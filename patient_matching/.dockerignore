@@ -1,6 +1,6 @@
 .DS_Store
 .git
-.github
+../.github
 .idea
 .mypy_cache
 .pytest_cache
