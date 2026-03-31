@@ -1,4 +1,4 @@
-"""fuzzy-db: Unified fuzzy string matching across database backends.
+"""fuzzy: Unified fuzzy string matching across database backends.
 
 Provides a single interface for performing Levenshtein, Jaro-Winkler, and
 other similarity searches against PostgreSQL, DuckDB, MongoDB, Redis,

@@ -1,4 +1,4 @@
-"""Configuration loading examples for fuzzy-db."""
+"""Configuration loading examples for fuzzy."""
 
 import os
 from fuzzy_db.config import ConfigLoader, create_from_config

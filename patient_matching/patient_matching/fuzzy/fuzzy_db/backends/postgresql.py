@@ -63,7 +63,7 @@ class PostgreSQLBackend(FuzzySearchBackend):
         except ImportError as exc:
             raise ImportError(
                 "psycopg2 is required for the PostgreSQL backend. "
-                "Install it with: pip install fuzzy-db[postgresql]"
+                "Install it with: pip install fuzzy[postgresql]"
             ) from exc
 
         logger.info("Connecting to PostgreSQL at %s:%s", self._conn_params["host"], self._conn_params["port"])

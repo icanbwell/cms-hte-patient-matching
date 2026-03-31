@@ -1,4 +1,4 @@
-"""Basic usage examples for fuzzy-db."""
+"""Basic usage examples for fuzzy."""
 
 from fuzzy_db import (
     DatabaseBackend,

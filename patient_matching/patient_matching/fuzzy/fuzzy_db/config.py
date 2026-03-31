@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class ConfigLoader:
-    """Load fuzzy-db configuration from various sources."""
+    """Load fuzzy configuration from various sources."""
 
     @staticmethod
     def from_yaml(filepath: str) -> Dict[str, Any]:
@@ -31,7 +31,7 @@ class ConfigLoader:
         except ImportError as exc:
             raise ImportError(
                 "PyYAML is required for YAML configuration. "
-                "Install it with: pip install fuzzy-db[yaml]"
+                "Install it with: pip install fuzzy[yaml]"
             ) from exc
 
         with open(filepath, "r") as f:

@@ -59,7 +59,7 @@ class DuckDBBackend(FuzzySearchBackend):
         except ImportError as exc:
             raise ImportError(
                 "duckdb is required for the DuckDB backend. "
-                "Install it with: pip install fuzzy-db[duckdb]"
+                "Install it with: pip install fuzzy[duckdb]"
             ) from exc
 
         logger.info("Connecting to DuckDB database: %s", self._database)

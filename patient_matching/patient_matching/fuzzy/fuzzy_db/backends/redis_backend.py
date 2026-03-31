@@ -63,7 +63,7 @@ class RedisBackend(FuzzySearchBackend):
         except ImportError as exc:
             raise ImportError(
                 "redis is required for the Redis backend. "
-                "Install it with: pip install fuzzy-db[redis]"
+                "Install it with: pip install fuzzy[redis]"
             ) from exc
 
         logger.info("Connecting to Redis at %s:%s", self._conn_params["host"], self._conn_params["port"])
@@ -104,7 +104,7 @@ class RedisBackend(FuzzySearchBackend):
         except ImportError as exc:
             raise ImportError(
                 "rapidfuzz is required for the Redis backend. "
-                "Install it with: pip install fuzzy-db"
+                "Install it with: pip install fuzzy"
             ) from exc
 
         pattern = f"{table}:*"

@@ -16,20 +16,20 @@ Unified fuzzy string matching across database backends. One API for Levenshtein,
 
 ```bash
 # Core (includes rapidfuzz for application-level matching)
-pip install fuzzy-db
+pip install fuzzy
 
 # With specific backends
-pip install fuzzy-db[duckdb]
-pip install fuzzy-db[postgresql]
-pip install fuzzy-db[mongodb]
-pip install fuzzy-db[redis]
-pip install fuzzy-db[elasticsearch]
+pip install fuzzy[duckdb]
+pip install fuzzy[postgresql]
+pip install fuzzy[mongodb]
+pip install fuzzy[redis]
+pip install fuzzy[elasticsearch]
 
 # All backends
-pip install fuzzy-db[all]
+pip install fuzzy[all]
 
 # Development
-pip install fuzzy-db[dev]
+pip install fuzzy[dev]
 ```
 
 ## Quick Start

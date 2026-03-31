@@ -50,7 +50,7 @@ class ElasticsearchBackend(FuzzySearchBackend):
         except ImportError as exc:
             raise ImportError(
                 "elasticsearch is required for the Elasticsearch backend. "
-                "Install it with: pip install fuzzy-db[elasticsearch]"
+                "Install it with: pip install fuzzy[elasticsearch]"
             ) from exc
 
         logger.info("Connecting to Elasticsearch: %s", self._hosts)

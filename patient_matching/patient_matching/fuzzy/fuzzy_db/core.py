@@ -1,4 +1,4 @@
-"""Core abstractions, data models, and enums for fuzzy-db."""
+"""Core abstractions, data models, and enums for fuzzy."""
 
 from __future__ import annotations
 

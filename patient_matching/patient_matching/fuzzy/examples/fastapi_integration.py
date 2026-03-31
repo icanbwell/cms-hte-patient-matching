@@ -1,4 +1,4 @@
-"""FastAPI integration example for fuzzy-db.
+"""FastAPI integration example for fuzzy.
 
 Run with: uvicorn examples.fastapi_integration:app --reload
 Requires: pip install fastapi uvicorn
@@ -60,7 +60,7 @@ try:
     from fastapi import FastAPI, Query
     from pydantic import BaseModel
 
-    app = FastAPI(title="fuzzy-db Demo API")
+    app = FastAPI(title="fuzzy Demo API")
 
     class SearchResponse(BaseModel):
         id: str

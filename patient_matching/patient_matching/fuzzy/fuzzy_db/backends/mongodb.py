@@ -54,7 +54,7 @@ class MongoDBBackend(FuzzySearchBackend):
         except ImportError as exc:
             raise ImportError(
                 "pymongo is required for the MongoDB backend. "
-                "Install it with: pip install fuzzy-db[mongodb]"
+                "Install it with: pip install fuzzy[mongodb]"
             ) from exc
 
         logger.info("Connecting to MongoDB: %s", self._connection_string)
@@ -167,7 +167,7 @@ class MongoDBBackend(FuzzySearchBackend):
         except ImportError as exc:
             raise ImportError(
                 "rapidfuzz is required for application-level MongoDB matching. "
-                "Install it with: pip install fuzzy-db"
+                "Install it with: pip install fuzzy"
             ) from exc
 
         collection = self._db[table]
