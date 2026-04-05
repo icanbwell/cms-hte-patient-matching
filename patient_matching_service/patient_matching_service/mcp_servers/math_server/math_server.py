@@ -84,4 +84,3 @@ class MathServerMCP:
             return PlainTextResponse("OK")
 
         return mcp
-

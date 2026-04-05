@@ -29,14 +29,10 @@ jobs:
         run: docker compose pull
 
       - name: pre-commit
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: make run-pre-commit && make clean-pre-commit
 
       # setup and install everything and run tests
       - name: up
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: make up
 
       - name: Set correct permissions for tests

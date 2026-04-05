@@ -2,7 +2,7 @@ export LANG
 
 .PHONY: Pipfile.lock
 Pipfile.lock: # Locks Pipfile and updates the Pipfile.lock on the local file system
-	docker compose --progress=plain build --no-cache --build-arg RUN_PIPENV_LOCK=true --build-arg GITHUB_TOKEN=${GITHUB_TOKEN} dev && \
+	docker compose --progress=plain build --no-cache --build-arg RUN_PIPENV_LOCK=true dev && \
 	docker compose --progress=plain run dev sh -c "cp -f /tmp/Pipfile.lock /usr/src/patient_matching_service/Pipfile.lock"
 
 .PHONY:devsetup

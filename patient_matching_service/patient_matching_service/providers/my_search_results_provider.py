@@ -12,11 +12,4 @@ class MyResultsProvider(ResultsProvider):
         client: Optional[str] = None,
         test: bool = False,
     ) -> Dict[str, Any]:
-        return {
-            "total_count": 1,
-            "results": [
-                {
-                    "result_id": 123
-                }
-            ]
-        }
+        return {"total_count": 1, "results": [{"result_id": 123}]}

@@ -10,13 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, HTMLResponse
 from prometheus_fastapi_instrumentator import Instrumentator
 from contextlib import asynccontextmanager, AbstractAsyncContextManager
-from typing import (
-    AsyncGenerator,
-    AsyncContextManager,
-    Callable,
-    Mapping,
-    Any
-)
+from typing import AsyncGenerator, AsyncContextManager, Callable, Mapping, Any
 
 from patient_matching_service.api_schema import ApiSchema
 from patient_matching_service.filters.endpoint_filter import EndpointFilter
@@ -35,6 +29,7 @@ logger = logging.getLogger(__name__)
 # disable logging calls to /health endpoint
 uvicorn_logger = logging.getLogger("uvicorn.access")
 uvicorn_logger.addFilter(EndpointFilter(path="/health"))
+
 
 # Your existing lifespan
 @asynccontextmanager
@@ -74,21 +69,24 @@ def create_composite_lifespan(
 
     return composite_lifespan
 
+
 math_server_mcp_app = MathServerMCP.get_app()
 
 app = FastAPI(
-        lifespan=create_composite_lifespan(
-            math_server_mcp_app.lifespan,
-            app_lifespan,
-        )
+    lifespan=create_composite_lifespan(
+        math_server_mcp_app.lifespan,
+        app_lifespan,
     )
+)
 
 app.mount(MathServerMCP.path, math_server_mcp_app)
 
 app.add_middleware(FastApiLoggingMiddleware)
 
 
-PLAYGROUND_HTML: Optional[str] = ExplorerPlayground(title="patient_matching_service").html(None)  # type: ignore[no-untyped-call]
+PLAYGROUND_HTML: Optional[str] = ExplorerPlayground(
+    title="patient_matching_service"
+).html(None)  # type: ignore[no-untyped-call]
 
 # Set up CORS middleware; adjust parameters as needed
 # noinspection PyTypeChecker
@@ -133,4 +131,5 @@ async def graphql_server(request: Request) -> JSONResponse:
     status_code = 200 if success else 400
     return JSONResponse(result, status_code=status_code)
 
-logger.info(f"FastAPI app created")
+
+logger.info("FastAPI app created")

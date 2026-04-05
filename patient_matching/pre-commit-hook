@@ -2,4 +2,4 @@
 
 GIT_PROJECT_ROOT=$(git rev-parse --show-toplevel)
 cd "$GIT_PROJECT_ROOT/patient_matching"
-docker build -f ./pre-commit.Dockerfile -t pre-commit-patient_matching . && docker run --rm --name pre-commit-patient_matching-run -v $(pwd)/:/sourcecode pre-commit-patient_matching
+docker build -f ./pre-commit.Dockerfile -t pre-commit-patient_matching . && docker run --rm --name pre-commit-patient_matching-run -v "$GIT_PROJECT_ROOT":/sourcecode -w /sourcecode/patient_matching pre-commit-patient_matching

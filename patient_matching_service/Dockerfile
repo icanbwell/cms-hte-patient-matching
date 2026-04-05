@@ -8,8 +8,6 @@ ENV PIP_ROOT_USER_ACTION=ignore
 
 # Define an argument to control whether to run pipenv lock (used for updating Pipfile.lock)
 ARG RUN_PIPENV_LOCK=false
-# Declare build-time arguments
-ARG GITHUB_TOKEN
 
 # Install common tools and dependencies (git is required for some Python packages)
 RUN apk add --no-cache git
@@ -54,9 +52,6 @@ FROM public.ecr.aws/docker/library/python:3.12-alpine3.20
 
 # Set terminal width (COLUMNS) and height (LINES)
 ENV COLUMNS=300
-
-# Define an argument to control whether to run pipenv lock (not used in this stage)
-ARG GITHUB_TOKEN
 
 # Install runtime dependencies required by the application (e.g., for shapely, grpcio, scipy, google-crc32 and numpy)
 # You can use auditwheel to check any package and identify the native library dependencies

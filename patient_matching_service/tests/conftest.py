@@ -28,6 +28,7 @@ def graphql_client() -> Generator[TestClient, None, None]:
     client = TestClient(app)
     yield client  # Use `yield` to ensure any teardown can happen after the test runs
 
+
 @pytest.fixture
 async def async_client() -> AsyncGenerator[httpx.AsyncClient, None]:
     async with LifespanManager(app) as manager:
