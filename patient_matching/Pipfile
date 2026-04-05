@@ -14,6 +14,22 @@ verify_ssl = true
 # cryptography is needed for RSA signature verification of JWTs
 pyjwt = "*"
 cryptography = "*"
+# rapidfuzz is needed for string distance algorithms in matching
+rapidfuzz = ">=3.9.4"
+# usaddress is needed for parsing street addresses
+usaddress = ">=0.5.10"
+# usaddress-scourgify is needed for normalizing addresses to USPS standard
+usaddress-scourgify = ">=0.6.0"
+# phonenumbers is needed for E.164 phone number normalization
+phonenumbers = ">=8.13.40"
+# phonetics is needed for phonetic matching algorithms
+phonetics = ">=1.0.5"
+# nominally is needed for parsing name components
+nominally = ">=1.1.0"
+# nicknames is needed for nickname lookup tables
+nicknames = ">=1.0.0"
+# text-unidecode is needed for diacritic folding
+text-unidecode = ">=1.3"
 
 [dev-packages]
 setuptools=">=60.9.3"
