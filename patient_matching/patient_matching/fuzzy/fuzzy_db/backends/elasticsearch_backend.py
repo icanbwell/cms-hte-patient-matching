@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 from ..core import (
     FuzzySearchBackend,
@@ -123,9 +123,7 @@ class ElasticsearchBackend(FuzzySearchBackend):
             if normalized >= config.threshold:
                 source = hit.get("_source", {})
                 value = str(source.get(field, ""))
-                metadata = {
-                    k: v for k, v in source.items() if k != field
-                }
+                metadata = {k: v for k, v in source.items() if k != field}
                 results.append(
                     SearchResult(
                         id=hit["_id"],

@@ -7,10 +7,9 @@ validated through fhirschemapy.
 
 from __future__ import annotations
 
-import json
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, Generator, List, Optional
+from typing import Any, Dict, Generator, Optional
 
 import httpx
 from fhirschemapy.R4B.patient import Patient
@@ -58,7 +57,7 @@ class FhirClient:
         auth = ClientCredentialsAuth(
             token_url="https://auth.example.com/token",
             client_id="my-app",
-            client_secret="secret",
+            client_secret="secret",  # pragma: allowlist secret
         )
         config = FhirClientConfig(
             base_url="https://fhir.example.com/R4",
@@ -94,25 +93,20 @@ class FhirClient:
         if search_params:
             params.update(search_params)
 
-        url = f"{self._base_url}/Patient"
+        url: Optional[str] = f"{self._base_url}/Patient"
         page_count = 0
 
         with self._create_http_client() as client:
             while url:
                 page_count += 1
-                if (
-                    self._config.max_pages > 0
-                    and page_count > self._config.max_pages
-                ):
+                if self._config.max_pages > 0 and page_count > self._config.max_pages:
                     logger.info(
                         "Reached max_pages limit (%d)",
                         self._config.max_pages,
                     )
                     break
 
-                logger.debug(
-                    "Fetching page %d from %s", page_count, url
-                )
+                logger.debug("Fetching page %d from %s", page_count, url)
                 response = self._authenticated_get(
                     client, url, params=params if page_count == 1 else None
                 )
@@ -127,9 +121,7 @@ class FhirClient:
                         yield resource
 
                 if entries:
-                    logger.info(
-                        "Page %d: %d entries", page_count, len(entries)
-                    )
+                    logger.info("Page %d: %d entries", page_count, len(entries))
 
                 # Follow the 'next' link for pagination
                 url = _get_next_link(bundle_dict)
@@ -155,7 +147,10 @@ class FhirClient:
             response.raise_for_status()
             # Validate through fhirschemapy, then return as dict
             patient = Patient.from_json(response.text)
-            return patient.model_dump(exclude_none=True, by_alias=True)
+            result: Dict[str, Any] = patient.model_dump(
+                exclude_none=True, by_alias=True
+            )
+            return result
 
     def _create_http_client(self) -> httpx.Client:
         """Create an HTTP client with configured defaults."""
@@ -191,5 +186,6 @@ def _get_next_link(bundle_dict: Dict[str, Any]) -> Optional[str]:
     """Extract the 'next' pagination URL from a Bundle dict."""
     for link in bundle_dict.get("link", []):
         if link.get("relation") == "next":
-            return link.get("url")
+            url: Optional[str] = link.get("url")
+            return url
     return None

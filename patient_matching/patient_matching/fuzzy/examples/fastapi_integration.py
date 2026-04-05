@@ -12,7 +12,6 @@ from fuzzy_db import (
     DatabaseBackend,
     FuzzySearchConfig,
     FuzzySearchManager,
-    SearchResult,
     SimilarityAlgorithm,
 )
 
@@ -39,16 +38,20 @@ def _seed_data() -> None:
     )
     for i, name in enumerate(
         [
-            "John Smith", "Jon Smyth", "Jonathan Smith",
-            "Jane Doe", "Janet Doe", "James Johnson",
-            "Jim Johnson", "Robert Williams", "Bob Williams",
+            "John Smith",
+            "Jon Smyth",
+            "Jonathan Smith",
+            "Jane Doe",
+            "Janet Doe",
+            "James Johnson",
+            "Jim Johnson",
+            "Robert Williams",
+            "Bob Williams",
             "Elizabeth Taylor",
         ],
         start=1,
     ):
-        backend._connection.execute(
-            "INSERT INTO patients VALUES (?, ?)", [i, name]
-        )
+        backend._connection.execute("INSERT INTO patients VALUES (?, ?)", [i, name])
     backend.disconnect()
 
 
@@ -96,8 +99,7 @@ try:
     @app.get("/algorithms")
     def list_algorithms():
         return {
-            algo.value: manager.supports_algorithm(algo)
-            for algo in SimilarityAlgorithm
+            algo.value: manager.supports_algorithm(algo) for algo in SimilarityAlgorithm
         }
 
 except ImportError:

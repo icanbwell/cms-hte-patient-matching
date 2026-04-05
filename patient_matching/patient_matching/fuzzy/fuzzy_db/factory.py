@@ -37,11 +37,11 @@ class FuzzySearchFactory:
         prevent the factory from being instantiated.
         """
         self._default_paths: Dict[DatabaseBackend, str] = {
-            DatabaseBackend.POSTGRESQL: "fuzzy_db.backends.postgresql.PostgreSQLBackend",
-            DatabaseBackend.DUCKDB: "fuzzy_db.backends.duckdb_backend.DuckDBBackend",
-            DatabaseBackend.MONGODB: "fuzzy_db.backends.mongodb.MongoDBBackend",
-            DatabaseBackend.REDIS: "fuzzy_db.backends.redis_backend.RedisBackend",
-            DatabaseBackend.ELASTICSEARCH: "fuzzy_db.backends.elasticsearch_backend.ElasticsearchBackend",
+            DatabaseBackend.POSTGRESQL: "patient_matching.fuzzy.fuzzy_db.backends.postgresql.PostgreSQLBackend",
+            DatabaseBackend.DUCKDB: "patient_matching.fuzzy.fuzzy_db.backends.duckdb_backend.DuckDBBackend",
+            DatabaseBackend.MONGODB: "patient_matching.fuzzy.fuzzy_db.backends.mongodb.MongoDBBackend",
+            DatabaseBackend.REDIS: "patient_matching.fuzzy.fuzzy_db.backends.redis_backend.RedisBackend",
+            DatabaseBackend.ELASTICSEARCH: "patient_matching.fuzzy.fuzzy_db.backends.elasticsearch_backend.ElasticsearchBackend",
         }
 
     def _resolve_class(self, backend: DatabaseBackend) -> Type[FuzzySearchBackend]:
@@ -111,4 +111,6 @@ class FuzzySearchFactory:
                 f"{backend_class.__name__} must be a subclass of FuzzySearchBackend"
             )
         self._registry[backend] = backend_class
-        logger.info("Registered custom backend %s -> %s", backend.value, backend_class.__name__)
+        logger.info(
+            "Registered custom backend %s -> %s", backend.value, backend_class.__name__
+        )

@@ -7,11 +7,10 @@ usaddress-scourgify. Addresses match regardless of designated type.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
-from scourgify import normalize_address_record
-from scourgify.exceptions import (
+from scourgify import normalize_address_record  # type: ignore[import-untyped]
+from scourgify.exceptions import (  # type: ignore[import-untyped]
     AddressNormalizationError,
     AmbiguousAddressError,
 )
@@ -57,9 +56,7 @@ class AddressNormalizer:
 
         return result
 
-    def _normalize_address(
-        self, addr: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
+    def _normalize_address(self, addr: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Normalize a single FHIR Address dict using scourgify.
 
         Returns None if the address is a placeholder.
@@ -71,7 +68,6 @@ class AddressNormalizer:
         country = addr.get("country", "")
         use = addr.get("use", "")
         addr_type = addr.get("type", "")
-        text = addr.get("text", "")
 
         line1 = lines[0] if len(lines) > 0 else ""
         line2 = lines[1] if len(lines) > 1 else ""
@@ -81,22 +77,16 @@ class AddressNormalizer:
             return None
 
         # Attempt USPS standardization via scourgify
-        normalized_line1, normalized_line2 = self._standardize_street(
-            line1, line2
-        )
+        normalized_line1, normalized_line2 = self._standardize_street(line1, line2)
 
         # Normalize city, state, postal with text normalization
         # (preserve spaces for address fields per A.2 exception)
         norm_city = normalize_text(city, preserve_spaces=True) if city else ""
-        norm_state = (
-            normalize_text(state, preserve_spaces=True) if state else ""
-        )
+        norm_state = normalize_text(state, preserve_spaces=True) if state else ""
         norm_postal = _normalize_postal_code(postal_code)
 
         # If everything is empty after normalization, skip
-        if not any(
-            [normalized_line1, norm_city, norm_state, norm_postal]
-        ):
+        if not any([normalized_line1, norm_city, norm_state, norm_postal]):
             return None
 
         result: Dict[str, Any] = {}
@@ -121,16 +111,12 @@ class AddressNormalizer:
         if norm_postal:
             result["postalCode"] = norm_postal
         if country:
-            result["country"] = normalize_text(
-                country, preserve_spaces=True
-            )
+            result["country"] = normalize_text(country, preserve_spaces=True)
 
         return result
 
     @staticmethod
-    def _standardize_street(
-        line1: str, line2: str
-    ) -> tuple[str, str]:
+    def _standardize_street(line1: str, line2: str) -> tuple[str, str]:
         """Standardize street address lines using scourgify.
 
         Falls back to basic text normalization if scourgify cannot parse.
@@ -149,9 +135,7 @@ class AddressNormalizer:
             norm_line2 = result.get("address_line_2", "") or ""
             return (norm_line1.lower(), norm_line2.lower())
         except (AddressNormalizationError, AmbiguousAddressError):
-            logger.debug(
-                "scourgify could not normalize address: %s", full_line
-            )
+            logger.debug("scourgify could not normalize address: %s", full_line)
         except Exception:
             logger.debug(
                 "Unexpected error normalizing address: %s",

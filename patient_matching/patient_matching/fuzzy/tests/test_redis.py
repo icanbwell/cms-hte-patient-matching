@@ -6,8 +6,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from fuzzy_db.backends.redis_backend import RedisBackend
-from fuzzy_db.core import FuzzySearchConfig, SimilarityAlgorithm
+from patient_matching.fuzzy.fuzzy_db.backends.redis_backend import RedisBackend
+from patient_matching.fuzzy.fuzzy_db.core import FuzzySearchConfig, SimilarityAlgorithm
 
 
 @pytest.fixture

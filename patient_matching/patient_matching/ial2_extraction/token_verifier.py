@@ -78,9 +78,7 @@ class TokenVerifier:
         except jwt.ExpiredSignatureError as e:
             raise TokenVerificationError(f"Token has expired: {e}") from e
         except jwt.InvalidAudienceError as e:
-            raise TokenVerificationError(
-                f"Invalid audience: {e}"
-            ) from e
+            raise TokenVerificationError(f"Invalid audience: {e}") from e
         except jwt.InvalidIssuerError as e:
             raise TokenVerificationError(f"Invalid issuer: {e}") from e
         except jwt.PyJWKClientError as e:
@@ -88,9 +86,7 @@ class TokenVerifier:
                 f"Failed to fetch signing key from JWKS: {e}"
             ) from e
         except jwt.InvalidTokenError as e:
-            raise TokenVerificationError(
-                f"Token verification failed: {e}"
-            ) from e
+            raise TokenVerificationError(f"Token verification failed: {e}") from e
 
     @classmethod
     def from_oidc_discovery(
@@ -116,13 +112,12 @@ class TokenVerifier:
             TokenVerificationError: If discovery metadata cannot be fetched.
         """
         try:
-            with urlopen(discovery_url) as response:
+            with urlopen(discovery_url) as response:  # nosec B310
                 metadata = json.loads(response.read())
             jwks_uri = metadata["jwks_uri"]
         except Exception as e:
             raise TokenVerificationError(
-                f"Failed to fetch OIDC discovery metadata from "
-                f"{discovery_url}: {e}"
+                f"Failed to fetch OIDC discovery metadata from {discovery_url}: {e}"
             ) from e
 
         return cls(

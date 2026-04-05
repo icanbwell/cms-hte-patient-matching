@@ -26,9 +26,7 @@ class TestNameNormalizer:
         assert result[0]["use"] == "official"
 
     def test_diacritic_folding_in_names(self) -> None:
-        patient = {
-            "name": [{"family": "García", "given": ["José"]}]
-        }
+        patient = {"name": [{"family": "García", "given": ["José"]}]}
         result = self.normalizer.normalize_patient_names(patient)
 
         assert result[0]["family"] == "garcia"
@@ -83,9 +81,7 @@ class TestNameNormalizer:
         assert result[0]["family"] == "smith"
 
     def test_test_patient_filtered(self) -> None:
-        patient = {
-            "name": [{"family": "Test", "given": ["Test"]}]
-        }
+        patient = {"name": [{"family": "Test", "given": ["Test"]}]}
         result = self.normalizer.normalize_patient_names(patient)
         assert len(result) == 0
 
@@ -123,9 +119,7 @@ class TestNameNormalizer:
         assert len(nicks) == 0
 
     def test_nicknames_attached_to_name(self) -> None:
-        patient = {
-            "name": [{"family": "Smith", "given": ["Robert"]}]
-        }
+        patient = {"name": [{"family": "Smith", "given": ["Robert"]}]}
         result = self.normalizer.normalize_patient_names(patient)
 
         # Should have _nicknames extension with bob, rob, etc.

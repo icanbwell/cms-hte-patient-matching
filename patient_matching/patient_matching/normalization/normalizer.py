@@ -102,9 +102,7 @@ class PatientNormalizer:
             result.pop("telecom", None)
 
         # Normalize addresses to USPS standard (C.1-C.2)
-        normalized_addresses = self._addresses.normalize_patient_addresses(
-            result
-        )
+        normalized_addresses = self._addresses.normalize_patient_addresses(result)
         if normalized_addresses:
             result["address"] = normalized_addresses
         else:
@@ -112,9 +110,7 @@ class PatientNormalizer:
 
         # Normalize identifiers — suppress placeholder SSNs
         if "identifier" in result:
-            normalized_ids = self._normalize_identifiers(
-                result["identifier"]
-            )
+            normalized_ids = self._normalize_identifiers(result["identifier"])
             if normalized_ids:
                 result["identifier"] = normalized_ids
             else:

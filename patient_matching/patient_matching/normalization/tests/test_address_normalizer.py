@@ -77,9 +77,7 @@ class TestAddressNormalizer:
 
     def test_homeless_address_filtered(self) -> None:
         patient = {
-            "address": [
-                {"line": ["Homeless"], "city": "Portland", "state": "OR"}
-            ]
+            "address": [{"line": ["Homeless"], "city": "Portland", "state": "OR"}]
         }
         result = self.normalizer.normalize_patient_addresses(patient)
         assert len(result) == 0
@@ -105,9 +103,7 @@ class TestAddressNormalizer:
 
     def test_empty_addresses(self) -> None:
         assert self.normalizer.normalize_patient_addresses({}) == []
-        assert (
-            self.normalizer.normalize_patient_addresses({"address": []}) == []
-        )
+        assert self.normalizer.normalize_patient_addresses({"address": []}) == []
 
     def test_city_state_normalized(self) -> None:
         patient = {

@@ -1,7 +1,7 @@
 # noinspection Mypy
 from typing import Any
 
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages  # type: ignore[import-untyped]
 from os import path, getcwd
 
 # from https://packaging.python.org/tutorials/packaging-projects/
@@ -27,7 +27,7 @@ def fix_setuptools() -> None:
     issues.
     """
     try:
-        from setuptools.sandbox import DirectorySandbox
+        from setuptools.sandbox import DirectorySandbox  # type: ignore[import-untyped]
 
         # noinspection PyUnusedLocal
         def violation(operation: Any, *args: Any, **_: Any) -> None:
@@ -66,5 +66,5 @@ setup(
     dependency_links=[],
     include_package_data=True,
     zip_safe=False,
-    package_data={"patient_matching": ["py.typed"]}
+    package_data={"patient_matching": ["py.typed"]},
 )

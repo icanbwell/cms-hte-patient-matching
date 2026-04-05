@@ -88,9 +88,7 @@ class NormalizationManager:
         """
         return self._normalizer.normalize(patient)
 
-    def normalize_batch(
-        self, patients: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+    def normalize_batch(self, patients: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Normalize a list of FHIR Patient resources.
 
         Args:

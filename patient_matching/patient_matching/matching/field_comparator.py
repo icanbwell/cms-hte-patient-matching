@@ -48,18 +48,14 @@ class FieldComparator:
             for c_val in candidate_values:
                 if len(c_val) < MIN_FUZZY_LENGTH:
                     continue
-                dist = DamerauLevenshtein.distance(
-                    q_val, c_val
-                )
+                dist = DamerauLevenshtein.distance(q_val, c_val)
                 if dist <= MAX_DAMERAU_LEVENSHTEIN_DISTANCE:
                     return True
 
         return False
 
     @staticmethod
-    def is_fuzzy_only(
-        query_values: Set[str], candidate_values: Set[str]
-    ) -> bool:
+    def is_fuzzy_only(query_values: Set[str], candidate_values: Set[str]) -> bool:
         """Check if the match is fuzzy-only (not exact).
 
         Returns True if fuzzy_match passes but exact_match does not.
@@ -74,9 +70,7 @@ class FieldComparator:
             for c_val in candidate_values:
                 if len(c_val) < MIN_FUZZY_LENGTH:
                     continue
-                dist = DamerauLevenshtein.distance(
-                    q_val, c_val
-                )
+                dist = DamerauLevenshtein.distance(q_val, c_val)
                 if dist <= MAX_DAMERAU_LEVENSHTEIN_DISTANCE:
                     return True
 

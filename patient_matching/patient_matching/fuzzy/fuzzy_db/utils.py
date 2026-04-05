@@ -101,9 +101,7 @@ class FuzzySearchBenchmark:
                     results=results,
                 )
             )
-            logger.info(
-                "%s: %.4fs, %d results", name, elapsed, len(results)
-            )
+            logger.info("%s: %.4fs, %d results", name, elapsed, len(results))
 
         return benchmark_results
 
@@ -187,13 +185,9 @@ def create_test_data(manager: FuzzySearchManager, table: str) -> None:
     if manager._backend_type == DatabaseBackend.DUCKDB:
         backend.connect()
         conn = backend._connection  # type: ignore[attr-defined]
-        conn.execute(
-            f"CREATE TABLE IF NOT EXISTS {table} (id INTEGER, name VARCHAR)"
-        )
+        conn.execute(f"CREATE TABLE IF NOT EXISTS {table} (id INTEGER, name VARCHAR)")
         for rid, name in sample_names:
-            conn.execute(
-                f"INSERT INTO {table} VALUES (?, ?)", [rid, name]
-            )
+            conn.execute(f"INSERT INTO {table} VALUES (?, ?)", [rid, name])  # nosec B608
         backend.disconnect()
         logger.info("Created test data in DuckDB table %s", table)
 
@@ -206,7 +200,8 @@ def create_test_data(manager: FuzzySearchManager, table: str) -> None:
             )
             for rid, name in sample_names:
                 cur.execute(
-                    f"INSERT INTO {table} (id, name) VALUES (%s, %s)", (rid, name)
+                    f"INSERT INTO {table} (id, name) VALUES (%s, %s)",  # nosec B608
+                    (rid, name),
                 )
         backend.disconnect()
         logger.info("Created test data in PostgreSQL table %s", table)

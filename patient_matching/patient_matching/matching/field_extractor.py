@@ -101,9 +101,7 @@ class FieldExtractor:
         return fields
 
     @staticmethod
-    def _extract_names(
-        patient: Dict[str, Any], fields: PatientFields
-    ) -> None:
+    def _extract_names(patient: Dict[str, Any], fields: PatientFields) -> None:
         """Extract name components from all HumanName entries."""
         for name_entry in patient.get("name", []):
             # Family names
@@ -128,18 +126,14 @@ class FieldExtractor:
                     fields.suffixes.add(s)
 
     @staticmethod
-    def _extract_birth_date(
-        patient: Dict[str, Any], fields: PatientFields
-    ) -> None:
+    def _extract_birth_date(patient: Dict[str, Any], fields: PatientFields) -> None:
         """Extract date of birth."""
         dob = patient.get("birthDate", "")
         if dob:
             fields.dob.add(dob)
 
     @staticmethod
-    def _extract_telecoms(
-        patient: Dict[str, Any], fields: PatientFields
-    ) -> None:
+    def _extract_telecoms(patient: Dict[str, Any], fields: PatientFields) -> None:
         """Extract phone numbers and email addresses."""
         for telecom in patient.get("telecom", []):
             system = telecom.get("system", "")
@@ -153,9 +147,7 @@ class FieldExtractor:
                 fields.emails.add(value)
 
     @staticmethod
-    def _extract_addresses(
-        patient: Dict[str, Any], fields: PatientFields
-    ) -> None:
+    def _extract_addresses(patient: Dict[str, Any], fields: PatientFields) -> None:
         """Extract street lines from all addresses."""
         for addr in patient.get("address", []):
             for line in addr.get("line", []):
@@ -163,9 +155,7 @@ class FieldExtractor:
                     fields.street_lines.add(line)
 
     @staticmethod
-    def _extract_identifiers(
-        patient: Dict[str, Any], fields: PatientFields
-    ) -> None:
+    def _extract_identifiers(patient: Dict[str, Any], fields: PatientFields) -> None:
         """Extract structured identifiers (SSN last 4, ITIN, MBI, etc.)."""
         for ident in patient.get("identifier", []):
             system = ident.get("system", "")
@@ -173,9 +163,7 @@ class FieldExtractor:
             if not value:
                 continue
 
-            type_codings = (
-                ident.get("type", {}).get("coding", [])
-            )
+            type_codings = ident.get("type", {}).get("coding", [])
             codes = {c.get("code", "") for c in type_codings}
 
             if system == _SSN_SYSTEM:

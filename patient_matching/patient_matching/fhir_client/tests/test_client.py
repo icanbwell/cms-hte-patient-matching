@@ -3,7 +3,6 @@
 import json
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 from patient_matching.fhir_client.client import FhirClient, FhirClientConfig
 
@@ -51,7 +50,6 @@ def _mock_response(data_dict, status_code=200):
 
 def _setup_mock_http(client, responses):
     """Set up a mock HTTP client that returns the given responses."""
-    mock_http = MagicMock()
     mock_http_client = MagicMock()
     mock_http_client.__enter__ = MagicMock(return_value=mock_http_client)
     mock_http_client.__exit__ = MagicMock(return_value=False)
@@ -126,9 +124,7 @@ class TestFhirClient:
         config = FhirClientConfig(base_url="https://fhir.example.com/R4")
         client = FhirClient(config)
 
-        mock_http_client = _setup_mock_http(
-            client, _mock_response(patient)
-        )
+        mock_http_client = _setup_mock_http(client, _mock_response(patient))
 
         with patch.object(client, "_create_http_client", return_value=mock_http_client):
             result = client.fetch_patient("p-123")
@@ -140,9 +136,7 @@ class TestFhirClient:
         config = FhirClientConfig(base_url="https://fhir.example.com/R4")
         client = FhirClient(config)
 
-        mock_http_client = _setup_mock_http(
-            client, _mock_response({}, status_code=404)
-        )
+        mock_http_client = _setup_mock_http(client, _mock_response({}, status_code=404))
 
         with patch.object(client, "_create_http_client", return_value=mock_http_client):
             result = client.fetch_patient("nonexistent")

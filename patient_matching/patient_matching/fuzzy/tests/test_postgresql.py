@@ -6,14 +6,16 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from fuzzy_db.backends.postgresql import PostgreSQLBackend
-from fuzzy_db.core import FuzzySearchConfig, SimilarityAlgorithm
+from patient_matching.fuzzy.fuzzy_db.backends.postgresql import PostgreSQLBackend
+from patient_matching.fuzzy.fuzzy_db.core import FuzzySearchConfig, SimilarityAlgorithm
 
 
 @pytest.fixture
 def mock_pg():
     """Create a PostgreSQL backend with mocked psycopg2."""
-    with patch("fuzzy_db.backends.postgresql.PostgreSQLBackend.connect"):
+    with patch(
+        "patient_matching.fuzzy.fuzzy_db.backends.postgresql.PostgreSQLBackend.connect"
+    ):
         backend = PostgreSQLBackend(
             host="localhost", port=5432, database="test", user="test", password="test"
         )

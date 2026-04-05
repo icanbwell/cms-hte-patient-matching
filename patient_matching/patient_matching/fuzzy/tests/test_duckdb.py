@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from fuzzy_db.backends.duckdb_backend import DuckDBBackend
-from fuzzy_db.core import FuzzySearchConfig, SimilarityAlgorithm
+from patient_matching.fuzzy.fuzzy_db.backends.duckdb_backend import DuckDBBackend
+from patient_matching.fuzzy.fuzzy_db.core import FuzzySearchConfig, SimilarityAlgorithm
 
 
 @pytest.fixture
@@ -13,9 +13,7 @@ def backend():
     """Create an in-memory DuckDB backend with sample data."""
     b = DuckDBBackend(database=":memory:")
     b.connect()
-    b._connection.execute(
-        "CREATE TABLE users (id INTEGER, name VARCHAR)"
-    )
+    b._connection.execute("CREATE TABLE users (id INTEGER, name VARCHAR)")
     sample = [
         (1, "John Smith"),
         (2, "Jon Smyth"),

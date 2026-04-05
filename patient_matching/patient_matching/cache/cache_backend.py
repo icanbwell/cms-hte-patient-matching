@@ -6,7 +6,6 @@ that supports efficient field-level lookups for the matching engine.
 
 from __future__ import annotations
 
-import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set

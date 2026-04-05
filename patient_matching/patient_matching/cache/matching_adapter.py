@@ -11,7 +11,7 @@ import logging
 from typing import Any, Dict, List, Set
 
 from ..matching.backend import FieldCriterion, MatchingBackend, MatchType
-from .cache_backend import CacheBackend, CachedPatient
+from .cache_backend import CacheBackend
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +30,7 @@ class CacheMatchingBackend(MatchingBackend):
     def __init__(self, cache: CacheBackend) -> None:
         self._cache = cache
 
-    def search(
-        self, criteria: List[FieldCriterion]
-    ) -> List[Dict[str, Any]]:
+    def search(self, criteria: List[FieldCriterion]) -> List[Dict[str, Any]]:
         """Search for candidate patients matching the given criteria.
 
         Uses the criteria as blocking keys — fetches candidates from

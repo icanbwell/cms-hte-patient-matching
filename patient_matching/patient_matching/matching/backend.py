@@ -47,9 +47,7 @@ class MatchingBackend(ABC):
     """
 
     @abstractmethod
-    def search(
-        self, criteria: List[FieldCriterion]
-    ) -> List[Dict[str, Any]]:
+    def search(self, criteria: List[FieldCriterion]) -> List[Dict[str, Any]]:
         """Search for candidate patients matching the given criteria.
 
         Args:

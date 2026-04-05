@@ -1,6 +1,5 @@
 """Tests for MatchingManager."""
 
-import pytest
 from typing import Any, Dict, List
 
 from patient_matching.matching.backend import FieldCriterion, MatchingBackend

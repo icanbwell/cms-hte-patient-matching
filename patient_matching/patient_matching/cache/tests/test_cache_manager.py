@@ -1,7 +1,7 @@
 """Tests for the CacheManager pipeline."""
 
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from patient_matching.cache.cache_manager import CacheManager, CacheManagerConfig
 from patient_matching.cache.duckdb_cache import DuckDBCache
@@ -62,13 +62,15 @@ class TestCacheManager:
     def test_build_cache_clears_existing(self, cache):
         from patient_matching.cache.cache_backend import CachedPatient
 
-        cache.upsert_patients([
-            CachedPatient(
-                patient_id="old",
-                first_names={"old"},
-                fhir_resource={"id": "old"},
-            )
-        ])
+        cache.upsert_patients(
+            [
+                CachedPatient(
+                    patient_id="old",
+                    first_names={"old"},
+                    fhir_resource={"id": "old"},
+                )
+            ]
+        )
         assert cache.count() == 1
 
         patients = [_make_fhir_patient("new")]
@@ -87,13 +89,15 @@ class TestCacheManager:
     def test_refresh_cache_does_not_clear(self, cache):
         from patient_matching.cache.cache_backend import CachedPatient
 
-        cache.upsert_patients([
-            CachedPatient(
-                patient_id="existing",
-                first_names={"existing"},
-                fhir_resource={"id": "existing"},
-            )
-        ])
+        cache.upsert_patients(
+            [
+                CachedPatient(
+                    patient_id="existing",
+                    first_names={"existing"},
+                    fhir_resource={"id": "existing"},
+                )
+            ]
+        )
 
         patients = [_make_fhir_patient("new")]
         mock_fhir_client = MagicMock()
@@ -127,9 +131,11 @@ class TestCacheManager:
 
     def test_patient_count_property(self, cache):
         mock_fhir_client = MagicMock()
-        mock_fhir_client.fetch_all_patients.return_value = iter([
-            _make_fhir_patient("p1"),
-        ])
+        mock_fhir_client.fetch_all_patients.return_value = iter(
+            [
+                _make_fhir_patient("p1"),
+            ]
+        )
 
         manager = CacheManager(
             fhir_client=mock_fhir_client,

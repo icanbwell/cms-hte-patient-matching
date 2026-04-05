@@ -35,10 +35,12 @@ class TestCacheMatchingBackend:
         cache.upsert_patients([_make_cached_patient("p1")])
         adapter = CacheMatchingBackend(cache)
 
-        results = adapter.search([
-            FieldCriterion(field_name="first_name", value="john"),
-            FieldCriterion(field_name="last_name", value="smith"),
-        ])
+        results = adapter.search(
+            [
+                FieldCriterion(field_name="first_name", value="john"),
+                FieldCriterion(field_name="last_name", value="smith"),
+            ]
+        )
         assert len(results) == 1
         assert results[0]["id"] == "p1"
 
@@ -46,9 +48,11 @@ class TestCacheMatchingBackend:
         cache.upsert_patients([_make_cached_patient("p1")])
         adapter = CacheMatchingBackend(cache)
 
-        results = adapter.search([
-            FieldCriterion(field_name="first_name", value="alice"),
-        ])
+        results = adapter.search(
+            [
+                FieldCriterion(field_name="first_name", value="alice"),
+            ]
+        )
         assert len(results) == 0
 
     def test_search_and_semantics(self, cache):
@@ -56,23 +60,27 @@ class TestCacheMatchingBackend:
         cache.upsert_patients([_make_cached_patient("p1")])
         adapter = CacheMatchingBackend(cache)
 
-        results = adapter.search([
-            FieldCriterion(field_name="first_name", value="john"),
-            FieldCriterion(field_name="last_name", value="jones"),  # wrong
-        ])
+        results = adapter.search(
+            [
+                FieldCriterion(field_name="first_name", value="john"),
+                FieldCriterion(field_name="last_name", value="jones"),  # wrong
+            ]
+        )
         assert len(results) == 0
 
     def test_search_fuzzy(self, cache):
         cache.upsert_patients([_make_cached_patient("p1", last="smith")])
         adapter = CacheMatchingBackend(cache)
 
-        results = adapter.search([
-            FieldCriterion(
-                field_name="last_name",
-                value="smtih",
-                match_type=MatchType.FUZZY,
-            ),
-        ])
+        results = adapter.search(
+            [
+                FieldCriterion(
+                    field_name="last_name",
+                    value="smtih",
+                    match_type=MatchType.FUZZY,
+                ),
+            ]
+        )
         assert len(results) == 1
 
     def test_search_empty_criteria(self, cache):
@@ -86,9 +94,11 @@ class TestCacheMatchingBackend:
         cache.upsert_patients([_make_cached_patient("p1")])
         adapter = CacheMatchingBackend(cache)
 
-        results = adapter.search([
-            FieldCriterion(field_name="dob", value="1990-01-15"),
-        ])
+        results = adapter.search(
+            [
+                FieldCriterion(field_name="dob", value="1990-01-15"),
+            ]
+        )
         assert len(results) == 1
         assert results[0]["resourceType"] == "Patient"
         assert results[0]["id"] == "p1"

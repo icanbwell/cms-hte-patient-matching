@@ -1,24 +1,20 @@
 """Tests for MatchingEngine."""
 
-import pytest
 from typing import Any, Dict, List
 
 from patient_matching.matching.backend import (
     FieldCriterion,
     MatchingBackend,
-    MatchType,
 )
 from patient_matching.matching.match_result import MatchOutcome
 from patient_matching.matching.matching_engine import MatchingEngine
 from patient_matching.matching.table2_rules import (
     APPROVED_RULES,
-    FieldRole,
-    MatchingRule,
-    RuleField,
 )
 
 
 # ── helpers ──────────────────────────────────────────────────────────
+
 
 def _make_patient(
     *,
@@ -179,9 +175,7 @@ class TestMatchingEngineSuffixConflict:
         engine = MatchingEngine(backend=InMemoryBackend([candidate]))
         result = engine.match(query)
         assert result.outcome == MatchOutcome.NO_MATCH
-        negated = [
-            ev for ev in result.rule_evaluations if ev.negated_by_suffix
-        ]
+        negated = [ev for ev in result.rule_evaluations if ev.negated_by_suffix]
         assert len(negated) > 0
 
     def test_same_suffix_no_conflict(self):
@@ -244,8 +238,6 @@ class TestMatchingEngineRuleEvaluations:
             rules=single_rule,
         )
         result = engine.match(query)
-        evals = [
-            e for e in result.rule_evaluations if e.rule_id == "26"
-        ]
+        evals = [e for e in result.rule_evaluations if e.rule_id == "26"]
         assert len(evals) == 1
         assert evals[0].field_outcomes.get("namespace_id") == "exact"

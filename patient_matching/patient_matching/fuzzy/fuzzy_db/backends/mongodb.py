@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 from ..core import (
     FuzzySearchBackend,
@@ -162,8 +162,7 @@ class MongoDBBackend(FuzzySearchBackend):
     ) -> List[SearchResult]:
         """Fetch documents and match using rapidfuzz."""
         try:
-            from rapidfuzz import fuzz
-            from rapidfuzz.distance import DamerauLevenshtein, Levenshtein
+            import rapidfuzz  # noqa: F401
         except ImportError as exc:
             raise ImportError(
                 "rapidfuzz is required for application-level MongoDB matching. "
@@ -200,9 +199,7 @@ class MongoDBBackend(FuzzySearchBackend):
         return scored[: config.limit]
 
     @staticmethod
-    def _compute_score(
-        query: str, value: str, config: FuzzySearchConfig
-    ) -> float:
+    def _compute_score(query: str, value: str, config: FuzzySearchConfig) -> float:
         """Compute a 0-1 similarity score using the configured algorithm."""
         from rapidfuzz import fuzz
         from rapidfuzz.distance import DamerauLevenshtein, Levenshtein
@@ -217,5 +214,6 @@ class MongoDBBackend(FuzzySearchBackend):
         if algo == SimilarityAlgorithm.JARO:
             # rapidfuzz provides Jaro via the distance module.
             from rapidfuzz.distance import Jaro
+
             return Jaro.similarity(query, value)
         raise ValueError(f"Unsupported algorithm: {algo}")

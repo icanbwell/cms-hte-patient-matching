@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, FrozenSet, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 
 from nicknames import NickNamer
 
@@ -106,9 +106,7 @@ class NameNormalizer:
     def suffix_table_version(self) -> str:
         return SUFFIX_TABLE_VERSION
 
-    def normalize_patient_names(
-        self, patient: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
+    def normalize_patient_names(self, patient: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Normalize all name entries on a FHIR Patient resource.
 
         Returns a new list of FHIR HumanName dicts with normalized values
@@ -142,7 +140,7 @@ class NameNormalizer:
 
         cleaned = normalize_text(given_name)
         try:
-            raw_nicknames: tuple[str, ...] = self._nicker.nicknames_of(cleaned)
+            raw_nicknames = tuple(self._nicker.nicknames_of(cleaned))
         except Exception:
             raw_nicknames = ()
 
@@ -190,9 +188,7 @@ class NameNormalizer:
         # Normalize components
         norm_family = normalize_text(family) if family else ""
         norm_given = [normalize_text(g) for g in given_list if g]
-        norm_suffix = [
-            self.normalize_suffix(s) for s in suffix_list if s
-        ]
+        norm_suffix = [self.normalize_suffix(s) for s in suffix_list if s]
         norm_prefix = [normalize_text(p) for p in prefix_list if p]
 
         # Check for placeholders (D.5 — applies to both requestor and responder)

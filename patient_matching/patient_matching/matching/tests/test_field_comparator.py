@@ -66,9 +66,7 @@ class TestFuzzyMatch:
 
     def test_fuzzy_match_multiple_values(self, comparator):
         """Should match if any pair matches."""
-        assert comparator.fuzzy_match(
-            {"bob", "robert"}, {"robret", "alice"}
-        ) is True
+        assert comparator.fuzzy_match({"bob", "robert"}, {"robret", "alice"}) is True
 
 
 class TestIsFuzzyOnly:

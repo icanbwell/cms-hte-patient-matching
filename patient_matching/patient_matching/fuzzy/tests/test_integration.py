@@ -4,20 +4,19 @@ from __future__ import annotations
 
 import json
 import os
-import tempfile
 
 import pytest
 
-from fuzzy_db.config import ConfigLoader, create_from_config
-from fuzzy_db.core import (
+from patient_matching.fuzzy.fuzzy_db.config import ConfigLoader, create_from_config
+from patient_matching.fuzzy.fuzzy_db.core import (
     DatabaseBackend,
     FuzzySearchConfig,
     SearchResult,
     SimilarityAlgorithm,
 )
-from fuzzy_db.factory import FuzzySearchFactory
-from fuzzy_db.manager import FuzzySearchManager
-from fuzzy_db.utils import get_recommended_backend
+from patient_matching.fuzzy.fuzzy_db.factory import FuzzySearchFactory
+from patient_matching.fuzzy.fuzzy_db.manager import FuzzySearchManager
+from patient_matching.fuzzy.fuzzy_db.utils import get_recommended_backend
 
 
 class TestSearchResult:
@@ -27,7 +26,9 @@ class TestSearchResult:
         assert r.similarity_score == 0.85
 
     def test_with_metadata(self):
-        r = SearchResult(id=1, value="test", similarity_score=0.5, metadata={"key": "val"})
+        r = SearchResult(
+            id=1, value="test", similarity_score=0.5, metadata={"key": "val"}
+        )
         assert r.metadata == {"key": "val"}
 
     def test_score_below_zero_raises(self):
@@ -83,13 +84,20 @@ class TestFuzzySearchFactory:
         assert backend is not None
 
     def test_register_custom_backend(self):
-        from fuzzy_db.core import FuzzySearchBackend
+        from patient_matching.fuzzy.fuzzy_db.core import FuzzySearchBackend
 
         class CustomBackend(FuzzySearchBackend):
-            def connect(self): pass
-            def disconnect(self): pass
-            def search(self, query, field, table, config=None): return []
-            def supports_algorithm(self, algorithm): return True
+            def connect(self):
+                pass
+
+            def disconnect(self):
+                pass
+
+            def search(self, query, field, table, config=None):
+                return []
+
+            def supports_algorithm(self, algorithm):
+                return True
 
         factory = FuzzySearchFactory()
         factory.register_backend(DatabaseBackend.MYSQL, CustomBackend)
@@ -196,10 +204,12 @@ class TestRecommendations:
         assert result == DatabaseBackend.DUCKDB
 
     def test_large_with_pg_infrastructure(self):
-        result = get_recommended_backend({
-            "dataset_size": "large",
-            "existing_infrastructure": ["postgresql"],
-        })
+        result = get_recommended_backend(
+            {
+                "dataset_size": "large",
+                "existing_infrastructure": ["postgresql"],
+            }
+        )
         assert result == DatabaseBackend.POSTGRESQL
 
     def test_default_is_duckdb(self):

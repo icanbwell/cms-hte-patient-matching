@@ -10,9 +10,8 @@ Implements requirements A.1-A.4:
 from __future__ import annotations
 
 import re
-import unicodedata
 
-from text_unidecode import unidecode
+from text_unidecode import unidecode  # type: ignore[import-untyped]
 
 _PUNCTUATION_RE = re.compile(r"[^\w\s]", re.UNICODE)
 _WHITESPACE_RE = re.compile(r"\s+")
@@ -24,7 +23,8 @@ def fold_diacritics(text: str) -> str:
     Uses text-unidecode for broad Unicode-to-ASCII transliteration,
     which handles accents, ligatures, and non-Latin scripts.
     """
-    return unidecode(text)
+    result: str = unidecode(text)
+    return result
 
 
 def normalize_text(text: str, *, preserve_spaces: bool = False) -> str:

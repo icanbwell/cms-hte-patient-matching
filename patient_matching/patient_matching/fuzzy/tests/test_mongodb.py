@@ -6,8 +6,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from fuzzy_db.backends.mongodb import MongoDBBackend
-from fuzzy_db.core import FuzzySearchConfig, SimilarityAlgorithm
+from patient_matching.fuzzy.fuzzy_db.backends.mongodb import MongoDBBackend
+from patient_matching.fuzzy.fuzzy_db.core import FuzzySearchConfig, SimilarityAlgorithm
 
 
 @pytest.fixture

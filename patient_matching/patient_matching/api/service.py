@@ -48,9 +48,7 @@ class MatchResponse:
     match_type: Optional[str] = None
     confidence_score: float = 0.0
     candidate_count: int = 0
-    rule_evaluations_summary: List[Dict[str, Any]] = field(
-        default_factory=list
-    )
+    rule_evaluations_summary: List[Dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass
@@ -165,9 +163,7 @@ class PatientMatcherService:
 
         return self._match_and_respond(normalized)
 
-    def _match_and_respond(
-        self, normalized_patient: Dict[str, Any]
-    ) -> MatchResponse:
+    def _match_and_respond(self, normalized_patient: Dict[str, Any]) -> MatchResponse:
         """Run matching engine and build response."""
         result = self._engine.match(normalized_patient)
         return self._build_response(result)

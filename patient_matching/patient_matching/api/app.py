@@ -90,8 +90,7 @@ def create_app(
         response_class=JSONResponse,
         summary="Match from IAL2 token",
         description=(
-            "Accepts a signed IAL2 JWT token and returns matched "
-            "FHIR Patient IDs."
+            "Accepts a signed IAL2 JWT token and returns matched FHIR Patient IDs."
         ),
     )
     async def match_ial2(request: Request) -> JSONResponse:
@@ -117,9 +116,7 @@ def create_app(
             token = body_str
 
         if not token:
-            raise HTTPException(
-                status_code=400, detail="Token is required."
-            )
+            raise HTTPException(status_code=400, detail="Token is required.")
 
         try:
             result = service.match_from_token(token)
@@ -158,7 +155,7 @@ def _extract_patient_from_parameters(
 
     for param in params_dict.get("parameter", []):
         if param.get("name") == "resource":
-            resource = param.get("resource", {})
+            resource: Dict[str, Any] = param.get("resource", {})
             if resource.get("resourceType") == "Patient":
                 return resource
     return None

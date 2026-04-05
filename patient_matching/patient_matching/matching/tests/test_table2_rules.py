@@ -5,8 +5,6 @@ import pytest
 from patient_matching.matching.table2_rules import (
     APPROVED_RULES,
     FieldRole,
-    MatchingRule,
-    RuleField,
 )
 
 
@@ -41,9 +39,7 @@ class TestApprovedRules:
         assert r.rule_id == "01"
         assert len(r.fields) == 4
         assert r.max_fuzzy_fields == 2
-        fuzzy_count = sum(
-            1 for f in r.fields if f.role == FieldRole.FUZZY_ELIGIBLE
-        )
+        fuzzy_count = sum(1 for f in r.fields if f.role == FieldRole.FUZZY_ELIGIBLE)
         assert fuzzy_count == 3  # first_name*, last_name*, street_line*
 
     def test_rule_26_namespace_id_only(self):

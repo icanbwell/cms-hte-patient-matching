@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 import threading
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 from ..fhir_client.client import FhirClient
@@ -156,9 +156,7 @@ class CacheManager:
         )
         return stats
 
-    def _process_patient(
-        self, patient_dict: Dict[str, Any]
-    ) -> Optional[CachedPatient]:
+    def _process_patient(self, patient_dict: Dict[str, Any]) -> Optional[CachedPatient]:
         """Normalize a patient and extract fields for caching.
 
         Returns None if the patient has no usable fields.
@@ -222,7 +220,7 @@ class CacheManager:
             logger.info("Scheduled refresh disabled (interval=0)")
             return
 
-        from apscheduler.schedulers.background import BackgroundScheduler
+        from apscheduler.schedulers.background import BackgroundScheduler  # type: ignore[import-untyped]
 
         self._scheduler = BackgroundScheduler()
         self._scheduler.add_job(

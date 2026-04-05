@@ -83,9 +83,7 @@ class PhoneNormalizer:
             logger.debug("Could not parse phone number: %s", phone_str)
             return None
 
-    def _normalize_telecom(
-        self, telecom: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
+    def _normalize_telecom(self, telecom: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Normalize a single FHIR ContactPoint dict."""
         system = telecom.get("system", "")
         value = telecom.get("value", "")

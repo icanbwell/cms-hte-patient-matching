@@ -6,7 +6,7 @@ and normalizes them into a single canonical representation.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 
@@ -183,11 +183,9 @@ def _extract_historical_addresses(
                     address_line2=entry.get("address_line2"),
                     city=entry.get("city") or entry.get("locality"),
                     state=entry.get("state") or entry.get("region"),
-                    postal_code=entry.get("postal_code")
-                    or entry.get("code_postal"),
+                    postal_code=entry.get("postal_code") or entry.get("code_postal"),
                     country=entry.get("country"),
-                    full_address=entry.get("full_address")
-                    or entry.get("formatted"),
+                    full_address=entry.get("full_address") or entry.get("formatted"),
                 )
             )
     return addresses if addresses else None

@@ -9,9 +9,9 @@ it is treated as unavailable for matching.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date, timedelta
-from typing import Dict, FrozenSet, List, Optional, Pattern
+from typing import FrozenSet, List, Pattern
 
 TABLE_VERSION = "1.0.0"
 
@@ -141,7 +141,9 @@ _PLACEHOLDER_ADDRESS_PATTERNS: List[Pattern[str]] = [
 ]
 
 _PLACEHOLDER_EMAIL_PATTERNS: List[Pattern[str]] = [
-    re.compile(r"^(test|noreply|no-reply|donotreply|nobody|null|none|fake)", re.IGNORECASE),
+    re.compile(
+        r"^(test|noreply|no-reply|donotreply|nobody|null|none|fake)", re.IGNORECASE
+    ),
     re.compile(r"@(example\.com|test\.com|invalid|nowhere)$", re.IGNORECASE),
 ]
 

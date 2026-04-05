@@ -4,9 +4,7 @@ import pytest
 from unittest.mock import MagicMock
 
 from patient_matching.api.service import (
-    MatchResponse,
     PatientMatcherService,
-    ServiceConfig,
     _compute_confidence,
 )
 from patient_matching.cache.cache_backend import CachedPatient
@@ -18,9 +16,16 @@ def _populate_cache(cache, patients):
     cache.upsert_patients(patients)
 
 
-def _make_cached(pid, first="john", last="smith", dob="1990-01-15",
-                 phone="+12125551234", email="john@gmail.com",
-                 ssn_last4="6789", street="123 main st"):
+def _make_cached(
+    pid,
+    first="john",
+    last="smith",
+    dob="1990-01-15",
+    phone="+12125551234",
+    email="john@gmail.com",
+    ssn_last4="6789",
+    street="123 main st",
+):
     return CachedPatient(
         patient_id=pid,
         first_names={first},
@@ -41,8 +46,10 @@ def _make_cached(pid, first="john", last="smith", dob="1990-01-15",
             ],
             "address": [{"line": [street]}],
             "identifier": [
-                {"system": "http://hl7.org/fhir/sid/us-ssn",
-                 "value": f"xxx-xx-{ssn_last4}"},
+                {
+                    "system": "http://hl7.org/fhir/sid/us-ssn",
+                    "value": f"xxx-xx-{ssn_last4}",
+                },
             ],
         },
     )
@@ -70,8 +77,7 @@ class TestPatientMatcherService:
             ],
             "address": [{"line": ["123 main st"]}],
             "identifier": [
-                {"system": "http://hl7.org/fhir/sid/us-ssn",
-                 "value": "xxx-xx-6789"},
+                {"system": "http://hl7.org/fhir/sid/us-ssn", "value": "xxx-xx-6789"},
             ],
         }
         result = service.match_patient(query)
@@ -112,14 +118,11 @@ class TestPatientMatcherService:
             ],
             "address": [{"line": ["123 main st"]}],
             "identifier": [
-                {"system": "http://hl7.org/fhir/sid/us-ssn",
-                 "value": "xxx-xx-6789"},
+                {"system": "http://hl7.org/fhir/sid/us-ssn", "value": "xxx-xx-6789"},
             ],
         }
 
-        service = PatientMatcherService(
-            cache=cache, ial2_extractor=mock_extractor
-        )
+        service = PatientMatcherService(cache=cache, ial2_extractor=mock_extractor)
         result = service.match_from_token("fake.jwt.token")
         assert result.outcome == "match"
         mock_extractor.extract.assert_called_once_with("fake.jwt.token")

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set
 
 import duckdb
 from rapidfuzz.distance import DamerauLevenshtein
@@ -159,9 +159,7 @@ class DuckDBCache(CacheBackend):
 
         return [self._row_to_cached_patient(r) for r in result]
 
-    def _fuzzy_search(
-        self, field_name: str, query_value: str
-    ) -> List[CachedPatient]:
+    def _fuzzy_search(self, field_name: str, query_value: str) -> List[CachedPatient]:
         """Fuzzy search using Damerau-Levenshtein distance <= 1.
 
         For values shorter than 5 characters, falls back to exact match
@@ -194,9 +192,7 @@ class DuckDBCache(CacheBackend):
             dist = DamerauLevenshtein.distance(query_value, val)
             if dist <= _MAX_DL_DISTANCE:
                 matched_ids.add(pid)
-                results.append(
-                    self._row_to_cached_patient((pid, fhir_json))
-                )
+                results.append(self._row_to_cached_patient((pid, fhir_json)))
 
         return results
 
@@ -212,9 +208,7 @@ class DuckDBCache(CacheBackend):
 
     def count(self) -> int:
         """Return the total number of cached patients."""
-        result = self._conn.execute(
-            "SELECT COUNT(*) FROM patients"
-        ).fetchone()
+        result = self._conn.execute("SELECT COUNT(*) FROM patients").fetchone()
         return result[0] if result else 0
 
     def clear(self) -> None:
@@ -227,9 +221,7 @@ class DuckDBCache(CacheBackend):
         """Close the DuckDB connection."""
         self._conn.close()
 
-    def _row_to_cached_patient(
-        self, row: tuple[str, str]
-    ) -> CachedPatient:
+    def _row_to_cached_patient(self, row: tuple[str, str]) -> CachedPatient:
         """Convert a (patient_id, fhir_resource_json) row to CachedPatient."""
         patient_id, fhir_json = row
         fhir_resource = json.loads(fhir_json)

@@ -76,7 +76,7 @@ class ConfigLoader:
             "PORT": "port",
             "DATABASE": "database",
             "USER": "user",
-            "PASSWORD": "password",
+            "PASSWORD": "password",  # pragma: allowlist secret
             "ALGORITHM": "algorithm",
             "THRESHOLD": "threshold",
             "MAX_DISTANCE": "max_distance",
@@ -98,7 +98,9 @@ class ConfigLoader:
                     value = value.lower() in ("true", "1", "yes")
                 config[config_key] = value
 
-        logger.info("Loaded %d config values from environment (prefix=%s)", len(config), prefix)
+        logger.info(
+            "Loaded %d config values from environment (prefix=%s)", len(config), prefix
+        )
         return config
 
 
@@ -135,7 +137,14 @@ def create_from_config(config: Dict[str, Any]) -> FuzzySearchManager:
     )
 
     # Everything else is treated as connection params.
-    reserved = {"backend", "algorithm", "threshold", "max_distance", "limit", "case_sensitive"}
+    reserved = {
+        "backend",
+        "algorithm",
+        "threshold",
+        "max_distance",
+        "limit",
+        "case_sensitive",
+    }
     connection_params = {k: v for k, v in config.items() if k not in reserved}
 
     return FuzzySearchManager(

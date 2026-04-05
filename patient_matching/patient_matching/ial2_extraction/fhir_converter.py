@@ -6,7 +6,7 @@ Produces a dict conforming to the FHIR R4 Patient resource structure
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from .claims_model import IAL2Address, IAL2Claims
 
@@ -53,9 +53,7 @@ class IAL2ToFhirConverter:
 
         # Gender
         if claims.sex_legal:
-            gender = _SEX_TO_FHIR_GENDER.get(
-                claims.sex_legal.lower(), "unknown"
-            )
+            gender = _SEX_TO_FHIR_GENDER.get(claims.sex_legal.lower(), "unknown")
             patient["gender"] = gender
 
         # Telecom (email, phone)
@@ -223,22 +221,16 @@ class IAL2ToFhirConverter:
         addresses: List[Dict[str, Any]] = []
 
         if claims.address:
-            addresses.append(
-                _address_to_fhir(claims.address, use="home")
-            )
+            addresses.append(_address_to_fhir(claims.address, use="home"))
 
         if claims.address_historical:
             for hist_addr in claims.address_historical:
-                addresses.append(
-                    _address_to_fhir(hist_addr, use="old")
-                )
+                addresses.append(_address_to_fhir(hist_addr, use="old"))
 
         return addresses
 
 
-def _address_to_fhir(
-    addr: IAL2Address, *, use: str
-) -> Dict[str, Any]:
+def _address_to_fhir(addr: IAL2Address, *, use: str) -> Dict[str, Any]:
     """Convert an IAL2Address to a FHIR Address dict."""
     fhir_addr: Dict[str, Any] = {"use": use}
 

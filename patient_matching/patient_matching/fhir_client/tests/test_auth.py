@@ -1,9 +1,8 @@
 """Tests for OAuth2 client credentials authentication."""
 
 import time
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
-import pytest
 
 from patient_matching.fhir_client.auth import (
     ClientCredentialsAuth,
@@ -13,22 +12,16 @@ from patient_matching.fhir_client.auth import (
 
 class TestTokenResponse:
     def test_is_expired_when_past(self):
-        token = TokenResponse(
-            access_token="tok", expires_at=time.time() - 60
-        )
+        token = TokenResponse(access_token="tok", expires_at=time.time() - 60)
         assert token.is_expired is True
 
     def test_is_not_expired_when_future(self):
-        token = TokenResponse(
-            access_token="tok", expires_at=time.time() + 300
-        )
+        token = TokenResponse(access_token="tok", expires_at=time.time() + 300)
         assert token.is_expired is False
 
     def test_is_expired_within_buffer(self):
         """Token expiring within 30s buffer should be considered expired."""
-        token = TokenResponse(
-            access_token="tok", expires_at=time.time() + 10
-        )
+        token = TokenResponse(access_token="tok", expires_at=time.time() + 10)
         assert token.is_expired is True
 
 

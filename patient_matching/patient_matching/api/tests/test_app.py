@@ -32,8 +32,7 @@ def _make_cached(pid="p1"):
             ],
             "address": [{"line": ["123 main st"]}],
             "identifier": [
-                {"system": "http://hl7.org/fhir/sid/us-ssn",
-                 "value": "xxx-xx-6789"},
+                {"system": "http://hl7.org/fhir/sid/us-ssn", "value": "xxx-xx-6789"},
             ],
         },
     )
@@ -74,8 +73,10 @@ class TestFhirMatchEndpoint:
                         ],
                         "address": [{"line": ["123 main st"]}],
                         "identifier": [
-                            {"system": "http://hl7.org/fhir/sid/us-ssn",
-                             "value": "xxx-xx-6789"},
+                            {
+                                "system": "http://hl7.org/fhir/sid/us-ssn",
+                                "value": "xxx-xx-6789",
+                            },
                         ],
                     },
                 }
@@ -125,9 +126,7 @@ class TestFhirMatchEndpoint:
     def test_match_missing_patient(self, test_client):
         params = {
             "resourceType": "Parameters",
-            "parameter": [
-                {"name": "count", "valueInteger": 5}
-            ],
+            "parameter": [{"name": "count", "valueInteger": 5}],
         }
         resp = test_client.post(
             "/Patient/$match",

@@ -66,7 +66,11 @@ class RedisBackend(FuzzySearchBackend):
                 "Install it with: pip install fuzzy[redis]"
             ) from exc
 
-        logger.info("Connecting to Redis at %s:%s", self._conn_params["host"], self._conn_params["port"])
+        logger.info(
+            "Connecting to Redis at %s:%s",
+            self._conn_params["host"],
+            self._conn_params["port"],
+        )
         self._client = redis_lib.Redis(**self._conn_params)
         self._client.ping()
         logger.info("Redis connection established")
@@ -99,8 +103,7 @@ class RedisBackend(FuzzySearchBackend):
         config = config or FuzzySearchConfig()
 
         try:
-            from rapidfuzz import fuzz
-            from rapidfuzz.distance import DamerauLevenshtein, Levenshtein
+            import rapidfuzz  # noqa: F401
         except ImportError as exc:
             raise ImportError(
                 "rapidfuzz is required for the Redis backend. "
@@ -138,13 +141,13 @@ class RedisBackend(FuzzySearchBackend):
 
         scored.sort(key=lambda r: r.similarity_score, reverse=True)
         results = scored[: config.limit]
-        logger.debug("Redis search returned %d results for query=%r", len(results), query)
+        logger.debug(
+            "Redis search returned %d results for query=%r", len(results), query
+        )
         return results
 
     @staticmethod
-    def _compute_score(
-        query: str, value: str, config: FuzzySearchConfig
-    ) -> float:
+    def _compute_score(query: str, value: str, config: FuzzySearchConfig) -> float:
         """Compute a 0-1 similarity score using the configured algorithm."""
         from rapidfuzz import fuzz
         from rapidfuzz.distance import DamerauLevenshtein, Jaro, Levenshtein

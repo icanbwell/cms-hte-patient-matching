@@ -6,7 +6,6 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from ..core import (
-    DatabaseBackend,
     FuzzySearchBackend,
     FuzzySearchConfig,
     SearchResult,
@@ -66,7 +65,11 @@ class PostgreSQLBackend(FuzzySearchBackend):
                 "Install it with: pip install fuzzy[postgresql]"
             ) from exc
 
-        logger.info("Connecting to PostgreSQL at %s:%s", self._conn_params["host"], self._conn_params["port"])
+        logger.info(
+            "Connecting to PostgreSQL at %s:%s",
+            self._conn_params["host"],
+            self._conn_params["port"],
+        )
         self._connection = psycopg2.connect(
             **self._conn_params,
             cursor_factory=psycopg2.extras.RealDictCursor,
@@ -130,7 +133,7 @@ class PostgreSQLBackend(FuzzySearchBackend):
             WHERE {func}({compare_field}, %(query)s) <= %(max_distance)s
             ORDER BY similarity_score DESC
             LIMIT %(limit)s
-        """
+        """  # nosec B608 - table/field names are not user input
 
         results: List[SearchResult] = []
         with self._connection.cursor() as cur:
@@ -153,5 +156,7 @@ class PostgreSQLBackend(FuzzySearchBackend):
                         )
                     )
 
-        logger.debug("PostgreSQL search returned %d results for query=%r", len(results), query)
+        logger.debug(
+            "PostgreSQL search returned %d results for query=%r", len(results), query
+        )
         return results

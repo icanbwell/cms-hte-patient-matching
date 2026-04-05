@@ -4,7 +4,6 @@ from fuzzy_db import (
     DatabaseBackend,
     FuzzySearchConfig,
     FuzzySearchFactory,
-    FuzzySearchManager,
     SimilarityAlgorithm,
 )
 
@@ -15,16 +14,12 @@ def duckdb_example():
 
     with DuckDBBackend(database=":memory:") as backend:
         # Create and populate a table.
-        backend._connection.execute(
-            "CREATE TABLE users (id INTEGER, name VARCHAR)"
-        )
+        backend._connection.execute("CREATE TABLE users (id INTEGER, name VARCHAR)")
         for i, name in enumerate(
             ["John Smith", "Jon Smyth", "Jonathan Smith", "Jane Doe", "Janet Doe"],
             start=1,
         ):
-            backend._connection.execute(
-                "INSERT INTO users VALUES (?, ?)", [i, name]
-            )
+            backend._connection.execute("INSERT INTO users VALUES (?, ?)", [i, name])
 
         # Search with Jaro-Winkler.
         config = FuzzySearchConfig(
@@ -40,14 +35,10 @@ def duckdb_example():
 def factory_example():
     """Using the factory directly for more control."""
     factory = FuzzySearchFactory()
-    backend = factory.create(
-        DatabaseBackend.DUCKDB, {"database": ":memory:"}
-    )
+    backend = factory.create(DatabaseBackend.DUCKDB, {"database": ":memory:"})
 
     with backend:
-        backend._connection.execute(
-            "CREATE TABLE t (id INTEGER, name VARCHAR)"
-        )
+        backend._connection.execute("CREATE TABLE t (id INTEGER, name VARCHAR)")
         backend._connection.execute("INSERT INTO t VALUES (1, 'hello world')")
 
         config = FuzzySearchConfig(
@@ -81,9 +72,7 @@ def custom_backend_example():
             results = []
             for record in self.data:
                 value = record.get(field, "")
-                score = Levenshtein.normalized_similarity(
-                    query.lower(), value.lower()
-                )
+                score = Levenshtein.normalized_similarity(query.lower(), value.lower())
                 if score >= config.threshold:
                     results.append(
                         SearchResult(

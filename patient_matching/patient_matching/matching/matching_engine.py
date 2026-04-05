@@ -77,9 +77,7 @@ class MatchingEngine:
             rule_matches: List[Dict[str, Any]] = []
             for candidate in candidates:
                 cand_fields = self._extractor.extract(candidate)
-                evaluation = self._evaluate_rule(
-                    rule, query_fields, cand_fields
-                )
+                evaluation = self._evaluate_rule(rule, query_fields, cand_fields)
                 all_evaluations.append(evaluation)
 
                 if evaluation.matched:
@@ -95,9 +93,7 @@ class MatchingEngine:
             if rule_matches:
                 matched_patients_by_rule[rule.rule_id] = rule_matches
 
-        return self._build_result(
-            matched_patients_by_rule, all_evaluations
-        )
+        return self._build_result(matched_patients_by_rule, all_evaluations)
 
     def _query_has_fields(
         self, query_fields: PatientFields, rule: MatchingRule
@@ -191,16 +187,12 @@ class MatchingEngine:
 
         evaluation.matched = all_matched
         if evaluation.matched:
-            evaluation.match_type = (
-                "fuzzy" if evaluation.fuzzy_fields else "exact"
-            )
+            evaluation.match_type = "fuzzy" if evaluation.fuzzy_fields else "exact"
 
         return evaluation
 
     @staticmethod
-    def _suffix_conflict(
-        query_suffixes: Set[str], cand_suffixes: Set[str]
-    ) -> bool:
+    def _suffix_conflict(query_suffixes: Set[str], cand_suffixes: Set[str]) -> bool:
         """Check for generational suffix conflict per B.5.
 
         If both sides have suffixes and no overlap, the match is negated.
@@ -239,10 +231,7 @@ class MatchingEngine:
                         first_rule_id = rule_id
                         # Find the evaluation for this rule
                         for ev in evaluations:
-                            if (
-                                ev.rule_id == rule_id
-                                and ev.matched
-                            ):
+                            if ev.rule_id == rule_id and ev.matched:
                                 first_match_type = ev.match_type
                                 break
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
@@ -75,9 +75,7 @@ class FuzzySearchConfig:
 
     def __post_init__(self) -> None:
         if not 0.0 <= self.threshold <= 1.0:
-            raise ValueError(
-                f"threshold must be between 0 and 1, got {self.threshold}"
-            )
+            raise ValueError(f"threshold must be between 0 and 1, got {self.threshold}")
         if self.max_distance < 0:
             raise ValueError(
                 f"max_distance must be non-negative, got {self.max_distance}"

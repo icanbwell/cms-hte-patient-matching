@@ -121,7 +121,7 @@ class DuckDBBackend(FuzzySearchBackend):
             WHERE {where_clause}
             ORDER BY similarity_score DESC
             LIMIT $limit
-        """
+        """  # nosec B608 - table/field names are not user input
 
         params: Dict[str, Any] = {"query": compare_query, "limit": config.limit}
         if is_distance:
@@ -145,5 +145,7 @@ class DuckDBBackend(FuzzySearchBackend):
                     )
                 )
 
-        logger.debug("DuckDB search returned %d results for query=%r", len(results), query)
+        logger.debug(
+            "DuckDB search returned %d results for query=%r", len(results), query
+        )
         return results

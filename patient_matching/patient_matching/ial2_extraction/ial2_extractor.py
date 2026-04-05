@@ -7,7 +7,7 @@ entry point.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from .claims_model import IAL2Claims
 from .fhir_converter import IAL2ToFhirConverter

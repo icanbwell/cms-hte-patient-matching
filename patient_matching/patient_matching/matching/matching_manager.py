@@ -67,9 +67,7 @@ class MatchingManager:
         """
         return self._engine.match(query_patient)
 
-    def match_batch(
-        self, query_patients: List[Dict[str, Any]]
-    ) -> List[MatchResult]:
+    def match_batch(self, query_patients: List[Dict[str, Any]]) -> List[MatchResult]:
         """Match a list of normalized FHIR Patients against the backend.
 
         Args:
