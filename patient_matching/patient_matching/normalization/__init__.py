@@ -7,6 +7,7 @@ CMS Patient Matching proposal.
 """
 
 from .normalizer import PatientNormalizer
+from .manager import NormalizationManager
 from .name_normalizer import NameNormalizer
 from .address_normalizer import AddressNormalizer
 from .phone_normalizer import PhoneNormalizer
@@ -19,6 +20,7 @@ __all__ = [
     "DateNormalizer",
     "fold_diacritics",
     "NameNormalizer",
+    "NormalizationManager",
     "normalize_text",
     "PatientNormalizer",
     "PhoneNormalizer",
