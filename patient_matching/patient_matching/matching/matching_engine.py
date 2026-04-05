@@ -223,13 +223,15 @@ class MatchingEngine:
 
         # Collect all unique matched patients across rules
         all_matched: List[Dict[str, Any]] = []
-        seen_ids: set[int] = set()
+        seen_ids: set[str] = set()
         first_rule_id: Optional[str] = None
         first_match_type = "exact"
 
         for rule_id, patients in matched_by_rule.items():
             for p in patients:
-                pid = id(p)
+                # Deduplicate by FHIR resource ID if available,
+                # falling back to Python object identity
+                pid = p.get("id", "") or str(id(p))
                 if pid not in seen_ids:
                     seen_ids.add(pid)
                     all_matched.append(p)

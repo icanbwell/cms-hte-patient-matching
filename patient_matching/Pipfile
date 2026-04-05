@@ -30,6 +30,18 @@ nominally = ">=1.1.0"
 nicknames = ">=1.0.0"
 # text-unidecode is needed for diacritic folding
 text-unidecode = ">=1.3"
+# fhirschemapy is needed for FHIR R4 resource parsing and serialization
+fhirschemapy = "*"
+# fastapi is needed for the $match HTTP API
+fastapi = ">=0.115.0"
+# uvicorn is the ASGI server for FastAPI
+uvicorn = ">=0.34.0"
+# httpx is needed for async HTTP calls to FHIR servers
+httpx = ">=0.28.0"
+# duckdb is needed for the in-memory patient cache
+duckdb = ">=1.2.0"
+# apscheduler is needed for scheduled cache refresh
+apscheduler = ">=3.10.0"
 
 [dev-packages]
 setuptools=">=60.9.3"
