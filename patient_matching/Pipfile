@@ -10,6 +10,10 @@ url = "https://imranq2.github.io/alpine-wheels/docs/"
 verify_ssl = true
 
 [packages]
+# PyJWT is needed for decoding and verifying IAL2 JWT tokens
+PyJWT = ">=2.8.0"
+# cryptography is needed for RSA signature verification of JWTs
+cryptography = ">=42.0.0"
 
 [dev-packages]
 setuptools=">=60.9.3"
