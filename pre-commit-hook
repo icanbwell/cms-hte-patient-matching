@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# Monorepo pre-commit hook — dispatches to per-project hooks based on staged changes
+
+GIT_PROJECT_ROOT=$(git rev-parse --show-toplevel)
+STAGED_FILES=$(git diff --cached --name-only)
+
+EXIT_CODE=0
+
+# Run patient_matching pre-commit if any files in that project are staged
+if echo "$STAGED_FILES" | grep -q "^patient_matching/"; then
+    echo "=== Running pre-commit for patient_matching ==="
+    "$GIT_PROJECT_ROOT/patient_matching/pre-commit-hook" "$@"
+    if [ $? -ne 0 ]; then
+        EXIT_CODE=1
+    fi
+fi
+
+# Run patient_matching_service pre-commit if any files in that project are staged
+if echo "$STAGED_FILES" | grep -q "^patient_matching_service/"; then
+    echo "=== Running pre-commit for patient_matching_service ==="
+    "$GIT_PROJECT_ROOT/patient_matching_service/pre-commit-hook" "$@"
+    if [ $? -ne 0 ]; then
+        EXIT_CODE=1
+    fi
+fi
+
+exit $EXIT_CODE

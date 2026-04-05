@@ -7,7 +7,7 @@
 
 ## Quality Checks
 - `make run-pre-commit` to run linting and formatting hooks.
-- If the pre-commit hook fails with permissions, run: `chmod +x ./.git/hooks/pre-commit`
+- Pre-commit hooks are managed at the repo root. Run `make setup-pre-commit` from the repo root to install.
 
 ## Packaging
 - `make build` to build artifacts.

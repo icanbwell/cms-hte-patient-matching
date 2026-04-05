@@ -24,16 +24,16 @@ down:
 
 .PHONY:clean-pre-commit
 clean-pre-commit: ## removes pre-commit hook
-	rm -f .git/hooks/pre-commit
+	rm -f "$$(git rev-parse --show-toplevel)/.git/hooks/pre-commit"
 
 .PHONY:setup-pre-commit
 setup-pre-commit:
-	cp ./pre-commit-hook ./.git/hooks/pre-commit && \
-	chmod +x ./.git/hooks/pre-commit
+	cp "$$(git rev-parse --show-toplevel)/pre-commit-hook" "$$(git rev-parse --show-toplevel)/.git/hooks/pre-commit" && \
+	chmod +x "$$(git rev-parse --show-toplevel)/.git/hooks/pre-commit"
 
 .PHONY:run-pre-commit
 run-pre-commit: setup-pre-commit
-	./.git/hooks/pre-commit
+	./pre-commit-hook
 
 .PHONY:update
 update: down Pipfile.lock setup-pre-commit  ## Updates all the packages using Pipfile

@@ -1,5 +1,5 @@
 #!/bin/bash
 
 GIT_PROJECT_ROOT=$(git rev-parse --show-toplevel)
-cd "$($GIT_PROJECT_ROOT "$0")"
-docker build -f ./pre-commit.Dockerfile -t pre-commit-spf . && docker run --rm --name pre-commit-spf-run -v $(pwd)/:/sourcecode pre-commit-spf
+cd "$GIT_PROJECT_ROOT/patient_matching"
+docker build -f ./pre-commit.Dockerfile -t pre-commit-patient_matching . && docker run --rm --name pre-commit-patient_matching-run -v $(pwd)/:/sourcecode pre-commit-patient_matching

@@ -83,7 +83,7 @@ COPY --from=python_packages /usr/local/lib/python3.12/site-packages /usr/local/l
 COPY --from=python_packages /usr/local/bin /usr/local/bin
 
 # Copy the application code into the runtime image
-COPY ./patient_matching ${PROJECT_DIR}
+COPY ./patient_matching ${PROJECT_DIR}/patient_matching
 
 # Copy the Pipfile.lock from the previous stage in case it was locked
 COPY --from=python_packages /usr/src/patient_matching/Pipfile.lock /usr/src/patient_matching/Pipfile.lock
