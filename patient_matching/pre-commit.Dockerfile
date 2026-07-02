@@ -13,7 +13,10 @@ RUN pipenv sync --dev --system
 # Set the working directory
 WORKDIR /sourcecode
 
-# Clean up unnecessary files
+# Allow git operations in the mounted volume
 RUN git config --global --add safe.directory /sourcecode
+RUN git config --global user.email "pre-commit@local" && \
+    git config --global user.name "pre-commit"
 
-CMD ["pre-commit", "run", "--all-files"]
+# Init a temporary git repo so pre-commit can operate on the project files
+CMD sh -c "git init && git add -A && pre-commit run --all-files"

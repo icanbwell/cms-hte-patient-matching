@@ -26,13 +26,16 @@ jobs:
           python-version: '3.12'
 
       - name: Pull docker images
+        working-directory: ./patient_matching
         run: docker compose pull
 
       - name: pre-commit
+        working-directory: ./patient_matching
         run: make run-pre-commit && make clean-pre-commit
 
       # setup and install everything and run tests
       - name: up
+        working-directory: ./patient_matching
         run: make up
 
       - name: Set correct permissions for tests
@@ -45,6 +48,7 @@ jobs:
           chmod -R 777 ${{ github.workspace }}/reports
 
       - name: tests
+        working-directory: ./patient_matching
         run: |
           docker compose run --rm -v ${{ github.workspace }}/reports:/reports dev pytest . --tb=auto --junitxml=/reports/test-results.xml
 
@@ -85,6 +89,7 @@ jobs:
 
       - name: Cleanup
         if: always()
+        working-directory: ./patient_matching
         run: |
           docker compose down -v --remove-orphans
 

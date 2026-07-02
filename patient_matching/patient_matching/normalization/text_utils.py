@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import re
 
-from text_unidecode import unidecode  # type: ignore[import-untyped]
+from text_unidecode import unidecode
 
 _PUNCTUATION_RE = re.compile(r"[^\w\s]", re.UNICODE)
 _WHITESPACE_RE = re.compile(r"\s+")

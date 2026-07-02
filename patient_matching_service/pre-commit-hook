@@ -10,4 +10,4 @@ fi
 
 GIT_PROJECT_ROOT=$(git rev-parse --show-toplevel)
 cd "$GIT_PROJECT_ROOT/patient_matching_service"
-docker build -f ./pre-commit.Dockerfile -t pre-commit-patient_matching_service . && docker run --rm --name pre-commit-run-patient_matching_service -e PRE_COMMIT_ALL_FILES=$PRE_COMMIT_ALL_FILES -v pre-commit:/.cache/pre-commit:delegated -v "$GIT_PROJECT_ROOT":/sourcecode -w /sourcecode/patient_matching_service pre-commit-patient_matching_service
+docker build -f ./pre-commit.Dockerfile -t pre-commit-patient_matching_service . && docker run --rm --name pre-commit-run-patient_matching_service -e PRE_COMMIT_ALL_FILES=$PRE_COMMIT_ALL_FILES -v pre-commit:/.cache/pre-commit:delegated -v "$(pwd)":/sourcecode pre-commit-patient_matching_service

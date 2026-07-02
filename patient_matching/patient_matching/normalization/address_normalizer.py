@@ -9,8 +9,8 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Optional
 
-from scourgify import normalize_address_record  # type: ignore[import-untyped]
-from scourgify.exceptions import (  # type: ignore[import-untyped]
+from scourgify import normalize_address_record
+from scourgify.exceptions import (
     AddressNormalizationError,
     AmbiguousAddressError,
 )

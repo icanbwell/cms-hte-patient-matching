@@ -220,7 +220,7 @@ class CacheManager:
             logger.info("Scheduled refresh disabled (interval=0)")
             return
 
-        from apscheduler.schedulers.background import BackgroundScheduler  # type: ignore[import-untyped]
+        from apscheduler.schedulers.background import BackgroundScheduler
 
         self._scheduler = BackgroundScheduler()
         self._scheduler.add_job(
