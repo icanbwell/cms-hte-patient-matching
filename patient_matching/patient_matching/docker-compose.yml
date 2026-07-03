@@ -1,0 +1,13 @@
+version: '3.5'
+services:
+  dev:
+    user: root
+    build:
+      dockerfile: Dockerfile
+      context: .
+    volumes:
+      - ./:/usr/src/patient_matching
+    container_name: patient_matching_dev
+    working_dir: /usr/src/patient_matching
+    env_file:
+      - docker.env

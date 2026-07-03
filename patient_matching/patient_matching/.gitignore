@@ -1,0 +1,13 @@
+# Distribution / packaging (needed for PyPI builds)
+build/
+dist/
+*.egg-info/
+*.egg
+MANIFEST
+
+# Environments
+.env
+docker.env
+
+# IDE
+/.idea/
