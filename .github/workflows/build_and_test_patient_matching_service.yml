@@ -1,0 +1,98 @@
+name: Build and Test (patient_matching_service)
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'patient_matching_service/**'
+      - 'Makefile'
+      - 'pre-commit-hook'
+      - '.github/workflows/build_and_test_patient_matching_service.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'patient_matching_service/**'
+      - 'Makefile'
+      - 'pre-commit-hook'
+      - '.github/workflows/build_and_test_patient_matching_service.yml'
+
+concurrency:
+  group: build-and-test-patient-matching-service-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Create docker.env
+        working-directory: ./patient_matching_service
+        run: touch docker.env
+
+      - name: Pull docker images
+        working-directory: ./patient_matching_service
+        run: docker compose pull
+
+      - name: pre-commit
+        working-directory: ./patient_matching_service
+        run: make run-pre-commit
+
+      - name: clean-pre-commit
+        if: always()
+        working-directory: ./patient_matching_service
+        run: make clean-pre-commit
+
+      - name: up
+        working-directory: ./patient_matching_service
+        run: make up
+
+      - name: Set correct permissions for tests
+        run: sudo chmod -R 777 ${{ github.workspace }}
+
+      - name: Create reports output folder
+        run: |
+          mkdir -p ${{ github.workspace }}/reports
+          chmod -R 777 ${{ github.workspace }}/reports
+
+      - name: tests
+        working-directory: ./patient_matching_service
+        run: |
+          docker compose run --rm -v ${{ github.workspace }}/reports:/reports dev pytest tests --tb=auto --junitxml=/reports/test-results.xml
+
+      - name: Upload pytest test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pytest-results-patient-matching-service
+          path: ${{ github.workspace }}/reports/**/*.xml
+
+      - name: Verify reports are generated
+        if: always()
+        run: ls -halt ${{ github.workspace }}/reports/
+
+      - name: Surface failing tests
+        if: always()
+        uses: pmeier/pytest-results-action@main
+        with:
+          path: ${{ github.workspace }}/reports/*.xml
+          summary: true
+          display-options: fEX
+          fail-on-empty: false
+          title: Test results (patient_matching_service)
+
+      - name: Cleanup
+        if: always()
+        working-directory: ./patient_matching_service
+        run: docker compose down -v --remove-orphans
+
+      - name: Cleanup build folder
+        if: always()
+        run: |
+          ls -la ./
+          sudo rm -rf ${{ github.workspace }}/*
+          ls -la ./

@@ -1,25 +1,30 @@
-name: Build and Test
+name: Build and Test (patient_matching)
 
-# Controls when the action will run. Triggers the workflow on push or pull request
-# events but only for the master branch
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'patient_matching/**'
+      - 'Makefile'
+      - 'pre-commit-hook'
+      - '.github/workflows/build_and_test_patient_matching.yml'
   pull_request:
     branches: [ main ]
+    paths:
+      - 'patient_matching/**'
+      - 'Makefile'
+      - 'pre-commit-hook'
+      - '.github/workflows/build_and_test_patient_matching.yml'
 
-# Prevent duplicate runs on the same ref and cancel in-progress on PR updates to save CI minutes
 concurrency:
-  group: build-and-test-${{ github.ref }}
+  group: build-and-test-patient-matching-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build_and_test:
-    # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
     steps:
-      # Checks-out your repository
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
@@ -30,20 +35,20 @@ jobs:
         run: docker compose pull
 
       - name: pre-commit
+        working-directory: ./patient_matching
         run: make run-pre-commit
 
       - name: clean-pre-commit
         if: always()
+        working-directory: ./patient_matching
         run: make clean-pre-commit
 
-      # setup and install everything and run tests
       - name: up
         working-directory: ./patient_matching
         run: make up
 
       - name: Set correct permissions for tests
-        run: |
-          sudo chmod -R 777 ${{ github.workspace }}
+        run: sudo chmod -R 777 ${{ github.workspace }}
 
       - name: Create reports output folder
         run: |
@@ -57,46 +62,31 @@ jobs:
 
       - name: Upload pytest test results
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: pytest-results
+          name: pytest-results-patient-matching
           path: ${{ github.workspace }}/reports/**/*.xml
-        # Use always() to always run this step to publish test results when there are test failures
-        if: ${{ always() }}
 
       - name: Verify reports are generated
-        if: ${{ always() }}
+        if: always()
         run: ls -halt ${{ github.workspace }}/reports/
 
-      # Publish all test results in the GitHub UI
       - name: Surface failing tests
         if: always()
-        uses: pmeier/pytest-results-action@main # https://github.com/pmeier/pytest-results-action
+        uses: pmeier/pytest-results-action@main
         with:
-          # A list of JUnit XML files, directories containing the former, and wildcard
-          # patterns to process.
-          # See @actions/glob for supported patterns.
           path: ${{ github.workspace }}/reports/*.xml
-
-          # (Optional) Add a summary of the results at the top of the report
           summary: true
-
-          # (Optional) Select which results should be included in the report.
-          # Follows the same syntax as `pytest -r`
           display-options: fEX
-
-          # (Optional) Fail the workflow if no JUnit XML was found.
           fail-on-empty: true
-
-          # (Optional) Title of the test results section in the workflow summary
-          title: Test results
+          title: Test results (patient_matching)
 
       - name: Cleanup
         if: always()
         working-directory: ./patient_matching
-        run: |
-          docker compose down -v --remove-orphans
+        run: docker compose down -v --remove-orphans
 
-      - name: 'Cleanup build folder'
+      - name: Cleanup build folder
         if: always()
         run: |
           ls -la ./
