@@ -52,10 +52,9 @@ jobs:
 
       - name: commit pre-commit fixes
         if: always()
-        working-directory: ./patient_matching_service
         run: |
-          git config user.email "gha-bot@localhost"
-          git config user.name "GitHub Actions"
+          git config --global user.email "gha-bot@localhost"
+          git config --global user.name "GitHub Actions"
           git add .
           git diff --staged --quiet || git commit -m "chore: auto-fix pre-commit issues"
 
