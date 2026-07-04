@@ -1,42 +1,39 @@
-# Stage 1: Base image to install common dependencies and lock Python dependencies
-# This stage is responsible for setting up the environment and installing Python packages using Pipenv.
+# Stage 1: Production dependencies
+# This stage installs production Python dependencies using uv
 FROM public.ecr.aws/docker/library/python:3.12-alpine3.20 AS python_packages
 
 # Set terminal width (COLUMNS) and height (LINES)
 ENV COLUMNS=300
-ENV PIP_ROOT_USER_ACTION=ignore
 
-# Define an argument to control whether to run pipenv lock (used for updating Pipfile.lock)
-ARG RUN_PIPENV_LOCK=false
+# Copy uv binary from official uv image
+COPY --from=ghcr.io/astral-sh/uv:0.11.6 /uv /uvx /usr/local/bin/
+
+# Set environment variables for uv
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_LINK_MODE=copy
 
 # Install common tools and dependencies (git is required for some Python packages)
 RUN apk add --no-cache git
 
-# Install pipenv, a tool for managing Python project dependencies
-RUN pip install pipenv
-
 # Set the working directory inside the container
 WORKDIR /usr/src/patient_matching_service
 
-# Copy Pipfile and Pipfile.lock to the working directory
-# Pipfile defines the Python packages required for the project
-# Pipfile.lock ensures consistency by locking the exact versions of packages
-COPY Pipfile* /usr/src/patient_matching_service/
+# Copy pyproject.toml and uv.lock to the working directory
+COPY pyproject.toml uv.lock* /usr/src/patient_matching_service/
 
 # Show the current pip configuration (for debugging purposes)
 RUN pip config list
 
-# Conditionally run pipenv lock to update the Pipfile.lock based on the argument provided
-# If RUN_PIPENV_LOCK is true, it regenerates the Pipfile.lock file with the latest versions of dependencies
-RUN if [ "$RUN_PIPENV_LOCK" = "true" ]; then echo "Locking Pipfile" && rm -f Pipfile.lock && pipenv lock --dev --clear --verbose --extra-pip-args="--prefer-binary"; fi
+# Install all production dependencies using uv
+RUN uv sync --frozen --all-extras --no-install-project --verbose
 
-# Install all dependencies using the locked versions in Pipfile.lock
-# --dev installs development dependencies, --system installs them globally in the container's Python environment
-RUN pipenv sync --dev --system --verbose --extra-pip-args="--prefer-binary"
+# Copy uv.lock to /tmp for retrieval if needed
+COPY --from=python_packages /tmp/uv.lock /tmp/uv.lock
 
 # Create necessary directories and list their contents (for debugging and verification)
-RUN mkdir -p /usr/local/lib/python3.12/site-packages && ls -halt /usr/local/lib/python3.12/site-packages
-RUN mkdir -p /usr/local/bin && ls -halt /usr/local/bin
+RUN mkdir -p /opt/venv/lib/python3.12/site-packages && ls -halt /opt/venv/lib/python3.12/site-packages
+RUN mkdir -p /opt/venv/bin && ls -halt /opt/venv/bin
 
 # Check and print system and Python platform information (for debugging)
 RUN python -c "import platform; print(platform.platform()); print(platform.architecture())"
@@ -46,24 +43,27 @@ RUN python -c "import sys; print(sys.platform, sys.version, sys.maxsize > 2**32)
 RUN pip debug --verbose
 RUN pip list -v
 
-# Stage 2: Final runtime image for the application
-# This stage creates a minimal image with only the runtime dependencies and the application code.
-FROM public.ecr.aws/docker/library/python:3.12-alpine3.20
+# Stage 1b: Development dependencies (extends production)
+# This stage installs dev dependencies on top of production
+FROM python_packages AS python_packages_dev
+
+RUN uv sync --frozen --all-extras --group dev --no-install-project --verbose
+
+# Stage 2: Production runtime image
+FROM public.ecr.aws/docker/library/python:3.12-alpine3.20 AS production
 
 # Set terminal width (COLUMNS) and height (LINES)
 ENV COLUMNS=300
 
-# Install runtime dependencies required by the application (e.g., for shapely, grpcio, scipy, google-crc32 and numpy)
-# You can use auditwheel to check any package and identify the native library dependencies
+# Install runtime dependencies required by the application
 RUN apk add --no-cache curl libstdc++ libffi git
-
-# Install pipenv to manage and run the application
-RUN pip install --no-cache-dir pipenv
 
 # Set environment variables for project configuration
 ENV PROJECT_DIR=/usr/src/patient_matching_service
 ENV PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus
 ENV PIP_ROOT_USER_ACTION=ignore
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
 # Create the directory for Prometheus metrics
 RUN mkdir -p ${PROMETHEUS_MULTIPROC_DIR}
@@ -71,29 +71,18 @@ RUN mkdir -p ${PROMETHEUS_MULTIPROC_DIR}
 # Set the working directory for the project
 WORKDIR ${PROJECT_DIR}
 
-# Copy the Pipfile and Pipfile.lock files into the runtime image
-COPY Pipfile* ${PROJECT_DIR}
+# Copy the application code into the runtime image (NO tests directory)
+COPY ./patient_matching_service ${PROJECT_DIR}/patient_matching_service
 
 # Copy installed Python packages from the previous stage
-COPY --from=python_packages /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
-COPY --from=python_packages /usr/local/bin /usr/local/bin
-
-# Copy the application code into the runtime image
-COPY ./patient_matching_service ${PROJECT_DIR}/patient_matching_service
-COPY ./setup.cfg ${PROJECT_DIR}/
-
-# Copy the Pipfile.lock from the previous stage in case it was locked
-COPY --from=python_packages ${PROJECT_DIR}/Pipfile.lock ${PROJECT_DIR}/Pipfile.lock
+COPY --from=python_packages /opt/venv /opt/venv
 
 # Copy Pipfile.lock to a temporary directory so it can be retrieved if needed
-COPY --from=python_packages ${PROJECT_DIR}/Pipfile.lock /tmp/Pipfile.lock
+COPY --from=python_packages /tmp/uv.lock /tmp/uv.lock
 
 # Create directories and list their contents (for debugging and verification)
-RUN mkdir -p /usr/local/lib/python3.12/site-packages && ls -halt /usr/local/lib/python3.12/site-packages
-RUN mkdir -p /usr/local/bin && ls -halt /usr/local/bin
-
-# Install the dependencies using pipenv in the final runtime environment
-RUN pipenv sync --dev --system --extra-pip-args="--prefer-binary"
+RUN mkdir -p /opt/venv/lib/python3.12/site-packages && ls -halt /opt/venv/lib/python3.12/site-packages
+RUN mkdir -p /opt/venv/bin && ls -halt /opt/venv/bin
 
 # Expose port 5000 for the application
 EXPOSE 5000
@@ -105,13 +94,24 @@ USER root
 RUN addgroup -S appgroup && adduser -S -h /etc/appuser appuser -G appgroup
 
 # Ensure that the appuser owns the application files and directories
-RUN chown -R appuser:appgroup ${PROJECT_DIR} /usr/local/lib/python3.12/site-packages /usr/local/bin ${PROMETHEUS_MULTIPROC_DIR}
+RUN chown -R appuser:appgroup ${PROJECT_DIR} /opt/venv ${PROMETHEUS_MULTIPROC_DIR}
 
 # Switch to the restricted user to enhance security
 USER appuser
 
-# Set the command to run the application using pipenv and uvicorn
-CMD ["ddtrace-run", "uvicorn", "patient_matching_service.api:app", "--host", "0.0.0.0", "--port", "5000", "--workers", "4", "--log-level", "debug"]
+# Stage 3: Development runtime (extends production with dev deps, tests, and hot reload)
+FROM production AS development
 
-# Set the command to run the application using pipenv and Python without uvicorn and ddtrace-run
-#CMD ["pipenv", "run", "python", "-m", "complaintparser.api"]
+USER root
+# Copy dev dependencies (superset of production)
+COPY --from=python_packages_dev /opt/venv /opt/venv
+# Copy tests directory for development
+COPY ./tests ${PROJECT_DIR}/tests
+RUN chown -R appuser:appgroup /opt/venv ${PROJECT_DIR}/tests
+USER appuser
+
+# Override CMD with hot-reload for local development
+CMD ["uvicorn", "patient_matching_service.api:app", "--host", "0.0.0.0", "--port", "5000", "--reload"]
+
+# Default: bare `docker build .` produces production image
+FROM production

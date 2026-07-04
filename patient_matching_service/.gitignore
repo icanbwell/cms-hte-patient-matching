@@ -5,6 +5,13 @@ docker.env
 .idea/*
 !.idea/fileTemplates/
 
+# uv
+.python-version
+dist/
+build/
+*.egg-info/
+!.idea/fileTemplates/
+
 # Test data
 /data/
 /tests_integration/index/

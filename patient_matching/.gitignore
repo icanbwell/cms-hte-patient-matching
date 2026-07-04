@@ -11,3 +11,9 @@ docker.env
 
 # IDE
 /.idea/
+
+# uv
+.python-version
+dist/
+build/
+*.egg-info/

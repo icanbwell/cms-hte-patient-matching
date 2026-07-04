@@ -343,9 +343,17 @@ Multi-backend fuzzy string search (DuckDB, PostgreSQL, MongoDB, Redis, Elasticse
 
 - Python 3.12+
 - Docker (for containerized development)
-- pipenv
+- [uv](https://github.com/astral-sh/uv) (Python package manager)
 
 ### Setup
+
+Private packages are hosted on JFrog. Set `JFROG_READ_TOKEN` in your environment before building:
+
+```bash
+export JFROG_READ_TOKEN="<your-jfrog-token>"
+```
+
+Add it to `~/.zshrc` or `~/.bashrc` to persist across sessions.
 
 ```bash
 make init          # Install dependencies and set up pre-commit hooks
@@ -358,7 +366,7 @@ make up            # Start Docker dev stack
 make tests         # Run tests in Docker container
 
 # Or locally:
-pipenv run pytest -v
+uv run pytest -v
 ```
 
 295 tests cover all modules including matching rules, normalization, caching, FHIR client, API endpoints, and fuzzy backends.
@@ -440,9 +448,9 @@ patient_matching/
 │           ├── backends/       # DuckDB, PostgreSQL, MongoDB,
 │           │                   # Redis, Elasticsearch
 │           └── tests/
+├── pyproject.toml
+├── uv.lock
 ├── Makefile
-├── Pipfile
-├── setup.py
 ├── VERSION
 └── docker-compose.yml
 ```
