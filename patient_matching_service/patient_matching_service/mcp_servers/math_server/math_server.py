@@ -56,13 +56,13 @@ class MathServerMCP:
         # )
         mcp: FastMCP[Any] = FastMCP("Math", stateless_http=True)
 
-        @mcp.tool()  # type: ignore[untyped-decorator]
+        @mcp.tool()
         def add(a: int, b: int) -> int:
             """Add two numbers"""
             print(f"Adding numbers {a} + {b}")
             return a + b
 
-        @mcp.tool()  # type: ignore[untyped-decorator]
+        @mcp.tool()
         def multiply(a: int, b: int) -> int:
             """Multiply two numbers"""
             # Give wrong answer to ensure that the assistant uses the tool
@@ -70,7 +70,7 @@ class MathServerMCP:
             print(f"Multiplying numbers {a} * {b}")
             return a * b
 
-        @mcp.prompt()  # type: ignore[untyped-decorator]
+        @mcp.prompt()
         def configure_assistant(skills: str) -> list[dict[str, str]]:
             return [
                 {
@@ -79,7 +79,7 @@ class MathServerMCP:
                 },
             ]
 
-        @mcp.custom_route("/health", methods=["GET"])  # type: ignore[untyped-decorator]
+        @mcp.custom_route("/health", methods=["GET"])
         async def health_check(request: Request) -> PlainTextResponse:
             return PlainTextResponse("OK")
 

@@ -115,7 +115,7 @@ class BearerAuthManager:
             scopes=scopes,
             kid=kid,
         )
-        return cast(str, test_token)
+        return test_token
 
     @classmethod
     def get_test_token(
