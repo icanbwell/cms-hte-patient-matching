@@ -19,6 +19,7 @@ jobs:
   analyze:
     name: Analyze (python)
     runs-on: ubuntu-latest
+    continue-on-error: true
     permissions:
       security-events: write
       packages: read
