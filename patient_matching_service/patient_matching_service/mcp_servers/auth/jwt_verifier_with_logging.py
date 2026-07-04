@@ -51,8 +51,6 @@ class JwtVerifierWithLogging(JWTVerifier):
             AccessToken object if valid, None if invalid or expired
         """
         try:
-            # Get verification key (static or from JWKS)
-            verification_key = await self._get_verification_key(token)
             # Use the parent class for JWT decoding
             claims = await super().load_access_token(token)
             if claims is None:
