@@ -1,7 +1,5 @@
-# This workflow will upload a Python Package to PyPI when a release is created
-# For more information see: https://packaging.python.org/guides/publishing-package-distribution-releases-using-github-actions-ci-cd-workflows/
-
-name: Upload Python Package
+# Publishes the patient_matching library to PyPI when a release is created
+name: Publish Python Package (patient_matching)
 
 on:
   release:
@@ -10,10 +8,8 @@ on:
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
-    # Specifying a GitHub environment is optional, but strongly encouraged
     environment: pypi
     permissions:
-      # IMPORTANT: this permission is mandatory for Trusted Publishing
       id-token: write
       contents: read
 
@@ -26,23 +22,27 @@ jobs:
           python-version: '3.12'
 
       - name: Set release tag in VERSION
+        working-directory: ./patient_matching
         run: echo "${{ github.event.release.tag_name }}" > VERSION
 
       - name: Install dependencies
         run: pip install -U pip setuptools wheel build
 
       - name: Build package
+        working-directory: ./patient_matching
         run: python -m build
 
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: patient_matching/dist/
 
       - name: List files in dist
-        run: ls -haltR dist
+        run: ls -haltR patient_matching/dist
 
       - name: Persist wheels directory
         uses: actions/upload-artifact@v4
         with:
           name: wheel_${{ github.event.release.tag_name }}
-          path: dist/*.whl
+          path: patient_matching/dist/*.whl
           if-no-files-found: error

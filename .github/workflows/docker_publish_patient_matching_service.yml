@@ -1,4 +1,4 @@
-name: Deploy to DockerHub
+name: Publish Docker Image (patient_matching_service)
 
 on:
   release:
@@ -14,7 +14,7 @@ jobs:
     runs-on: main
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
       - name: AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -31,15 +31,13 @@ jobs:
       - name: Install QEMU
         uses: docker/setup-qemu-action@v3
         with:
-            platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64,linux/arm64
 
       - name: Create builder
-        run: |
-          docker buildx create --use
+        run: docker buildx create --use
 
       - name: Inspect builder
-        run: |
-          docker buildx inspect --bootstrap
+        run: docker buildx inspect --bootstrap
 
       - name: Build, tag, and push image to Amazon ECR
         env:
@@ -51,4 +49,5 @@ jobs:
             --platform linux/amd64,linux/arm64 \
             -t $REPOSITORY_URL/$IMAGE_NAME:$IMAGE_TAG \
             --push \
-            -f Dockerfile .
+            -f patient_matching_service/Dockerfile \
+            patient_matching_service/

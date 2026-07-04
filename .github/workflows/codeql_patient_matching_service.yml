@@ -1,0 +1,41 @@
+name: CodeQL (patient_matching_service)
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'patient_matching_service/**'
+      - '.github/workflows/codeql_patient_matching_service.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'patient_matching_service/**'
+      - '.github/workflows/codeql_patient_matching_service.yml'
+  schedule:
+    - cron: '16 16 * * 1'
+  workflow_dispatch:
+
+jobs:
+  analyze:
+    name: Analyze (python)
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      packages: read
+      actions: read
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: python
+          build-mode: none
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:python

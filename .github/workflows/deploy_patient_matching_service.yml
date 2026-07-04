@@ -1,5 +1,5 @@
-name: patient_matching_service - Deploy
-run-name: patient_matching_service to ${{ inputs.env }} - ${{ inputs.env }}
+name: Deploy (patient_matching_service)
+run-name: patient_matching_service to ${{ inputs.env }}
 
 on:
   workflow_dispatch:
@@ -10,7 +10,7 @@ on:
         required: true
       env:
         type: choice
-        description: Environment to be deployed
+        description: Environment to deploy to
         required: true
         options:
           - dev-ue1
@@ -31,12 +31,12 @@ jobs:
     runs-on: main
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Checkout icanbwell/cie.gha-deploy
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           repository: icanbwell/cie.gha-deploy
@@ -47,12 +47,12 @@ jobs:
         uses: ./.github/actions/cie.gha-deploy
         with:
           token: ${{ secrets.BWELL_DEV_PAT }}
-          service-name: $SERVICE_NAME
-          service-namespace: $SERVICE_NAMESPACE
+          service-name: ${{ env.SERVICE_NAME }}
+          service-namespace: ${{ env.SERVICE_NAMESPACE }}
           env: ${{ inputs.env }}
           image-tag: ${{ github.event.inputs.tag }}
 
-      - name: 'Cleanup build folder'
+      - name: Cleanup build folder
         if: always()
         run: |
           ls -la ./
