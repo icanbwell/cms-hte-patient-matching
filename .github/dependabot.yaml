@@ -7,7 +7,10 @@ updates:
       # Check for updates to GitHub Actions every weekday
       interval: "daily"
   - package-ecosystem: "pip"
-    directory: "/"
+    directory: "/patient_matching"
     schedule:
-      # Check for updates managed by Composer once a week
+      interval: "weekly"
+  - package-ecosystem: "pip"
+    directory: "/patient_matching_service"
+    schedule:
       interval: "weekly"

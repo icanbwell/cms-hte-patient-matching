@@ -1,8 +1,0 @@
-#!/bin/bash
-
-# Use the directory where this script is located
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-
-# Build and run pre-commit
-cd "$SCRIPT_DIR"
-docker build -f ./pre-commit.Dockerfile -t pre-commit-patient_matching . && docker run --rm --name pre-commit-patient_matching-run -v "$SCRIPT_DIR":/sourcecode pre-commit-patient_matching

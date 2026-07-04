@@ -13,4 +13,4 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # Build and run pre-commit
 cd "$SCRIPT_DIR"
-docker build -f ./pre-commit.Dockerfile -t pre-commit-patient_matching_service . && docker run --rm --name pre-commit-run-patient_matching_service -e PRE_COMMIT_ALL_FILES=$PRE_COMMIT_ALL_FILES -v pre-commit:/.cache/pre-commit:delegated -v "$SCRIPT_DIR":/sourcecode pre-commit-patient_matching_service
+docker build -f ./pre-commit.Dockerfile -t pre-commit-patient_matching_service . && docker run --rm --name pre-commit-run-patient_matching_service -e PRE_COMMIT_ALL_FILES=$PRE_COMMIT_ALL_FILES -v pre-commit-patient-matching-service:/.cache/pre-commit:delegated -v "$SCRIPT_DIR":/sourcecode pre-commit-patient_matching_service

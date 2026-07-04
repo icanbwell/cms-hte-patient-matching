@@ -1,3 +1,4 @@
+LANG=en_US.utf-8
 export LANG
 
 .PHONY: Pipfile.lock

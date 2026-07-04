@@ -122,7 +122,7 @@ def graphql_playground() -> str:
 @app.post("/graphql")
 async def graphql_server(request: Request) -> JSONResponse:
     data = await request.json()
-    print(f"API call [{request.client.host if request.client else None}] {data!r}")
+    logger.info(f"API call [{request.client.host if request.client else None}] {data!r}")
 
     success, result = await graphql(
         ApiSchema.schema, data, context_value=request, debug=app.debug

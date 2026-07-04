@@ -61,7 +61,8 @@ repos:
         args: [
           --strict,
           --python-version=3.12,
-          --show-error-codes
+          --show-error-codes,
+          --explicit-package-bases
         ]
 
       # Bandit for security scanning
