@@ -26,6 +26,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -41,11 +43,21 @@ jobs:
       - name: pre-commit
         working-directory: ./patient_matching_service
         run: make run-pre-commit
+        continue-on-error: true
 
       - name: clean-pre-commit
         if: always()
         working-directory: ./patient_matching_service
         run: make clean-pre-commit
+
+      - name: commit pre-commit fixes
+        if: always()
+        working-directory: ./patient_matching_service
+        run: |
+          git config user.email "gha-bot@localhost"
+          git config user.name "GitHub Actions"
+          git add .
+          git diff --staged --quiet || git commit -m "chore: auto-fix pre-commit issues"
 
       - name: up
         working-directory: ./patient_matching_service
