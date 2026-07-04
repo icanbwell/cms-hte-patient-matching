@@ -86,7 +86,7 @@ app.add_middleware(FastApiLoggingMiddleware)
 
 PLAYGROUND_HTML: Optional[str] = ExplorerPlayground(
     title="patient_matching_service"
-).html(None)  # type: ignore[no-untyped-call]
+).html(None)
 
 # Set up CORS middleware; adjust parameters as needed
 # noinspection PyTypeChecker

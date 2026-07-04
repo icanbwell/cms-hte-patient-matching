@@ -30,8 +30,11 @@ jobs:
         run: docker compose pull
 
       - name: pre-commit
-        working-directory: ./patient_matching
-        run: make run-pre-commit && make clean-pre-commit
+        run: make run-pre-commit
+
+      - name: clean-pre-commit
+        if: always()
+        run: make clean-pre-commit
 
       # setup and install everything and run tests
       - name: up

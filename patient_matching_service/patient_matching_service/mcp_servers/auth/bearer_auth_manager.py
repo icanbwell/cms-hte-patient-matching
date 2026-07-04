@@ -115,7 +115,7 @@ class BearerAuthManager:
             scopes=scopes,
             kid=kid,
         )
-        return test_token
+        return cast(str, test_token)
 
     @classmethod
     def get_test_token(
@@ -222,4 +222,4 @@ class BearerAuthManager:
         email_override = os.getenv("TEST_GOOGLE_DRIVE_EMAIL")
         if email_override:
             return email_override
-        return access_token.client_id
+        return cast(str | None, access_token.client_id)

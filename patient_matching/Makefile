@@ -33,7 +33,7 @@ setup-pre-commit:
 
 .PHONY:run-pre-commit
 run-pre-commit: setup-pre-commit
-	./pre-commit-hook
+	./pre-commit-hook pre_commit_all_files
 
 .PHONY:update
 update: down Pipfile.lock setup-pre-commit  ## Updates all the packages using Pipfile

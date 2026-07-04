@@ -47,6 +47,11 @@ setup-pre-commit: ## Install the monorepo pre-commit hook
 	cp ./pre-commit-hook ./.git/hooks/pre-commit && \
 	chmod +x ./.git/hooks/pre-commit
 
+.PHONY: run-pre-commit
+run-pre-commit: ## Run pre-commit checks for all projects
+	$(MAKE) -C patient_matching run-pre-commit
+	$(MAKE) -C patient_matching_service run-pre-commit
+
 .PHONY: clean-pre-commit
 clean-pre-commit: ## Remove the pre-commit hook
 	rm -f .git/hooks/pre-commit

@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 
-class JwtVerifierWithLogging(JWTVerifier):
+class JwtVerifierWithLogging(JWTVerifier):  # type: ignore[misc]
     """
     JWT Verifier with logging capabilities.
     This class extends the JWTVerifier to add logging for token verification.
