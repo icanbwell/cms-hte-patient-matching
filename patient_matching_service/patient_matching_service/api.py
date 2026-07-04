@@ -86,7 +86,7 @@ app.add_middleware(FastApiLoggingMiddleware)
 
 PLAYGROUND_HTML: Optional[str] = ExplorerPlayground(
     title="patient_matching_service"
-).html(None)  # type: ignore[no-untyped-call]
+).html(None)
 
 # Set up CORS middleware; adjust parameters as needed
 # noinspection PyTypeChecker
@@ -122,7 +122,9 @@ def graphql_playground() -> str:
 @app.post("/graphql")
 async def graphql_server(request: Request) -> JSONResponse:
     data = await request.json()
-    logger.info(f"API call [{request.client.host if request.client else None}] {data!r}")
+    logger.info(
+        f"API call [{request.client.host if request.client else None}] {data!r}"
+    )
 
     success, result = await graphql(
         ApiSchema.schema, data, context_value=request, debug=app.debug
