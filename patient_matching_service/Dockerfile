@@ -28,8 +28,8 @@ RUN pip config list
 # Install all production dependencies using uv
 RUN uv sync --frozen --all-extras --no-install-project --verbose
 
-# Copy uv.lock to /tmp for retrieval if needed
-COPY --from=python_packages /tmp/uv.lock /tmp/uv.lock
+# Copy uv.lock from working directory to /tmp for retrieval if needed
+RUN cp -n /usr/src/patient_matching_service/uv.lock /tmp/uv.lock
 
 # Create necessary directories and list their contents (for debugging and verification)
 RUN mkdir -p /opt/venv/lib/python3.12/site-packages && ls -halt /opt/venv/lib/python3.12/site-packages

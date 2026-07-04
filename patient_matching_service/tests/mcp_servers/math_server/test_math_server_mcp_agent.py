@@ -29,6 +29,7 @@ async def test_math_mcp_agent_via_fastmcp(
         headers: dict[str, str] | None = None,
         timeout: httpx.Timeout | None = None,
         auth: httpx.Auth | None = None,
+        **kwargs: Any,
     ) -> httpx.AsyncClient:
         if headers:
             async_client_unopened.headers.update(headers)

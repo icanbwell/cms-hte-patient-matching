@@ -51,10 +51,8 @@ class MathServerMCP:
         #     if token_verifier and well_known_url
         #     else None
         # )
-        # mcp: FastMCP[Any] = FastMCP(
-        #     "GoogleDrive", auth=auth, stateless_http=True
-        # )
-        mcp: FastMCP[Any] = FastMCP("Math", stateless_http=True)
+        # mcp: FastMCP[Any] = FastMCP("GoogleDrive", auth=auth)
+        mcp: FastMCP[Any] = FastMCP("Math")
 
         @mcp.tool()
         def add(a: int, b: int) -> int:
