@@ -1,4 +1,4 @@
-exclude: (^.idea/|^docsrc|^docs)
+exclude: (^.idea/|^docsrc|^docs|^.*tests/.*)$
 
 repos:
   # Pre-commit hooks for basic checks
@@ -57,7 +57,6 @@ repos:
         types: [ python ]
         entry: mypy
         require_serial: true
-        files: ^patient_matching/
         args: [
           --strict,
           --python-version=3.12,
