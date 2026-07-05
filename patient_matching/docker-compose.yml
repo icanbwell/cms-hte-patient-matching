@@ -11,4 +11,4 @@ services:
     container_name: patient_matching_dev
     working_dir: /usr/src/patient_matching
     env_file:
-      - docker.env
+      - .env

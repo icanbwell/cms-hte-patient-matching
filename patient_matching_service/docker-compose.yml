@@ -11,7 +11,7 @@ services:
       DEBUG_METRICS: 0
       DD_TRACE_ENABLED: "false"
       LOG_LEVEL: INFO
-    env_file: docker.env
+    env_file: .env
     ports:
       - '5050:5000'
     volumes:
