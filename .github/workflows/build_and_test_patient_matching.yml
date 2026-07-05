@@ -34,9 +34,14 @@ jobs:
         working-directory: ./patient_matching
         run: docker compose pull
 
+      - name: Install pre-commit and dependencies
+        working-directory: ./patient_matching
+        run: |
+          pip install pre-commit ruff mypy bandit
+
       - name: pre-commit
         working-directory: ./patient_matching
-        run: make run-pre-commit
+        run: pre-commit run --all-files
 
       - name: clean-pre-commit
         if: always()
