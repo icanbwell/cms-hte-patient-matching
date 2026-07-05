@@ -105,9 +105,8 @@ FROM production AS development
 USER root
 # Copy dev dependencies (superset of production)
 COPY --from=python_packages_dev /opt/venv /opt/venv
-# Copy tests directory for development
-COPY ./tests ${PROJECT_DIR}/tests
-RUN chown -R appuser:appgroup /opt/venv ${PROJECT_DIR}/tests
+# Tests are inside the package subdirectories, no need to copy单独 tests directory
+RUN chown -R appuser:appgroup /opt/venv ${PROJECT_DIR}
 USER appuser
 
 # Override CMD with hot-reload for local development
