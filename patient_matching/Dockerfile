@@ -14,7 +14,7 @@ ENV UV_COMPILE_BYTECODE=1
 ENV UV_LINK_MODE=copy
 
 # Install common tools and dependencies (git is required for some Python packages)
-RUN apk add --no-cache git
+RUN apk add --no-cache git jq build-base python3-dev
 
 # Set the working directory inside the container
 WORKDIR /usr/src/patient_matching/
