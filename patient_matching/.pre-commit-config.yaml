@@ -27,6 +27,7 @@ repos:
       # Dependency and import checks
       - id: check-ast
       - id: check-added-large-files
+        exclude: docs/.*\.pdf$
       - id: check-json
       - id: check-toml
       - id: check-yaml
