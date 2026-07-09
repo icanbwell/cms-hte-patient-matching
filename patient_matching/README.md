@@ -55,8 +55,8 @@ pip install patient_matching
 Or install from source:
 
 ```bash
-git clone https://github.com/icanbwell/patient_matching.git
-cd patient_matching/patient_matching
+git clone https://github.com/icanbwell/patient-matching-reference-implementation.git
+cd patient-matching-reference-implementation/patient_matching
 pip install -e .
 ```
 
@@ -463,4 +463,4 @@ Apache License 2.0
 
 Imran Qureshi — [imran.qureshi@bwell.com](mailto:imran.qureshi@bwell.com)
 
-**Repository:** [https://github.com/icanbwell/patient_matching](https://github.com/icanbwell/patient_matching)
+**Repository:** [https://github.com/icanbwell/patient-matching-reference-implementation](https://github.com/icanbwell/patient-matching-reference-implementation)

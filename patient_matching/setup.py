@@ -50,10 +50,10 @@ setup(
     version=version,
     author="Imran Qureshi",
     author_email="imran.qureshi@bwell.com",
-    description="patient_matching",
+    description="CMS Patient Matching Implementation",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/icanbwell/patient_matching",
+    url="https://github.com/icanbwell/patient-matching-reference-implementation",
     packages=find_packages(),
     install_requires=[],
     classifiers=[
