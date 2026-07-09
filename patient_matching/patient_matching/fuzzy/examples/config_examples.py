@@ -1,10 +1,14 @@
 """Configuration loading examples for fuzzy."""
 
+from __future__ import annotations
+
 import os
-from fuzzy_db.config import ConfigLoader, create_from_config
+from typing import Any
+
+from patient_matching.fuzzy.fuzzy_db.config import ConfigLoader, create_from_config
 
 
-def json_config_example():
+def json_config_example() -> None:
     """Load configuration from a JSON file."""
     # Assuming config.json contains:
     # {
@@ -14,13 +18,13 @@ def json_config_example():
     #     "threshold": 0.7,
     #     "limit": 10
     # }
-    config = ConfigLoader.from_json("config.json")
+    config: dict[str, Any] = ConfigLoader.from_json("config.json")
     manager = create_from_config(config)
     print(f"Backend: {manager._backend_type.value}")
     print(f"Algorithm: {manager._default_config.algorithm.value}")
 
 
-def yaml_config_example():
+def yaml_config_example() -> None:
     """Load configuration from a YAML file."""
     # Assuming config.yaml contains:
     # backend: postgresql
@@ -31,12 +35,12 @@ def yaml_config_example():
     # password: secret
     # algorithm: levenshtein
     # threshold: 0.6
-    config = ConfigLoader.from_yaml("config.yaml")
+    config: dict[str, Any] = ConfigLoader.from_yaml("config.yaml")
     manager = create_from_config(config)
     print(f"Backend: {manager._backend_type.value}")
 
 
-def env_config_example():
+def env_config_example() -> None:
     """Load configuration from environment variables."""
     # Set environment variables.
     os.environ["FUZZY_SEARCH_BACKEND"] = "duckdb"
@@ -44,7 +48,7 @@ def env_config_example():
     os.environ["FUZZY_SEARCH_ALGORITHM"] = "levenshtein"
     os.environ["FUZZY_SEARCH_THRESHOLD"] = "0.65"
 
-    config = ConfigLoader.from_env()
+    config: dict[str, Any] = ConfigLoader.from_env()
     manager = create_from_config(config)
     print(f"Backend: {manager._backend_type.value}")
     print(f"Threshold: {manager._default_config.threshold}")

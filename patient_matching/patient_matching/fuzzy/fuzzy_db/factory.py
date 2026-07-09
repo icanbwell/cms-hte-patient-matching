@@ -65,9 +65,11 @@ class FuzzySearchFactory:
 
         module = importlib.import_module(module_path)
         cls = getattr(module, class_name)
+        # Type refinement: cls is now a valid subclass of FuzzySearchBackend
+        result: Type[FuzzySearchBackend] = cls
         # Cache it for subsequent calls.
-        self._registry[backend] = cls
-        return cls
+        self._registry[backend] = result
+        return result
 
     def create(
         self,

@@ -5,12 +5,15 @@ from __future__ import annotations
 import json
 import logging
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Union
 
 from .core import DatabaseBackend, FuzzySearchConfig, SimilarityAlgorithm
 from .manager import FuzzySearchManager
 
 logger = logging.getLogger(__name__)
+
+# Type for connection params which can be str, int, float, or bool
+ConnectionParamValue = Union[str, int, float, bool]
 
 
 class ConfigLoader:
@@ -91,12 +94,13 @@ class ConfigLoader:
             if value is not None:
                 # Coerce numeric and boolean types.
                 if config_key in ("port", "max_distance", "limit"):
-                    value = int(value)
+                    config[config_key] = int(value)
                 elif config_key == "threshold":
-                    value = float(value)
+                    config[config_key] = float(value)
                 elif config_key == "case_sensitive":
-                    value = value.lower() in ("true", "1", "yes")
-                config[config_key] = value
+                    config[config_key] = value.lower() in ("true", "1", "yes")
+                else:
+                    config[config_key] = value
 
         logger.info(
             "Loaded %d config values from environment (prefix=%s)", len(config), prefix
@@ -145,7 +149,9 @@ def create_from_config(config: Dict[str, Any]) -> FuzzySearchManager:
         "limit",
         "case_sensitive",
     }
-    connection_params = {k: v for k, v in config.items() if k not in reserved}
+    connection_params: Dict[str, ConnectionParamValue] = {
+        k: v for k, v in config.items() if k not in reserved
+    }
 
     return FuzzySearchManager(
         backend_type=backend_type,

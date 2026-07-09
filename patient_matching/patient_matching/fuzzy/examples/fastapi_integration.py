@@ -6,9 +6,9 @@ Requires: pip install fastapi uvicorn
 
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
-from fuzzy_db import (
+from patient_matching.fuzzy.fuzzy_db import (
     DatabaseBackend,
     FuzzySearchConfig,
     FuzzySearchManager,
@@ -33,7 +33,7 @@ def _seed_data() -> None:
     """Insert sample data for the demo."""
     backend = manager.backend
     backend.connect()
-    backend._connection.execute(
+    backend._connection.execute(  # type: ignore[attr-defined]
         "CREATE TABLE IF NOT EXISTS patients (id INTEGER, name VARCHAR)"
     )
     for i, name in enumerate(
@@ -51,7 +51,7 @@ def _seed_data() -> None:
         ],
         start=1,
     ):
-        backend._connection.execute("INSERT INTO patients VALUES (?, ?)", [i, name])
+        backend._connection.execute("INSERT INTO patients VALUES (?, ?)", [i, name])  # type: ignore[attr-defined]
     backend.disconnect()
 
 
@@ -69,7 +69,7 @@ try:
         id: str
         value: str
         similarity_score: float
-        metadata: Optional[dict] = None
+        metadata: Optional[Dict[str, Any]] = None
 
     @app.get("/search", response_model=List[SearchResponse])
     def search(
@@ -79,7 +79,7 @@ try:
         algorithm: str = Query("jaro_winkler", description="Algorithm"),
         threshold: float = Query(0.6, ge=0.0, le=1.0),
         limit: int = Query(10, ge=1, le=100),
-    ) -> List[dict]:
+    ) -> List[Dict[str, Any]]:
         config = FuzzySearchConfig(
             algorithm=SimilarityAlgorithm(algorithm),
             threshold=threshold,
@@ -97,7 +97,7 @@ try:
         ]
 
     @app.get("/algorithms")
-    def list_algorithms():
+    def list_algorithms() -> Dict[str, bool]:
         return {
             algo.value: manager.supports_algorithm(algo) for algo in SimilarityAlgorithm
         }
