@@ -42,7 +42,7 @@ update: down uv.lock setup-pre-commit  ## Updates all the packages using pyproje
 
 .PHONY:tests
 tests: up
-	docker compose run --rm --name patient_matching dev pytest tests patient_matching
+	docker compose run --rm --name patient_matching dev pytest tests
 
 .PHONY:shell
 shell:devdocker ## Brings up the bash shell in dev docker
