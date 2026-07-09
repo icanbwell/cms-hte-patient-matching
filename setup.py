@@ -7,7 +7,7 @@ from os import path, getcwd
 # from https://packaging.python.org/tutorials/packaging-projects/
 
 # noinspection SpellCheckingInspection
-package_name = "patientmatching"
+package_name = "patient_matching"
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -50,10 +50,10 @@ setup(
     version=version,
     author="Imran Qureshi",
     author_email="imran.qureshi@bwell.com",
-    description="patientmatching",
+    description="CMS Patient Matching Implementation",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/icanbwell/patient-matching",
+    url="https://github.com/icanbwell/patient-matching-reference-implementation",
     packages=find_packages(),
     install_requires=[],
     classifiers=[
@@ -66,5 +66,5 @@ setup(
     dependency_links=[],
     include_package_data=True,
     zip_safe=False,
-    package_data={"patientmatching": ["py.typed"]}
+    package_data={"patient_matching": ["py.typed"]},
 )

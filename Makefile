@@ -1,67 +1,46 @@
 LANG=en_US.utf-8
-
 export LANG
 
-.PHONY: Pipfile.lock
-Pipfile.lock:
-	docker compose --progress=plain build --no-cache --build-arg RUN_PIPENV_LOCK=true dev && \
-	docker compose --progress=plain run --rm dev sh -c "cp -f /tmp/Pipfile.lock /usr/src/patientmatching/Pipfile.lock"
+.PHONY: uv.lock
+uv.lock: # Locks pyproject.toml and updates the uv.lock on the local file system
+	docker compose --progress=plain build --no-cache --build-arg RUN_UV_LOCK=true dev && \
+	docker compose --progress=plain run dev sh -c "cp -f /tmp/uv.lock /usr/src/patient_matching_service/uv.lock"
 
-.PHONY:devdocker
-devdocker: ## Builds the docker for dev
-	docker compose build
-
-.PHONY:init
-init: Pipfile.lock devdocker up setup-pre-commit  ## Initializes the local developer environment
-
-.PHONY: up
-up:
-	docker compose up --build -d --remove-orphans
-
-.PHONY: down
-down:
-	docker compose down
-
-.PHONY:clean-pre-commit
-clean-pre-commit: ## removes pre-commit hook
-	rm -f .git/hooks/pre-commit
-
-.PHONY:setup-pre-commit
-setup-pre-commit:
-	cp ./pre-commit-hook ./.git/hooks/pre-commit && \
-	chmod +x ./.git/hooks/pre-commit
-
-.PHONY:run-pre-commit
-run-pre-commit: setup-pre-commit
-	./.git/hooks/pre-commit
-
-.PHONY:update
-update: down Pipfile.lock setup-pre-commit  ## Updates all the packages using Pipfile
-	make devdocker && \
-	make pipenv-setup
-
-.PHONY:tests
-tests: up
-	docker compose run --rm --name patientmatching dev pytest tests patientmatching
-
-.PHONY:shell
-shell:devdocker ## Brings up the bash shell in dev docker
-	docker compose run --rm --name patientmatching dev sh
+.PHONY:devsetup
+devsetup: ## one time setup for devs
+	touch docker.env && \
+	make update && \
+	make up && \
+	make setup-pre-commit && \
+	make tests && \
+	make up
 
 .PHONY:build
-build:
-	docker compose run --rm --name patientmatching dev rm -rf dist/
-	docker compose run --rm --name patientmatching dev python3 setup.py sdist bdist_wheel
+build: ## Builds the docker for dev
+	docker compose build --parallel
 
-.PHONY:testpackage
-testpackage:build
-	docker compose run --rm --name patientmatching dev python3 -m twine upload -u __token__ --repository testpypi dist/*
-# password can be set in TWINE_PASSWORD. https://twine.readthedocs.io/en/latest/
+.PHONY: up
+up: ## starts docker containers
+	docker compose up --build -d && \
+	echo "waiting for patient_matching_service service to become healthy" && \
+	while [ "`docker inspect --format {{.State.Health.Status}} patient_matching_service`" != "healthy" ]; do printf "." && sleep 2; done && \
+	echo ""
+	echo "patient_matching_service Service: http://localhost:5050/graphql"
 
-.PHONY:package
-package:build
-	docker compose run --rm --name patientmatching dev python3 -m twine upload -u __token__ --repository pypi dist/*
-# password can be set in TWINE_PASSWORD. https://twine.readthedocs.io/en/latest/ (note this is the token not your password)
+.PHONY: down
+down: ## stops docker containers
+	docker compose down --remove-orphans
+
+.PHONY:update
+update: uv.lock setup-pre-commit  ## Updates all the packages using pyproject.toml
+	make build && \
+	make run-pre-commit && \
+	echo "In PyCharm, do File -> Invalidate Caches/Restart to refresh" && \
+	echo "If you encounter issues with remote sources being out of sync, click on the 'Remote Python' feature on" && \
+	echo "the lower status bar and reselect the same interpreter and it will rebuild the remote source cache." && \
+	echo "See this link for more details:" && \
+	echo "https://intellij-support.jetbrains.com/hc/en-us/community/posts/205813579-Any-way-to-force-a-refresh-of-external-libraries-on-a-remote-interpreter-?page=2#community_comment_360002118020"
+
 
 .DEFAULT_GOAL := help
 .PHONY: help
@@ -69,7 +48,23 @@ help: ## Show this help.
 	# from https://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-.PHONY:pipenv-setup
-pipenv-setup:devdocker ## Run pipenv-setup to update setup.py with latest dependencies
-	docker compose run --rm dev sh -c "pipenv run pipenv install --skip-lock --categories \"pipenvsetup\" && pipenv run pipenv-setup sync --pipfile" && \
-	make run-pre-commit
+.PHONY:tests
+tests: ## Runs all the tests
+	docker compose run --rm --name patient_matching_service_tests dev pytest tests
+
+.PHONY:shell
+shell: ## Brings up the bash shell in dev docker
+	docker compose run --rm --name patient_matching_service_shell dev /bin/sh
+
+.PHONY:clean-pre-commit
+clean-pre-commit: ## removes pre-commit hook
+	rm -f "$$(git rev-parse --show-toplevel)/.git/hooks/pre-commit"
+
+.PHONY:setup-pre-commit
+setup-pre-commit:
+	cp "$$(git rev-parse --show-toplevel)/pre-commit-hook" "$$(git rev-parse --show-toplevel)/.git/hooks/pre-commit" && \
+	chmod +x "$$(git rev-parse --show-toplevel)/.git/hooks/pre-commit"
+
+.PHONY:run-pre-commit
+run-pre-commit: setup-pre-commit
+	./pre-commit-hook pre_commit_all_files

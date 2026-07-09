@@ -5,9 +5,10 @@ services:
     build:
       dockerfile: Dockerfile
       context: .
+      target: development
     volumes:
-      - ./:/usr/src/patientmatching
-    container_name: patientmatching_dev
-    working_dir: /usr/src/patientmatching
+      - ./:/usr/src/patient_matching
+    container_name: patient_matching_dev
+    working_dir: /usr/src/patient_matching
     env_file:
-      - docker.env
+      - .env

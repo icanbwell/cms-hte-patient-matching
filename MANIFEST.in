@@ -1,6 +1,4 @@
 include README.md
-include requirements.txt
-include requirements-test.txt
 include VERSION
 include Makefile
-include patientmatching/py.typed
+include patient_matching/py.typed
