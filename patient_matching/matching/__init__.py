@@ -8,6 +8,7 @@ fuzzy matching, suffix conflict detection, and uniqueness checks.
 from .backend import FieldCriterion, MatchingBackend, MatchType
 from .field_comparator import FieldComparator
 from .field_extractor import FieldExtractor, PatientFields
+from .in_memory_backend import InMemoryBackend
 from .match_result import MatchOutcome, MatchResult, RuleEvaluation
 from .matching_engine import MatchingEngine
 from .matching_manager import MatchingManager
@@ -19,6 +20,7 @@ __all__ = [
     "FieldCriterion",
     "FieldExtractor",
     "FieldRole",
+    "InMemoryBackend",
     "MatchingBackend",
     "MatchingEngine",
     "MatchingManager",
