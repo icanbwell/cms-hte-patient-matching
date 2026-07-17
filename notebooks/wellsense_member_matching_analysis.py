@@ -47,11 +47,31 @@
 
 import json
 import os
+import re
 from datetime import datetime, timedelta
 
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+
+# --- SQL-safety helpers -------------------------------------------------------------------
+# Widget values below (table/column names, the client id) get interpolated into spark.sql()
+# f-strings. Validate identifiers with an allowlist regex and escape string-literal values so
+# widget input can never break out of its intended position in the query.
+_IDENTIFIER_RE = re.compile(r"^[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)*$")
+
+
+def _validate_sql_identifier(name: str) -> str:
+    """Ensure `name` is a bare dotted identifier (letters/digits/underscore/dot only)."""
+    if not name or not _IDENTIFIER_RE.match(name):
+        raise ValueError(f"Unsafe SQL identifier: {name!r}")
+    return name
+
+
+def _sql_string_literal(value: str) -> str:
+    """Escape `value` for safe use as a single-quoted SQL string literal."""
+    return "'" + str(value).replace("'", "''") + "'"
+
 
 # --- Widgets (Databricks). Falls back to defaults when run outside Databricks. ---
 try:
@@ -62,11 +82,13 @@ try:
     dbutils.widgets.text("ws_client", "wellsense", "Client id for WellSense (this is clientId, NOT slug)")
     dbutils.widgets.text("client_col", "", "Raw column holding the client id (blank = auto-detect)")
     JSON_PATH = dbutils.widgets.get("json_path")
-    WS_CATALOG = dbutils.widgets.get("ws_catalog")
-    WS_SCHEMA = dbutils.widgets.get("ws_schema")
-    PROA_TABLE = dbutils.widgets.get("proa_table")
+    WS_CATALOG = _validate_sql_identifier(dbutils.widgets.get("ws_catalog"))
+    WS_SCHEMA = _validate_sql_identifier(dbutils.widgets.get("ws_schema"))
+    PROA_TABLE = _validate_sql_identifier(dbutils.widgets.get("proa_table"))
     WS_CLIENT = dbutils.widgets.get("ws_client")
     CLIENT_COL = dbutils.widgets.get("client_col").strip()
+    if CLIENT_COL:
+        _validate_sql_identifier(CLIENT_COL)
     IN_DATABRICKS = True
 except Exception:
     # Local fallback — point at the file sitting next to this notebook.
@@ -101,11 +123,14 @@ CANDIDATE_CLIENT_COLS = ["scope", "url", "flow_run_name", "metrics_flow_run_name
 
 def detect_client_col(table, needle):
     """Return the first raw column that contains `needle` in the last 30 days of runs, plus the hit count."""
+    _validate_sql_identifier(table)
+    needle_literal = _sql_string_literal(f"%{needle.lower()}%")
     for c in CANDIDATE_CLIENT_COLS:
+        _validate_sql_identifier(c)
         try:
             n = spark.sql(
                 f"SELECT COUNT(*) AS c FROM {table} "
-                f"WHERE LOWER(`{c}`) LIKE '%{needle.lower()}%' "
+                f"WHERE LOWER(`{c}`) LIKE {needle_literal} "
                 f"AND run_date_time >= DATEADD(day, -30, CURRENT_DATE())"
             ).collect()[0]["c"]
             if n:
@@ -121,9 +146,13 @@ if IN_DATABRICKS:
               if CLIENT_COL else
               f"Could not auto-detect a column containing '{WS_CLIENT}'. Set the 'client_col' widget manually. "
               f"Candidates tried: {CANDIDATE_CLIENT_COLS}")
-    CLIENT_PREDICATE = f"LOWER(`{CLIENT_COL}`) LIKE '%{WS_CLIENT.lower()}%'" if CLIENT_COL else "TRUE"
+    if CLIENT_COL:
+        _validate_sql_identifier(CLIENT_COL)
+        CLIENT_PREDICATE = f"LOWER(`{CLIENT_COL}`) LIKE {_sql_string_literal(f'%{WS_CLIENT.lower()}%')}"
+    else:
+        CLIENT_PREDICATE = "TRUE"
 else:
-    CLIENT_PREDICATE = f"LOWER(`<client_col>`) LIKE '%{WS_CLIENT.lower()}%'"  # resolved at runtime in Databricks
+    CLIENT_PREDICATE = f"LOWER(`<client_col>`) LIKE {_sql_string_literal(f'%{WS_CLIENT.lower()}%')}"  # resolved at runtime in Databricks
 print("WellSense client predicate:", CLIENT_PREDICATE)
 
 # COMMAND ----------
@@ -138,11 +167,26 @@ print("WellSense client predicate:", CLIENT_PREDICATE)
 # COMMAND ----------
 
 # DBTITLE 1,Load the JSON and show the headline metadata
+# Only these roots are allowed to be read from — the widget/env value is analyst-supplied but
+# must not be able to point outside the expected DBFS/Volumes locations (or the notebook's own
+# local directory in the non-Databricks fallback).
+_ALLOWED_JSON_ROOTS = ("/dbfs/", "/Volumes/")
+
+
 def load_failure_json(path):
     """Load Layer A. Handles both /dbfs FUSE paths and plain local paths."""
-    candidates = [path]
-    if path.startswith("/dbfs/"):
-        candidates.append(path.replace("/dbfs", "", 1))  # spark path variant
+    normalized = os.path.normpath(path)
+    if os.path.isabs(normalized):
+        if not normalized.startswith(_ALLOWED_JSON_ROOTS):
+            raise ValueError(
+                f"Refusing to read {path!r}: absolute paths must be under {_ALLOWED_JSON_ROOTS}."
+            )
+    elif ".." in normalized.split(os.sep):
+        raise ValueError(f"Refusing to read {path!r}: path traversal is not allowed.")
+
+    candidates = [normalized]
+    if normalized.startswith("/dbfs/"):
+        candidates.append(normalized.replace("/dbfs", "", 1))  # spark path variant
     for p in candidates:
         try:
             with open(p) as f:
@@ -622,7 +666,7 @@ member_ids = (
 print(f"Failed member_ids to look up in the source feed: {len(member_ids)}")
 
 if IN_DATABRICKS:
-    ids_sql = ",".join("'" + m.replace("'", "''") + "'" for m in member_ids)
+    ids_sql = ",".join(_sql_string_literal(m) for m in member_ids)
     source = spark.sql(f"""
         SELECT member_id, date_of_birth, gender_code, gender_identity_code, zipcode,
                first_name, last_name, deceased_indicator, case_head_name, case_head_approved,
@@ -631,6 +675,10 @@ if IN_DATABRICKS:
         WHERE member_id IN ({ids_sql})
         QUALIFY ROW_NUMBER() OVER (PARTITION BY member_id ORDER BY file_date DESC) = 1
     """)
+    # Notebook-global by design: Databricks executes each cell in the same module/global
+    # namespace, so `src_pdf` living at module scope is how later cells (the reconciliation
+    # cells below) read it back — there is no long-lived multi-request process here for it to
+    # leak across.
     src_pdf = source.toPandas()
     print(f"Matched {len(src_pdf)} of {len(member_ids)} member_ids in ws_eligibility_all "
           f"({len(member_ids) - len(src_pdf)} not present → candidate 'member not on file' / upstream gaps).")
@@ -663,9 +711,9 @@ else:
 #                           on="member_id", how="left"))
 
 def run_dob_reconciliation(recon: pd.DataFrame):
-    recon = recon.copy()
-    recon["dob_bucket"] = recon.apply(lambda r: classify_dob_pair(r.get("dob_bwell"), r.get("dob_ehr")), axis=1)
-    counts = recon["dob_bucket"].value_counts()
+    r = recon.copy()
+    r["dob_bucket"] = r.apply(lambda row: classify_dob_pair(row.get("dob_bwell"), row.get("dob_ehr")), axis=1)
+    counts = r["dob_bucket"].value_counts()
 
     ours = ["format_artifact", "unparseable"]           # fixable in our code
     recoverable_now = ["typo_auto_recovered"]           # already handled by the algorithm
@@ -681,7 +729,7 @@ def run_dob_reconciliation(recon: pd.DataFrame):
            xlabel="records")
     plt.tight_layout()
     display(ax.get_figure())
-    return recon
+    return r
 
 # `recon` was populated from bronze.proa.metrics two cells up. Run the DOB buckets now if we have data.
 if isinstance(recon, pd.DataFrame) and len(recon):
