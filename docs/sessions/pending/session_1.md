@@ -41,9 +41,9 @@ persistence layer exists yet in this repo) will read `RuleEvaluation.timestamp`/
   `patient_matching/matching/match_result.py`.
 - Populate both fields in `MatchingEngine._evaluate_rule` in
   `patient_matching/matching/matching_engine.py`.
-- Read `version` from the repo's existing `VERSION` file (already present at the repo root,
-  used by `setup.cfg`'s `[metadata] version = file: VERSION` per `pyproject.toml`'s
-  `[tool.setuptools.dynamic]` — do not hardcode a version string).
+- Read `version` from the repo's existing `VERSION` file at the repo root (the canonical
+  source of truth for the package version in this repo, though not currently wired into
+  `pyproject.toml`/`setup.cfg`'s own packaging metadata) — do not hardcode a version string.
 
 ### Out of scope
 - Any persistence/storage of audit records (no such layer exists in this repo).
@@ -136,7 +136,6 @@ File: `patient_matching/matching/tests/test_matching_engine.py` (existing file �
 test class alongside the existing `TestMatchingEngine*` classes).
 
 ```python
-import re
 from datetime import datetime
 
 class TestAuditFields:
