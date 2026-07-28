@@ -91,12 +91,25 @@ docs/sessions/
   the existing bandit/detect-private-key/detect-aws-credentials pre-commit hooks staying
   active, no secrets in `docker.env`, `.gitignore` covering local env files) before any PR
   merges — this is verified as part of the separate PR-review pass, not a session itself.
+- **Reference documents (intentionally NOT copied into this repo):** the CMS v3.3 spec is a
+  live Google Doc still in "Draft for Technical Validation" status with an open public-comment
+  period and unresolved reviewer comments — it is actively changing and this repo doesn't own
+  it, so it is referenced by link, not mirrored as a file. **Sean's Google Doc:**
+  `https://docs.google.com/document/d/1ABHR6e4N-K9lEj1vc7DuzoAy8CuaAqwqAZSpJH9T4Yg/edit`
+  (file ID `1ABHR6e4N-K9lEj1vc7DuzoAy8CuaAqwqAZSpJH9T4Yg`). Any session that needs its content
+  (5, 6 below) fetches it fresh via Google Drive access as its first task, rather than trusting
+  a point-in-time copy that could silently go stale while the comment period is still open —
+  the opposite was tried mid-design (a full copy was committed, then deleted per Sean's
+  feedback: "now we have two things that need to be kept up to date," 2026-07-28). This is
+  different from the ONC dataset (Thread B session 3), which *is* copied in, because that's a
+  static, versioned, published benchmark that isn't changing — the distinction is mutability
+  and ownership, not size or source.
 - **Statistical rigor gate (Definition of Done, tiered — see below).** Per Sean (2026-07-28):
   this matching methodology is built on statistical uniqueness-quantification principles
   (Fellegi-Sunter-style P(collision)), not a labeled ground truth we can check answers against,
   so statistical rigor is the guiding philosophy — but per Sean's follow-up (also 2026-07-28),
   it should shape the sessions **without blocking early development**. The CMS v3.3 spec itself
-  (`docs/CMS_Patient_Matching_Proposal_v3.3.0.md`) endorses exactly this kind of phased rigor —
+  (see the reference-documents bullet above) endorses exactly this kind of phased rigor —
   a 12-month grace period for empirical P(collision) validation at population scale, and a
   "safe harbor" for self-attested performance against standardized datasets — so this gate
   mirrors the spec's own structure rather than inventing a stricter one:
@@ -217,40 +230,46 @@ code. Medium. Upstream: session 3 (shares the `rule_eval.py` wiring and report f
 ### Back to Thread A — now unblocked
 
 Both items previously listed below as blocked candidates are now unblocked: Sean shared the
-actual CMS v3.3 spec text (saved as `docs/CMS_Patient_Matching_Proposal_v3.3.0.md`, with a
-provenance header noting it's still a draft under public comment), and that document itself
+CMS v3.3 spec (Google Doc, file ID `1ABHR6e4N-K9lEj1vc7DuzoAy8CuaAqwqAZSpJH9T4Yg` — see the
+reference-documents bullet above; not copied into this repo), and that document itself
 contains Imran's P(collision) reference script links (§IV.I:
 `gist.github.com/imranq2/b5cc7a534a37dfa26922a83e69c686ee` and a companion Colab notebook) —
 fetched and confirmed directly: the gist's `FIELD_U_PROBS` dict matches the spec's Table 3
 exactly, implements the same `∏ u_field_k` joint-probability formula and 2e-12 threshold, and
 already flags 2 of the 37 proposed combinations as failing or administratively concerning —
 consistent with what the spec's own Table 4 and open review comments say (see below). Three
-independent sources now agree, so this is implemented from firsthand spec text, not secondhand
-description.
+independent sources agree as of 2026-07-28, so sessions 5-6 are scoped from firsthand spec
+text, not secondhand description — but since the doc is a live, still-commented-on draft,
+whoever executes those sessions should re-fetch it rather than trust this scoping to still
+match exactly (e.g. rule numbering, exact u-values, or the two flagged concerns could shift if
+CMS revises the draft before then).
 
 **pending/session_5.md — Table 3 u-probabilities + P(collision) evaluator**
-Implement `FIELD_U_PROBS` (17 fields, exact/fuzzy values) and a `p_collision()`/
-`evaluate_combination()` module per `docs/CMS_Patient_Matching_Proposal_v3.3.0.md` §IV,
-mirroring Imran's reference script's function shape for consistency with his established
-implementation. Replace `table2_rules.py`'s hardcoded `p_collision_exact`/`p_collision_fuzzy`
-floats with values computed by this evaluator (catches drift/typos against the spec
-automatically instead of trusting hand-entered constants). Include the spec's own admitted
-inconsistency as an explicit test: First Name + Last Name + DOB + ZIP computes to 3e-12 (above
-threshold) under Table 3's values and **must not** be approvable by this evaluator, regardless
-of the 3e-13 figure that appears in some prior (non-spec) analyses. Cross-checking output
-against Imran's gist/Colab directly is a stretch goal, not a blocker, since it's an external
-resource outside this repo's control. Medium. Upstream: none — this is a rule-defining
-session, so it needs Thread B's Tier-1 report before `completed/`, per the gate above.
+First task: fetch the current spec via Google Drive (file ID above) — do not assume a local
+copy exists or is current. Implement `FIELD_U_PROBS` (17 fields, exact/fuzzy values, per §IV.C
+as of this scoping) and a `p_collision()`/`evaluate_combination()` module, mirroring Imran's
+reference script's function shape for consistency with his established implementation. Replace
+`table2_rules.py`'s hardcoded `p_collision_exact`/`p_collision_fuzzy` floats with values
+computed by this evaluator (catches drift/typos against the spec automatically instead of
+trusting hand-entered constants). Include the spec's own admitted inconsistency as an explicit
+test: First Name + Last Name + DOB + ZIP computed to 3e-12 (above threshold) under this
+scoping's Table 3 values and **must not** be approvable by this evaluator, regardless of the
+3e-13 figure that appears in some prior (non-spec) analyses — re-verify this against whatever
+Table 3 values the live doc has at execution time. Cross-checking output against Imran's
+gist/Colab directly is a stretch goal, not a blocker, since it's an external resource outside
+this repo's control. Medium. Upstream: none — this is a rule-defining session, so it needs
+Thread B's Tier-1 report before `completed/`, per the gate above.
 
 **pending/session_6.md — Expand Table 2 to v3.3's 37 rules**
-Replace `table2_rules.py`'s 26 v3.2.2 rules with the 37 rules from
-`docs/CMS_Patient_Matching_Proposal_v3.3.0.md`'s Table 2, scored via session 5's evaluator.
-Two explicit exclusions/flags carried over from the spec and its still-open review comments
-(see the provenance header in that doc): (1) First Name + Last Name + DOB + ZIP **must not**
-be added — the spec says so outright pending an undefined geographic-dependency-discount
-methodology; (2) the phone+ZIP+name-anchored cluster (rules in the 33-37 range) has open,
-unresolved reviewer concern about false positives among co-resident family/household members
-— implement them, but behind a distinct, default-off flag (e.g.
+First task: fetch the current spec via Google Drive (same file ID) for its Table 2. Replace
+`table2_rules.py`'s 26 v3.2.2 rules with the (as of this scoping) 37 v3.3 rules, scored via
+session 5's evaluator. Two explicit exclusions/flags carried over from this scoping's read of
+the spec and its still-open review comments (re-verify both still apply at execution time,
+since the doc is under active comment): (1) First Name + Last Name + DOB + ZIP **must not** be
+added — the spec says so outright pending an undefined geographic-dependency-discount
+methodology; (2) the phone+ZIP+name-anchored cluster (rules in the 33-37 range as of this
+scoping) has open, unresolved reviewer concern about false positives among co-resident
+family/household members — implement them, but behind a distinct, default-off flag (e.g.
 `enable_household_risk_rules`) until Thread B's harness can run a dedicated adversarial
 family-sharing test case against them. `NEEDS HUMAN DECISION — Sean/Imran`: whether to enable
 that cluster by default before the spec's comment period resolves — recommended default is to
@@ -290,8 +309,8 @@ commit, verified via `git merge-base --is-ancestor` to be a direct ancestor of
   rather than introduce new patterns.
 - For the one remaining domain-specific open item (per-value collision probability), Imran is
   the specific person to consult, not a generic "ask around" — he authored the v3.3 proposal
-  itself and the P(collision) reference script now confirmed at `docs/
-  CMS_Patient_Matching_Proposal_v3.3.0.md` §IV.I.
+  itself and the P(collision) reference script now confirmed at the spec doc's §IV.I (see the
+  reference-documents bullet above for the link).
 
 ## Out of scope for this design
 
