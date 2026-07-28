@@ -40,10 +40,12 @@ partially-ordered gaps against the CMS spec — exactly the shape the playbook t
 - Sessions target **CMS v3.3 throughout** (gender dropped, DOB ±1 day, 2e-12 collision bar),
   even before the rule-set expansion itself lands, since v3.3 is the actual mid-August goal —
   not v3.2.2, which is what's currently in the repo.
-- Sessions blocked on assets not present in this repo (v3.3 spec text, Imran's P(collision)
-  reference script, ONC labeled dataset) are **not** authored as full session docs yet — they
-  go in `index.md`'s "Candidate future sessions" list with a `NEEDS HUMAN DECISION` note on
-  where each asset comes from.
+- Sessions blocked on assets not present in this repo are **not** authored as full session
+  docs — they go in `index.md`'s "Candidate future sessions" list with a `NEEDS HUMAN
+  DECISION` note on where each asset comes from. (Two items originally blocked this way — the
+  v3.3 spec text and Imran's P(collision) reference script — were resolved mid-design when
+  Sean shared the spec doc directly; see "Back to Thread A — now unblocked" below. The ONC
+  dataset was separately resolved once it was confirmed to be public, non-PHI data.)
 
 ## Directory structure
 
@@ -89,25 +91,46 @@ docs/sessions/
   the existing bandit/detect-private-key/detect-aws-credentials pre-commit hooks staying
   active, no secrets in `docker.env`, `.gitignore` covering local env files) before any PR
   merges — this is verified as part of the separate PR-review pass, not a session itself.
-- **Statistical rigor gate (Definition of Done, applies to every future session):** per Sean
-  (2026-07-28) — this matching methodology is built on statistical uniqueness-quantification
-  principles (Fellegi-Sunter-style P(collision)), not a labeled ground truth we can check
-  answers against. **Statistical rigor is therefore the guiding philosophy, not a nice-to-have.**
-  Any session that adds or modifies a matching rule (a fuzzy-match allowance, a DOB tolerance,
-  nickname handling, u-probability/collision values, a new Table 2 rule, a blocking key) is
-  **not done** until its PR includes a `rule_eval.py`-produced `ComparisonReport` — baseline
-  vs. candidate, with Beta-posterior credible intervals on precision/recall/FPR — showing the
-  change's actual effect. Sessions that don't touch rule behavior (e.g. session 1's audit
-  fields) are exempt.
+- **Statistical rigor gate (Definition of Done, tiered — see below).** Per Sean (2026-07-28):
+  this matching methodology is built on statistical uniqueness-quantification principles
+  (Fellegi-Sunter-style P(collision)), not a labeled ground truth we can check answers against,
+  so statistical rigor is the guiding philosophy — but per Sean's follow-up (also 2026-07-28),
+  it should shape the sessions **without blocking early development**. The CMS v3.3 spec itself
+  (`docs/CMS_Patient_Matching_Proposal_v3.3.0.md`) endorses exactly this kind of phased rigor —
+  a 12-month grace period for empirical P(collision) validation at population scale, and a
+  "safe harbor" for self-attested performance against standardized datasets — so this gate
+  mirrors the spec's own structure rather than inventing a stricter one:
+  - **Tier 1 — required before a rule-changing session reaches `completed/`:** an ONC
+    self-match `ComparisonReport` from `rule_eval.py` (baseline vs. candidate, Beta-posterior
+    credible intervals on precision/recall/FPR). Achievable entirely on synthetic labeled data
+    (Thread B session 3) — no real-data dependency, so this is never blocked on infra access.
+  - **Tier 2 — encouraged, not required:** validate the change's effect on P(collision)/
+    collision-*rate* against real population data (Thread B session 4). This is well-posed
+    without match/non-match labels — per the spec, "responding entities are encouraged to
+    validate collision probabilities against their own patient populations" — unlike
+    precision, which real unlabeled data structurally can't certify (see the conversation's
+    precision-measurability discussion; real links are also confounded by the current
+    production algorithm, per Sean).
+  - **Tier 3 — explicitly not a near-term blocker:** full empirical precision/recall/FPR at
+    population scale (≥1M records) on real data, matching the spec's own 12-month grace
+    period. Track as a pre-production-cutover milestone (the handoff's own "validate before
+    go-live" step), not a gate on any session in this backlog.
+  - **Sessions can be authored and coded in any order** — the gate applies at merge time, not
+    at start time. In practice this means Thread A's rule-changing sessions (5, 6 below) can
+    be developed in parallel with Thread B, but shouldn't move to `completed/` until Thread B
+    session 3 exists and produces their required Tier-1 report.
+  - Sessions that don't touch rule behavior (audit fields, tiered-response plumbing) are
+    exempt entirely, at every tier.
 
 ## Guiding philosophy: why there's a second thread of work
 
 Sean's framing (2026-07-28): because there is no independent "these two records are/aren't
 the same person" ground truth beyond the statistical framework itself, every rule change must
 be evaluated for its effect on **false-positive rate and recall**, not shipped on judgment
-alone. That's a standing requirement on all *future* rule work, which means the harness that
-produces those numbers has to exist and be trustworthy *before* Line B's remaining rule
-changes (v3.3 rule expansion, the P(collision) evaluator) land — not after.
+alone — but, per Sean's follow-up, that shouldn't block early development. The tiered gate
+above resolves this: the harness (Thread B) needs to exist before a rule-changing session can
+be marked `completed/`, but nothing stops Thread A's rule work (sessions 5, 6) from being
+authored and coded in parallel with it.
 
 **What already exists vs. what's genuinely new**, checked directly against
 `helix.personmatching` (the sibling repo's own ONC-based test harness) so this isn't built on
@@ -191,23 +214,60 @@ Sean`: the exact catalog/schema/table names for the FHIR Patient/Person match ta
 yet known to this design; resolve at session-start per the playbook protocol, before writing
 code. Medium. Upstream: session 3 (shares the `rule_eval.py` wiring and report format).
 
-## Candidate future sessions (not yet authored — blocked on assets not in this repo)
+### Back to Thread A — now unblocked
 
-- **Expand Table 2 to v3.3's 37 rules.** `NEEDS HUMAN DECISION — Sean`: needs
-  `CMS_Patient_Matching_Proposal_v3.3.0 (1).md` (referenced in the handoff, not present in
-  this repo — only v3.2.2's PDF/txt are). Recommended default: Sean pulls it from wherever
-  the handoff sourced it (Imran, or the internal DS handoff doc) and adds it to `docs/`.
-  Blocked on the statistical rigor gate too: this is a rule change, so it needs Thread B done
-  first, and its `ComparisonReport` needs Sean/Imran sign-off before merge.
-- **P(collision) evaluator, including per-value (name-frequency-conditioned) collision
-  probability.** `NEEDS HUMAN DECISION — Sean/Imran`: needs "Imran's gist/Colab" (handoff
-  §IV.I) — not in this repo or findable via grep. Sean separately raised a specific
-  methodology refinement worth carrying into this session's scope once it's unblocked: using
-  per-value collision probability (e.g. surname-frequency-weighted, "Smith" vs. "Qureshi")
-  rather than CMS's static per-field constant — a real change to the P(collision) methodology
-  that needs Imran's sign-off as domain lead, not something to implement unilaterally.
-  Recommended default: ask Imran directly for the reference script/values and his read on the
-  per-value refinement.
+Both items previously listed below as blocked candidates are now unblocked: Sean shared the
+actual CMS v3.3 spec text (saved as `docs/CMS_Patient_Matching_Proposal_v3.3.0.md`, with a
+provenance header noting it's still a draft under public comment), and that document itself
+contains Imran's P(collision) reference script links (§IV.I:
+`gist.github.com/imranq2/b5cc7a534a37dfa26922a83e69c686ee` and a companion Colab notebook) —
+fetched and confirmed directly: the gist's `FIELD_U_PROBS` dict matches the spec's Table 3
+exactly, implements the same `∏ u_field_k` joint-probability formula and 2e-12 threshold, and
+already flags 2 of the 37 proposed combinations as failing or administratively concerning —
+consistent with what the spec's own Table 4 and open review comments say (see below). Three
+independent sources now agree, so this is implemented from firsthand spec text, not secondhand
+description.
+
+**pending/session_5.md — Table 3 u-probabilities + P(collision) evaluator**
+Implement `FIELD_U_PROBS` (17 fields, exact/fuzzy values) and a `p_collision()`/
+`evaluate_combination()` module per `docs/CMS_Patient_Matching_Proposal_v3.3.0.md` §IV,
+mirroring Imran's reference script's function shape for consistency with his established
+implementation. Replace `table2_rules.py`'s hardcoded `p_collision_exact`/`p_collision_fuzzy`
+floats with values computed by this evaluator (catches drift/typos against the spec
+automatically instead of trusting hand-entered constants). Include the spec's own admitted
+inconsistency as an explicit test: First Name + Last Name + DOB + ZIP computes to 3e-12 (above
+threshold) under Table 3's values and **must not** be approvable by this evaluator, regardless
+of the 3e-13 figure that appears in some prior (non-spec) analyses. Cross-checking output
+against Imran's gist/Colab directly is a stretch goal, not a blocker, since it's an external
+resource outside this repo's control. Medium. Upstream: none — this is a rule-defining
+session, so it needs Thread B's Tier-1 report before `completed/`, per the gate above.
+
+**pending/session_6.md — Expand Table 2 to v3.3's 37 rules**
+Replace `table2_rules.py`'s 26 v3.2.2 rules with the 37 rules from
+`docs/CMS_Patient_Matching_Proposal_v3.3.0.md`'s Table 2, scored via session 5's evaluator.
+Two explicit exclusions/flags carried over from the spec and its still-open review comments
+(see the provenance header in that doc): (1) First Name + Last Name + DOB + ZIP **must not**
+be added — the spec says so outright pending an undefined geographic-dependency-discount
+methodology; (2) the phone+ZIP+name-anchored cluster (rules in the 33-37 range) has open,
+unresolved reviewer concern about false positives among co-resident family/household members
+— implement them, but behind a distinct, default-off flag (e.g.
+`enable_household_risk_rules`) until Thread B's harness can run a dedicated adversarial
+family-sharing test case against them. `NEEDS HUMAN DECISION — Sean/Imran`: whether to enable
+that cluster by default before the spec's comment period resolves — recommended default is to
+ship them off-by-default, matching the spec's own "necessary but not sufficient" framing for
+threshold-only approval. Medium-large. Upstream: session 5 (needs the evaluator); needs Thread
+B's Tier-1 report before `completed/`.
+
+## Candidate future sessions (not yet authored)
+
+- **P(collision) evaluator: per-value (name-frequency-conditioned) collision probability.**
+  No longer blocked on a missing asset (session 5 has the reference script and spec values in
+  hand) — what remains is a genuine **methodology deviation** from the published CMS approach,
+  which uses static per-field constants, not per-value frequency weighting. `NEEDS HUMAN
+  DECISION — Sean/Imran`: this needs Imran's explicit sign-off as domain lead before
+  implementation, since it goes beyond what the spec itself prescribes, not just his reference
+  values. Recommended default: propose it to Imran alongside session 5/6's results once they
+  exist, as a concrete "here's what the spec says vs. what we think could be more precise."
 - **"Project US@" address format compliance.** Smaller gap in the otherwise-complete
   normalization layer; not blocked, just not yet scoped in detail. Candidate once Threads A/B's
   pending sessions land.
@@ -224,19 +284,20 @@ eventual build target — that framing is superseded. All future sessions build 
 fhir_client/ial2_extraction implementation — PR #2 `add-patient-matching-code` is that same
 commit, verified via `git merge-base --is-ancestor` to be a direct ancestor of
 `claude/cms-matching-v1`, not a divergent parallel design). Practical implications:
-- New code (sessions 1-4 and the still-blocked candidate sessions) should follow the
+- New code (sessions 1-6 and the still-blocked candidate session) should follow the
   conventions Imran already established — `table2_rules.py`'s `RuleField`/`MatchingRule`
   dataclass shape, docstrings citing exact CMS spec sections, the normalization module split —
   rather than introduce new patterns.
-- For the domain-specific blocked items above (v3.3's 37 rules, the P(collision) evaluator),
-  Imran is the specific person to consult, not a generic "ask around" — he authored the v3.3
-  proposal itself and the P(collision) reference script the handoff references.
+- For the one remaining domain-specific open item (per-value collision probability), Imran is
+  the specific person to consult, not a generic "ask around" — he authored the v3.3 proposal
+  itself and the P(collision) reference script now confirmed at `docs/
+  CMS_Patient_Matching_Proposal_v3.3.0.md` §IV.I.
 
 ## Out of scope for this design
 
 - Any change to `helix.personmatching` or `person-matching-service` (different repos) —
   this repo does not port to or depend on either.
 - The PR #1/#2/#3 review-and-merge pass the user separately requested — that happens after
-  this scaffold and sessions 1-4 land, as its own piece of work.
+  this scaffold and sessions 1-6 land, as its own piece of work.
 - Automating the PHI guardrail (flagged above as a candidate future session, not part of this
   one).

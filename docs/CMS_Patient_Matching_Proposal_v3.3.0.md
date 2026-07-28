@@ -1,0 +1,442 @@
+<!--
+Provenance: exported 2026-07-28 from the internal working-group Google Doc
+Sean shared for this migration (not previously available in this repo - only
+v3.2.2's PDF/txt were). Status per the document itself: "Draft for Technical
+Validation," Release Date 6/24/2026, comment period open. Table 2/3/4 and the
+P(collision) methodology below are DRAFT and may still change through the
+comment period and CMS governance process - treat as the current best
+reference, not a finalized standard. Reference script: see §IV.I below for
+the gist/Colab links.
+
+Known open review concerns as of retrieval (not yet resolved in the source
+document): several reviewers flagged that the phone+ZIP+name-anchored
+combinations in Table 2 (rules in the 33-37 range) may violate the framework's
+field-independence assumption for co-resident family/household members
+sharing a landline and surname, with at least one reviewer citing a concrete
+false-positive scenario involving release of sensitive records to a family
+member. Table 4 also documents an internal inconsistency the spec itself
+acknowledges: First Name + Last Name + DOB + ZIP computes to 3e-12 (above the
+2e-12 threshold) under this document's own Table 3 values, despite appearing
+acceptable in some prior analyses (3e-13) - the spec explicitly says this
+combination SHALL NOT be added to Table 2 until a formal geographic-dependency
+discount methodology is adopted through governance. Any session implementing
+Table 2 from this document should treat both of these as blocking exclusions
+or explicit opt-in flags, not silently include them at face value.
+-->
+
+# CMS Patient Matching & Response Proposal
+Version 3.3.0
+Draft for Technical Validation
+# Table of Contents
+[**Table of Contents 1**](?tab=t.0#heading=h.bcaz7p59qby4)
+[**Executive Summary 3**](?tab=t.0#heading=h.w4ax7pwj3wkc)
+[**I. Purpose 4**](?tab=t.0#heading=h.61jl93leapbb)
+[**II. Core Principles 4**](?tab=t.0#heading=h.27j4p7oxe3o3)
+[**III. Risk Framework 6**](?tab=t.0#heading=h.iacy95mn5wj1)
+[**A. The Harm of Non-Return 6**](?tab=t.0#heading=)
+[**B. Collision Risk vs. Non-Return Risk 6**](?tab=t.0#heading=)
+[**C. Matching Criteria 9**](?tab=t.0#heading=)
+[**D. IAL2 Claims Tokens 12**](?tab=t.0#heading=h.uwzwbg129med)
+[E. IAL2 Claim Token Fields 13](?tab=t.0#heading=h.fjgia958hww3)
+[**IV. Model & Assumptions 16**](?tab=t.0#heading=h.cy5rzp9segcv)
+[**A. Assumptions and intended use 16**](?tab=t.0#heading=)
+[**B. Probability of Collision 16**](?tab=t.0#heading=)
+[**C. Per-Field Collision Probabilities 16**](?tab=t.0#heading=)
+[**D. Joint Collision Probability 20**](?tab=t.0#heading=h.otv11srhj6m9)
+[**E. Note on SSN and ITIN 23**](?tab=t.0#heading=)
+[**F. Ecosystem-Specific Collision Validation 24**](?tab=t.0#heading=h.q7550n8ouymi)
+[G. Note on Twins, Fragile Identities and Populations with limited or unstable demographic data 24](?tab=t.0#heading=h.nrr6c262owmq)
+[H. Note on Insurance Identifiers 24](?tab=t.0#heading=h.81lf5ad1gtr0)
+[Member ID versus Subscriber ID 24](?tab=t.0#heading=h.qp7l0gyo3qsp)
+[Payer Namespace Requirement 25](?tab=t.0#heading=h.w6bqe57242fb)
+[Recyclability 25](?tab=t.0#heading=h.ef6r3i2g9gmn)
+[Relationship to MBI 26](?tab=t.0#heading=h.l7yq58jykvf7)
+[U-Probability Basis 26](?tab=t.0#heading=h.e8hx6sqvy81o)
+[I. Reference Script to calculate P(collision) 26](?tab=t.0#heading=h.jk966unev8hg)
+[**V. Normalization Requirements 27**](?tab=t.0#heading=h.w4xozjxxpo8h)
+[**A. Required Normalization 27**](?tab=t.0#heading=h.ommh6hgdq0hq)
+[**B. Name Handling 27**](?tab=t.0#heading=)
+[**C. Demographic Fields 27**](?tab=t.0#heading=h.n5kqqvr4xisg)
+[**D. Placeholder Values 28**](?tab=t.0#heading=)
+[**E. Fuzzy Matching 28**](?tab=t.0#heading=)
+[**VI. Validation Requirements 28**](?tab=t.0#heading=h.mlk8nuevgcrn)
+[**A. Implementation Testing 28**](?tab=t.0#heading=h.3xn59phydr5z)
+[**B. Validation of P(collision) Values 29**](?tab=t.0#heading=)
+[**VII. Audit & Monitoring 30**](?tab=t.0#heading=)
+[**VIII. Governance & Versioning 30**](?tab=t.0#heading=)
+[**IX - Implementation and Testing 31**](?tab=t.0#heading=h.vhrgzp9mynow)
+[**References 32**](?tab=t.0#heading=h.roa84gnssmgq)
+[**Document Control 33**](?tab=t.0#heading=h.mhhifgdrapr)
+# Executive Summary
+The challenge of patient matching in healthcare is well documented. According to a 2020 eHealth Initiative/NextGate survey, approximately 38% of U.S. providers experienced an adverse event in the prior two years attributable to incorrect patient matching. Studies cite that patient matching rates between organizations is low at around 50%, and some CMS health tech ecosystem pledgees report that it is closer to 40% in real data exchange and worse for patient-initiated access. The CMS Health Tech Ecosystem has convened a working group over the last several months to address this problem. The working group, which includes CMS alongside ecosystem participants, has conducted testing against real datasets within their respective organizations and, as a group, developed this proposal collaboratively.
+Stated simply, If the identity attributes in a query correspond to a field combination listed in Table 2 of this document, and the query produces a unique candidate subject, the responding entity SHALL return matching records for that patient within the permitted scope for that query context.
+Table 2, incorporated directly into this document, lists validated combinations of identity attributes whose conservative Probability of Collision, P(collision), is less than or equal to 2e-12, or 0.0000000002% and satisfy additional administrative controls. P(collision) is the probability that two distinct individuals in the population share identical values for a given combination of fields. It measures the inherent discriminating power of the field combination itself, independent of any specific matching algorithm or vendor implementation.
+The proposal has three parts:
+1.  Data Handling and Cleaning: Requirements for normalizing identity attributes, including the principle that each field represents a set of all known values (current and prior).
+2.  Matching Rules Based on Probability of Collision: A single threshold of P(collision) \<= 2e-12, equivalent to 0.0000000002%, is applied to every candidate combination of identity attributes. Combinations that clear the threshold are listed in Table 2.
+3.  Testing and Validation: Requirements ensuring implementations produce expected results, validated against standardized test datasets and ongoing monitoring.
+CMS intends to publish this proposal as part of the CMS Interoperability Framework, which ecosystem pledgees agree to follow. Because Medicare is also a respondent in the Payer pledge category, and will respond to patient, provider, and as appropriate payer requests, CMS will also be a direct implementer of this proposal, not solely its sponsor.
+Failure to return records when a query satisfies a Table 2-listed combination and produces a unique candidate is non-compliant with this proposal.
+1.  # Purpose
+This proposal seeks to define a consistent and nationally applicable matching strategy for patient, member or beneficiary records. It defines when responding entities SHALL return the matching records, subject to the administrative controls in §IV.D and Table 4.  in response to any query for records as governed by the data sharing agreement used to establish trust between the parties but does not seek to provide governance or protocol recommendations beyond matching (e.g. data returned, exchange purposes, enforcement, etc).  This framework governs source-system matching at responding endpoints, not payload requirements on wire-transaction formats.
+1.  # Core Principles
+1.  Matching thresholds SHALL NOT be arbitrary. Under this framework, the threshold is 2e-12 probability of collision, 0.0000000002% or 1 in 500 billion.
+2.  Confidence is measured by aggregate Probability of Collision, not field count.
+3.  If a query matches a Table 2-listed combination and produces a unique candidate, the responding entity shall respond with a match appropriate to the protocol subject to the administrative controls in §IV.D and Table 4.
+4.  A match is satisfied only when it produces a unique candidate subject at the source system. Network queries could have unique candidates found at more than one source systems and SHALL return the match from each source system. Compliance for matching is assessed at the source-system level for each Participant; the network’s compliance role is to faithfully convey the query, including the IAL2 Claims Token where present, and to aggregate Participant responses without distortion.
+5.  Fuzzy techniques are permitted but constrained and testable.
+6.  Meeting the threshold is the baseline metric for inclusion in the approved list of matching criteria, however, administrative evaluation for known risks such as data independence, shared contract risk, multiple birth risk, and others are also critical to evaluating a criteria.
+7.  Ongoing validation and transparency are mandatory.
+8.  False positives (wrong-patient releases) are critical errors and must be minimized — but they are auditable and correctable and we propose operational containment (audit logging, downstream notice under 45 CFR 164.404–410, revocation where technically feasible).  The patient’s rights to notice, accounting (§164.528), and OCR complaint are not extinguished by remediation.
+9.  False negatives (failure to return data to the correct patient) cause invisible, cumulative harm and must be minimized.
+10. Each identity attribute represents a set of values, current and historical. Matching shall evaluate against all known values for a field (e.g., all known last names, all known addresses, all known phone numbers). Historical values are weighed by collision contribution within the combination, not by recency in isolation ; a match on any known value satisfies the field.
+11. IAL2 Claims Tokens that can be cryptographically verified with an authorized Credential Service Provider (“CSP”) provide a high level of assurance the identity of the individual and app requesting data has been verified.
+12. Covered entities may request PHI from other covered entities without a signed CSP token being required. Patient facing apps not covered by HIPAA may only request records by transmitting a CSP-issued IAL2 Claims Token
+1.  # Risk Framework
+1.  ## The Harm of Non-Return
+The documented harm from patient matching failures is extensive:
+  - Approximately 38% of U.S. providers experienced an adverse event in the prior two years attributable to incorrect patient matching (eHealth Initiative/NextGate 2020 survey)
+  - More than 7,600 identification errors across 181 healthcare organizations in a 2.5-year period, with roughly 9% resulting in patient injury or death (ECRI Institute 2016)
+  - Average healthcare facility loses $17.4 million per year to misidentification-related claim denials. Studies show that the average hospital loses $17.4 million annually due to misidentification-related claim denials. But lost revenue doesn’t just stem from the initial denial. Fixing each one costs an average of $25 per claim for practices and $181 for hospitals. On top of that, over a third of organizations report spending $1.3 million a year trying to resolve patient identity issues (Imprivata survey)
+  - Black Book Survey found that duplicate patient records cost an average of $1950 per patient per inpatient stay and over $800 per emergency department visit. According to the same study, one-third of rejected insurance claims are attributed to inaccurate patient identification, costing the average hospital $1.5 million and the US healthcare system $6 billion annually.(Black Book Research 2018)
+  - An estimated $3.6 billion per year is spent industry-wide on patient identity management and matching (extrapolated from Intermountain Healthcare testimony)
+  - Disproportionate impact on Black, Latino, homeless, incarcerated, and disabled patients
+These harms occur under the status quo, a system where a large percentage of record queries fail silently. No one logs a match that should have happened but didn’t. The patient simply doesn’t get the data. The physician simply doesn’t see the history.
+1.  ## Collision Risk vs. Non-Return Risk
+The framework approval threshold is P(collision) less than or equal to 2e-12 or 1 in 500 billion. The question, however, is not "is 0.0000000002% probability of collision acceptable?" The question is "compared to what?"
+For a typical single-physician practice (\~2,000 patients), the expected number of wrong-patient releases per year from the defined threshold probability of collision is effectively zero.
+Meanwhile, the same practice under a 40% match rate silently fails to return data on roughly 3,000 queries per year, each one a missed opportunity to prevent harm.
+*Table 1 Threshold comparison: framework standard versus status quo*
+|  |  |  |
+| :- | :- | :- |
+|  | 0.0000000002% Collision Threshold | Status Quo (40% match rate) |
+| Wrong-patient releases/year | \~0 | Unknown (no one measures) |
+| Correct data NOT returned/year | Near zero | \~3,000 |
+| Detectable? | Yes — auditable | No — invisible |
+| Correctable? | Yes — discrete events | No — systemic |
+
+For every query that clears the threshold, there is at most a 1 in 500 billion theoretical probability that the matching field combination could also belong to a different individual. But "could theoretically belong to" is not "will be released to the wrong person." Additional safeguards reduce the actual wrong-release rate to near zero and provide a path to remediation in the event it does.
+The harm of non-return is invisible and cumulative. The harm of false positives is discrete and detectable. Both are real, and the framework does not minimize either. The framework’s operational response to false-positive risk has three components.
+**First**, the framework operates a tiered match logic. When a query yields a single Table 2-qualifying unique candidate, the responder returns. When a query yields two candidates, the protocol layer MAY escalate to multi-factor authentication or supplementary disambiguation. When a query yields three or more candidates, the responder applies the more stringent 1-in-a-million collision threshold and may decline to return absent further evidence. This is the framework’s primary operational mechanism for managing false-positive risk — not a single absolute threshold.
+**Second**, the verified-attribute foundation is materially stronger than the alternatives in routine use today. A patient may request records from a covered entity by fax, by web-portal login, or by paper form. Each of those channels offers substantially less identity assurance than IAL2 identity proofing performed by a Kantara-certified, independently-audited Credential Service Provider with biometric binding and document authentication under NIST SP 800-63A §§5.2 and 5.3. The proposed framework reduces — not increases — the residual false-positive exposure relative to status-quo patient-submission channels.
+**Third**, HIPAA at 45 CFR 164.514(h) requires reasonable verification, not perfect verification. The community is proposing through this framework that IAL2 reliance plus the §II matching rules plus the §IV.D administrative controls plus the §VII audit infrastructure constitutes a reasonable verification posture. The relevant liability question is: when an organization uses best-practice identity proofing, a federally-grounded collision threshold, the tiered match-disambiguation logic, and the audit infrastructure described in §VII — and a single-patient error nonetheless occurs at a 1-in-500-billion collision probability — what is the residual liability that does not also attach to fax, portal, or paper channels operating with materially weaker assurance? We believe the answer is: less.
+1.  ## Matching Criteria
+The approved combinations provided in Table 2 are the baseline matching rules eligible for implementation . Additional detail on model construction and threshold selection are provided in a later section.
+*Table 2 Approved matching combinations and conservative collision estimates. Fields with a \* may be fuzzy.*
+|  |  |  |  |
+| :- | :- | :- | :- |
+| ID | Approved field combination | P(collision),    exact | P(collision),    fuzzy |
+| 01 | First Name\* + Last Name\* + DOB\* + Street Line\* | 3e-13 | 9e-13 |
+| 02 | First Name + Last Name\* + DOB\* + Phone Number | 1e-14 | 2e-14 |
+| 03 | First Name\* + Last Name\* + DOB\* + Email Address | 1e-14 | 3e-14 |
+| 04 | First Name\* + Last Name + DOB + SSN Last 4 | 1e-12 | 2e-12 |
+| 05 | First Name + Last Name\* + DOB + SSN Last 4 | 1e-12 | 2e-12 |
+| 06 | First Name\* + Last Name + DOB + ITIN Last 4 | 1e-12 | 2e-12 |
+| 07 | First Name + Last Name\* + DOB + ITIN Last 4 | 1e-12 | 2e-12 |
+| 08 | First Name + DOB + MBI | 2e-12 |  |
+| 09 | First Name + DOB + Legal ID | 2e-12 |  |
+| 10 | Last Name\* + DOB\* + Legal ID | 5e-13 | 1e-12 |
+| 11 | First Name + DOB + Phone Number | 2e-12 |  |
+| 12 | First Name + DOB + Email Address | 2e-12 |  |
+| 13 | Last Name + Phone Number + SSN Last 4 | 5e-13 |  |
+| 14 | Last Name + Phone Number + ITIN Last 4 | 5e-13 |  |
+| 15 | Last Name\* + Email Address + SSN Last 4 | 5e-13 | 1e-12 |
+| 16 | Last Name\* + Email Address + ITIN Last 4 | 5e-13 | 1e-12 |
+| 17 | First Name + Phone Number + SSN Last 4 | 2e-12 |  |
+| 18 | First Name + Phone Number + ITIN Last 4 | 2e-12 |  |
+| 19 | First Name + Email Address + SSN Last 4 | 2e-12 |  |
+| 20 | First Name + Email Address + ITIN Last 4 | 2e-12 |  |
+| 21 | Phone Number + MBI | 1e-12 |  |
+| 22 | Phone Number + Legal ID (w/issuing-authority namespace) | 1e-12 |  |
+| 23 | Email Address + MBI | 1e-12 |  |
+| 24 | Email Address + Legal ID (w/issuing-authority namespace) | 1e-12 |  |
+| 25 | Legal ID + MBI | 1e-12 |  |
+| 26 | Namespace bound unique identifiers (e.g. EMPI, FHIR Patient Identifier, CSP UUID, etc) | ≈0 |  |
+| 27 | First Name + DOB + Member ID (w/ Payer namespace) | 2e-12 |  |
+| 28 | Last Name\* + DOB\* + Member ID (w/ Payer namespace) | 5e-13 | 1e-12 |
+| 29 | Phone Number + Member ID (w/ Payer namespace) | 1e-12 |  |
+| 30 | Email Address + Member ID (w/ Payer namespace) | 1e-12 |  |
+| 31 | First Name\* + Last Name + DOB + Subscriber ID (w/ Payer namespace) | 1e-12 | 2e-12 |
+| 32 | First Name + Last Name\* + DOB + Subscriber ID (w/ Payer namespace) | 1e-12 | 2e-12 |
+| 33 | First Name\* + Last Name\* + Phone Number + ZIP | 3e-14 | 9e-14 |
+| 34 | Last Name + Phone Number + ZIP | 1.5e-12 |  |
+| 35 | Last Name + Email Address + ZIP | 1.5e-12 |  |
+| 36 | Last Name\* + DOB + Phone Number | 5e-13 | 1e-12 |
+| 37 | Last Name\* + Street Line + Phone Number | 1.5e-13 | 3e-13 |
+
+Notes: First name is the twin and multiple-birth guardrail for rules that rely on household-shared demographic evidence. Where a fuzzy value is shown with "\*". Email, SSN last 4, ITIN last 4, MBI, Legal ID, ZIP, and namespace bound unique identifiers must match exactly. MBI means CMS-issued MBI only; generic insurance subscriber or member identifiers are not interchangeable with MBI under Table 2.  When Date of Birth is shown with “\*” that means we allow a ±1-day tolerance.
+Notes: Member ID means the full individual-level identifier inclusive of any dependent suffix; the bare subscriber base value without a dependent suffix SHALL NOT be used under Member ID rules (rules 27–30). Subscriber ID means the policyholder-level base value; rules 31–36 require at least one individually discriminating demographic field (first name, last name, or date of birth) to mitigate recyclability risk. For all rules in this group, the Payer ID establishes the namespace and matching SHALL be performed only within that namespace. Email, phone, date of birth, subscriber ID, and member ID must match exactly after normalization. Fuzzy matching is limited to name fields as defined in Table 3 and §V.E.
+The following combinations pass the collision threshold but should be administratively restricted:
+|  |  |  |  |
+| :- | :- | :- | :- |
+| **Candidate combination** | **P(collision)** | **Secondary risk category** | **Why the risk is not fully captured by P(collision)** |
+| Subscriber ID + DOB + Payer namespace | 1e-10 | Family sharing risk; recyclability risk | Subscriber ID is shared across family members; DOB is also shared among twins and potentially known to household members. The combination does not include an individually discriminating name field and cannot reliably resolve to a single individual in family-plan contexts. |
+| Member ID + Payer namespace alone | 1e-6 | Above threshold | Does not meet the 2e-12 threshold and is excluded on that basis, independent of any administrative review. |
+| Subscriber ID + Group Number + Payer namespace | \~1e-8 | Data independence risk; recyclability risk | Group number is an employer-level field, not an individual-level field; it provides no incremental individual discrimination and may be shared by hundreds or thousands of members. Group number would transfer to a new member receiving a recycled subscriber ID and therefore provides no recyclability mitigation. |
+
+Rules 34 and 35 do not carry a \* on Last Name. Applying fuzzy matching to Last Name in either combination would yield P(collision) = 3e-12, exceeding the framework threshold; Last Name must therefore match exactly in these two rules. Rule 36 parallels approved rules 13 and 14 (Last Name + Phone/ITIN Last 4), which are already approved at the same 5e-13 level; the gap in the original table appears to be an omission. For rule 37, fuzzy matching applies to Last Name only; Street Line is subject to address normalization per §V.C but not to string-fuzzy comparison in this combination.
+Except where this framework expressly provides a deterministic contraindication, disagreement in additional data elements present in the query or source record, but not included in the qualifying Table 2 combination, does not by itself negate the match. In such cases, the more likely implication is that one or more non-qualifying data elements are inaccurate, stale, or incomplete, not that the otherwise qualifying match is incorrect. Organizations MAY flag such queries for review, audit, or data-quality follow-up. This framework further mitigates risk of an incorrect match by requiring that a match is satisfied only when it produces a unique candidate subject at the source system.
+1.  ## IAL2 Claims Tokens
+A patient-facing app SHALL include a CSP-issued IAL2 Claims Token in a query to match a patient. For purposes of this framework, an "IAL2 Claims Token" means a signed OpenID Connect ID token issued by a CSP after identity proofing to at least NIST IAL2. The presence of a valid IAL2 Claims Token provides high-confidence evidence regarding the provenance and prior identity proofing of the demographic attributes conveyed in the query and strengthens the Responder's ability to verify that the matching request is being made at the patient's direction.
+If an IAL2 Claims Token is included in a query, the Responder SHALL validate the token prior to responding. Validation SHALL include:
+1.  The token's digital signature using the CSP's published JWKS or other applicable key distribution mechanism
+2.  The iss claim identifies a trusted CSP
+3.  The aud claim identifies the intended relying party, IAS Provider, or other expected audience for the transaction
+4.  The token is unexpired based on the exp claim when present, or otherwise within the Responder's maximum acceptable age based on iat; and reasonable checks of token integrity and freshness.
+5.  Anti-replay controls using the jti claim in combination with issuer context. At a minimum, the Responder SHALL record previously accepted iss + jti values, or maintain equivalent controls, for the applicable token-validity window and SHALL reject subsequent reuse of the same token identifier.
+If token validation fails or replay is detected, the Responder SHALL NOT rely on the token or any claim extracted from it for matching or response.
+When an IAL2 Claims Token is successfully validated, demographic claims extracted from the token SHALL be used as query demographics for matching. Such demographics SHALL be subject to the same normalization, placeholder suppression, historical-value handling, exact and fuzzy comparison constraints, approved Table 2 combinations, and uniqueness requirements that apply when the same demographics are transmitted directly in the query.
+## E. IAL2 Claim Token Fields
+|  |  |  |
+| :- | :- | :- |
+| Field Name | Description | Required |
+| iss | Issuer identifier for the entity that issued the ID Token. Case-sensitive URL. | Required - OIDC |
+| sub | Unique identifier for the subject (person) within the issuer’s system | Required - OIDC |
+| aud | Identifies the intended audience of the token | Required - OIDC |
+| exp | Expiration time for the token | Required - OIDC |
+| iat | Time the token was issued | Required - OIDC |
+| jti | Unique identifier for the token, used to prevent replay attacks | Required |
+| at\_hash | Hash of the access token for validation purposes | Optional - OIDC |
+| auth\_time | Time when the end-user authentication occurred | Required - OIDC |
+| identity\_assurance\_level | IAL at which the claims in the token have been verified to. | Required - CAN |
+| given\_name | First or given name(s) of the person. Multiple names may be space- separated | Required – TEFCA |
+| middle\_name | Middle name of individual | Required if present |
+| last\_name | Surnames / last names | Required |
+| name\_full | Concatenate first, middle, last or the strong off the legal document | Required |
+| name\_historical | Previously known or alternate legal names    (note: distinguish legal name v. aliases/nicknames/preferred names | Required if present |
+|  | Patient’s date of birth | Required |
+| gender | Legal sex or gender as recorded at birth | Optional |
+| email | Verified email associated with individual | Required |
+| phone\_number | Verified primary phone number | Required |
+| phone\_number\_historical | Previous phone numbers | Optional |
+| country | Country | Required |
+| address\_line1 / street\_address | Primary street address | Required |
+| address\_line2 / street\_address | Second address line (e.g. apartment or suite number) | Required if present |
+| locality | City or locality name | Required |
+| region | State, providence, or region | Required |
+| postal\_code | ZIP or postal | Required |
+| full\_address / formatted | Composite formatted address string | Required |
+| address\_historical | Array of previously known addresses | Required if present and validated by CSPs |
+| ssn\_itin | Social security number | For discussion |
+| ssn\_itin\_short | Last 4 of SSN/ITIN | For discussion |
+| uuid | CSP-specific identifier, unique per individual | For discussion |
+| itin | Individual Taxpayer Identification Number, for individuals without SSNs | For discussion |
+| legal\_id\_issuer | Government-issued legal identity documents like driver’s license and passport | For discussion |
+
+
+1.  # Model & Assumptions
+1.  ## Assumptions and intended use
+Exact national collision probabilities cannot be known with precision for every field and every field combination. The values below are intended as order-of-magnitude estimates for threshold setting, relative comparison, and risk ranking. Unless direct empirical estimates are available for the deployment population, the model uses reasonable assumptions based on distinct-value counts, expected skew, missingness, and operational experience.
+Joint probabilities are treated as first-order approximations. They do not assume complete independence across demographic variables. All values should be understood as provisional and subject to recalibration as better population-specific data become available.
+1.  ## Probability of Collision
+The primary metric used to evaluate match strength is the Probability of Collision, P(collision), defined as approximate probability that two distinct individuals in the relevant population share the same observed values for a specified set of demographics or identifying attributes.
+P(collision) is best understood as a measure of ambiguity in the identifier set itself, not as a direct measure of total matching performance. It provides a practical lower-bound proxy for how often a combination of fields may fail to distinguish two different people. If two distinct people are indistinguishable across all fields in a given combination, then the available data alone cannot reliably separate them.
+This model is consistent with the Fellegi-Sunter probabilistic record linkage literature, in which u-probability for a field represents the probability of coincidental agreement among records that do not belong to the same person. For the purposes of this framework, u-probabilities are treated as estimated
+values that support threshold design and comparative scoring. They are not presented as exact national constants.
+1.  ## Per-Field Collision Probabilities
+For a single field with counts ni across N distinct individuals, the exact non-match agreement probability is:
+ufield = Σ\[ni(ni - 1)\] / \[N(N - 1)\]
+For large populations, this may be approximated as ufield ≈ Σ(fi^2)
+where fi is the relative frequency of value i. When a field is approximately uniform, a simpler approximation is
+ufield ≈ 1 / Ndistinct
+In practice, exact population frequency distributions are not available for every field, and field distributions vary across patient populations, regions, and source systems. Accordingly, the values in Table 3 should be treated as conservative single-point assumptions based on reasonable expectations about cardinality, skew, missingness, and data quality. They are intended for threshold setting, comparative scoring, and rule classification, not for precise actuarial measurement.
+Fuzzy matching is used only to account for limited data-entry variation that remains after deterministic normalization. It is not applied to structured fields such as DOB, ZIP, MBI, Legal ID, or namespace bound unique identifiers, and it is not applied to any compared string shorter than 5 characters after normalization. Fuzzy comparison may be used only for first name, last name, and street line, and only under constrained rules intended to capture minor typographic or adjacent transposition errors. Unless Table 2 expressly states otherwise, no more than one field in a qualifying combination may be satisfied by fuzzy comparison.
+*Table 3. Conservative per-field u-probabilities used to classify Table 2 combinations*
+|  |  |  |  |
+| :- | :- | :- | :- |
+| Field | Conservative u, exact | Conservative u, fuzzy | Basis / assumption |
+| First Name | 0.02 | 0.03 | Common-name concentration; deterministic nickname handling first; fuzzy limited to a single minor edit or adjacent transposition and only when the normalized value is at least 5 characters. |
+| Middle Name | 0.01 | Not used | This field has been dismissed due to observed data quality issues and low selectivity |
+| Last Name | 0.005 | 0.01 | Heavy-tailed surname distribution; no phonetics; fuzzy limited to a single minor edit or adjacent transposition and only when the normalized value is at least 5 characters. |
+| Suffix | 0.2 | Not used | This field has been dismissed due to observed data quality issues and low selectivity |
+| Date of Birth (full) | 0.0001 | Not used | Exact comparison only. |
+| Year of Birth | 0.015 | Not used | This field has been dismissed due to observed low adoption and low selectivity |
+| ZIP Code (5-digit) | 0.0003 | Not used | Conservative geographic concentration assumption; exact comparison only. |
+| City | 0.01 | Not used | Exact comparison only. |
+| State | 0.06 | Not used | Exact comparison only. |
+| Street line | 0.00003 | 0.00006 | Street line and ZIP standardized; ZIP must remain exact. Fuzzy, when allowed, applies only to the street line. |
+| Phone Number | 0.000001 | Not used | Normalized to E.164 |
+| Email Address | 0.000001 | Not used | Exact comparison only after deterministic normalization. |
+| SSN Last 4 Digits | 0.0001 | Not used | Exact comparison only. |
+| ITIN Last 4 Digits | 0.0001 | Not used | Exact comparison only. |
+| Legal ID (full exact value within issuing-authority namespace) | 0.000001 | Not used | Conservative floor for exact DL/passport or equivalent legal identifier; exact comparison only within namespace. |
+| MBI (CMS-issued Medicare Beneficiary Identifier) | 0.000001 | Not used | CMS-issued MBI only; generic insurance identifiers are excluded unless separately validated. |
+| Namespace bound unique identifiers (e.g. EMPI, FHIR Patient Identifier, CSP UUID, etc.) | ≈0 | Not used | Exact comparison only; treated as effectively zero collision for under namespace-bound exact matching. |
+| Insurance Member ID (full individual-level value within payer namespace, i.e., including any dependent suffix) | 0.000001 | Not used | Conservative floor for exact individual member identifier issued by a single payer; exact comparison only within payer namespace. Family-plan dependent suffixes must be included; a bare subscriber base value without dependent suffix SHALL NOT be treated as a Member ID under this row. |
+| Insurance Subscriber ID (policyholder-level base value within payer namespace) | 0.0001 | Not used | Conservative estimate reflecting documented family-plan sharing: approximately 40% of commercially insured individuals are dependents sharing a base subscriber ID with one or more household members. This degrades the effective per-individual selectivity to roughly the level of SSN last 4 digits. Exact comparison only within payer namespace. |
+
+Where no reliable empirical distribution is available, the assigned u-value should be understood as a conservative order-of-magnitude assumption or engineering floor rather than a directly measured quantity. For namespace bound unique identifiers, "≈0" indicates effectively zero collision for threshold design under exact namespace-bound comparison, not a claim of literal impossibility.
+The following simplifying assumptions are reasonable for threshold-setting purposes:
+1.  City and state should generally be treated as a single geographic signal when both are present.
+2.  ZIP code already captures state and much of city, so state adds little incremental discrimination when ZIP is available.
+3.  Address line 1 and ZIP should not automatically receive full independent credit, because they are related geographic fields.
+4.  Phone number and email address should be treated as strong but imperfect identifiers, since either may be shared, stale, reassigned, or missing.
+1.  ## Joint Collision Probability
+Under this framework, joint collision estimates are intended to provide a practical and transparent approximation of match ambiguity, not an exact population truth.
+Any field combination above the threshold is not eligible for approval. A field combination below the threshold is eligible for consideration, but it is not automatically approved. This distinction is important because P(collision) is a mathematical estimate of coincidental agreement, not a complete measure of operational safety. It is calculated from conservative per-field assumptions using a multiplicative approximation, which is useful for threshold-setting but does not fully capture all real-world sources of overlap. In practice, some data elements are not fully independent, some are shared across family members or households, some are proxy-controlled, some are stale or reassigned, and some are vulnerable to fraud or data-quality defects. Examples include twins or siblings sharing date of birth and residence, spouses or caregivers sharing an email address, family-plan phone numbers, multigenerational naming patterns, suffix suppression, shared living spaces such as long-term care facilities or shelters, and recycled contact channels. The threshold is intentionally set at this stringent level in part to create a safety margin for those risks.
+For a combination of multiple fields, the collision probability may be approximated as: P(collision for combination) ≈ ∏ u\_field,k
+This product form is a first-order heuristic. It is useful for ranking combinations by expected ambiguity, but it should not be interpreted as a literal claim that all fields are fully independent.
+The threshold was chosen based on the clustering of common industry used combinations in national matching products compared against a distribution of field combinations and their super sets. An analysis of 2554 combinations of demographic fields were conducted and reduced to 1150 combinations based on the elimination of Year of Birth, Suffix, and Middle Name. Rows with an effective collision probability
+of zero are excluded in the following chart (e.g. namespace bound unique identifiers). Note how the number of possible unique combinations (e.g. not a subset of a larger combination) drop off rapidly around the reference set cluster.
+*Table 3 Distribution of Collision probabilities. Zero values excluded.*
+*\[image\]*
+There are approximately 68 additional unique combinations that could be added to the approved list based on threshold, however, passing the threshold should be treated as a necessary condition for approval, not a sufficient one. Combinations that fall below the threshold may still warrant restriction, exact-only treatment, limitation to certain query contexts, or exclusion from Table 2 if they rely too heavily on shared, mutable, or household-level data. Because demographic variables are often correlated, the model applies conservative dependency adjustments to avoid overstating uniqueness.
+Several administrative rules must additionally be evaluated prior to approval of a new matching combination.
+1.  Data Independence risk. Each field in the combination must be reasonably independent from the others.
+2.  Shared Contact Channel risk. Each contact channel that can be shared must be distinguished by other individually identifying fields.
+3.  Reassignment risk. Each field that can be reassigned must be further distinguished by individually identifying fields.
+4.  Multiple Births (e.g. Twins) risk must be mitigated by non-placeholder based first name.
+5.  Generational Name risk must be mitigated by date of birth and are further checked deterministically by suffix if available
+6.  Geographic field dependency. The simplifying assumptions in §IV.D note that City and State should be treated as a single geographic signal when both are present, and that ZIP already captures much of City and State. These observations imply that certain field combinations involving two or more correlated geographic attributes — for example, City + ZIP or DOB + ZIP in combinations that lack an individually discriminating contact field — may overstate uniqueness if their u-probabilities are multiplied without a dependency adjustment. The framework does not currently specify a formal method for computing that adjustment. Until such a method is adopted through governance, combinations whose approval depends on a geographic dependency discount SHALL NOT be added to Table 2. Combinations that pass the 2e-12 threshold using the full Table 3 product — without any discount — are unaffected by this constraint and may be evaluated normally.
+The combinations below illustrate this principle. While they technically meet the threshold, they should be administratively rejected.
+*Table 4 Sample Administrative Restrictions on Matching Combinations*
+|  |  |  |  |
+| :- | :- | :- | :- |
+| Candidate combination | P(collision) | Secondary risk category | Why the risk is not fully captured by P(collision) |
+| Date of Birth + Street Address + ZIP | 3.00E-13 | Twin risk; shared living space risk | Twins, siblings in the same household, and residents in shared or institutional settings may share these fields; address standardization can also collapse distinctions if unit information is missing or inconsistent |
+| Email + Date of Birth + City + State | 1.00E-12 | Shared contact channel risk | Email addresses may be shared by spouses, parents, guardians, or caregivers; City and State add limited incremental discrimination |
+| First Name + Last Name + Street + Zip | 3.00E-13 | Shared contact channel risk; Generational Name risk | Parent and child generational names in the same household where suffix was either not disclosed or not transmitted |
+| Phone + City + State + Zip | 1.8E-13 | Reassignment risk; Shared contact risk; Data independence risk | Though clearly under the threshold, phone numbers are frequently shared or reassigned. City, State, and Zip are not independent. |
+| First Name + Last Name + DOB + ZIP | 3e-12 (framework) | Above threshold; geographic dependency question | With Table 3 u-values this combination yields P(collision) = 3e-12, which exceeds the 2e-12 threshold and is ineligible for approval without a formally documented dependency adjustment. The value 3e-13 appears in some prior analyses of this combination, suggesting an implicit discount is being applied to correlated geographic and demographic fields; that discount must be specified and validated before this rule may be reconsidered. |
+| Last Name + DOB + City + ZIP | 1.5e-12 (framework) | Data independence risk | City and ZIP are correlated fields — ZIP already encodes city and state. Per §IV.D assumptions, the combination should not receive full independent credit for both. A dependency adjustment reducing the effective contribution of City is warranted before this rule is approved, and the adjusted value should be validated against population data per §IV.F. |
+
+Further, to protect against skewed distribution in the demographic data and other unknowns, implementers are expected to:
+1.  Remove placeholders. Prior to performing matching requesters and responders must identify and remove placeholder values prior to matching.
+2.  Perform a uniqueness check. The query must produce exactly one candidate in the responding system. If two patients share the same field combination, the system flags ambiguity and does NOT release.
+3.  Log queries. Every match is logged and can be audited. Wrong-patient releases are discrete, detectable, reportable events.
+1.  ## Note on SSN and ITIN
+Social Security Numbers (SSN) and Individual Taxpayer Identification Numbers (ITIN) are highly sensitive federal identifiers with well-documented value in improving patient matching accuracy. Full SSN, in particular, functions as a near-deterministic identifier and can materially improve match precision and reduce both false positives and false negatives. These benefits may be especially pronounced for populations with fragmented or unstable demographic data, where SSN may serve as a more persistent identifier than name or address.
+This proposal, however, does not permit the use or transmission of full SSN or full ITIN in matching queries. This reflects a deliberate risk tradeoff in the context of a national-scale, multi-party interoperability network. Unlike local or single-organization environments, network-based exchange introduces materially higher risks related to data exposure, including query logging, aggregation across participants, and the potential for unauthorized harvesting of sensitive identifiers. Even when optional, the presence of full SSN in queries would result in its propagation across a broad set of entities, increasing the severity and impact of breach scenarios.
+In addition, there is a clear and ongoing trend among covered entities to minimize or eliminate the collection and storage of full SSN due to security, regulatory, and liability considerations. Consumer expectations have similarly evolved, with strong resistance to sharing SSN in digital health workflows and demonstrated impacts on engagement when requested. While some identity proofing workflows may collect SSN at the point of credential issuance, this proposal intentionally avoids extending its use into routine data exchange.
+Accordingly, this framework limits use to the last four digits of SSN or ITIN as optional matching attributes. This approach preserves some incremental matching value while materially reducing sensitivity and exposure risk. ITIN is treated with the same sensitivity and handling requirements as SSN throughout this proposal. Full SSN and full ITIN SHALL NOT be transmitted as part of matching queries.
+An organization’s decision not to collect SSN or ITIN does not constitute non-compliance with the framework. The framework treats SSN/ITIN as optional throughout, and alternative demographic combinations in Table 2 are independently sufficient. Policy should not incentivize — directly or indirectly — reliance on SSN or ITIN where alternatives perform equivalently. 
+1.  ## Ecosystem-Specific Collision Validation
+While published population-scale collision probabilities shall be used for initial Table 2 classification, responding entities are encouraged to validate collision probabilities against their own patient populations and report major deviations and observations to CMS.
+## G. Note on Twins, Fragile Identities and Populations with limited or unstable demographic data
+We propose convening a Patient Matching for Vulnerable Populations subworkgroup under the CMS Interoperability Framework governance. The subworkgroup’s remit would include twin and higher-order multiple-birth guardrails, populations using shared living spaces, populations without stable phone or address, and populations using transliterated or non-Latin names. Initial deliverables would be (a) validated test packs covering these scenarios and (b) recommended administrative controls beyond the Table 4 baseline. 
+## H. Note on Insurance Identifiers
+Insurance identifiers offer meaningful incremental discriminating power when used within a defined payer namespace, but they present structural characteristics that require explicit handling rules not applicable to most other fields in this framework.
+#### **Member ID versus Subscriber ID**
+U.S. commercial health insurance practice distinguishes two related but non-equivalent identifiers. The **Insurance Subscriber ID** is assigned to the individual who purchases or holds the policy (the policyholder). Under standard commercial plan design, all family members enrolled on the same policy share the same base subscriber ID, distinguished only by a two-digit dependent suffix (e.g., "00" for the subscriber, "01" for a spouse, "02" onward for dependents). Approximately 40 percent of commercially insured individuals are covered as dependents under another person's policy. Because the base subscriber ID without its suffix identifies the family unit rather than the individual, it does not satisfy the individual-uniqueness requirement that anchors the collision probability model in this framework.
+The **Insurance Member ID** is the individual-level identifier assigned to each covered person, including the dependent suffix where applicable. When the full individual member ID — inclusive of any payer-assigned suffix — is used, it functions as an individual-level identifier within the payer's namespace and may be treated with the same selectivity assumption as a Legal ID or MBI within its issuing authority.
+Implementations SHALL NOT substitute the bare subscriber base value for an individual member ID when applying Member ID combinations from Table 2. If the implementation cannot confirm that a submitted identifier includes the individual-level suffix, it SHALL treat the identifier as a Subscriber ID and apply the corresponding, more conservative, u-probability.
+#### **Payer Namespace Requirement**
+Neither identifier is globally unique. The same numeric or alphanumeric string may refer to entirely different individuals at different payers. A payer identifier (Payer ID or, in FHIR contexts, the Coverage.identifier.system URI) is therefore a required co-input for any matching combination that uses an insurance identifier. Matching SHALL be performed only within the payer namespace established by the co-submitted Payer ID. A query that provides an insurance identifier without a Payer ID SHALL NOT be evaluated under any insurance identifier combination in Table 2.
+In FHIR, the individual member ID is represented as Coverage.identifier with type.coding.code = "MB" (from HL7 v2 table 0203), and the payer namespace is encoded in Coverage.identifier.system. The subscriber ID is represented in Coverage.subscriberId and, beginning with FHIR R5, carries its own Identifier.system field. Implementations SHALL enforce the namespace binding at the Coverage.identifier.system or equivalent level.
+#### **Recyclability**
+Unlike government-issued identifiers such as MBI, commercial insurance member IDs are not guaranteed to be permanently bound to a single individual. A member who disenrolls and re-enrolls may receive a new member ID at the same payer, and some payers have historically reused previously issued values when pools are exhausted or following system migrations. CMS Medicaid data show that between one and three percent of state-reported beneficiary IDs in the 2016 T-MSIS Analytic Files were non-unique, with a subset linked to records for more than one distinct individual. No equivalent published measurement exists for commercial payer member IDs; the absence of a published recycling rate does not imply the rate is zero.
+The combinatorial mitigation for recyclability risk is the same principle applied to other mutable or recyclable fields in this framework: the matching combination must include at least one individually discriminating demographic field (such as date of birth, first name, or last name) that is not derived from the coverage relationship and that would not transfer to a new member who received a recycled ID. All Table 2 combinations incorporating an insurance identifier satisfy this requirement. An insurance identifier SHALL NOT be combined solely with other insurance-derived or plan-administrative fields (such as group number, plan type, or enrollment date) in a Table 2 combination, as those fields would be equally applicable to a new member receiving a recycled ID.
+#### **Relationship to MBI**
+The CMS-issued Medicare Beneficiary Identifier (MBI) is already listed in Table 2 as a standalone-combinable field. MBI is a federal lifetime identifier with a defined format (11-character randomized alphanumeric), issued by CMS and scoped to the Medicare program. It is not interchangeable with a commercial payer's member ID, Medicaid MSIS ID, or any other insurance identifier. Rules referencing MBI in Table 2 apply only to CMS-issued MBI values.
+#### **U-Probability Basis**
+No empirically measured Fellegi-Sunter u-probability has been published in the peer-reviewed literature for U.S. commercial insurance member or subscriber identifiers. The values assigned in Table 3 are conservative order-of-magnitude engineering assumptions grounded in the following:
+For **Insurance Member ID** (u = 0.000001): the theoretical per-individual collision probability within a large payer's enrollment population (one million or more members) is approximately 1/N, where N is total enrollment. For payers with one million or more members this yields a value at or below 0.000001. The assigned value matches the conservative floor already applied to Legal ID and MBI in this framework — both of which are namespace-bound exact identifiers of comparable cardinality — and is consistent with the HL7 FHIR Interoperable Digital Identity and Patient Matching Implementation Guide (v2.0.0, 2024), which scores Insurance Member ID + Payer ID in the same input weight tier as a verified address, phone number, or MRN.
+For **Insurance Subscriber ID** (u = 0.0001): the documented family-plan sharing pattern degrades per-individual selectivity. If 40 percent of insured persons are dependents sharing a base subscriber ID with one or more household members, the effective collision probability for the subscriber base value is substantially higher than 1/N. A conservative estimate matching the SSN last 4 digit assumption (u = 0.0001) is appropriate until ecosystem-specific empirical measurements are available. The HL7 FHIR IG separately confirms this degraded status, noting that "the identifier is not 1:1 with a unique identity" for subscriber-level values.
+Both values are provisional and subject to the same ecosystem-specific validation requirements established in §IV.F. Participating organizations that can compute empirical collision rates from their own enrollment populations are encouraged to report those measurements to CMS for framework-level recalibration.
+## I. Reference Script to calculate P(collision)
+<https://gist.github.com/imranq2/b5cc7a534a37dfa26922a83e69c686ee> 
+Runnable version (Google Collab Notebook): <https://colab.research.google.com/drive/10G0FC_II4FbExIrzkIDW5oF-Asad9h8a?usp=sharing> 
+1.  # Normalization Requirements
+1.  ## Required Normalization
+    1.  All string matching SHALL be case insensitive
+    2.  All whitespace SHALL be removed or ignored during matching except as required in normalized address fields
+    3.  All punctuation (e.g. hyphens, periods, apostrophes, etc) SHALL be removed or ignored during matching except as required in normalized address fields
+    4.  All string fields shall implement Diacritic folding as part of the matching process
+    5.  Date of birth SHALL be represented in YYYY-MM-DD format when the full date is known. If only year or year-month is known, the value SHALL be transmitted as partial and SHALL NOT be imputed, padded, or converted to a full date for matching.
+2.  ## Name Handling 
+    1.  Each implementation SHALL \[image\]maintain a versioned reference table of nickname values first name field used in matching.
+    2.  All name fields including First, Middle, Last, Prefix, Suffix, Title and any others SHALL be separated into discrete components used for matching
+    3.  Matching algorithms SHALL match against ALL known names (maiden, previous, AKA)
+    4.  For the avoidance of doubt, matching SHALL ignore or remove all punctuation and whitespace in name fields
+    5.  If a generational suffix can be identified on both the query and the response and they do not match then the responder SHALL NOT return the match. For the avoidance of doubt, this rule SHALL negate a match that was made by matching a combination in table 2.
+    6.  Suffix expansion tables SHALL be \[image\]maintained and integrated to support abbreviations and shorthand.
+3.  ## Demographic Fields
+    1.  All addresses SHALL be normalized to Project US@ standard formats by the Requestor and Responder
+    2.  Address SHALL match regardless of designated type (home, legal, office, physical, postal, etc)
+    3.  All phone numbers SHALL be normalized to E.164 specifications for matching purposes and
+    4.  Phone numbers SHALL match regardless of designated type (home, cell, work, etc)
+    5.  Responders SHALL match against ALL known values, current or historical.
+    6.  Demographic matching SHALL be performed in a case insensitive manner
+4.  ## Placeholder Values
+    1.  Each implementation SHALL \[image\]maintain versioned reference tables of non-comparable values (e.g. placeholder values) and patterns for each demographic field used in matching.
+    2.  Regular expressions may be used to identify placeholder values.
+    3.  When a field value is identified as placeholder, temporary, unknown, test, or otherwise non-comparable, that field SHALL be treated as unavailable for use in matching. It SHALL NOT count as an exact match, fuzzy match, nickname match, phonetic match, or conflict.
+    4.  Placeholder-name categories SHALL include, at minimum, newborn temporary names, unidentified-patient names, unknown-value placeholders, and local test or training values.
+    5.  Placeholder suppression SHALL apply to both requestor-side query preparation and responder-side record evaluation.
+    6.  Unknown dates of birth, including all dates of birth prior to the current year – 120 years or after the current date + 2 days SHALL be treated as unavailable for use in matching.
+1.  ## Fuzzy Matching
+1.  Fuzzy matching may only be used on approved demographic combinations where the demographic is explicitly marked for fuzzy matching.
+2.  Fuzzy matching should be implemented as least edit distance tolerating 1 insertion, 1 deletion, 1 substitution, or a single transposition. This set of edits can best be described as a Damerau-Levenshtein distance of 1 (as opposed to a standard Levenshtein which would classify the transposition as a distance of 2). Jaro-Winkler may also be considered where available.
+3.  Fuzzy matching SHALL NOT be applied to query strings that are less than 5 characters long.
+4.  Soundex and other phonetic matching are prohibited; except we permit phonetic comparison on first and last name where the implementer can validate the technique against the approved test datasets at or below the framework’s false-positive threshold. 
+1.  # Validation Requirements\[image\]
+1.  ## Implementation Testing
+Before initial production use, and after any material change to matching logic, normalization rules, placeholder handling, fuzzy-comparison settings, or decision thresholds, an implementation SHALL demonstrate documented performance on the ONC patient matching test dataset
+(<https://github.com/onc-healthit/patient-matching>), on a successor dataset, or an approved third party assessment approved through the governance process. At a minimum, validation results SHALL report observed precision, recall, and false-positive rate at the configured operating point. Validation SHALL confirm that the implementation correctly handles matches, non-matches, placeholder values, normalization requirements, uniqueness checks, approved fuzzy comparisons, and other material edge cases.
+We will include shelters, nursing facilities, correctional institutions, hotels and short-term housing, halfway houses, dormitories, group homes, migrant camps, and multi-generational households as required scenarios in the validation test datasets. 
+Participants that rely on a vendor, health information network, payer platform, or other shared matching service MAY rely on centrally produced benchmark results for the core algorithm, provided that they document the product, version, and configuration in use and perform local acceptance testing sufficient to show that the production implementation applies this framework correctly to their own data feeds, message formats, and workflows. Local acceptance testing need not replicate population-scale benchmarking, but it SHALL confirm that required fields, comparison rules, and response behavior operate as configured in production.
+As the ONC dataset is revised, or as an approved successor dataset becomes available, implementations SHALL validate against the current approved version within the implementation period established through governance. This approach permits algorithmic innovation by evaluating outcomes rather than prescribing a single technical method.
+1.  ## Validation of P(collision) Values
+The P(collision) values used to approve combinations in Table 2 are conservative estimates intended for threshold design and rule classification. Those values SHALL be empirically validated at the framework level within 12 months of proposal adoption, and again when a material change is proposed to an affected combination, using one or more population-scale datasets totaling at least 1 million records. Validation may be performed by CMS, a network operator, a qualified independent entity, or participants acting collaboratively. Individual participants are required to assemble a dataset of that size on its own in order to comply with this requirement.
+For each combination evaluated, the validation record SHALL report the observed collision rate for the combination's field set, the 95 percent confidence interval, and a description of the validation population, including material demographic, geographic, and source-system characteristics that could affect the result. Participants with sufficient volume and technical capability SHOULD perform ecosystem-specific validation or 
+If framework-level or ecosystem-specific validation demonstrates that a Table 2 combination materially exceeds the framework threshold, that combination SHALL be reviewed through the governance process and, as appropriate, restricted, suspended, or removed from Table 2.
+1.  # Audit & Monitoring
+Each participant SHALL maintain audit and monitoring practices sufficient to explain match decisions, investigate incidents, and identify performance degradation over time.
+For each query evaluated under Table 2, the participant SHALL retain information sufficient to reconstruct the decision, including the Table 2 combination evaluated, whether the comparison was exact or fuzzy, the uniqueness-check result, the attribute-level comparison outcomes needed to explain the determination including at a minimum:
+  - The query initiator
+  - Table 2 combination evaluated
+  - Match type (exact or fuzzy)
+  - Identifiers of records matched
+  - Uniqueness-check result
+  - Final match determination
+  - Timestamp
+Where feasible, the participant SHOULD also retain the applicable rules or software version so that the decision can be reproduced during audit or incident review. Audit records SHALL be protected in accordance with applicable privacy and security requirements.
+Participants SHALL have an established process to monitor ambiguous match rates, suspected wrong-patient incidents, fuzzy-constraint violations, and material changes in non-return, manual-review, or exception rates.
+If monitoring indicates that an approved combination may be degrading, that a rule is being applied incorrectly, or that false-positive behavior may be emerging, the participant SHALL document the issue, take proportionate interim mitigation steps, and escalate the matter through the governance process when the issue could affect Table 2 or the framework threshold.
+We are committing to publishing validated population-level collision-rate benchmarks at the framework level, enabling participants to calibrate against their own populations without requiring disclosure of proprietary matching methodologies. 
+1.  # Governance & Versioning
+This framework SHALL be maintained through a documented governance process that supports transparency, reproducibility, public review, and orderly implementation. A proposed change SHALL include a description of the change, the rationale for the change, the anticipated implementation impact, and, where applicable, a validation plan or supporting evidence. Changes that materially affect Table 2,
+the framework threshold, approved fields, normalization rules, fuzzy constraints, or required testing SHALL be published for public comment for not less than calendar 30 days, unless an emergency update is needed to address a material patient-safety, privacy, security, or compliance risk.
+After review of comments and supporting evidence, adopted changes SHALL be published with a version increment and an effective date. Substantive changes SHALL include a transition period of not less than 90 days unless a shorter period is necessary to mitigate immediate risk. Supporting validation results for substantive changes SHOULD be made available in a form that allows participants to understand the operational impact of the change.
+Semantic versioning, in the form Major.Minor.Patch, SHALL be used. A Major version change indicates a change to the framework threshold, core methodology, or other foundational requirement. A Minor version change indicates a substantive implementation change, including additions to or removals from Table 2, support for new fields or identifier classes, or changes to validation or normalization requirements that materially affect matching behavior. A Patch version change indicates clarifications, corrections, citation updates, or other non-substantive revisions that do not materially change participant obligations.
+An approved combination SHALL be reviewed for restriction, suspension, or removal when framework-level validation, ecosystem-specific validation, or sustained operational monitoring shows that the combination may no longer perform within the framework threshold or risk assumptions. Grounds for such action include observed P(collision) above the framework threshold, systematic issues in collision detection or implementation performance, or sustained false-positive behavior attributable to the combination. Where immediate risk mitigation is needed, a combination MAY be temporarily suspended pending full review. All such actions SHALL be documented and communicated through the governance process.
+# IX - Implementation and Testing
+The framework is proposed as a baseline against which existing methods can be tested, not a mandated replacement of methods that already meet or exceed the framework’s performance. We propose a phased adoption period and a documented safe harbor for organizations whose current matching performance is demonstrably at or above the framework’s collision and recall benchmarks, regardless of the specific methodology used. The §VI validation requirements provide the empirical basis for that safe harbor: organizations would self-attest performance against the standardized test datasets and report results under §VII.
+# References
+The following peer-reviewed and government sources provide empirically validated collision probabilities:
+1.  Zech J, Husk G, Moore T, Shapiro JS. “Measuring the Degree of Unmatched Patient Records in a Health Information Exchange Using Exact Matching.” Applied Clinical Informatics. 2016;7(2):330-
+340\. — Collision rates from 85 million records in the Social Security Death Master File. <https://pmc.ncbi.nlm.nih.gov/articles/PMC4941843/>
+1.  Sweeney L. “Simple Demographics Often Identify People Uniquely.” Carnegie Mellon University, Data Privacy Working Paper 3. 2000. — Population uniqueness from U.S. Census data. <https://dataprivacylab.org/projects/identifiability/paper1.pdf>
+2.  Golle P. “Revisiting the Uniqueness of Simple Demographics in the US Population.” ACM Workshop on Privacy in Electronic Society (WPES ’06). 2006. — Revised uniqueness estimates with 2000 Census methodology. <https://doi.org/10.1145/1179601.1179615>
+3.  Fellegi IP, Sunter AB. “A Theory for Record Linkage.” Journal of the American Statistical Association. 1969;64(328):1183-1210. — Theoretical framework establishing per-field collision probability (u-probability). <https://doi.org/10.1080/01621459.1969.10501049>
+4.  Sayers A, Ben-Shlomo Y, Blom AW, Steele F. “Probabilistic record linkage.” International Journal of Epidemiology. 2016;45(3):954-964. — Review of u-probability estimation methodology. <https://pmc.ncbi.nlm.nih.gov/articles/PMC5005943/>
+5.  Winkler WE. “Overview of Record Linkage and Current Research Problems.” U.S. Census Bureau Research Report Series (Statistics \#2006-2). 2006. — Census Bureau methodology for estimating collision probabilities. <https://www.census.gov/content/dam/Census/library/working-papers/2006/adrm/rrs2006-02.pdf>
+6.  The Sequoia Project. “A Framework for Cross-Organizational Patient Identity Management.” Version 3.1. 2018. — Empirical uniqueness probabilities from operational health information exchanges. <https://sequoiaproject.org/wp-content/uploads/2018/06/The-Sequoia-Project->Framework-for-Patient-Identity-Management-v31.pdf
+7.  RAND Corporation (Hillestad R et al.). “Identity Crisis: An Examination of the Costs and Benefits of a Unique Patient Identifier for the U.S. Health Care System.” Monograph MG-753. 2008. — Collision analysis across composite identifier keys in 80 million records. <https://www.rand.org/content/dam/rand/pubs/monographs/2008/RAND_MG753.pdf>
+8.  National Institute of Standards and Technology. “De-Identifying Government Datasets.” NIST Special Publication 800-188. 2023. — Government framework for probability-based evaluation of identifier systems. <https://csrc.nist.gov/pubs/sp/800/188/final>
+# Document Control
+|  |  |
+| :- | :- |
+| Item | Detail |
+| Version | 3.3.0 Draft |
+| Status | Draft for Technical Validation |
+| Release Date | 6/24/2026 |
+| Comment Period Ends | \[Date + 60 days\] |
+| Effective Date | \[TBD after finalization\] |
+
+Comment Submission Information:
+Submit Comments To:
+Public Comment Focus Areas:
+1.  Probability of Collision as primary metric and the 2e-12 threshold
+2.  Risk framework — collision risk vs. non-return harm
+3.  Table 2 completeness - are important field combinations missing?
+4.  Fuzzy constraints appropriateness
+5.  P(collision) values from different populations
+6.  Ecosystem-specific validation requirements
+7.  Implementation feasibility
+8.  SSN/ITIN last-4 handling
+9.  Consideration for weighting known past demographics such as address and phone differently
+10. Consideration for the weighting of shared living spaces such as shelter, hotel, jail, halfway house, dorm, nursing facility, group home, migrant camp, or family shelter
+11. Consider a requirement that Responders SHALL match on date of birth + or – 1 day from the date provided by the requestor
+12. Should the Patients insurance ID and ID suffix be a matching field
+
