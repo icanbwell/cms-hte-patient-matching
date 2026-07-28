@@ -430,9 +430,9 @@ class TestBuildOncPairs:
 ## Validation (definition of "resolved")
 
 - [ ] `evaluation/fixtures/onc/` contains all 9 ONC CSV shards.
-- [ ] `evaluate_pair()` exists on `MatchingEngine`, is used internally by `match()`, and the
-      equivalence test (`TestEvaluatePairEquivalence`) passes — proving the refactor didn't
-      change `match()`'s behavior.
+- [ ] `evaluate_pair()` exists on `MatchingEngine` as new, additive code; `match()` is left
+      unchanged; the consistency test (`TestEvaluatePairEquivalence`) passes, confirming the
+      two paths agree on the simple case it covers.
 - [ ] `build_onc_pairs()` produces both true-match (masked-self) and true-non-match (sampled
       cross) pairs, with the negative-sample count controllable and never pairing a record
       with itself.
@@ -440,7 +440,7 @@ class TestBuildOncPairs:
       `evaluation/baselines/v3_2_2_onc_baseline.txt`, which is committed.
 - [ ] All new tests pass: `docker compose run --rm dev pytest evaluation/test_onc_baseline.py -v`
 - [ ] `make tests` is green (full suite, including the existing `test_matching_engine.py` and
-      `evaluation/test_rule_eval.py` — the `evaluate_pair` refactor must not regress either).
+      `evaluation/test_rule_eval.py` — since `match()` is unmodified, neither should regress).
 - [ ] `make run-pre-commit` is clean for all touched files under `patient_matching/` (note:
       `evaluation/` is excluded from pre-commit hooks per `conventions.md` — run
       `ruff check evaluation/` and `mypy evaluation/` manually and fix anything they flag,
