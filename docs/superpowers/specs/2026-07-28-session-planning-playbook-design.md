@@ -126,16 +126,31 @@ v3.3 rules land. Medium. Upstream: none.
 - **"Project US@" address format compliance.** Smaller gap in the otherwise-complete
   normalization layer; not blocked, just not yet scoped in detail. Candidate for session 4
   once 1-3 land.
-- **Strategic architecture question (not a session, a policy call):** the handoff's own build
-  plan (§4.4) targets `helix.personmatching` as the eventual home for this logic, calling
-  `patient-matching` a "v1 demo." Whether this repo's proven logic later gets ported upstream,
-  or `patient-matching` becomes the production engine outright, is `NEEDS HUMAN DECISION —
-  Sean/Zack` and out of scope for this session set. Noted here so it isn't silently assumed
-  either way.
+
+## Resolved: this repo stays self-contained
+
+**Decided (2026-07-28):** `patient-matching` does **not** get ported to
+`helix.personmatching`. It is its own self-contained implementation, despite the handoff
+doc's §4.4 framing of `patient-matching` as a "v1 demo" and `helix.personmatching` as the
+eventual build target — that framing is superseded. All future sessions build here.
+
+**Imran Qureshi is the domain lead** for the CMS proposal and the P(collision) methodology
+(confirmed: he authored commit `3abc37e`, the foundational normalization/matching/cache/
+fhir_client/ial2_extraction implementation — PR #2 `add-patient-matching-code` is that same
+commit, verified via `git merge-base --is-ancestor` to be a direct ancestor of
+`claude/cms-matching-v1`, not a divergent parallel design). Practical implications:
+- New code (sessions 1-3, and eventually 4-6) should follow the conventions Imran already
+  established — `table2_rules.py`'s `RuleField`/`MatchingRule` dataclass shape, docstrings
+  citing exact CMS spec sections, the normalization module split — rather than introduce new
+  patterns.
+- For the domain-specific blocked items above (v3.3's 37 rules, the P(collision) evaluator),
+  Imran is the specific person to consult, not a generic "ask around" — he authored the v3.3
+  proposal itself and the P(collision) reference script the handoff references.
 
 ## Out of scope for this design
 
-- Any change to `helix.personmatching` or `person-matching-service` (different repos).
+- Any change to `helix.personmatching` or `person-matching-service` (different repos) —
+  this repo does not port to or depend on either.
 - The PR #1/#2/#3 review-and-merge pass the user separately requested — that happens after
   this scaffold and sessions 1-3 land, as its own piece of work.
 - Automating the PHI guardrail (flagged above as a candidate future session, not part of this
