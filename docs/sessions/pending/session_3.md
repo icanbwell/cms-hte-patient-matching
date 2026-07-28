@@ -68,16 +68,19 @@ produces become the reference point for every later rule-changing session's Tier
   method factoring the existing per-candidate rule-evaluation logic (today spread across
   `_evaluate_rule` + `_suffix_conflict`, called once per candidate inside `match()`) into a
   standalone pairwise decision, so it can be wrapped as a `rule_eval.Matcher` without
-  duplicating logic. `match()` itself is refactored to call this new method internally —
-  behavior must be identical before/after (this is the "equivalence test" `conventions.md`
-  requires for a behavior-preserving refactor).
+  duplicating logic. `match()` itself is left completely unchanged — `evaluate_pair()` is
+  purely additive, so there is no refactor risk to the existing method.
 - Build labeled pairs for `rule_eval.py` from the ONC data:
-  - **True-match pairs**: `(record, masked(record))` for each ONC record, across the same
-    masking scenarios `helix.personmatching`'s `test_cms_performance.py` already defines
-    (confirmed via direct inspection, 2026-07-28: `drop_gender`, `drop_email_phone`,
-    `drop_email_gender_phone`, `gender_unknown`) — `is_true_match=True`, since masking some
+  - **True-match pairs**: `(record, masked(record))` for each ONC record, across two
+    scenarios meaningful to this engine's actual field set: `none` (the unmasked self-pair,
+    a baseline sanity check) and `drop_email_phone` (removes contact-channel fields, forcing
+    reliance on name/DOB/address-based rules) — `is_true_match=True`, since masking some
     fields doesn't change who the record actually belongs to. This tests recall under
-    realistic partial data, not a trivial always-true self-compare.
+    realistic partial data, not a trivial always-true self-compare. Narrower than
+    `helix.personmatching`'s 4 scenarios, since two of theirs (`drop_gender`,
+    `gender_unknown`) would be no-ops here: this engine's `PatientFields` has no `gender`
+    field at all (gender isn't a Table 2 matching field, consistent with CMS v3.3 dropping
+    it entirely).
   - **True-non-match pairs**: a *sampled* set of cross pairs `(record_i, record_j)`, `i != j`
     — ONC guarantees every row is a distinct individual, so any two distinct rows are a
     genuine non-match, `is_true_match=False`. This is where the "blocking and local memory
@@ -148,6 +151,8 @@ produces become the reference point for every later rule-changing session's Tier
 
    def _row_to_patient(row: Dict[str, str]) -> Dict[str, Any]:
        given = [row["FIRST"]]
+       if row.get("MIDDLE"):
+           given.append(row["MIDDLE"])
        if row.get("ALIAS"):
            given.append(row["ALIAS"])
        family_names = [row["LAST"]]
@@ -220,10 +225,15 @@ produces become the reference point for every later rule-changing session's Tier
                return True
        return False
    ```
-   Then simplify `match()`'s inner loop to call it where it makes sense to reduce duplication
-   — but do NOT change `match()`'s externally-observable behavior (its return type, its
-   `MatchResult` construction, and its per-rule audit trail via `all_evaluations` must stay
-   exactly as they are today, since Task 5 below requires an equivalence test proving this).
+   Do not modify `match()` at all — `evaluate_pair()` is new, additive code only. Note one
+   known, documented limitation: `evaluate_pair()` checks a candidate's full known-value sets
+   directly, while `match()`'s blocking (`_build_criteria`) only blocks on a single
+   representative value per field before verification — so for a candidate with multiple
+   values in a blocked field (e.g. multiple historical last names), the two paths are not
+   guaranteed to agree. This is acceptable for the self-match-integrity use case in this
+   session (each ONC record's masked variants share the same underlying values), but would
+   need revisiting before reusing `evaluate_pair()` against genuinely multi-valued production
+   data.
 
 4. **Build labeled pairs and size the negative sample.**
    File: `evaluation/onc_baseline.py` (new).
@@ -244,16 +254,13 @@ produces become the reference point for every later rule-changing session's Tier
    from patient_matching.matching.matching_engine import MatchingEngine
    from patient_matching.matching.in_memory_backend import InMemoryBackend
 
-   MASKING_SCENARIOS = ("none", "drop_gender", "drop_email_phone", "drop_email_gender_phone", "gender_unknown")
+   MASKING_SCENARIOS = ("none", "drop_email_phone")
 
 
    def _mask(patient: Dict[str, Any], scenario: str) -> Dict[str, Any]:
-       masked = dict(patient)
-       if scenario in ("drop_gender", "drop_email_gender_phone", "gender_unknown"):
-           masked = {**masked, "gender": "unknown" if scenario == "gender_unknown" else None}
-       if scenario in ("drop_email_phone", "drop_email_gender_phone"):
-           masked = {**masked, "telecom": []}
-       return masked
+       if scenario == "drop_email_phone":
+           return {**patient, "telecom": []}
+       return dict(patient)
 
 
    def build_onc_pairs(
@@ -340,7 +347,7 @@ File: `evaluation/test_onc_baseline.py` (new, sibling to the existing `evaluatio
 
 ```python
 import pytest
-from evaluation.onc_loader import _decode_sas_date, load_onc_patients
+from evaluation.onc_loader import _decode_sas_date
 from evaluation.onc_baseline import build_onc_pairs, current_engine_matcher
 from evaluation.rule_eval import LabeledPair
 
@@ -349,28 +356,39 @@ class TestOncTransform:
         "raw_offset,expected_iso",
         [
             ("2", "1900-01-01"),   # offset 0 after the -2 correction
-            ("367", "1900-12-31"), # 365 days later (1900 not a leap year)
-            ("36527", "2000-01-01"),
+            ("367", "1901-01-01"), # 365 days later (1900 is not a leap year)
+            ("36527", "2000-01-02"),
         ],
     )
     def test_decode_sas_date_boundaries(self, raw_offset, expected_iso):
         assert _decode_sas_date(raw_offset) == expected_iso
 
 class TestEvaluatePairEquivalence:
-    """MatchingEngine.evaluate_pair must agree with match()'s per-candidate decision -
-    this IS the equivalence test conventions.md requires for this behavior-preserving
-    refactor."""
+    """MatchingEngine.evaluate_pair should agree with match()'s decision on this simple,
+    single-valued-field case. This is a consistency check between the two decision paths,
+    not a refactor-equivalence proof — see the known blocking-vs-full-value-set limitation
+    noted in Task 3."""
 
     def test_evaluate_pair_agrees_with_match_for_matching_pair(self):
         from patient_matching.matching.field_extractor import FieldExtractor
         from patient_matching.matching.in_memory_backend import InMemoryBackend
         from patient_matching.matching.matching_engine import MatchingEngine
 
-        candidate = _make_patient(mbi="1abc2de3f45")
+        def _patient(mbi):
+            return {
+                "resourceType": "Patient",
+                "name": [{"family": "smith", "given": ["john"]}],
+                "birthDate": "1980-01-01",
+                "telecom": [],
+                "address": [],
+                "identifier": [{"system": "http://hl7.org/fhir/sid/us-mbi", "value": mbi}],
+            }
+
+        candidate = _patient("1abc2de3f45")
         candidate["id"] = "cand-1"
         backend = InMemoryBackend([candidate])
         engine = MatchingEngine(backend=backend)
-        query = _make_patient(mbi="1abc2de3f45")
+        query = _patient("1abc2de3f45")
 
         match_result = engine.match(query)
         extractor = FieldExtractor()
@@ -382,10 +400,11 @@ class TestEvaluatePairEquivalence:
 
 class TestBuildOncPairs:
     def test_true_match_pairs_outnumber_or_equal_masking_scenarios(self):
+        from evaluation.onc_baseline import MASKING_SCENARIOS
         patients = [{"id": "p1", "name": [{"family": "smith", "given": ["john"]}], "birthDate": "1980-01-01", "telecom": [], "address": [], "identifier": []}]
         pairs = build_onc_pairs(patients, n_negative_samples=0)
         true_pairs = [p for p in pairs if p.is_true_match]
-        assert len(true_pairs) == 5  # one per masking scenario, per Task 4's MASKING_SCENARIOS
+        assert len(true_pairs) == len(MASKING_SCENARIOS)
 
     def test_negative_sample_count_is_respected(self):
         patients = [
