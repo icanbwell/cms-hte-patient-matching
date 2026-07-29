@@ -26,7 +26,9 @@ does exactly this, in order:
    "Workspace isolation" below) — never directly on `claude/cms-matching-v1` itself.
 6. **Execute the tasks in order**, test-first, per the TDD validation loop below.
 7. **Close the session**: fill in *Execution notes*, move the doc to `completed/`, update
-   `index.md`, merge the feature branch back into `claude/cms-matching-v1`, commit.
+   `index.md`, commit the bookkeeping, **open a PR from the feature branch into
+   `claude/cms-matching-v1`**, and merge it once self-reviewed (see "Every session ends with
+   a PR" below) — a session is never closed by merging or fast-forwarding without one.
 
 If told "start session N" specifically, skip step 1's queue lookup and go straight to that
 session (still doing steps 2-7).
@@ -200,6 +202,19 @@ via PR (self-reviewed by Sean) — since `claude/cms-matching-v1` is not `main`,
 "never directly on the base branch" while keeping all Line B work in one place until PR #3
 itself is ready to merge to `main`.
 
+## Every session ends with a PR
+
+**Every session, no exceptions, ends by opening a PR from its feature branch into
+`claude/cms-matching-v1`** — never a direct merge, fast-forward, or push straight to
+`claude/cms-matching-v1` without one, even though Sean is self-reviewing during Zack's PTO.
+The PR is what makes a session's diff visible and reviewable as a single unit, gives Aikido/
+Gecko's automated scans a checkpoint to run against (per the Security guardrail above) before
+the change lands, and gives *Execution notes* a natural home (the PR description) alongside
+the session doc's own copy. A session is not done until its PR is merged — see Definition of
+Done below. If a PR is intentionally left open past a session's other criteria being met (e.g.
+waiting on Sean's explicit go-ahead to merge), that's a valid stopping point, but it must be
+recorded as such in *Execution notes*, not silently skipped.
+
 ## Dependency and ordering rules
 
 - Don't start a session whose upstream sessions aren't in `completed/` without explicit
@@ -218,8 +233,10 @@ A session is done when **all** hold:
 4. For rule-changing sessions, the statistical rigor gate's Tier 1 requirement is met.
 5. The end state is stable and at least as capable as the start state — if not, the session
    does not merge; revert and write up the blocker instead.
-6. Work is committed on its feature branch and merged into `claude/cms-matching-v1` (or a PR
-   is open and Sean has said how to merge it).
+6. Work is committed on its feature branch, a PR from that branch into `claude/cms-matching-v1`
+   is open, and it has been merged (see "Every session ends with a PR" above) — or, if Sean has
+   explicitly said to leave it open rather than merge yet, that decision is recorded in
+   *Execution notes*.
 
 Then: fill in *Execution notes*, move `pending/session_N.md` -> `completed/session_N.md`,
 update `index.md` (move the row to the top of *Completed*, trim that list back to 3 if needed,
