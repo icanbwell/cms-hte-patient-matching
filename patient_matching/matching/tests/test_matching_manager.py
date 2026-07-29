@@ -16,8 +16,8 @@ class InMemoryBackend(MatchingBackend):
         return list(self._patients)
 
 
-def _make_patient(**overrides):
-    base = {
+def _make_patient(**overrides: Any) -> Dict[str, Any]:
+    base: Dict[str, Any] = {
         "resourceType": "Patient",
         "name": [{"family": "smith", "given": ["john"]}],
         "birthDate": "1990-01-15",
@@ -38,32 +38,32 @@ def _make_patient(**overrides):
 
 
 class TestMatchingManager:
-    def test_match_returns_result(self):
+    def test_match_returns_result(self) -> None:
         backend = InMemoryBackend([_make_patient()])
         manager = MatchingManager(backend=backend)
         result = manager.match(_make_patient())
         assert result.outcome == MatchOutcome.MATCH
 
-    def test_match_batch(self):
+    def test_match_batch(self) -> None:
         backend = InMemoryBackend([_make_patient()])
         manager = MatchingManager(backend=backend)
         results = manager.match_batch([_make_patient(), _make_patient()])
         assert len(results) == 2
         assert all(r.outcome == MatchOutcome.MATCH for r in results)
 
-    def test_rule_count(self):
+    def test_rule_count(self) -> None:
         backend = InMemoryBackend([])
         manager = MatchingManager(backend=backend)
         assert manager.rule_count == 26
 
-    def test_custom_rules(self):
+    def test_custom_rules(self) -> None:
         backend = InMemoryBackend([])
         subset = APPROVED_RULES[:5]
         manager = MatchingManager(backend=backend, rules=subset)
         assert manager.rule_count == 5
         assert manager.rules == subset
 
-    def test_no_match_empty_backend(self):
+    def test_no_match_empty_backend(self) -> None:
         backend = InMemoryBackend([])
         manager = MatchingManager(backend=backend)
         result = manager.match(_make_patient())

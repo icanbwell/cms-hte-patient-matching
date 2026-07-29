@@ -1,5 +1,7 @@
 """Tests for placeholder value detection."""
 
+from typing import cast
+
 from patient_matching.normalization.placeholder_detector import PlaceholderDetector
 
 
@@ -39,7 +41,7 @@ class TestPlaceholderNames:
 
     def test_empty_is_placeholder(self) -> None:
         assert self.detector.is_placeholder_name("")
-        assert self.detector.is_placeholder_name(None)
+        assert self.detector.is_placeholder_name(cast(str, None))
 
 
 class TestPlaceholderDates:
@@ -58,7 +60,7 @@ class TestPlaceholderDates:
 
     def test_empty_date(self) -> None:
         assert self.detector.is_placeholder_date("")
-        assert self.detector.is_placeholder_date(None)
+        assert self.detector.is_placeholder_date(cast(str, None))
 
     def test_unknown_string(self) -> None:
         assert self.detector.is_placeholder_date("unknown")

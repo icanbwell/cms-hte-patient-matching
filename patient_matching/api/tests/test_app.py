@@ -1,6 +1,7 @@
 """Tests for the FastAPI application endpoints."""
 
 import json
+from typing import Iterator
 
 import pytest
 from fastapi.testclient import TestClient
@@ -11,7 +12,7 @@ from patient_matching.cache.cache_backend import CachedPatient
 from patient_matching.cache.duckdb_cache import DuckDBCache
 
 
-def _make_cached(pid="p1"):
+def _make_cached(pid: str = "p1") -> CachedPatient:
     return CachedPatient(
         patient_id=pid,
         first_names={"john"},
@@ -39,7 +40,7 @@ def _make_cached(pid="p1"):
 
 
 @pytest.fixture
-def test_client():
+def test_client() -> Iterator[TestClient]:
     cache = DuckDBCache(database=":memory:")
     cache.upsert_patients([_make_cached()])
     service = PatientMatcherService(cache=cache)
@@ -50,14 +51,14 @@ def test_client():
 
 
 class TestHealthEndpoint:
-    def test_health(self, test_client):
+    def test_health(self, test_client: TestClient) -> None:
         resp = test_client.get("/health")
         assert resp.status_code == 200
         assert resp.json()["status"] == "ok"
 
 
 class TestFhirMatchEndpoint:
-    def test_match_success(self, test_client):
+    def test_match_success(self, test_client: TestClient) -> None:
         params = {
             "resourceType": "Parameters",
             "parameter": [
@@ -93,7 +94,7 @@ class TestFhirMatchEndpoint:
         assert body["type"] == "searchset"
         assert body["total"] >= 1
 
-    def test_match_no_match(self, test_client):
+    def test_match_no_match(self, test_client: TestClient) -> None:
         params = {
             "resourceType": "Parameters",
             "parameter": [
@@ -116,14 +117,14 @@ class TestFhirMatchEndpoint:
         assert body["type"] == "searchset"
         assert body.get("total", 0) == 0
 
-    def test_match_invalid_body(self, test_client):
+    def test_match_invalid_body(self, test_client: TestClient) -> None:
         resp = test_client.post(
             "/Patient/$match",
             content="not json",
         )
         assert resp.status_code == 400
 
-    def test_match_missing_patient(self, test_client):
+    def test_match_missing_patient(self, test_client: TestClient) -> None:
         params = {
             "resourceType": "Parameters",
             "parameter": [{"name": "count", "valueInteger": 5}],
@@ -136,7 +137,7 @@ class TestFhirMatchEndpoint:
 
 
 class TestIal2MatchEndpoint:
-    def test_ial2_no_extractor_returns_400(self, test_client):
+    def test_ial2_no_extractor_returns_400(self, test_client: TestClient) -> None:
         resp = test_client.post(
             "/match/ial2",
             content=json.dumps({"token": "fake.jwt.token"}),
@@ -144,7 +145,7 @@ class TestIal2MatchEndpoint:
         # Should return 400 because no IAL2 extractor is configured
         assert resp.status_code == 400
 
-    def test_ial2_empty_token_returns_400(self, test_client):
+    def test_ial2_empty_token_returns_400(self, test_client: TestClient) -> None:
         resp = test_client.post(
             "/match/ial2",
             content=json.dumps({"token": ""}),

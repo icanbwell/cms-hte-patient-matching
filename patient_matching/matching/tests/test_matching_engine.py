@@ -1,6 +1,6 @@
 """Tests for MatchingEngine."""
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from patient_matching.matching.backend import (
     FieldCriterion,
@@ -18,18 +18,18 @@ from patient_matching.matching.table2_rules import (
 
 def _make_patient(
     *,
-    first="john",
-    last="smith",
-    dob="1990-01-15",
-    phone="+12125551234",
-    email="john@gmail.com",
-    ssn_last4="6789",
-    street="123 main st",
-    suffix=None,
-    mbi=None,
-    legal_id=None,
-    namespace_id=None,
-):
+    first: str = "john",
+    last: str = "smith",
+    dob: str = "1990-01-15",
+    phone: Optional[str] = "+12125551234",
+    email: Optional[str] = "john@gmail.com",
+    ssn_last4: Optional[str] = "6789",
+    street: Optional[str] = "123 main st",
+    suffix: Optional[str] = None,
+    mbi: Optional[str] = None,
+    legal_id: Optional[str] = None,
+    namespace_id: Optional[str] = None,
+) -> Dict[str, Any]:
     """Build a minimal normalized FHIR Patient dict."""
     patient: Dict[str, Any] = {
         "resourceType": "Patient",
@@ -101,7 +101,7 @@ class EmptyBackend(MatchingBackend):
 
 
 class TestMatchingEngineExactMatch:
-    def test_exact_match_single_candidate(self):
+    def test_exact_match_single_candidate(self) -> None:
         candidate = _make_patient()
         query = _make_patient()
         engine = MatchingEngine(backend=InMemoryBackend([candidate]))
@@ -110,14 +110,14 @@ class TestMatchingEngineExactMatch:
         assert result.is_unique is True
         assert len(result.matched_patients) == 1
 
-    def test_no_match_different_names(self):
+    def test_no_match_different_names(self) -> None:
         candidate = _make_patient(first="alice", last="jones")
         query = _make_patient(first="john", last="smith")
         engine = MatchingEngine(backend=InMemoryBackend([candidate]))
         result = engine.match(query)
         assert result.outcome == MatchOutcome.NO_MATCH
 
-    def test_no_candidates_from_backend(self):
+    def test_no_candidates_from_backend(self) -> None:
         query = _make_patient()
         engine = MatchingEngine(backend=EmptyBackend())
         result = engine.match(query)
@@ -125,7 +125,7 @@ class TestMatchingEngineExactMatch:
 
 
 class TestMatchingEngineAmbiguous:
-    def test_ambiguous_multiple_candidates(self):
+    def test_ambiguous_multiple_candidates(self) -> None:
         c1 = _make_patient()
         c2 = _make_patient(phone="+12125559999")
         query = _make_patient()
@@ -137,7 +137,7 @@ class TestMatchingEngineAmbiguous:
 
 
 class TestMatchingEngineFuzzyMatch:
-    def test_fuzzy_match_last_name(self):
+    def test_fuzzy_match_last_name(self) -> None:
         """Last name 'smtih' (transposition) should fuzzy-match 'smith'."""
         candidate = _make_patient(last="smtih")
         query = _make_patient(last="smith")
@@ -146,7 +146,7 @@ class TestMatchingEngineFuzzyMatch:
         assert result.outcome == MatchOutcome.MATCH
         assert result.match_type == "fuzzy"
 
-    def test_fuzzy_match_short_string_rejected(self):
+    def test_fuzzy_match_short_string_rejected(self) -> None:
         """Short first name 'jon' vs 'john' — should NOT fuzzy match."""
         candidate = _make_patient(first="jon", last="jones", dob="2000-01-01")
         query = _make_patient(first="john", last="jones", dob="2000-01-01")
@@ -168,7 +168,7 @@ class TestMatchingEngineFuzzyMatch:
 
 
 class TestMatchingEngineSuffixConflict:
-    def test_suffix_conflict_negates_match(self):
+    def test_suffix_conflict_negates_match(self) -> None:
         """B.5: Different suffixes should negate the match."""
         candidate = _make_patient(suffix="jr")
         query = _make_patient(suffix="sr")
@@ -178,14 +178,14 @@ class TestMatchingEngineSuffixConflict:
         negated = [ev for ev in result.rule_evaluations if ev.negated_by_suffix]
         assert len(negated) > 0
 
-    def test_same_suffix_no_conflict(self):
+    def test_same_suffix_no_conflict(self) -> None:
         candidate = _make_patient(suffix="jr")
         query = _make_patient(suffix="jr")
         engine = MatchingEngine(backend=InMemoryBackend([candidate]))
         result = engine.match(query)
         assert result.outcome == MatchOutcome.MATCH
 
-    def test_no_suffix_no_conflict(self):
+    def test_no_suffix_no_conflict(self) -> None:
         candidate = _make_patient()
         query = _make_patient(suffix="jr")
         engine = MatchingEngine(backend=InMemoryBackend([candidate]))
@@ -194,7 +194,7 @@ class TestMatchingEngineSuffixConflict:
 
 
 class TestMatchingEngineRuleSubset:
-    def test_custom_rule_subset(self):
+    def test_custom_rule_subset(self) -> None:
         """Engine should respect a custom subset of rules."""
         single_rule = (APPROVED_RULES[25],)  # Rule 26: namespace_id
         candidate = _make_patient(namespace_id="MRN001")
@@ -207,7 +207,7 @@ class TestMatchingEngineRuleSubset:
         assert result.outcome == MatchOutcome.MATCH
         assert result.matched_rule_id == "26"
 
-    def test_rule_skipped_when_query_missing_fields(self):
+    def test_rule_skipped_when_query_missing_fields(self) -> None:
         """Rule should be skipped if query lacks required fields."""
         single_rule = (APPROVED_RULES[7],)  # Rule 08: First Name + DOB + MBI
         query = _make_patient(mbi=None)  # No MBI
@@ -221,14 +221,14 @@ class TestMatchingEngineRuleSubset:
 
 
 class TestMatchingEngineRuleEvaluations:
-    def test_evaluations_are_recorded(self):
+    def test_evaluations_are_recorded(self) -> None:
         candidate = _make_patient()
         query = _make_patient()
         engine = MatchingEngine(backend=InMemoryBackend([candidate]))
         result = engine.match(query)
         assert len(result.rule_evaluations) > 0
 
-    def test_evaluation_field_outcomes(self):
+    def test_evaluation_field_outcomes(self) -> None:
         """Rule 26 eval should have namespace_id as exact."""
         single_rule = (APPROVED_RULES[25],)
         candidate = _make_patient(namespace_id="MRN001")

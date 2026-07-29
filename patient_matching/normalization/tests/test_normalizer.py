@@ -1,5 +1,7 @@
 """Tests for the PatientNormalizer orchestrator."""
 
+from typing import Any, Dict
+
 from patient_matching.normalization.normalizer import PatientNormalizer
 
 
@@ -107,7 +109,7 @@ class TestPatientNormalizer:
         assert "name" not in result
 
     def test_original_not_mutated(self) -> None:
-        patient = {
+        patient: Dict[str, Any] = {
             "resourceType": "Patient",
             "name": [{"family": "Smith", "given": ["John"]}],
             "birthDate": "1990-01-01",

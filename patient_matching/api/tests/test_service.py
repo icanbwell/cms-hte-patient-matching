@@ -1,5 +1,7 @@
 """Tests for the PatientMatcherService."""
 
+from typing import Iterator, List
+
 import pytest
 from unittest.mock import MagicMock
 
@@ -12,20 +14,20 @@ from patient_matching.cache.duckdb_cache import DuckDBCache
 from patient_matching.matching.match_result import MatchOutcome, MatchResult
 
 
-def _populate_cache(cache, patients):
+def _populate_cache(cache: DuckDBCache, patients: List[CachedPatient]) -> None:
     cache.upsert_patients(patients)
 
 
 def _make_cached(
-    pid,
-    first="john",
-    last="smith",
-    dob="1990-01-15",
-    phone="+12125551234",
-    email="john@gmail.com",
-    ssn_last4="6789",
-    street="123 main st",
-):
+    pid: str,
+    first: str = "john",
+    last: str = "smith",
+    dob: str = "1990-01-15",
+    phone: str = "+12125551234",
+    email: str = "john@gmail.com",
+    ssn_last4: str = "6789",
+    street: str = "123 main st",
+) -> CachedPatient:
     return CachedPatient(
         patient_id=pid,
         first_names={first},
@@ -56,14 +58,14 @@ def _make_cached(
 
 
 @pytest.fixture
-def cache():
+def cache() -> Iterator[DuckDBCache]:
     c = DuckDBCache(database=":memory:")
     yield c
     c.close()
 
 
 class TestPatientMatcherService:
-    def test_match_patient_exact(self, cache):
+    def test_match_patient_exact(self, cache: DuckDBCache) -> None:
         _populate_cache(cache, [_make_cached("p1")])
         service = PatientMatcherService(cache=cache)
 
@@ -85,7 +87,7 @@ class TestPatientMatcherService:
         assert "p1" in result.matched_patient_ids
         assert result.confidence_score > 0.99
 
-    def test_match_patient_no_match(self, cache):
+    def test_match_patient_no_match(self, cache: DuckDBCache) -> None:
         _populate_cache(cache, [_make_cached("p1")])
         service = PatientMatcherService(cache=cache)
 
@@ -99,12 +101,12 @@ class TestPatientMatcherService:
         assert result.outcome == "no_match"
         assert len(result.matched_patient_ids) == 0
 
-    def test_match_from_token_without_extractor(self, cache):
+    def test_match_from_token_without_extractor(self, cache: DuckDBCache) -> None:
         service = PatientMatcherService(cache=cache)
         with pytest.raises(ValueError, match="IAL2 extractor not configured"):
             service.match_from_token("some.jwt.token")
 
-    def test_match_from_token_with_extractor(self, cache):
+    def test_match_from_token_with_extractor(self, cache: DuckDBCache) -> None:
         _populate_cache(cache, [_make_cached("p1")])
 
         mock_extractor = MagicMock()
@@ -129,11 +131,11 @@ class TestPatientMatcherService:
 
 
 class TestComputeConfidence:
-    def test_no_match_returns_zero(self):
+    def test_no_match_returns_zero(self) -> None:
         result = MatchResult(outcome=MatchOutcome.NO_MATCH)
         assert _compute_confidence(result) == 0.0
 
-    def test_match_returns_high_confidence(self):
+    def test_match_returns_high_confidence(self) -> None:
         result = MatchResult(
             outcome=MatchOutcome.MATCH,
             matched_rule_id="01",
@@ -143,6 +145,6 @@ class TestComputeConfidence:
         # P(collision) for rule 01 exact is 3e-13
         assert score > 0.99
 
-    def test_ambiguous_returns_zero(self):
+    def test_ambiguous_returns_zero(self) -> None:
         result = MatchResult(outcome=MatchOutcome.AMBIGUOUS)
         assert _compute_confidence(result) == 0.0
