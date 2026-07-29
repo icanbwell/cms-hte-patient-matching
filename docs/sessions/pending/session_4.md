@@ -102,7 +102,7 @@ data or a service other code depends on.
 2. **Copy and adapt the query-safety pattern.**
    File: `notebooks/fhir_match_data_source.py` (new).
    Copy `_validate_sql_identifier`/`_sql_string_literal` from
-   `notebooks/wellsense_member_matching_analysis.py` (lines ~40-50 as of 2026-07-28) verbatim.
+   `notebooks/wellsense_member_matching_analysis.py` (lines 61-73 as of 2026-07-28) verbatim.
    Add widgets for whatever table names Task 1 resolved, e.g.:
    ```python
    dbutils.widgets.text("fhir_catalog", "<TBD from Task 1>", "FHIR Patient catalog")
