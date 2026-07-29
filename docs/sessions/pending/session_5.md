@@ -189,7 +189,7 @@ session's evaluator) rather than hand-typed, for every rule session 6 defines.
        p_collision_exact=p_collision((_rf(FIRST_NAME, _F), _rf(LAST_NAME, _F), _rf(DOB), _rf(STREET_LINE, _F))),
        p_collision_fuzzy=p_collision(
            (_rf(FIRST_NAME, _F), _rf(LAST_NAME, _F), _rf(DOB), _rf(STREET_LINE, _F)),
-           fuzzy_fields=frozenset({FIRST_NAME, LAST_NAME, STREET_LINE}),
+           fuzzy_fields=frozenset({FIRST_NAME, LAST_NAME}),
        ),
    )
    ```
@@ -200,7 +200,7 @@ session's evaluator) rather than hand-typed, for every rule session 6 defines.
    and confirm every existing assertion about specific `p_collision_exact`/`p_collision_fuzzy`
    values still passes — if any computed value differs from today's hardcoded one by more
    than a rounding difference, stop and investigate before proceeding (it means either the
-   evaluator or the original hand-entered constant was wrong).
+   evaluator or the original hand-entered constant was wrong). One known, expected exception: rules 04 and 06's computed `p_collision_fuzzy` will come out to 1.5e-12, not the currently-hardcoded 2e-12 — this is not a bug to investigate. The old hardcoded value implicitly assumed a `first_name` fuzzy u-probability of 0.04 (a 2x multiplier over exact); the real v3.3 Table 3 states 0.03 (1.5x). Accept the new computed value (1.5e-12) as the correct v3.3-era figure for these two rules, replacing the stale v3.2.2-era constant — this is exactly the kind of drift this evaluator is meant to catch and correct.
 
 4. **(Stretch goal, not required for Definition of Done) Cross-check against Imran's
    reference script.** Fetch `https://gist.github.com/imranq2/b5cc7a534a37dfa26922a83e69c686ee`
