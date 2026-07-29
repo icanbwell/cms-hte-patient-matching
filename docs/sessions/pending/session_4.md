@@ -179,7 +179,7 @@ class TestSqlSafetyHelpers:
       (Tier 2), not a precision/recall claim.
 - [ ] No real data, query output, or table contents are committed to this repo — only the
       notebook file itself.
-- [ ] The SQL-safety unit tests pass: `docker compose run --rm dev pytest notebooks/test_fhir_match_data_source.py -v` (or `evaluation/tests/test_fhir_match_data_source.py`, per Task 4's collection-path check).
+- [ ] The SQL-safety unit tests pass: `docker compose run --rm dev pytest notebooks/test_fhir_match_data_source.py -v` (or `evaluation/tests/test_fhir_match_data_source.py`, per the collection-path note in 'Unit tests required' above).
 - [ ] `make tests` is green.
 
 ## Open questions

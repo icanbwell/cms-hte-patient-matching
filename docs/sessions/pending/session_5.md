@@ -200,7 +200,7 @@ session's evaluator) rather than hand-typed, for every rule session 6 defines.
    and confirm every existing assertion about specific `p_collision_exact`/`p_collision_fuzzy`
    values still passes — if any computed value differs from today's hardcoded one by more
    than a rounding difference, stop and investigate before proceeding (it means either the
-   evaluator or the original hand-entered constant was wrong). One known, expected exception: rules 04 and 06's computed `p_collision_fuzzy` will come out to 1.5e-12, not the currently-hardcoded 2e-12 — this is not a bug to investigate. The old hardcoded value implicitly assumed a `first_name` fuzzy u-probability of 0.04 (a 2x multiplier over exact); the real v3.3 Table 3 states 0.03 (1.5x). Accept the new computed value (1.5e-12) as the correct v3.3-era figure for these two rules, replacing the stale v3.2.2-era constant — this is exactly the kind of drift this evaluator is meant to catch and correct.
+   evaluator or the original hand-entered constant was wrong). One known, expected exception: rules 04 and 06's computed `p_collision_fuzzy` will come out to 1.5e-12, not the currently-hardcoded 2e-12 — this is not a bug to investigate. The old hardcoded value implicitly assumed a `first_name` fuzzy u-probability of 0.04 (a 2x multiplier over exact); the real v3.3 Table 3 states 0.03 (1.5x). Accept the new computed value (1.5e-12) as the correct v3.3-era figure for these two rules, replacing the stale v3.2.2-era constant — this is exactly the kind of drift this evaluator is meant to catch and correct. Rule 26 will also change: its currently-hardcoded `p_collision_exact=0.0` becomes `1e-15` once computed via `FIELD_U_PROBS["namespace_id"]` (see that entry's comment for why a small nonzero float is used instead of a literal 0.0 — it prevents this field from masking other fields' probabilities in a product). This is expected, not something to 'fix' back to 0.0.
 
 4. **(Stretch goal, not required for Definition of Done) Cross-check against Imran's
    reference script.** Fetch `https://gist.github.com/imranq2/b5cc7a534a37dfa26922a83e69c686ee`
@@ -310,7 +310,7 @@ class TestExistingRulesMatchComputedValues:
         by accident (a real bug: an unmapped field name in FIELD_U_PROBS would raise a
         KeyError at import time, not silently produce 0.0, but this guards against a
         future refactor reintroducing a literal-float regression)."""
-        assert rule.p_collision_exact > 0 or rule.rule_id == "26"  # rule 26 is the ~0 namespace-ID case
+        assert rule.p_collision_exact > 0 or rule.rule_id == "26"  # rule 26's namespace_id is now a small nonzero float (1e-15), not literally 0.0 - see Task 3's note
 ```
 
 ## Validation (definition of "resolved")
