@@ -55,6 +55,12 @@ _(none yet — see `rejected/README.md`)_
   normalization layer; not blocked, just not yet scoped in detail.
 - **Automate the PHI guardrail** (a pre-commit check for hardcoded PHI-shaped literals in
   `notebooks/`) — currently enforced by review only.
+- **Add a real indexed blocking key to `InMemoryBackend.search()`** (e.g. by
+  `(soundex(last_name), dob_year)`), replacing its current O(n) linear-scan-per-query
+  behavior. Not required by session 3, which evaluates rules via direct pairwise
+  `evaluate_pair()` calls on precomputed pairs and never calls `InMemoryBackend.search()`;
+  matters once actual `match()`/`match_batch()` calls need to scale against a large corpus
+  (e.g. session 4 or eventual production-shaped batch runs).
 
 ## Dependency graph (at a glance)
 
