@@ -889,18 +889,6 @@ wheels = [
 ]
 
 [[package]]
-name = "nominally"
-version = "1.1.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "unidecode" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/2a/fe/277ee9fef646f2373589075c005f33a66f68cd8e416f0a871661a491fe49/nominally-1.1.0.tar.gz", hash = "sha256:ede40380b03c6777311d3f35fa57f4b92464483f54fe6466302067e656775706", size = 29013, upload-time = "2021-05-19T23:00:45.076Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/1d/a4/7b0b1cee1774fee95779b40ccb239b55f1b6459606bc4b7cb5d70b225343/nominally-1.1.0-py3-none-any.whl", hash = "sha256:90ac314fe4906561095fb49859de822a28b7c0954a22c5187912798ea010c3cb", size = 32970, upload-time = "2021-05-19T23:00:42.544Z" },
-]
-
-[[package]]
 name = "packaging"
 version = "26.2"
 source = { registry = "https://pypi.org/simple" }
@@ -930,7 +918,6 @@ dependencies = [
     { name = "fhirschemapy" },
     { name = "httpx" },
     { name = "nicknames" },
-    { name = "nominally" },
     { name = "phonenumbers" },
     { name = "phonetics" },
     { name = "pyjwt" },
@@ -1002,7 +989,6 @@ requires-dist = [
     { name = "httpx", marker = "extra == 'all'" },
     { name = "httpx", marker = "extra == 'fhir'" },
     { name = "nicknames", specifier = ">=1.0.0" },
-    { name = "nominally", specifier = ">=1.1.0" },
     { name = "phonenumbers", specifier = ">=8.13.40" },
     { name = "phonetics", specifier = ">=1.0.5" },
     { name = "pyjwt", specifier = ">=2.8.0" },
@@ -1029,7 +1015,7 @@ dev = [
     { name = "pytest-asyncio", specifier = ">=0.23.6" },
     { name = "pytest-cov", specifier = ">=6.1.1" },
     { name = "ruff", specifier = ">=0.11.5" },
-    { name = "setuptools", specifier = ">=60.9.3" },
+    { name = "setuptools", specifier = ">=83.0.0" },
     { name = "twine", specifier = ">=4.0.2" },
     { name = "wheel", specifier = ">=0.43.0" },
 ]
@@ -1572,11 +1558,11 @@ wheels = [
 
 [[package]]
 name = "setuptools"
-version = "82.0.1"
+version = "83.0.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/4f/db/cfac1baf10650ab4d1c111714410d2fbb77ac5a616db26775db562c8fab2/setuptools-82.0.1.tar.gz", hash = "sha256:7d872682c5d01cfde07da7bccc7b65469d3dca203318515ada1de5eda35efbf9", size = 1152316, upload-time = "2026-03-09T12:47:17.221Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/34/26/f5d29e25ffdb535afef2d35cdb55b325298f96debd670da4c325e08d70f4/setuptools-83.0.0.tar.gz", hash = "sha256:025bccbbf0fa05b6192bc64ae1e7b16e001fd6d6d4d5de03c97b1c1ade523bef", size = 1154254, upload-time = "2026-07-04T15:31:22.699Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9d/76/f789f7a86709c6b087c5a2f52f911838cad707cc613162401badc665acfe/setuptools-82.0.1-py3-none-any.whl", hash = "sha256:a59e362652f08dcd477c78bb6e7bd9d80a7995bc73ce773050228a348ce2e5bb", size = 1006223, upload-time = "2026-03-09T12:47:15.026Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/40/e1e72872c6354b306daef1703549e8e83b4d43cfea356311bf722a043752/setuptools-83.0.0-py3-none-any.whl", hash = "sha256:29b23c360f22f414dc7336bb39178cc7bcbf6021ed2733cde173f09dba19abb3", size = 1008090, upload-time = "2026-07-04T15:31:20.885Z" },
 ]
 
 [[package]]
@@ -1679,15 +1665,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/81/5b/879b2f932adfa7a053c360d50bc896c977fa6426109185f7c12ebdd0cb9d/tzlocal-5.4.4.tar.gz", hash = "sha256:8dbb8660838688a7b6ba4fed31d18dedf842afb4d47ca050d6d891c2c15f3be4", size = 31170, upload-time = "2026-06-29T08:03:40.026Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/9e/a4/017a7a6cbe387d961a688ec31364ae60a5c4e22c96ae9921b79a947c855d/tzlocal-5.4.4-py3-none-any.whl", hash = "sha256:aae09f0126a8a86fa736be266eb4a471380d26a0de3bc14844e7821fee3e2a15", size = 18115, upload-time = "2026-06-29T08:03:38.666Z" },
-]
-
-[[package]]
-name = "unidecode"
-version = "1.2.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/cd/31/245d8a384939aa0ee152c76fc62890f79f35fc41cd12839f5df268d9081d/Unidecode-1.2.0.tar.gz", hash = "sha256:8d73a97d387a956922344f6b74243c2c6771594659778744b2dbdaad8f6b727d", size = 216042, upload-time = "2021-02-05T11:51:36.498Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/9e/25/723487ca2a52ebcee88a34d7d1f5a4b80b793f179ee0f62d5371938dfa01/Unidecode-1.2.0-py2.py3-none-any.whl", hash = "sha256:12435ef2fc4cdfd9cf1035a1db7e98b6b047fe591892e81f34e94959591fad00", size = 241669, upload-time = "2021-02-05T11:51:38.944Z" },
 ]
 
 [[package]]
