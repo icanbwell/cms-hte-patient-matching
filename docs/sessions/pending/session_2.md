@@ -43,10 +43,10 @@ None new — same `MatchResult` consumers as today, now seeing a new possible
 - Add `MatchOutcome.ESCALATE` to the enum in `patient_matching/matching/match_result.py`,
   for the exactly-2-candidates case.
 - Redefine what `MatchOutcome.AMBIGUOUS` means: 3 or more candidates, evaluated against a
-  stricter 1e-6 collision threshold (see Task 3 below for exactly how "the stricter threshold"
+  stricter 1e-6 collision threshold (see Task 2 below for exactly how "the stricter threshold"
   is applied given today's engine has no live P(collision) computation yet — session 5 adds
   that; this session adds the *branching structure*, using a placeholder-free interim
-  comparison described in Task 3).
+  comparison described in Task 2).
 - Update `MatchingEngine._build_result` in `patient_matching/matching/matching_engine.py` to
   branch on `len(all_matched)`: `== 1` -> `MATCH` (unchanged), `== 2` -> `ESCALATE` (new),
   `>= 3` -> `AMBIGUOUS` (same enum value as today, but now specifically meaning "3+, stricter
@@ -54,7 +54,7 @@ None new — same `MatchResult` consumers as today, now seeing a new possible
 
 ### Out of scope
 - Actually computing P(collision) for the 3+-candidate stricter-threshold check — that
-  requires session 5's evaluator. This session's interim behavior (Task 3) is deliberately
+  requires session 5's evaluator. This session's interim behavior (Task 2) is deliberately
   simple and explicitly documented as interim, so session 5/6 can wire in the real
   P(collision) check later without changing `_build_result`'s branching structure.
 - Any MFA/disambiguation implementation for the `ESCALATE` case — this repo has no
