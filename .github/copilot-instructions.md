@@ -13,7 +13,7 @@
   - `tests/` – test suite.
   - `docker-compose.yml` – dev environment services.
   - `Makefile` – common commands (`make init`, `make up`, `make tests`, etc.).
-- **Tooling**: pre-commit hook in `pre-commit-hook` and config in `setup.cfg`.
+- **Tooling**: pre-commit hooks run via `uv run pre-commit` (see `Makefile`'s `run-pre-commit`/`setup-pre-commit` targets); config in `.pre-commit-config.yaml`.
 
 ## Code Style and Quality Rules
 - Prefer clear, explicit imports; avoid relative imports unless the project already uses them.
