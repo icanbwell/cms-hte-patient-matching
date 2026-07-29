@@ -17,6 +17,7 @@
 - Every session that changes matching *rule behavior* (3, 5, 6) must carry the statistical-rigor gate language (Tier 1/2/3) — sessions 1 and 2 are explicitly exempt (audit plumbing and CMS-mandated tiering, not tunable rule behavior).
 - No placeholders in any session doc: every task names exact files, exact function/class names, and either exact code or an exact, complete data table. `NEEDS HUMAN DECISION` tags are allowed only where the design doc (`docs/superpowers/specs/2026-07-28-session-planning-playbook-design.md`) already identifies a genuine external dependency (Sean's real Databricks/Mongo table names for session 4; Imran's sign-off for the not-yet-authored per-value P(collision) idea).
 - Source of truth for scope/sequencing: `docs/superpowers/specs/2026-07-28-session-planning-playbook-design.md`. Where this plan and that spec seem to disagree, the spec wins — flag it during self-review rather than silently picking one.
+- **Every session ends with an opened PR into `claude/cms-matching-v1`, no exceptions** (added 2026-07-28, mid-execution, per Sean) — `conventions.md`'s protocol step 7 and Definition of Done must both state this as a hard requirement, not one option among several ("merged, or a PR is open" language is not acceptable — the PR is mandatory even when Sean is self-reviewing).
 
 ---
 
@@ -116,7 +117,9 @@ does exactly this, in order:
    "Workspace isolation" below) — never directly on `claude/cms-matching-v1` itself.
 6. **Execute the tasks in order**, test-first, per the TDD validation loop below.
 7. **Close the session**: fill in *Execution notes*, move the doc to `completed/`, update
-   `index.md`, merge the feature branch back into `claude/cms-matching-v1`, commit.
+   `index.md`, commit the bookkeeping, **open a PR from the feature branch into
+   `claude/cms-matching-v1`**, and merge it once self-reviewed (see "Every session ends with
+   a PR" below) — a session is never closed by merging or fast-forwarding without one.
 
 If told "start session N" specifically, skip step 1's queue lookup and go straight to that
 session (still doing steps 2-7).
@@ -290,6 +293,19 @@ via PR (self-reviewed by Sean) — since `claude/cms-matching-v1` is not `main`,
 "never directly on the base branch" while keeping all Line B work in one place until PR #3
 itself is ready to merge to `main`.
 
+## Every session ends with a PR
+
+**Every session, no exceptions, ends by opening a PR from its feature branch into
+`claude/cms-matching-v1`** — never a direct merge, fast-forward, or push straight to
+`claude/cms-matching-v1` without one, even though Sean is self-reviewing during Zack's PTO.
+The PR is what makes a session's diff visible and reviewable as a single unit, gives Aikido/
+Gecko's automated scans a checkpoint to run against (per the Security guardrail above) before
+the change lands, and gives *Execution notes* a natural home (the PR description) alongside
+the session doc's own copy. A session is not done until its PR is merged — see Definition of
+Done below. If a PR is intentionally left open past a session's other criteria being met (e.g.
+waiting on Sean's explicit go-ahead to merge), that's a valid stopping point, but it must be
+recorded as such in *Execution notes*, not silently skipped.
+
 ## Dependency and ordering rules
 
 - Don't start a session whose upstream sessions aren't in `completed/` without explicit
@@ -308,8 +324,10 @@ A session is done when **all** hold:
 4. For rule-changing sessions, the statistical rigor gate's Tier 1 requirement is met.
 5. The end state is stable and at least as capable as the start state — if not, the session
    does not merge; revert and write up the blocker instead.
-6. Work is committed on its feature branch and merged into `claude/cms-matching-v1` (or a PR
-   is open and Sean has said how to merge it).
+6. Work is committed on its feature branch, a PR from that branch into `claude/cms-matching-v1`
+   is open, and it has been merged (see "Every session ends with a PR" above) — or, if Sean has
+   explicitly said to leave it open rather than merge yet, that decision is recorded in
+   *Execution notes*.
 
 Then: fill in *Execution notes*, move `pending/session_N.md` -> `completed/session_N.md`,
 update `index.md` (move the row to the top of *Completed*, trim that list back to 3 if needed,
