@@ -12,6 +12,7 @@ from .core import (
     FuzzySearchConfig,
     SearchResult,
     SimilarityAlgorithm,
+    validate_sql_identifier,
 )
 from .manager import FuzzySearchManager
 
@@ -166,7 +167,11 @@ def create_test_data(manager: FuzzySearchManager, table: str) -> None:
     Args:
         manager: A configured ``FuzzySearchManager``.
         table: The table/collection name to populate.
+
+    Raises:
+        ValueError: If ``table`` is not a safe bare SQL identifier.
     """
+    table = validate_sql_identifier(table)
     sample_names = [
         (1, "John Smith"),
         (2, "Jon Smyth"),
@@ -187,7 +192,7 @@ def create_test_data(manager: FuzzySearchManager, table: str) -> None:
         conn = backend._connection  # type: ignore[attr-defined]
         conn.execute(f"CREATE TABLE IF NOT EXISTS {table} (id INTEGER, name VARCHAR)")
         for rid, name in sample_names:
-            conn.execute(f"INSERT INTO {table} VALUES (?, ?)", [rid, name])  # nosec B608
+            conn.execute(f"INSERT INTO {table} VALUES (?, ?)", [rid, name])  # nosec B608 - table validated as a bare SQL identifier above
         backend.disconnect()
         logger.info("Created test data in DuckDB table %s", table)
 
@@ -200,7 +205,7 @@ def create_test_data(manager: FuzzySearchManager, table: str) -> None:
             )
             for rid, name in sample_names:
                 cur.execute(
-                    f"INSERT INTO {table} (id, name) VALUES (%s, %s)",  # nosec B608
+                    f"INSERT INTO {table} (id, name) VALUES (%s, %s)",  # nosec B608 - table validated as a bare SQL identifier above
                     (rid, name),
                 )
         backend.disconnect()

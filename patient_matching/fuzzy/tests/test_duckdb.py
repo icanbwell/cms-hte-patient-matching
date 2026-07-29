@@ -150,3 +150,20 @@ class TestDuckDBBackend:
         results = backend.search("John", "name", "users", config)
         for r in results:
             assert 0.0 <= r.similarity_score <= 1.0
+
+    @pytest.mark.parametrize(
+        "field,table",
+        [
+            ("name) UNION SELECT ssn FROM users--", "users"),
+            ("name", "users; DROP TABLE users;--"),
+            ("name", "users) UNION SELECT ssn FROM users--"),
+        ],
+    )
+    def test_search_rejects_sql_injection_via_field_or_table(
+        self, backend, field, table
+    ):
+        """A malicious field/table (e.g. sourced from an HTTP query param, as in
+        examples/fastapi_integration.py) must be rejected before it ever reaches
+        the SQL string, not executed against the database."""
+        with pytest.raises(ValueError, match="Unsafe SQL identifier"):
+            backend.search("x", field, table)

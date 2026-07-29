@@ -10,6 +10,7 @@ from ..core import (
     FuzzySearchConfig,
     SearchResult,
     SimilarityAlgorithm,
+    validate_sql_identifier,
 )
 
 logger = logging.getLogger(__name__)
@@ -91,6 +92,9 @@ class DuckDBBackend(FuzzySearchBackend):
         if self._connection is None:
             raise RuntimeError("Not connected. Call connect() first.")
 
+        field = validate_sql_identifier(field)
+        table = validate_sql_identifier(table)
+
         config = config or FuzzySearchConfig()
         if not self.supports_algorithm(config.algorithm):
             raise ValueError(f"DuckDB does not support {config.algorithm.value}")
@@ -121,7 +125,7 @@ class DuckDBBackend(FuzzySearchBackend):
             WHERE {where_clause}
             ORDER BY similarity_score DESC
             LIMIT $limit
-        """  # nosec B608 - table/field names are not user input
+        """  # nosec B608 - field/table validated as bare SQL identifiers above
 
         params: Dict[str, Any] = {"query": compare_query, "limit": config.limit}
         if is_distance:

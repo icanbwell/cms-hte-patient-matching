@@ -22,26 +22,11 @@ WORKDIR /usr/src/patient_matching/
 # Copy pyproject.toml and uv.lock to the working directory
 COPY pyproject.toml uv.lock* /usr/src/patient_matching/
 
-# Show the current pip configuration (for debugging purposes)
-RUN pip config list
-
 # Install all production dependencies using uv
 RUN uv sync --frozen --all-extras --no-install-project --verbose
 
 # Copy uv.lock from working directory to /tmp for retrieval if needed
 RUN cp -n /usr/src/patient_matching/uv.lock /tmp/uv.lock
-
-# Create necessary directories and list their contents (for debugging and verification)
-RUN mkdir -p /opt/venv/lib/python3.12/site-packages && ls -halt /opt/venv/lib/python3.12/site-packages
-RUN mkdir -p /opt/venv/bin && ls -halt /opt/venv/bin
-
-# Check and print system and Python platform information (for debugging)
-RUN python -c "import platform; print(platform.platform()); print(platform.architecture())"
-RUN python -c "import sys; print(sys.platform, sys.version, sys.maxsize > 2**32)"
-
-# Debug pip installation and list installed packages with verbosity
-RUN pip debug --verbose
-RUN pip list -v
 
 # Stage 1b: Development dependencies (extends production)
 # This stage installs dev dependencies on top of production
@@ -79,10 +64,6 @@ COPY --from=python_packages /opt/venv /opt/venv
 
 # Copy Pipfile.lock to a temporary directory so it can be retrieved if needed
 COPY --from=python_packages /tmp/uv.lock /tmp/uv.lock
-
-# Create directories and list their contents (for debugging and verification)
-RUN mkdir -p /opt/venv/lib/python3.12/site-packages && ls -halt /opt/venv/lib/python3.12/site-packages
-RUN mkdir -p /opt/venv/bin && ls -halt /opt/venv/bin
 
 # Expose port 5000 for the application
 EXPOSE 5000

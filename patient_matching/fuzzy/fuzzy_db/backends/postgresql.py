@@ -10,6 +10,7 @@ from ..core import (
     FuzzySearchConfig,
     SearchResult,
     SimilarityAlgorithm,
+    validate_sql_identifier,
 )
 
 logger = logging.getLogger(__name__)
@@ -105,6 +106,9 @@ class PostgreSQLBackend(FuzzySearchBackend):
         if self._connection is None or self._connection.closed:
             raise RuntimeError("Not connected. Call connect() first.")
 
+        field = validate_sql_identifier(field)
+        table = validate_sql_identifier(table)
+
         config = config or FuzzySearchConfig()
         if not self.supports_algorithm(config.algorithm):
             raise ValueError(
@@ -133,7 +137,7 @@ class PostgreSQLBackend(FuzzySearchBackend):
             WHERE {func}({compare_field}, %(query)s) <= %(max_distance)s
             ORDER BY similarity_score DESC
             LIMIT %(limit)s
-        """  # nosec B608 - table/field names are not user input
+        """  # nosec B608 - field/table validated as bare SQL identifiers above
 
         results: List[SearchResult] = []
         with self._connection.cursor() as cur:
