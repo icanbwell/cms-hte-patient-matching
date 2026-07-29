@@ -25,6 +25,14 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Create .env for docker-compose
+        # docker-compose.yml's dev service declares env_file: [.env], but .env is
+        # gitignored (it's for local secrets) and never exists in a fresh CI checkout,
+        # so `make up` fails with "env file .../.env not found". An empty file is
+        # sufficient - matches the Makefile's own `touch docker.env` convention in
+        # `devsetup`, just for the filename docker-compose.yml actually references.
+        run: touch .env
+
       - name: Pull docker images
         run: docker compose pull
 
