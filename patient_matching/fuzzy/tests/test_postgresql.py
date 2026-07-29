@@ -73,3 +73,19 @@ class TestPostgreSQLBackend:
         mock_pg._connection.closed = True
         mock_pg.disconnect()
         mock_pg._connection.close.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "field,table",
+        [
+            ("name) UNION SELECT ssn FROM users--", "users"),
+            ("name", "users; DROP TABLE users;--"),
+        ],
+    )
+    def test_search_rejects_sql_injection_via_field_or_table(
+        self, mock_pg, field, table
+    ):
+        """A malicious field/table must be rejected before it ever reaches the SQL
+        string - the mocked cursor must never see an execute() call at all."""
+        with pytest.raises(ValueError, match="Unsafe SQL identifier"):
+            mock_pg.search("x", field, table)
+        mock_pg._connection.cursor.assert_not_called()

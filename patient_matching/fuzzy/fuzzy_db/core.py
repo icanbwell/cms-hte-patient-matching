@@ -3,12 +3,41 @@
 from __future__ import annotations
 
 import logging
+import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
+
+_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def validate_sql_identifier(name: str) -> str:
+    """Validate that ``name`` is safe to interpolate as a bare SQL identifier
+    (a table or column name) in a query string.
+
+    Backends in this package build SQL by string-interpolating the caller-supplied
+    ``field``/``table`` values, because DB-API parameter binding does not support
+    parameterizing identifiers (only values) - see e.g. ``duckdb_backend.py``'s and
+    ``postgresql.py``'s ``search()``. Callers can be arbitrary application code
+    (see ``examples/fastapi_integration.py``, which sources both from HTTP query
+    parameters), so an unvalidated identifier is a direct SQL injection path.
+    This allow-lists identifiers to letters/digits/underscore, not starting with
+    a digit - the same shape every supported backend (DuckDB, PostgreSQL) requires
+    for an unquoted identifier, and narrow enough to reject any query-string
+    metacharacter (quotes, semicolons, parens, whitespace, comment markers).
+
+    Raises:
+        ValueError: If ``name`` is empty or contains anything outside
+            ``[A-Za-z0-9_]``, or starts with a digit.
+    """
+    if not name or not _IDENTIFIER_RE.match(name):
+        raise ValueError(
+            f"Unsafe SQL identifier: {name!r} - must match {_IDENTIFIER_RE.pattern}"
+        )
+    return name
 
 
 class SimilarityAlgorithm(Enum):
