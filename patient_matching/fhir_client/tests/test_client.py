@@ -1,13 +1,16 @@
 """Tests for the FHIR client."""
 
 import json
+from typing import Any, Dict, List, Union
 from unittest.mock import MagicMock, patch
 
 
 from patient_matching.fhir_client.client import FhirClient, FhirClientConfig
 
 
-def _make_bundle(patients, next_url=None):
+def _make_bundle(
+    patients: List[Dict[str, Any]], next_url: Union[str, None] = None
+) -> Dict[str, Any]:
     """Create a FHIR Bundle dict with patient entries."""
     entries = []
     for p in patients:
@@ -18,7 +21,7 @@ def _make_bundle(patients, next_url=None):
             }
         )
 
-    bundle = {
+    bundle: Dict[str, Any] = {
         "resourceType": "Bundle",
         "type": "searchset",
         "total": len(patients),
@@ -31,7 +34,9 @@ def _make_bundle(patients, next_url=None):
     return bundle
 
 
-def _make_patient(patient_id="patient-1", first="john", last="smith"):
+def _make_patient(
+    patient_id: str = "patient-1", first: str = "john", last: str = "smith"
+) -> Dict[str, Any]:
     return {
         "resourceType": "Patient",
         "id": patient_id,
@@ -40,7 +45,7 @@ def _make_patient(patient_id="patient-1", first="john", last="smith"):
     }
 
 
-def _mock_response(data_dict, status_code=200):
+def _mock_response(data_dict: Dict[str, Any], status_code: int = 200) -> MagicMock:
     resp = MagicMock()
     resp.json.return_value = data_dict
     resp.text = json.dumps(data_dict)
@@ -48,7 +53,9 @@ def _mock_response(data_dict, status_code=200):
     return resp
 
 
-def _setup_mock_http(client, responses):
+def _setup_mock_http(
+    client: FhirClient, responses: Union[MagicMock, List[MagicMock]]
+) -> MagicMock:
     """Set up a mock HTTP client that returns the given responses."""
     mock_http_client = MagicMock()
     mock_http_client.__enter__ = MagicMock(return_value=mock_http_client)
@@ -61,7 +68,7 @@ def _setup_mock_http(client, responses):
 
 
 class TestFhirClient:
-    def test_fetch_all_patients_single_page(self):
+    def test_fetch_all_patients_single_page(self) -> None:
         patients = [_make_patient("p1"), _make_patient("p2")]
         bundle = _make_bundle(patients)
 
@@ -77,7 +84,7 @@ class TestFhirClient:
         assert result[0]["id"] == "p1"
         assert result[1]["id"] == "p2"
 
-    def test_fetch_all_patients_pagination(self):
+    def test_fetch_all_patients_pagination(self) -> None:
         page1 = _make_bundle(
             [_make_patient("p1")],
             next_url="https://fhir.example.com/R4/Patient?_page=2",
@@ -98,7 +105,7 @@ class TestFhirClient:
         assert result[0]["id"] == "p1"
         assert result[1]["id"] == "p2"
 
-    def test_fetch_all_patients_max_pages(self):
+    def test_fetch_all_patients_max_pages(self) -> None:
         page = _make_bundle(
             [_make_patient("p1")],
             next_url="https://fhir.example.com/R4/Patient?_page=2",
@@ -118,7 +125,7 @@ class TestFhirClient:
         # Should stop after 1 page even though there's a next link
         assert len(result) == 1
 
-    def test_fetch_patient_by_id(self):
+    def test_fetch_patient_by_id(self) -> None:
         patient = _make_patient("p-123")
 
         config = FhirClientConfig(base_url="https://fhir.example.com/R4")
@@ -132,7 +139,7 @@ class TestFhirClient:
         assert result is not None
         assert result["id"] == "p-123"
 
-    def test_fetch_patient_not_found(self):
+    def test_fetch_patient_not_found(self) -> None:
         config = FhirClientConfig(base_url="https://fhir.example.com/R4")
         client = FhirClient(config)
 
@@ -143,12 +150,13 @@ class TestFhirClient:
 
         assert result is None
 
-    def test_auth_header_included(self):
+    def test_auth_header_included(self) -> None:
+        mock_auth = MagicMock()
         config = FhirClientConfig(
             base_url="https://fhir.example.com/R4",
-            auth=MagicMock(),
+            auth=mock_auth,
         )
-        config.auth.get_access_token.return_value = "bearer-token-xyz"
+        mock_auth.get_access_token.return_value = "bearer-token-xyz"
 
         client = FhirClient(config)
         bundle = _make_bundle([_make_patient("p1")])
@@ -163,7 +171,7 @@ class TestFhirClient:
         headers = call_args.kwargs.get("headers", {})
         assert headers["Authorization"] == "Bearer bearer-token-xyz"
 
-    def test_empty_bundle(self):
+    def test_empty_bundle(self) -> None:
         bundle = {"resourceType": "Bundle", "type": "searchset", "total": 0}
 
         config = FhirClientConfig(base_url="https://fhir.example.com/R4")

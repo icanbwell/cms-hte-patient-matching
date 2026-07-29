@@ -1,5 +1,7 @@
 """Tests for the CacheMatchingBackend adapter."""
 
+from typing import Iterator
+
 import pytest
 
 from patient_matching.cache.cache_backend import CachedPatient
@@ -9,13 +11,15 @@ from patient_matching.matching.backend import FieldCriterion, MatchType
 
 
 @pytest.fixture
-def cache():
+def cache() -> Iterator[DuckDBCache]:
     c = DuckDBCache(database=":memory:")
     yield c
     c.close()
 
 
-def _make_cached_patient(pid, first="john", last="smith", dob="1990-01-15"):
+def _make_cached_patient(
+    pid: str, first: str = "john", last: str = "smith", dob: str = "1990-01-15"
+) -> CachedPatient:
     return CachedPatient(
         patient_id=pid,
         first_names={first},
@@ -31,7 +35,7 @@ def _make_cached_patient(pid, first="john", last="smith", dob="1990-01-15"):
 
 
 class TestCacheMatchingBackend:
-    def test_search_exact_match(self, cache):
+    def test_search_exact_match(self, cache: DuckDBCache) -> None:
         cache.upsert_patients([_make_cached_patient("p1")])
         adapter = CacheMatchingBackend(cache)
 
@@ -44,7 +48,7 @@ class TestCacheMatchingBackend:
         assert len(results) == 1
         assert results[0]["id"] == "p1"
 
-    def test_search_no_match(self, cache):
+    def test_search_no_match(self, cache: DuckDBCache) -> None:
         cache.upsert_patients([_make_cached_patient("p1")])
         adapter = CacheMatchingBackend(cache)
 
@@ -55,7 +59,7 @@ class TestCacheMatchingBackend:
         )
         assert len(results) == 0
 
-    def test_search_and_semantics(self, cache):
+    def test_search_and_semantics(self, cache: DuckDBCache) -> None:
         """All criteria must match (AND semantics)."""
         cache.upsert_patients([_make_cached_patient("p1")])
         adapter = CacheMatchingBackend(cache)
@@ -68,7 +72,7 @@ class TestCacheMatchingBackend:
         )
         assert len(results) == 0
 
-    def test_search_fuzzy(self, cache):
+    def test_search_fuzzy(self, cache: DuckDBCache) -> None:
         cache.upsert_patients([_make_cached_patient("p1", last="smith")])
         adapter = CacheMatchingBackend(cache)
 
@@ -83,14 +87,14 @@ class TestCacheMatchingBackend:
         )
         assert len(results) == 1
 
-    def test_search_empty_criteria(self, cache):
+    def test_search_empty_criteria(self, cache: DuckDBCache) -> None:
         cache.upsert_patients([_make_cached_patient("p1")])
         adapter = CacheMatchingBackend(cache)
 
         results = adapter.search([])
         assert len(results) == 0
 
-    def test_search_returns_fhir_resource(self, cache):
+    def test_search_returns_fhir_resource(self, cache: DuckDBCache) -> None:
         cache.upsert_patients([_make_cached_patient("p1")])
         adapter = CacheMatchingBackend(cache)
 

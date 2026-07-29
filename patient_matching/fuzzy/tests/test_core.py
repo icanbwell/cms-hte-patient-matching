@@ -18,7 +18,7 @@ class TestValidateSqlIdentifier:
             "UPPER_CASE",
         ],
     )
-    def test_accepts_bare_identifiers(self, identifier):
+    def test_accepts_bare_identifiers(self, identifier: str) -> None:
         assert validate_sql_identifier(identifier) == identifier
 
     @pytest.mark.parametrize(
@@ -36,6 +36,6 @@ class TestValidateSqlIdentifier:
             "table/*comment*/name",
         ],
     )
-    def test_rejects_unsafe_identifiers(self, identifier):
+    def test_rejects_unsafe_identifiers(self, identifier: str) -> None:
         with pytest.raises(ValueError, match="Unsafe SQL identifier"):
             validate_sql_identifier(identifier)

@@ -11,7 +11,7 @@ from patient_matching.fuzzy.fuzzy_db.core import FuzzySearchConfig, SimilarityAl
 
 
 @pytest.fixture
-def mock_redis():
+def mock_redis() -> RedisBackend:
     """Create a Redis backend with mocked redis client."""
     backend = RedisBackend(host="localhost", port=6379)
     client = MagicMock()
@@ -35,11 +35,11 @@ def mock_redis():
 
 
 class TestRedisBackend:
-    def test_supports_all_algorithms(self, mock_redis):
+    def test_supports_all_algorithms(self, mock_redis: RedisBackend) -> None:
         for algo in SimilarityAlgorithm:
             assert mock_redis.supports_algorithm(algo)
 
-    def test_search_returns_results(self, mock_redis):
+    def test_search_returns_results(self, mock_redis: RedisBackend) -> None:
         config = FuzzySearchConfig(
             algorithm=SimilarityAlgorithm.LEVENSHTEIN,
             threshold=0.5,
@@ -49,7 +49,7 @@ class TestRedisBackend:
         assert len(results) > 0
         assert results[0].value == "John Smith"
 
-    def test_metadata_included(self, mock_redis):
+    def test_metadata_included(self, mock_redis: RedisBackend) -> None:
         config = FuzzySearchConfig(threshold=0.5)
         results = mock_redis.search("John Smith", "name", "users", config)
         match = [r for r in results if r.value == "John Smith"]
@@ -57,16 +57,16 @@ class TestRedisBackend:
         assert match[0].metadata is not None
         assert "age" in match[0].metadata
 
-    def test_not_connected_raises(self):
+    def test_not_connected_raises(self) -> None:
         backend = RedisBackend()
         with pytest.raises(RuntimeError, match="Not connected"):
             backend.search("test", "name", "users")
 
-    def test_disconnect(self, mock_redis):
+    def test_disconnect(self, mock_redis: RedisBackend) -> None:
         mock_redis.disconnect()
         assert mock_redis._client is None
 
-    def test_threshold_filtering(self, mock_redis):
+    def test_threshold_filtering(self, mock_redis: RedisBackend) -> None:
         mock_redis._client.scan.side_effect = [
             (0, ["users:1"]),
         ]

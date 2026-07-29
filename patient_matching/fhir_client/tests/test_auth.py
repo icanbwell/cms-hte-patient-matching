@@ -11,15 +11,15 @@ from patient_matching.fhir_client.auth import (
 
 
 class TestTokenResponse:
-    def test_is_expired_when_past(self):
+    def test_is_expired_when_past(self) -> None:
         token = TokenResponse(access_token="tok", expires_at=time.time() - 60)
         assert token.is_expired is True
 
-    def test_is_not_expired_when_future(self):
+    def test_is_not_expired_when_future(self) -> None:
         token = TokenResponse(access_token="tok", expires_at=time.time() + 300)
         assert token.is_expired is False
 
-    def test_is_expired_within_buffer(self):
+    def test_is_expired_within_buffer(self) -> None:
         """Token expiring within 30s buffer should be considered expired."""
         token = TokenResponse(access_token="tok", expires_at=time.time() + 10)
         assert token.is_expired is True
@@ -34,7 +34,7 @@ class TestClientCredentialsAuth:
             scope="system/*.read",
         )
 
-    def test_get_access_token_requests_new(self):
+    def test_get_access_token_requests_new(self) -> None:
         auth = self._make_auth()
         mock_client = MagicMock()
         mock_response = MagicMock()
@@ -49,7 +49,7 @@ class TestClientCredentialsAuth:
         assert token == "new-token-123"
         mock_client.post.assert_called_once()
 
-    def test_get_access_token_caches(self):
+    def test_get_access_token_caches(self) -> None:
         auth = self._make_auth()
         mock_client = MagicMock()
         mock_response = MagicMock()
@@ -67,7 +67,7 @@ class TestClientCredentialsAuth:
         assert token1 == token2 == "cached-token"
         assert mock_client.post.call_count == 1
 
-    def test_get_access_token_refreshes_expired(self):
+    def test_get_access_token_refreshes_expired(self) -> None:
         auth = self._make_auth()
         mock_client = MagicMock()
 
@@ -93,7 +93,7 @@ class TestClientCredentialsAuth:
         assert token2 == "token-2"
         assert mock_client.post.call_count == 2
 
-    def test_invalidate_forces_refresh(self):
+    def test_invalidate_forces_refresh(self) -> None:
         auth = self._make_auth()
         mock_client = MagicMock()
         mock_response = MagicMock()
@@ -109,7 +109,7 @@ class TestClientCredentialsAuth:
 
         assert mock_client.post.call_count == 2
 
-    def test_post_includes_scope_and_grant_type(self):
+    def test_post_includes_scope_and_grant_type(self) -> None:
         auth = self._make_auth()
         mock_client = MagicMock()
         mock_response = MagicMock()
@@ -128,7 +128,7 @@ class TestClientCredentialsAuth:
         assert data["client_secret"] == "my-secret"
         assert data["scope"] == "system/*.read"
 
-    def test_extra_params_included(self):
+    def test_extra_params_included(self) -> None:
         auth = ClientCredentialsAuth(
             token_url="https://auth.example.com/token",
             client_id="c",

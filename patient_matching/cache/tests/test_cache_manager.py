@@ -1,5 +1,7 @@
 """Tests for the CacheManager pipeline."""
 
+from typing import Any, Dict, Iterator
+
 import pytest
 from unittest.mock import MagicMock
 
@@ -7,7 +9,9 @@ from patient_matching.cache.cache_manager import CacheManager, CacheManagerConfi
 from patient_matching.cache.duckdb_cache import DuckDBCache
 
 
-def _make_fhir_patient(pid, first="john", last="smith", dob="1990-01-15"):
+def _make_fhir_patient(
+    pid: str, first: str = "john", last: str = "smith", dob: str = "1990-01-15"
+) -> Dict[str, Any]:
     return {
         "resourceType": "Patient",
         "id": pid,
@@ -19,14 +23,14 @@ def _make_fhir_patient(pid, first="john", last="smith", dob="1990-01-15"):
 
 
 @pytest.fixture
-def cache():
+def cache() -> Iterator[DuckDBCache]:
     c = DuckDBCache(database=":memory:")
     yield c
     c.close()
 
 
 class TestCacheManager:
-    def test_build_cache(self, cache):
+    def test_build_cache(self, cache: DuckDBCache) -> None:
         patients = [_make_fhir_patient("p1"), _make_fhir_patient("p2")]
         mock_fhir_client = MagicMock()
         mock_fhir_client.fetch_all_patients.return_value = iter(patients)
@@ -42,7 +46,7 @@ class TestCacheManager:
         assert stats["patients_skipped"] == 0
         assert cache.count() == 2
 
-    def test_build_cache_skips_no_id(self, cache):
+    def test_build_cache_skips_no_id(self, cache: DuckDBCache) -> None:
         patients = [
             {"resourceType": "Patient", "name": [{"family": "smith"}]},
         ]
@@ -59,7 +63,7 @@ class TestCacheManager:
         assert stats["patients_skipped"] == 1
         assert cache.count() == 0
 
-    def test_build_cache_clears_existing(self, cache):
+    def test_build_cache_clears_existing(self, cache: DuckDBCache) -> None:
         from patient_matching.cache.cache_backend import CachedPatient
 
         cache.upsert_patients(
@@ -86,7 +90,7 @@ class TestCacheManager:
         assert cache.get_patient("old") is None
         assert cache.get_patient("new") is not None
 
-    def test_refresh_cache_does_not_clear(self, cache):
+    def test_refresh_cache_does_not_clear(self, cache: DuckDBCache) -> None:
         from patient_matching.cache.cache_backend import CachedPatient
 
         cache.upsert_patients(
@@ -113,7 +117,7 @@ class TestCacheManager:
         assert cache.get_patient("existing") is not None
         assert cache.get_patient("new") is not None
 
-    def test_batch_processing(self, cache):
+    def test_batch_processing(self, cache: DuckDBCache) -> None:
         patients = [_make_fhir_patient(f"p{i}") for i in range(10)]
         mock_fhir_client = MagicMock()
         mock_fhir_client.fetch_all_patients.return_value = iter(patients)
@@ -129,7 +133,7 @@ class TestCacheManager:
         assert stats["patients_cached"] == 10
         assert cache.count() == 10
 
-    def test_patient_count_property(self, cache):
+    def test_patient_count_property(self, cache: DuckDBCache) -> None:
         mock_fhir_client = MagicMock()
         mock_fhir_client.fetch_all_patients.return_value = iter(
             [

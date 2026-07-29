@@ -1,5 +1,7 @@
 """Tests for the NormalizationManager."""
 
+from typing import Any, Dict
+
 from patient_matching.normalization.manager import NormalizationManager
 
 
@@ -121,7 +123,7 @@ class TestNormalizationManager:
         assert results[1]["name"][0]["family"] == "garcia"
 
     def test_normalize_does_not_mutate_original(self) -> None:
-        patient = {
+        patient: Dict[str, Any] = {
             "resourceType": "Patient",
             "name": [{"family": "Smith", "given": ["John"]}],
             "birthDate": "1990-01-01",
