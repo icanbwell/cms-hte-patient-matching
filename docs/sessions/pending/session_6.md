@@ -64,7 +64,7 @@ None new.
    | 28 | Last Name* + DOB* + Member ID (payer namespace) | 5e-13 | 1e-12 | DOB* = +/-1 day |
    | 29 | Phone Number + Member ID (payer namespace) | 1e-12 | — | |
    | 30 | Email Address + Member ID (payer namespace) | 1e-12 | — | |
-   | 31 | First Name* + Last Name + DOB + Subscriber ID (payer namespace) | 1e-12 | 2e-12 | |
+   | 31 | First Name* + Last Name + DOB + Subscriber ID (payer namespace) | 1e-12 | 1.5e-12 | |
    | 32 | First Name + Last Name* + DOB + Subscriber ID (payer namespace) | 1e-12 | 2e-12 | |
    | 33 | First Name* + Last Name* + Phone Number + ZIP | 3e-14 | 9e-14 | household-risk cluster, see below |
    | 34 | Last Name + Phone Number + ZIP | 1.5e-12 | — | household-risk cluster |
@@ -77,6 +77,8 @@ None new.
    built — don't hardcode the spec's numbers as literals (same principle as session 5's
    Task 3); use them here only to verify the computed value against the spec's own stated
    figure as a sanity check while authoring the rule.
+
+   **Note:** row 31's p(fuzzy) is 1.5e-12, not a 2e-12 figure that would assume a 2x first_name fuzzy multiplier — consistent with session 5's Table 3 (first_name fuzzy u=0.03, a 1.5x multiplier), and with the same correction already applied to session 5's rules 04/06. Row 32 is unaffected (its fuzzy field is last_name, whose 2x multiplier — 0.01 vs exact 0.005 — is correct as stated).
 
 **4. Two explicit exclusions/flags, carried over from the spec's own text and its still-open
    review comments** (see `../superpowers/specs/2026-07-28-session-planning-playbook-design.md`
@@ -131,7 +133,7 @@ None new.
      only ever sees a `Patient` dict (per its docstring: "Extract canonical field values from
      a normalized FHIR Patient resource"). Per the spec, an insurance identifier requires a
      co-submitted Payer ID and SHALL be namespace-scoped — represent this the same way
-     `legal_ids`/`namespace_ids` already do (`f"{namespace}|{value}"` — see
+     `legal_ids`/`namespace_ids` already do (`f"{assigner}|{value}"` — see
      `_extract_identifiers`'s existing `legal_ids` branch for the pattern), reading from
      `patient.get("identifier", [])` entries whose `type.coding` includes a member-ID or
      subscriber-ID type code. **Decide the exact FHIR identifier type codes to key off of at
@@ -188,10 +190,12 @@ None new.
                all_matched = False
                continue
 
+           # Try exact match first
            if self._comparator.exact_match(q_values, c_values):
                evaluation.field_outcomes[rf.name] = "exact"
                continue
 
+           # Try fuzzy if eligible
            if (
                rf.role == FieldRole.FUZZY_ELIGIBLE
                and rule.max_fuzzy_fields > 0
@@ -203,10 +207,12 @@ None new.
                    evaluation.fuzzy_fields.append(rf.name)
                    continue
                else:
+                   # Exceeded max fuzzy fields
                    evaluation.field_outcomes[rf.name] = "fuzzy_exceeded"
                    all_matched = False
                    continue
 
+           # No match
            evaluation.field_outcomes[rf.name] = "no_match"
            all_matched = False
 
@@ -290,7 +296,7 @@ None new.
                _rf(PHONE),
                _rf(ZIP_CODE),
            ),
-           max_fuzzy_fields=1,
+           max_fuzzy_fields=2,
            p_collision_exact=p_collision((_rf(FIRST_NAME, _F), _rf(LAST_NAME, _F), _rf(PHONE), _rf(ZIP_CODE))),
            p_collision_fuzzy=p_collision(
                (_rf(FIRST_NAME, _F), _rf(LAST_NAME, _F), _rf(PHONE), _rf(ZIP_CODE)),
@@ -312,6 +318,8 @@ None new.
    the Task 3 table above; write all nine remaining calls out in full using the two examples
    above as the pattern, the same way rule 27's and rule 33's are written out in full here —
    don't leave a real `...` or a bare comment in the actual file.
+
+   **Bug-prevention note:** This exact bug class — a `max_fuzzy_fields` value inconsistent with how many fields the stated `p_collision_fuzzy` figure requires to be simultaneously fuzzy — has now been found and fixed twice in this plan (session 5's rule 01, session 6's rule 33). When writing each remaining rule, don't just copy the table's `*`-marked fields into `fuzzy_fields` — verify with `p_collision(...)` that your chosen `fuzzy_fields` set and `max_fuzzy_fields` value together actually reproduce the table's stated figure, the same way rule 27 and rule 33's examples do.
    Update the module docstring and `MatchingRule`'s docstring reference to "26" -> reflect the
    new total, and update `MatchingEngine`'s module docstring (currently "All 26 approved field
    combinations") similarly.
