@@ -58,13 +58,12 @@ shell: ## Brings up the bash shell in dev docker
 
 .PHONY:clean-pre-commit
 clean-pre-commit: ## removes pre-commit hook
-	rm -f "$$(git rev-parse --show-toplevel)/.git/hooks/pre-commit"
+	uv run pre-commit uninstall
 
 .PHONY:setup-pre-commit
-setup-pre-commit:
-	cp "$$(git rev-parse --show-toplevel)/pre-commit-hook" "$$(git rev-parse --show-toplevel)/.git/hooks/pre-commit" && \
-	chmod +x "$$(git rev-parse --show-toplevel)/.git/hooks/pre-commit"
+setup-pre-commit: ## Install the pre-commit git hook (uv-managed, no Docker)
+	uv run pre-commit install
 
 .PHONY:run-pre-commit
-run-pre-commit: setup-pre-commit
-	./pre-commit-hook pre_commit_all_files
+run-pre-commit: ## Run all pre-commit hooks over all files (no install needed)
+	uv run pre-commit run --all-files

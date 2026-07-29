@@ -27,40 +27,30 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Create .env for docker-compose
-        # docker-compose.yml's dev service declares env_file: [.env], but .env is
-        # gitignored (it's for local secrets) and never exists in a fresh CI checkout,
-        # so `make up` fails with "env file .../.env not found". An empty file is
-        # sufficient - matches the Makefile's own `touch docker.env` convention in
-        # `devsetup`, just for the filename docker-compose.yml actually references.
-        run: touch .env
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+        with:
+          version: "0.11.6"
 
-      - name: Pull docker images
-        run: docker compose pull
+      # Runs directly on the runner rather than inside the Alpine-based Dockerfile:
+      # duckdb has no musllinux wheel, so installing it under Alpine means compiling
+      # DuckDB's C++ engine from source on every run (~40 minutes). ubuntu-latest is
+      # glibc, so this installs from a prebuilt wheel in seconds. The production
+      # Dockerfile is unaffected - it's only built at image-publish time, not per PR.
+      - name: Sync dependencies
+        run: uv sync --frozen --all-extras --group dev
 
+      # Lint gate - runs before tests. If any check fails, the job stops here and
+      # the test step never runs.
       - name: pre-commit
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: make run-pre-commit && make clean-pre-commit
-
-      # setup and install everything and run tests
-      - name: up
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: make up
-
-      - name: Set correct permissions for tests
-        run: |
-          sudo chmod -R 777 ${{ github.workspace }}
+        run: make run-pre-commit
 
       - name: Create reports output folder
-        run: |
-          mkdir -p ${{ github.workspace }}/reports
-          chmod -R 777 ${{ github.workspace }}/reports
+        run: mkdir -p ${{ github.workspace }}/reports
 
       - name: tests
-        run: |
-          docker compose run --rm -v ${{ github.workspace }}/reports:/reports dev pytest . --tb=auto --junitxml=/reports/test-results.xml
+        run: uv run pytest . --tb=auto --junitxml=${{ github.workspace }}/reports/test-results.xml
 
       - name: Upload pytest test results
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -69,10 +59,6 @@ jobs:
           path: ${{ github.workspace }}/reports/**/*.xml
         # Use always() to always run this step to publish test results when there are test failures
         if: ${{ always() }}
-
-      - name: Verify reports are generated
-        if: ${{ always() }}
-        run: ls -halt ${{ github.workspace }}/reports/
 
       # Publish all test results in the GitHub UI
       - name: Surface failing tests
@@ -96,11 +82,6 @@ jobs:
 
           # (Optional) Title of the test results section in the workflow summary
           title: Test results
-
-      - name: Cleanup
-        if: always()
-        run: |
-          docker compose down -v --remove-orphans
 
       - name: 'Cleanup build folder'
         if: always()
