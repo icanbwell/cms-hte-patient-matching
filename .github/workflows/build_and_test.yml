@@ -1,0 +1,91 @@
+name: Build and Test
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+# Prevent duplicate runs on the same ref and cancel in-progress on PR updates to save CI minutes
+concurrency:
+  group: build-and-test-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build_and_test:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checks-out your repository
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+        with:
+          version: "0.11.6"
+
+      # Runs directly on the runner rather than inside the Alpine-based Dockerfile:
+      # duckdb has no musllinux wheel, so installing it under Alpine means compiling
+      # DuckDB's C++ engine from source on every run (~40 minutes). ubuntu-latest is
+      # glibc, so this installs from a prebuilt wheel in seconds. The production
+      # Dockerfile is unaffected - it's only built at image-publish time, not per PR.
+      - name: Sync dependencies
+        run: uv sync --frozen --all-extras --group dev
+
+      # Lint gate - runs before tests. If any check fails, the job stops here and
+      # the test step never runs.
+      - name: pre-commit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: make run-pre-commit
+
+      - name: Create reports output folder
+        run: mkdir -p ${{ github.workspace }}/reports
+
+      - name: tests
+        run: uv run pytest . --tb=auto --junitxml=${{ github.workspace }}/reports/test-results.xml
+
+      - name: Upload pytest test results
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: pytest-results
+          path: ${{ github.workspace }}/reports/**/*.xml
+        # Use always() to always run this step to publish test results when there are test failures
+        if: ${{ always() }}
+
+      # Publish all test results in the GitHub UI
+      - name: Surface failing tests
+        if: always()
+        uses: pmeier/pytest-results-action@26894ffc9555e4c5886a50c332c4989158a99ed4 # main, as of this pin - see https://github.com/pmeier/pytest-results-action
+        with:
+          # A list of JUnit XML files, directories containing the former, and wildcard
+          # patterns to process.
+          # See @actions/glob for supported patterns.
+          path: ${{ github.workspace }}/reports/*.xml
+
+          # (Optional) Add a summary of the results at the top of the report
+          summary: true
+
+          # (Optional) Select which results should be included in the report.
+          # Follows the same syntax as `pytest -r`
+          display-options: fEX
+
+          # (Optional) Fail the workflow if no JUnit XML was found.
+          fail-on-empty: true
+
+          # (Optional) Title of the test results section in the workflow summary
+          title: Test results
+
+      - name: 'Cleanup build folder'
+        if: always()
+        run: |
+          ls -la ./
+          sudo rm -rf ${{ github.workspace }}/*
+          ls -la ./
