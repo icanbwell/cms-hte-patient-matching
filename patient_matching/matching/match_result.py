@@ -13,11 +13,18 @@ from typing import Any, Dict, List, Optional
 
 
 class MatchOutcome(Enum):
-    """Outcome of a matching operation."""
+    """Outcome of a matching operation.
+
+    Tiered per CMS v3.3 step 6's uniqueness response: exactly 1 candidate
+    is a MATCH, exactly 2 candidates ESCALATE (may go to MFA/disambiguation),
+    and 3+ candidates are AMBIGUOUS (must clear a stricter 1e-6 collision
+    threshold or the responder declines).
+    """
 
     MATCH = "match"
     NO_MATCH = "no_match"
-    AMBIGUOUS = "ambiguous"
+    ESCALATE = "escalate"  # exactly 2 candidates; may escalate to MFA/disambiguation
+    AMBIGUOUS = "ambiguous"  # 3+ candidates; stricter 1e-6 threshold applies
     INSUFFICIENT_FIELDS = "insufficient_fields"
 
 
@@ -54,7 +61,7 @@ class MatchResult:
     Attributes:
         outcome: Overall outcome of the match attempt.
         matched_patients: FHIR Patient dicts that matched (0 or 1 for
-            MATCH, 0 for NO_MATCH, 2+ for AMBIGUOUS).
+            MATCH, 0 for NO_MATCH, 2 for ESCALATE, 3+ for AMBIGUOUS).
         matched_rule_id: The Table 2 rule that produced the match.
         match_type: "exact" or "fuzzy".
         is_unique: Whether the match produced exactly one candidate.

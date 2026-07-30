@@ -95,7 +95,7 @@ def test_engine_fuzzy_match() -> None:
     assert result.match_type == "fuzzy"
 
 
-def test_engine_ambiguous_is_not_released() -> None:
+def test_engine_escalate_is_not_released() -> None:
     # Two different people sharing First + DOB + Phone (Rule 11).
     def with_phone(pid: str, given: str, family: str) -> Dict[str, Any]:
         p = _patient(pid, given, family, "2000-01-01", f"{pid} st")
@@ -114,7 +114,7 @@ def test_engine_ambiguous_is_not_released() -> None:
         "telecom": [{"system": "phone", "value": "+16175550000"}],
     }
     result = manager.match(query)
-    assert result.outcome == MatchOutcome.AMBIGUOUS
+    assert result.outcome == MatchOutcome.ESCALATE
     assert not result.is_unique
     assert result.candidate_count == 2
 

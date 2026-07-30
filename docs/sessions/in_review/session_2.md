@@ -189,15 +189,15 @@ is trivial to make unique per candidate — check `_make_patient`'s actual signa
 
 ## Validation (definition of "resolved")
 
-- [ ] `MatchOutcome.ESCALATE` exists and is used for exactly-2-candidate results.
-- [ ] `MatchOutcome.AMBIGUOUS` is used only for 3+-candidate results (never for exactly 2).
-- [ ] The existing `TestMatchingEngineAmbiguous` test (or its 2-candidate case) is updated to
+- [x] `MatchOutcome.ESCALATE` exists and is used for exactly-2-candidate results.
+- [x] `MatchOutcome.AMBIGUOUS` is used only for 3+-candidate results (never for exactly 2).
+- [x] The existing `TestMatchingEngineAmbiguous` test (or its 2-candidate case) is updated to
       expect `ESCALATE`, not `AMBIGUOUS`, if it exercises exactly 2 candidates — grep the test
       file for `AMBIGUOUS` and confirm every remaining reference is a genuine 3+-candidate
       case.
-- [ ] All four parametrized boundary cases (1/2/3/5 candidates) pass.
-- [ ] `make tests` is green (full suite, no regressions from the `AMBIGUOUS` meaning change).
-- [ ] `make run-pre-commit` is clean.
+- [x] All four parametrized boundary cases (1/2/3/5 candidates) pass.
+- [x] `make tests` is green (full suite, no regressions from the `AMBIGUOUS` meaning change).
+- [x] `make run-pre-commit` is clean.
 
 ## Open questions
 
@@ -208,4 +208,54 @@ Sean's sign-off to ship as an interim state ahead of session 5/6.
 
 ## Execution notes
 
-_(empty at authoring time; filled in by whoever executes the session)_
+Executed 2026-07-30 on feature branch `claude/session-2-tiered-uniqueness`, cut from
+`origin/main` at `c752873` (session 1's merge commit).
+
+- Added `MatchOutcome.ESCALATE` to `patient_matching/matching/match_result.py`, per the
+  session doc's exact snippet; updated the enum's class docstring and `MatchResult.
+  matched_patients`'s attribute docstring (also said "2+ for AMBIGUOUS", now stale — updated
+  to "2 for ESCALATE, 3+ for AMBIGUOUS").
+- Replaced `MatchingEngine._build_result`'s trailing `if/else` with the three-way branch from
+  the session doc verbatim (`== 1` MATCH, `== 2` ESCALATE, `>= 3` AMBIGUOUS with the documented
+  interim-conservative comment).
+- Test file `patient_matching/matching/tests/test_matching_engine.py`: renamed
+  `test_ambiguous_multiple_candidates` to `test_escalate_two_candidates` and updated its
+  assertion to `MatchOutcome.ESCALATE` (it exercises exactly 2 candidates); tightened its
+  `candidate_count >= 2` assertion to `== 2` since the count is now deterministic. Added
+  `TestTieredUniquenessResponse` with the doc's parametrized 1/2/3/5-candidate table, using
+  rule 08 (First Name + DOB + MBI, all-exact) with a distinct MBI per candidate, per the
+  doc's suggested pattern — `_make_patient`'s actual signature matched the doc's assumption
+  directly, no field-name adjustment needed.
+- Found and fixed a second, doc-unlisted regression: `patient_matching/matching/tests/
+  test_in_memory_backend.py::test_engine_ambiguous_is_not_released` also exercises exactly 2
+  candidates (via `MatchingManager`, which wraps `MatchingEngine` directly) and asserted
+  `MatchOutcome.AMBIGUOUS` — this would have failed after the branching change. Renamed to
+  `test_engine_escalate_is_not_released` and updated the assertion to `ESCALATE`. Confirmed via
+  grep that no other production or test code references `MatchOutcome.AMBIGUOUS`/`ESCALATE` in
+  a way requiring a change (`patient_matching/api/service.py::_compute_confidence` already
+  branches on `!= MatchOutcome.MATCH`, so it's outcome-agnostic and needed no update).
+
+Validation:
+- `uv run pytest` (full local suite, outside Docker): 332 passed, 2 skipped, no regressions.
+- `docker compose run --rm dev pytest patient_matching/matching/tests/`: 82 passed (78
+  pre-existing + 4 new parametrized cases), no regressions.
+- `docker compose run --rm dev pytest patient_matching/api/tests/`: pre-existing, unrelated
+  failure — `ImportError: Error loading shared library libstdc++.so.6` from `duckdb` in the
+  Alpine/musl dev image, on code this session never touched (`patient_matching/cache/
+  duckdb_cache.py`). Not a regression from this change; not investigated further (out of
+  scope). The equivalent tests pass locally outside Docker (`uv run pytest`, full suite above),
+  confirming this is a container/native-lib issue, not a logic issue.
+- `make tests`: 1 passed — as session 1 documented, this target only runs the top-level
+  `tests/` dir (`test_basic.py`), not `patient_matching/matching/tests/`. Pre-existing Makefile
+  gap, out of this session's scope; noted again here since the direct `docker compose run
+  --rm dev pytest patient_matching/matching/tests/` run above is the stronger evidence.
+- `make run-pre-commit`: clean (ruff, ruff format, mypy, bandit, secrets, etc.).
+- No P(collision) computation was added (out of scope per the doc); the 3+-candidate branch's
+  interim always-AMBIGUOUS behavior is exactly what session 5/6 are expected to replace.
+- Statistical rigor gate: does not apply — the 1e-6 threshold is CMS-mandated, not tuned, and
+  this session adds no new value judgment beyond the doc's explicit interim default (safe by
+  construction: can only under-return, never mis-release).
+
+Decision: PR opened from `claude/session-2-tiered-uniqueness` into `main`, left **open**
+rather than merged — per `conventions.md`'s Definition of Done, merging is Sean's call, not
+the executing agent's. Doc moved to `in_review/` accordingly.
