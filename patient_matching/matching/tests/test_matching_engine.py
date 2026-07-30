@@ -1,5 +1,6 @@
 """Tests for MatchingEngine."""
 
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from patient_matching.matching.backend import (
@@ -241,3 +242,30 @@ class TestMatchingEngineRuleEvaluations:
         evals = [e for e in result.rule_evaluations if e.rule_id == "26"]
         assert len(evals) == 1
         assert evals[0].field_outcomes.get("namespace_id") == "exact"
+
+
+class TestAuditFields:
+    """RuleEvaluation.timestamp/.version are populated per CMS Section VII."""
+
+    def test_timestamp_is_iso8601_utc(self) -> None:
+        candidate = _make_patient()
+        engine = MatchingEngine(backend=InMemoryBackend([candidate]))
+        result = engine.match(_make_patient())
+        assert result.rule_evaluations, "expected at least one rule evaluation"
+        for ev in result.rule_evaluations:
+            parsed = datetime.fromisoformat(ev.timestamp)
+            assert parsed.tzinfo is not None
+
+    def test_version_is_nonempty_string(self) -> None:
+        candidate = _make_patient()
+        engine = MatchingEngine(backend=InMemoryBackend([candidate]))
+        result = engine.match(_make_patient())
+        assert result.rule_evaluations
+        for ev in result.rule_evaluations:
+            assert isinstance(ev.version, str) and ev.version != ""
+
+    def test_version_matches_repo_version_file(self) -> None:
+        from patient_matching.matching.matching_engine import _PACKAGE_VERSION
+
+        repo_version = open("VERSION").read().strip()
+        assert _PACKAGE_VERSION == repo_version

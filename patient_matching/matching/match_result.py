@@ -1,8 +1,8 @@
 """Result types for patient matching operations.
 
 Captures audit-required fields per Section VII of the CMS proposal:
-rule ID, match type (exact/fuzzy), uniqueness result, and per-field
-comparison outcomes.
+rule ID, match type (exact/fuzzy), uniqueness result, per-field
+comparison outcomes, evaluation timestamp, and software version.
 """
 
 from __future__ import annotations
@@ -32,6 +32,9 @@ class RuleEvaluation:
         fuzzy_fields: Which fields (if any) were matched via fuzzy.
         negated_by_suffix: Whether a suffix conflict negated the match.
         field_outcomes: Per-field comparison results for audit.
+        timestamp: ISO 8601 UTC timestamp of when this evaluation ran.
+        version: The patient_matching package version that produced this
+            evaluation, from VERSION.
     """
 
     rule_id: str = ""
@@ -40,6 +43,8 @@ class RuleEvaluation:
     fuzzy_fields: List[str] = field(default_factory=list)
     negated_by_suffix: bool = False
     field_outcomes: Dict[str, str] = field(default_factory=dict)
+    timestamp: str = ""
+    version: str = ""
 
 
 @dataclass
