@@ -20,17 +20,27 @@ does exactly this, in order:
    callout names — a human-curated pick that does not always match the top row of *Up Next*.
 2. **Read this file (`conventions.md`) in full**, then read that session doc in full.
 3. **Verify upstream dependencies.** Every session lists upstream sessions it depends on.
-   Confirm each is already in `completed/`. If not, **stop** and tell Sean which dependency is
-   missing, and ask whether to proceed anyway.
+   Confirm each is already in `completed/` — meaning its PR has actually **merged into
+   `main`**, not just that the doc says the work is finished. A dependency sitting in
+   `in_review/` (PR open, not yet merged) does **not** satisfy this: branching from `main` now
+   won't have that session's code. If the dependency isn't in `completed/`, **stop** and tell
+   Sean which dependency is missing (and whether it's merely `in_review/` vs. not started at
+   all), and ask whether to proceed anyway.
 4. **Resolve open questions.** If any question in the session is still tagged
    `NEEDS HUMAN DECISION`, ask Sean now, before writing any code.
 5. **Set up an isolated workspace** — a feature branch cut from `main` (see
    "Workspace isolation" below) — never directly on `main` itself.
 6. **Execute the tasks in order**, test-first, per the TDD validation loop below.
-7. **Close the session**: fill in *Execution notes*, move the doc to `completed/`, update
-   `index.md`, commit the bookkeeping, **open a PR from the feature branch into
-   `main`**, and merge it once self-reviewed (see "Every session ends with
-   a PR" below) — a session is never closed by merging or fast-forwarding without one.
+7. **Close the session**: fill in *Execution notes*, commit the bookkeeping, **open a PR from
+   the feature branch into `main`** (see "Every session ends with a PR" below — a session is
+   never closed by merging or fast-forwarding without one), then either:
+   - **merged now** (self-reviewed clean, no reason to wait): move the doc to `completed/` and
+     update `index.md`'s *Completed* table; or
+   - **PR left open** (e.g. waiting on Sean's explicit go-ahead, since merging is his call to
+     make): move the doc to `in_review/` instead (see that folder's README), update `index.md`
+     to reflect that, and record the decision in *Execution notes*. Come back and move it from
+     `in_review/` to `completed/` once the PR actually merges — that move can happen in a later,
+     unrelated session/conversation; it doesn't need to be the one that opened the PR.
 
 If told "start session N" specifically, skip step 1's queue lookup and go straight to that
 session (still doing steps 2-7).
@@ -43,14 +53,19 @@ docs/sessions/
                    recently completed, one-line summaries
   conventions.md   this file
   pending/         session_N.md files not yet started (the queue; order = suggested execution order)
-  completed/       session_N.md files that met their Definition of Done
+  in_review/       session_N.md files whose work is done and PR is open, but not yet merged
+  completed/       session_N.md files that met their Definition of Done (PR merged into main)
   rejected/        session_N.md files Sean decided not to pursue (kept, not deleted)
 ```
 
-A session moves **pending -> completed** when its Definition of Done is met, or
-**pending -> rejected** when Sean decides against it. Sessions are never edited in place after
-execution starts; if the plan turns out wrong mid-execution, finish or cleanly abandon, note it
-in *Execution notes*, and author a follow-up session rather than rewriting history.
+A session moves **pending -> in_review** once its own work is done and its PR is open but not
+yet merged, then **in_review -> completed** once that PR merges (these two moves can happen in
+different sessions/conversations — see the "start the next session" protocol's step 7). A
+session that merges immediately (no reason to wait) can skip `in_review/` and go straight
+**pending -> completed**. A session moves **pending -> rejected** at any point before
+`completed/` when Sean decides against it. Sessions are never edited in place after execution
+starts; if the plan turns out wrong mid-execution, finish or cleanly abandon, note it in
+*Execution notes*, and author a follow-up session rather than rewriting history.
 
 ## Anatomy of a session doc
 
@@ -174,7 +189,9 @@ development:
   not a gate on any session in this backlog.
 - **Sessions can be authored and coded in any order** — the gate applies at merge time, not
   start time. Sessions 5 and 6 (rule-defining) can be developed in parallel with session 3,
-  but shouldn't move to `completed/` until session 3 exists and produces their Tier-1 report.
+  but shouldn't move to `completed/` until session 3 itself is in `completed/` (merged into
+  `main`) and its Tier-1 report is actually there to diff against — session 3 sitting in
+  `in_review/` isn't enough, since 5/6 would need to branch from a `main` that has the report.
 - Sessions that don't touch rule behavior (1, 2) are exempt entirely, at every tier.
 
 ## PHI / data-handling guardrail
@@ -213,15 +230,19 @@ against (per the Security guardrail above) before the change lands, and gives *E
 notes* a natural home (the PR description) alongside the session doc's own copy. A session is
 not done until its PR is merged — see Definition of Done below. If a PR is intentionally left
 open past a session's other criteria being met (e.g. waiting on Sean's explicit go-ahead to
-merge), that's a valid stopping point, but it must be recorded as such in *Execution notes*,
-not silently skipped.
+merge), that's a valid stopping point, but it must be recorded as such in *Execution notes*
+(not silently skipped) and the doc moved to `in_review/`, not `completed/` — see "Session
+lifecycle and folders" above.
 
 ## Dependency and ordering rules
 
-- Don't start a session whose upstream sessions aren't in `completed/` without explicit
-  sign-off from Sean.
+- Don't start a session whose upstream sessions aren't in `completed/` (merged into `main`,
+  not just `in_review/`) without explicit sign-off from Sean.
 - `index.md`'s Up Next order reflects dependencies but isn't the only valid order —
   independent sessions may be reordered.
+- A session with only a *merge-gate* dependency (see the statistical rigor gate) rather than a
+  hard code dependency can still be coded while the gating session is `in_review/` — it just
+  can't move to `completed/` first.
 - A missing prerequisite discovered mid-session becomes a new session with a re-sequenced
   index, not silent scope expansion of the current one.
 
@@ -237,11 +258,16 @@ A session is done when **all** hold:
 6. Work is committed on its feature branch, a PR from that branch into `main`
    is open, and it has been merged (see "Every session ends with a PR" above) — or, if Sean has
    explicitly said to leave it open rather than merge yet, that decision is recorded in
-   *Execution notes*.
+   *Execution notes* and the doc lives in `in_review/`, not `completed/`, until it does merge.
 
-Then: fill in *Execution notes*, move `pending/session_N.md` -> `completed/session_N.md`,
-update `index.md` (move the row to the top of *Completed*, trim that list back to 3 if needed,
-re-set *Suggested Next Session*), commit the bookkeeping.
+Then: fill in *Execution notes*, and either:
+- **merged**: move `pending/session_N.md` -> `completed/session_N.md`, update `index.md`
+  (move the row to the top of *Completed*, trim that list back to 3 if needed, re-set
+  *Suggested Next Session*), commit the bookkeeping; or
+- **PR open, not yet merged**: move `pending/session_N.md` -> `in_review/session_N.md`, add it
+  to `index.md`'s *In Review* section, commit the bookkeeping. Later, once the PR merges (in
+  this session or a future one), move `in_review/session_N.md` -> `completed/session_N.md` and
+  update `index.md` the same way the "merged" case above does.
 
 ## Open-questions handling
 
