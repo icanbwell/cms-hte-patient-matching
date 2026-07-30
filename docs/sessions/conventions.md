@@ -3,11 +3,13 @@
 > **Read this file first, every session.**
 
 These documents let a fresh agent conversation execute a scoped piece of work end-to-end from
-"start the next session." This repo backs open PR #3 (`claude/cms-matching-v1`, "CMS matching
-v1: in-memory backend + demo notebook"); sessions build directly on that branch, not `main`
-(which currently has no code — `main` is just the initial commit). Sessions are submitted for
-Sean's review (self-review during Zack Malone's PTO, 2026-07-21 -> 2026-08-01); a rejected
-session moves to `rejected/` (kept, not deleted — see `rejected/README.md`).
+"start the next session." PR #3 (`claude/cms-matching-v1`, "CMS matching v1: in-memory backend
++ demo notebook") merged into `main` on 2026-07-29 (commit `cf9b71b`); sessions now build
+directly on `main`, which is the integration branch for this backlog. (Prior to that merge,
+sessions built on `claude/cms-matching-v1` because `main` had no code yet — see git history if
+that context is needed.) Sessions are submitted for Sean's review (self-review during Zack
+Malone's PTO, 2026-07-21 -> 2026-08-01); a rejected session moves to `rejected/` (kept, not
+deleted — see `rejected/README.md`).
 
 ## The "start the next session" protocol
 
@@ -22,12 +24,12 @@ does exactly this, in order:
    missing, and ask whether to proceed anyway.
 4. **Resolve open questions.** If any question in the session is still tagged
    `NEEDS HUMAN DECISION`, ask Sean now, before writing any code.
-5. **Set up an isolated workspace** — a feature branch cut from `claude/cms-matching-v1` (see
-   "Workspace isolation" below) — never directly on `claude/cms-matching-v1` itself.
+5. **Set up an isolated workspace** — a feature branch cut from `main` (see
+   "Workspace isolation" below) — never directly on `main` itself.
 6. **Execute the tasks in order**, test-first, per the TDD validation loop below.
 7. **Close the session**: fill in *Execution notes*, move the doc to `completed/`, update
    `index.md`, commit the bookkeeping, **open a PR from the feature branch into
-   `claude/cms-matching-v1`**, and merge it once self-reviewed (see "Every session ends with
+   `main`**, and merge it once self-reviewed (see "Every session ends with
    a PR" below) — a session is never closed by merging or fast-forwarding without one.
 
 If told "start session N" specifically, skip step 1's queue lookup and go straight to that
@@ -197,23 +199,22 @@ per-session.
 
 ## Workspace isolation per session
 
-A feature branch cut from `claude/cms-matching-v1`, merged back into `claude/cms-matching-v1`
-via PR (self-reviewed by Sean) — since `claude/cms-matching-v1` is not `main`, this satisfies
-"never directly on the base branch" while keeping all Line B work in one place until PR #3
-itself is ready to merge to `main`.
+A feature branch cut from `main`, merged back into `main` via PR (self-reviewed by Sean) —
+this satisfies "never directly on the base branch." (Before PR #3 merged on 2026-07-29, this
+section pointed at `claude/cms-matching-v1` instead of `main`, back when `main` had no code.)
 
 ## Every session ends with a PR
 
 **Every session, no exceptions, ends by opening a PR from its feature branch into
-`claude/cms-matching-v1`** — never a direct merge, fast-forward, or push straight to
-`claude/cms-matching-v1` without one, even though Sean is self-reviewing during Zack's PTO.
-The PR is what makes a session's diff visible and reviewable as a single unit, gives Aikido/
-Gecko's automated scans a checkpoint to run against (per the Security guardrail above) before
-the change lands, and gives *Execution notes* a natural home (the PR description) alongside
-the session doc's own copy. A session is not done until its PR is merged — see Definition of
-Done below. If a PR is intentionally left open past a session's other criteria being met (e.g.
-waiting on Sean's explicit go-ahead to merge), that's a valid stopping point, but it must be
-recorded as such in *Execution notes*, not silently skipped.
+`main`** — never a direct merge, fast-forward, or push straight to `main` without one, even
+though Sean is self-reviewing during Zack's PTO. The PR is what makes a session's diff visible
+and reviewable as a single unit, gives Aikido/Gecko's automated scans a checkpoint to run
+against (per the Security guardrail above) before the change lands, and gives *Execution
+notes* a natural home (the PR description) alongside the session doc's own copy. A session is
+not done until its PR is merged — see Definition of Done below. If a PR is intentionally left
+open past a session's other criteria being met (e.g. waiting on Sean's explicit go-ahead to
+merge), that's a valid stopping point, but it must be recorded as such in *Execution notes*,
+not silently skipped.
 
 ## Dependency and ordering rules
 
@@ -233,7 +234,7 @@ A session is done when **all** hold:
 4. For rule-changing sessions, the statistical rigor gate's Tier 1 requirement is met.
 5. The end state is stable and at least as capable as the start state — if not, the session
    does not merge; revert and write up the blocker instead.
-6. Work is committed on its feature branch, a PR from that branch into `claude/cms-matching-v1`
+6. Work is committed on its feature branch, a PR from that branch into `main`
    is open, and it has been merged (see "Every session ends with a PR" above) — or, if Sean has
    explicitly said to leave it open rather than merge yet, that decision is recorded in
    *Execution notes*.

@@ -12,8 +12,9 @@ run whatever **Suggested Next Session** names below.
 ## Suggested Next Session
 
 > **Session 1 — Audit record completeness.** Smallest, no dependencies, no statistical-rigor
-> gate to satisfy (not a rule change) — the fastest way to get the "start the next session"
-> loop actually exercised once before tackling larger work.
+> gate to satisfy (not a rule change) — a quick, low-risk pick while session 3's PR is out for
+> review. (Sessions 5/6 are also unblocked now that session 3's Tier-1 report exists, but they're
+> larger — session 1 is the fastest next win.)
 
 ## Up Next (execution order)
 
@@ -21,18 +22,18 @@ run whatever **Suggested Next Session** names below.
 |---|---------|--------|-----------|------|--------|-------------------|
 | 1 | [session_1](pending/session_1.md) | Line B: CMS v3.3 migration | — | S | pending | Add `timestamp`/`version` to the audit record (§VII) |
 | 2 | [session_2](pending/session_2.md) | Line B: CMS v3.3 migration | — | S/M | pending | Split `AMBIGUOUS` into 2-candidate vs. 3+-candidate tiered response |
-| 3 | [session_3](pending/session_3.md) | Evaluation & Statistical Rigor | — | M/L | pending | ONC self-match baseline wired to `rule_eval.py`; pairwise matcher + sampled negatives |
 | 4 | [session_4](pending/session_4.md) | Evaluation & Statistical Rigor | 3 | M | pending | Real-world FHIR data source for `rule_eval.py`, via reproducible queries |
 | 5 | [session_5](pending/session_5.md) | Line B: CMS v3.3 migration | — | M | pending | Table 3 u-probabilities + P(collision) evaluator |
 | 6 | [session_6](pending/session_6.md) | Line B: CMS v3.3 migration | 5 | M/L | pending | Expand Table 2 to v3.3's 37 rules |
 
-Sessions 5 and 6 can be coded in parallel with session 3 (the statistical-rigor gate applies
-at merge time, not start time — see `conventions.md`), but shouldn't move to `completed/`
-until session 3 exists.
+Sessions 5 and 6's merge gate (session 3's Tier-1 report) is now satisfied — see Completed
+below — so they're unblocked, pending Sean's review of session 3's PR.
 
 ## Completed (most recent 3)
 
-_(none yet)_
+| # | Session | Thread | One-line summary |
+|---|---------|--------|-------------------|
+| 3 | [session_3](completed/session_3.md) | Evaluation & Statistical Rigor | ONC self-match baseline wired to `rule_eval.py` (1M-record dataset, not the ~28K assumed); pairwise matcher + sampled negatives. PR open, not yet merged. |
 
 ### Keeping this index current (do this when closing a session)
 1. Move the row from *Up Next* to the **top** of *Completed*.

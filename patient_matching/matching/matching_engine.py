@@ -95,6 +95,30 @@ class MatchingEngine:
 
         return self._build_result(matched_patients_by_rule, all_evaluations)
 
+    def evaluate_pair(
+        self, query_fields: PatientFields, candidate_fields: PatientFields
+    ) -> bool:
+        """Decide whether two already-extracted field sets match, per Table 2.
+
+        This is the pure pairwise decision (no backend search, no uniqueness
+        check) - the same logic match() applies per candidate, factored out so
+        it can be used directly against precomputed pairs (see
+        evaluation/onc_baseline.py) without needing a MatchingBackend at all.
+
+        Known limitation: this checks a candidate's full known-value sets
+        directly, while match()'s blocking (_build_criteria) only blocks on a
+        single representative value per field before verification - so for a
+        candidate with multiple values in a blocked field (e.g. multiple
+        historical last names), the two paths are not guaranteed to agree.
+        """
+        for rule in self._rules:
+            evaluation = self._evaluate_rule(rule, query_fields, candidate_fields)
+            if evaluation.matched and not self._suffix_conflict(
+                query_fields.suffixes, candidate_fields.suffixes
+            ):
+                return True
+        return False
+
     def _query_has_fields(
         self, query_fields: PatientFields, rule: MatchingRule
     ) -> bool:
