@@ -11,6 +11,7 @@ __init__.py and is not an installed package):
 from __future__ import annotations
 
 import random
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Set, Tuple
 
@@ -24,10 +25,13 @@ from patient_matching.normalization.manager import NormalizationManager
 
 MASKING_SCENARIOS = ("none", "drop_email_phone")
 
-# Shared engine instance: evaluate_pair() doesn't touch the backend, so one
-# instance (with an empty backend) serves every pair rather than
-# reconstructing the rule set/comparator per call.
-_ENGINE = MatchingEngine(backend=InMemoryBackend([]))
+
+@lru_cache(maxsize=1)
+def _engine() -> MatchingEngine:
+    """Lazily-built, read-only engine: evaluate_pair() never mutates the rule
+    set, comparator, or (empty, unused) backend, so one instance safely serves
+    every pair rather than reconstructing it per call."""
+    return MatchingEngine(backend=InMemoryBackend([]))
 
 
 def _mask(patient: Dict[str, Any], scenario: str) -> Dict[str, Any]:
@@ -92,7 +96,7 @@ def build_onc_pairs(
 
 def current_engine_matcher(features: Mapping[str, Any]) -> bool:
     """Adapts MatchingEngine.evaluate_pair to rule_eval.py's Matcher signature."""
-    return _ENGINE.evaluate_pair(features["query"], features["candidate"])
+    return _engine().evaluate_pair(features["query"], features["candidate"])
 
 
 if __name__ == "__main__":
