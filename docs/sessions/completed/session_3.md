@@ -536,6 +536,14 @@ guessed in advance:
   engine can't always confirm a record against itself once email+phone are dropped, on top of
   whatever the ONC `Null` shard's missing fields already cost it.
 - PR opened: https://github.com/icanbwell/patient-matching/pull/11, from
-  `claude/session-3-onc-baseline` into `main`; **left open, not merged** - merging a PR is a
-  shared/visible action, so this is left for Sean's explicit go-ahead rather than auto-merged,
-  even though `conventions.md`'s normal flow is self-review-and-merge during Zack's PTO.
+  `claude/session-3-onc-baseline` into `main`. Left open rather than auto-merged, since merging
+  is a shared/visible action; Sean reviewed and merged it himself (merged 2026-07-30T04:28:33Z,
+  commit `be1280e`). Moved from `in_review/` to `completed/` accordingly - see
+  `docs/sessions/in_review/README.md` for why that's a separate step from opening the PR.
+- While this session was `in_review/`, its existence surfaced a real gap: session 4 (and,
+  before this doc moved here, the "start the next session" protocol's dependency check
+  generally) had no way to distinguish "session 3's own work is finished" from "session 3's
+  code is actually on `main`." Added `docs/sessions/in_review/` as a distinct lifecycle state
+  to close that gap (`conventions.md` updated accordingly), and fed the same fix back into the
+  reusable `~/git/session-planning-playbook.md` template, since the identical bug exists there
+  for any project adopting this pattern.
