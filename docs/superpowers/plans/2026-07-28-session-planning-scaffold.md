@@ -8,6 +8,21 @@
 
 **Tech Stack:** Markdown files under `docs/sessions/`. No new runtime dependencies. Source-of-truth for all technical claims is the current state of `patient_matching/matching/*.py` and `evaluation/rule_eval.py` on `claude/cms-matching-v1`, as read during this plan's authoring (2026-07-28) — cited by exact file and function name throughout.
 
+> **Post-execution note (2026-07-30):** This plan is a historical record of what was executed
+> on 2026-07-28 — per this repo's own "never rewrite history" principle (see
+> `docs/sessions/conventions.md`), the task bodies below are left as originally authored, not
+> edited to match later reality. Two things have since changed; the **live**
+> `docs/sessions/conventions.md` and `docs/sessions/index.md` are the source of truth, not this
+> plan's embedded snapshots of them:
+> 1. **Branch base**: PR #3 (`claude/cms-matching-v1`) merged into `main` on 2026-07-29
+>    (commit `cf9b71b`). Every reference below to sessions branching from/PR'ing into
+>    `claude/cms-matching-v1` now means `main` instead.
+> 2. **Session lifecycle**: a third folder, `docs/sessions/in_review/`, was added
+>    (session 3, 2026-07-30) for sessions whose work is done and PR is open but not yet merged
+>    — distinct from `completed/`, which now specifically means "PR merged into `main`." This
+>    matters for Task 1's directory scaffold and Task 2's embedded `conventions.md` step-3/
+>    step-7 protocol text below, both written before this distinction existed.
+
 ## Global Constraints
 
 - Every file this plan creates lives under `docs/sessions/` in the `patient-matching` repo, on branch `claude/cms-matching-v1`. Do not touch `main`.

@@ -4,6 +4,14 @@
 **Author:** Sean (via Claude Code)
 **Status:** proposed
 
+> **Post-execution note (2026-07-30):** kept as-authored, per this repo's own "never rewrite
+> history" principle — see `docs/sessions/conventions.md` for what's actually current. Two
+> things below are now stale: (1) PR #3 (`claude/cms-matching-v1`) merged into `main` on
+> 2026-07-29, so "sessions build on `claude/cms-matching-v1`, not `main`" (below) now reads the
+> other way around — sessions build on `main`. (2) The lifecycle this design proposes
+> (`pending/completed/rejected`) gained a fourth-ish state, `docs/sessions/in_review/`, for
+> work that's done with an open-but-unmerged PR — added while session 3 was awaiting merge.
+
 ## Purpose
 
 Adopt the `session-planning-playbook.md` structure (`docs/sessions/`) in this repo so the
