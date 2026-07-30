@@ -535,7 +535,7 @@ guessed in advance:
   masked self-pairs is a real, useful signal for future sessions (5/6): the current 26-rule
   engine can't always confirm a record against itself once email+phone are dropped, on top of
   whatever the ONC `Null` shard's missing fields already cost it.
-- PR opened from `claude/session-3-onc-baseline` into `main`; **left open, not merged** -
-  merging a PR is a shared/visible action, so this is left for Sean's explicit go-ahead rather
-  than auto-merged, even though `conventions.md`'s normal flow is self-review-and-merge during
-  Zack's PTO.
+- PR opened: https://github.com/icanbwell/patient-matching/pull/11, from
+  `claude/session-3-onc-baseline` into `main`; **left open, not merged** - merging a PR is a
+  shared/visible action, so this is left for Sean's explicit go-ahead rather than auto-merged,
+  even though `conventions.md`'s normal flow is self-review-and-merge during Zack's PTO.
