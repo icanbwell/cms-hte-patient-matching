@@ -9,7 +9,10 @@ Evaluates a query patient against candidates from the backend, applying:
 
 from __future__ import annotations
 
+import importlib.resources
 import logging
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 from .backend import FieldCriterion, MatchType, MatchingBackend
@@ -23,6 +26,24 @@ from .table2_rules import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _read_package_version() -> str:
+    """Read the package version from the repo-root VERSION file.
+
+    Falls back to "unknown" if VERSION can't be found (e.g. installed without
+    the repo root present) rather than raising - a missing version string
+    should never break matching.
+    """
+    try:
+        package_dir = Path(str(importlib.resources.files("patient_matching")))
+        version_path = package_dir.parent / "VERSION"
+        return version_path.read_text().strip()
+    except (FileNotFoundError, ModuleNotFoundError, OSError):
+        return "unknown"
+
+
+_PACKAGE_VERSION = _read_package_version()
 
 
 class MatchingEngine:
@@ -170,7 +191,11 @@ class MatchingEngine:
         Returns a RuleEvaluation with field-by-field outcomes.
         Respects max_fuzzy_fields constraint.
         """
-        evaluation = RuleEvaluation(rule_id=rule.rule_id)
+        evaluation = RuleEvaluation(
+            rule_id=rule.rule_id,
+            timestamp=datetime.now(timezone.utc).isoformat(),
+            version=_PACKAGE_VERSION,
+        )
         fuzzy_count = 0
         all_matched = True
 

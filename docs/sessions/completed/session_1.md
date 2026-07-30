@@ -188,4 +188,49 @@ the repo's existing `VERSION` file convention.
 
 ## Execution notes
 
-_(empty at authoring time; filled in by whoever executes the session)_
+Executed 2026-07-29 on feature branch `claude/session-1-audit-fields` (cut from `origin/main`
+at `be1280e`, session 3's merge commit).
+
+- Added `timestamp: str = ""` and `version: str = ""` to `RuleEvaluation`
+  (`patient_matching/matching/match_result.py`), updated its `Attributes:` docstring and the
+  module docstring.
+- Added `_read_package_version()` and module-level `_PACKAGE_VERSION` to
+  `patient_matching/matching/matching_engine.py`, reading the repo-root `VERSION` file via
+  `importlib.resources.files("patient_matching")`. Deviated from the session doc's literal
+  snippet: routed the result through `pathlib.Path(str(...))` before `.parent` — mypy rejects
+  `.parent` on `importlib.resources.abc.Traversable` (`error: "Traversable" has no attribute
+  "parent"`) and flags the resulting `.read_text()` as `Any`. `pathlib.Path` gives the same
+  runtime behavior with a type mypy can check.
+- Populated both fields in `_evaluate_rule`'s `RuleEvaluation(...)` construction.
+- Added `TestAuditFields` to `patient_matching/matching/tests/test_matching_engine.py` per the
+  session's test table, using the file's actual backend test-double name (`InMemoryBackend`)
+  instead of the doc's placeholder `_InMemoryTestBackend`.
+
+Validation:
+- TDD: confirmed all three new tests failed for the right reason (missing attrs / missing
+  `_PACKAGE_VERSION`) before implementing, then passed after.
+- `docker compose run --rm dev pytest patient_matching/matching/tests/ -v`: 78 passed (75
+  pre-existing + 3 new), no regressions.
+- `make tests`: 1 passed — this target only runs `pytest tests` (the top-level `tests/` dir,
+  currently just `test_basic.py`); it does not reach `patient_matching/matching/tests/`. This is
+  a pre-existing Makefile gap, not something introduced or fixed by this session — left as-is
+  since fixing it is out of this session's scope, but noting it here since it means the exact
+  `make tests` gate is weaker evidence than the direct `patient_matching/matching/tests/` run
+  above.
+- `make run-pre-commit`: clean (ruff, ruff format, mypy, bandit, secrets, etc. all passed) —
+  required the `pathlib` deviation above to get mypy green.
+- No rule/matching *behavior* changed (audit plumbing only) — statistical rigor gate does not
+  apply, per `conventions.md`.
+
+Decision: PR opened from `claude/session-1-audit-fields` into `main`, left **open** rather than
+merged — per `conventions.md`'s Definition of Done, merging is Sean's call to make, not the
+executing agent's. Doc moved to `in_review/` accordingly.
+
+PR #13 reviewed (approved by Kenan Spruill, 2026-07-30) after a request posted to
+`#team-bailey-ai-internal`. Also self-reviewed via a 5-agent automated code-review pass — three
+candidate issues surfaced (an eager `_PACKAGE_VERSION` module-global, `index.md` scope slightly
+exceeding session 1's own remit, a premature `Suggested Next Session` reset) but none cleared
+the confidence bar for a blocking comment; see PR #13's discussion for detail. Sean approved
+merging now that review landed. Merged into `main`; doc moved from `in_review/` to `completed/`
+in the same close-out (no separate bookkeeping PR needed, unlike session 3, since the merge and
+the doc move happened together).

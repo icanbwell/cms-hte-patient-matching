@@ -11,16 +11,16 @@ run whatever **Suggested Next Session** names below.
 
 ## Suggested Next Session
 
-> **Session 1 — Audit record completeness.** Smallest, no dependencies, no statistical-rigor
-> gate to satisfy (not a rule change) — the fastest next win now that session 3 has merged.
-> Session 4 is also unblocked now (its hard code dependency on session 3 is satisfied) and
-> sessions 5/6's merge gate is satisfied too, but session 1 is still the smallest, quickest pick.
+> **Session 2 — Tiered `AMBIGUOUS` response.** Smallest remaining item with no dependencies and
+> no statistical-rigor gate (explicitly exempted, same as session 1, per `conventions.md`).
+> Sessions 1 and 3 are both fully merged now — session 4's hard code dependency on session 3 is
+> satisfied and sessions 5/6's merge gate is satisfied too, so 2/4/5/6 are all genuinely
+> startable. Session 2 is still the smallest, quickest pick.
 
 ## Up Next (execution order)
 
 | # | Session | Thread | Depends on | Size | Status | One-line summary |
 |---|---------|--------|-----------|------|--------|-------------------|
-| 1 | [session_1](pending/session_1.md) | Line B: CMS v3.3 migration | — | S | pending | Add `timestamp`/`version` to the audit record (§VII) |
 | 2 | [session_2](pending/session_2.md) | Line B: CMS v3.3 migration | — | S/M | pending | Split `AMBIGUOUS` into 2-candidate vs. 3+-candidate tiered response |
 | 4 | [session_4](pending/session_4.md) | Evaluation & Statistical Rigor | 3 | M | pending | Real-world FHIR data source for `rule_eval.py`, via reproducible queries |
 | 5 | [session_5](pending/session_5.md) | Line B: CMS v3.3 migration | — | M | pending | Table 3 u-probabilities + P(collision) evaluator |
@@ -38,6 +38,7 @@ _(none currently — see `in_review/README.md` for what lands here.)_
 
 | # | Session | Thread | One-line summary |
 |---|---------|--------|-------------------|
+| 1 | [session_1](completed/session_1.md) | Line B: CMS v3.3 migration | Add `timestamp`/`version` to the audit record (§VII) — audit plumbing only, no matching-behavior change. Merged via [#13](https://github.com/icanbwell/patient-matching/pull/13). |
 | 3 | [session_3](completed/session_3.md) | Evaluation & Statistical Rigor | ONC self-match baseline wired to `rule_eval.py` (1M-record dataset, not the ~28K assumed); pairwise matcher + sampled negatives. Merged via [#11](https://github.com/icanbwell/patient-matching/pull/11). |
 
 ### Keeping this index current (do this when closing a session)
