@@ -36,7 +36,7 @@ on 5).
 
 | # | Session | Thread | PR | One-line summary |
 |---|---------|--------|----|--------------------|
-| 2 | [session_2](in_review/session_2.md) | Line B: CMS v3.3 migration | (open — see PR) | Split `AMBIGUOUS` into `ESCALATE` (exactly 2 candidates) vs. `AMBIGUOUS` (3+, stricter interim threshold) |
+| 2 | [session_2](in_review/session_2.md) | Line B: CMS v3.3 migration | [#14](https://github.com/icanbwell/patient-matching/pull/14) | Split `AMBIGUOUS` into `ESCALATE` (exactly 2 candidates) vs. `AMBIGUOUS` (3+, stricter interim threshold) |
 
 ## Completed (most recent 3)
 

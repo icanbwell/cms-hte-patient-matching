@@ -256,6 +256,7 @@ Validation:
   this session adds no new value judgment beyond the doc's explicit interim default (safe by
   construction: can only under-return, never mis-release).
 
-Decision: PR opened from `claude/session-2-tiered-uniqueness` into `main`, left **open**
-rather than merged — per `conventions.md`'s Definition of Done, merging is Sean's call, not
-the executing agent's. Doc moved to `in_review/` accordingly.
+Decision: PR [#14](https://github.com/icanbwell/patient-matching/pull/14) opened from
+`claude/session-2-tiered-uniqueness` into `main`, left **open** rather than merged — per
+`conventions.md`'s Definition of Done, merging is Sean's call, not the executing agent's. Doc
+moved to `in_review/` accordingly.
