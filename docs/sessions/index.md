@@ -11,28 +11,32 @@ run whatever **Suggested Next Session** names below.
 
 ## Suggested Next Session
 
-> **Session 2 — Tiered `AMBIGUOUS` response.** Smallest remaining item with no dependencies and
-> no statistical-rigor gate (explicitly exempted, same as session 1, per `conventions.md`).
-> Sessions 1 and 3 are both fully merged now — session 4's hard code dependency on session 3 is
-> satisfied and sessions 5/6's merge gate is satisfied too, so 2/4/5/6 are all genuinely
-> startable. Session 2 is still the smallest, quickest pick.
+> **Session 4 — Real-world FHIR data source for `rule_eval.py`.** Session 2 (tiered
+> `AMBIGUOUS`/`ESCALATE` response) is done and its PR is open (see *In Review* below), so it's
+> no longer a valid pick. Of the remaining pending sessions, 4 and 5 are both genuinely
+> startable (4's hard code dependency on session 3 is satisfied; 5 has no dependencies at all);
+> 6 is not yet startable (depends on 5). Picking 4: it's the next Tier-2 statistical-rigor
+> milestone per `conventions.md` and doesn't share Line B's CMS-v3.3-spec-fetch dependency that
+> 5/6 both carry.
 
 ## Up Next (execution order)
 
 | # | Session | Thread | Depends on | Size | Status | One-line summary |
 |---|---------|--------|-----------|------|--------|-------------------|
-| 2 | [session_2](pending/session_2.md) | Line B: CMS v3.3 migration | — | S/M | pending | Split `AMBIGUOUS` into 2-candidate vs. 3+-candidate tiered response |
 | 4 | [session_4](pending/session_4.md) | Evaluation & Statistical Rigor | 3 | M | pending | Real-world FHIR data source for `rule_eval.py`, via reproducible queries |
 | 5 | [session_5](pending/session_5.md) | Line B: CMS v3.3 migration | — | M | pending | Table 3 u-probabilities + P(collision) evaluator |
 | 6 | [session_6](pending/session_6.md) | Line B: CMS v3.3 migration | 5 | M/L | pending | Expand Table 2 to v3.3's 37 rules |
 
 Session 3 merged into `main` (PR [#11](https://github.com/icanbwell/patient-matching/pull/11),
 2026-07-30) — session 4's hard code dependency and sessions 5/6's merge gate are both satisfied
-now, all four are genuinely startable.
+now, all three remaining pending sessions above are genuinely startable except 6 (still gated
+on 5).
 
 ## In Review
 
-_(none currently — see `in_review/README.md` for what lands here.)_
+| # | Session | Thread | PR | One-line summary |
+|---|---------|--------|----|--------------------|
+| 2 | [session_2](in_review/session_2.md) | Line B: CMS v3.3 migration | [#14](https://github.com/icanbwell/patient-matching/pull/14) | Split `AMBIGUOUS` into `ESCALATE` (exactly 2 candidates) vs. `AMBIGUOUS` (3+, stricter interim threshold) |
 
 ## Completed (most recent 3)
 

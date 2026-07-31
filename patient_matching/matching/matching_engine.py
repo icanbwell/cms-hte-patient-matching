@@ -284,7 +284,7 @@ class MatchingEngine:
                                 first_match_type = ev.match_type
                                 break
 
-        # Uniqueness check: must produce exactly 1 candidate
+        # Uniqueness check: tiered per CMS v3.3 - 1 unique / 2 escalate / 3+ stricter threshold
         if len(all_matched) == 1:
             return MatchResult(
                 outcome=MatchOutcome.MATCH,
@@ -295,8 +295,24 @@ class MatchingEngine:
                 rule_evaluations=evaluations,
                 candidate_count=len(all_matched),
             )
+        elif len(all_matched) == 2:
+            return MatchResult(
+                outcome=MatchOutcome.ESCALATE,
+                matched_patients=all_matched,
+                matched_rule_id=first_rule_id,
+                match_type=first_match_type,
+                is_unique=False,
+                rule_evaluations=evaluations,
+                candidate_count=len(all_matched),
+            )
         else:
-            # Ambiguous: 2+ candidates matched
+            # 3+ candidates: CMS v3.3 requires a stricter 1e-6 threshold here. This engine
+            # doesn't yet compute live P(collision) (see session 5) - until it does, every
+            # 3+-candidate case is conservatively treated as failing that stricter bar
+            # (i.e. always AMBIGUOUS/decline), which is the safe default: it can only ever
+            # cause an under-return, never a wrong-patient release. Session 5/6 should
+            # replace this comment and wire in a real check without changing the branch
+            # structure above.
             return MatchResult(
                 outcome=MatchOutcome.AMBIGUOUS,
                 matched_patients=all_matched,

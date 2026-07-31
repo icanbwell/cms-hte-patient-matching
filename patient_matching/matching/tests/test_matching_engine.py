@@ -3,6 +3,8 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
+import pytest
+
 from patient_matching.matching.backend import (
     FieldCriterion,
     MatchingBackend,
@@ -126,15 +128,52 @@ class TestMatchingEngineExactMatch:
 
 
 class TestMatchingEngineAmbiguous:
-    def test_ambiguous_multiple_candidates(self) -> None:
+    def test_escalate_two_candidates(self) -> None:
         c1 = _make_patient()
         c2 = _make_patient(phone="+12125559999")
         query = _make_patient()
         engine = MatchingEngine(backend=InMemoryBackend([c1, c2]))
         result = engine.match(query)
-        assert result.outcome == MatchOutcome.AMBIGUOUS
+        assert result.outcome == MatchOutcome.ESCALATE
         assert result.is_unique is False
-        assert result.candidate_count >= 2
+        assert result.candidate_count == 2
+
+
+class TestTieredUniquenessResponse:
+    """Boundary behavior across 1 / 2 / 3+ matched candidates (CMS v3.3 step 6)."""
+
+    @pytest.mark.parametrize(
+        "n_candidates,expected_outcome,expected_unique",
+        [
+            (1, MatchOutcome.MATCH, True),
+            (2, MatchOutcome.ESCALATE, False),
+            (3, MatchOutcome.AMBIGUOUS, False),
+            (5, MatchOutcome.AMBIGUOUS, False),
+        ],
+    )
+    def test_outcome_by_candidate_count(
+        self, n_candidates: int, expected_outcome: MatchOutcome, expected_unique: bool
+    ) -> None:
+        # Rule 08 (First Name + DOB + MBI, all exact) with a distinct MBI per
+        # candidate is enough to make each candidate unique while still
+        # matching the query on first name + DOB.
+        candidates = [
+            _make_patient(first="john", dob="1990-01-15", mbi=f"1mbi{i:03d}mbi1")
+            for i in range(n_candidates)
+        ]
+        for i, c in enumerate(candidates):
+            c["id"] = f"patient-{i}"
+        backend = InMemoryBackend(candidates)
+        engine = MatchingEngine(backend=backend)
+        query = _make_patient(
+            first="john", dob="1990-01-15", mbi=candidates[0]["identifier"][-1]["value"]
+        )
+
+        result = engine.match(query)
+
+        assert result.outcome == expected_outcome
+        assert result.is_unique == expected_unique
+        assert result.candidate_count == n_candidates
 
 
 class TestMatchingEngineFuzzyMatch:
