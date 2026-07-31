@@ -12,8 +12,8 @@ run whatever **Suggested Next Session** names below.
 ## Suggested Next Session
 
 > **Session 4 — Real-world FHIR data source for `rule_eval.py`.** Session 2 (tiered
-> `AMBIGUOUS`/`ESCALATE` response) is done and its PR is open (see *In Review* below), so it's
-> no longer a valid pick. Of the remaining pending sessions, 4 and 5 are both genuinely
+> `ESCALATE`/`AMBIGUOUS` response) merged into `main` via PR #14 (2026-07-31), so it's done and
+> off the board entirely. Of the remaining pending sessions, 4 and 5 are both genuinely
 > startable (4's hard code dependency on session 3 is satisfied; 5 has no dependencies at all);
 > 6 is not yet startable (depends on 5). Picking 4: it's the next Tier-2 statistical-rigor
 > milestone per `conventions.md` and doesn't share Line B's CMS-v3.3-spec-fetch dependency that
@@ -34,14 +34,13 @@ on 5).
 
 ## In Review
 
-| # | Session | Thread | PR | One-line summary |
-|---|---------|--------|----|--------------------|
-| 2 | [session_2](in_review/session_2.md) | Line B: CMS v3.3 migration | [#14](https://github.com/icanbwell/patient-matching/pull/14) | Split `AMBIGUOUS` into `ESCALATE` (exactly 2 candidates) vs. `AMBIGUOUS` (3+, stricter interim threshold) |
+_(none currently — see `in_review/README.md` for what lands here.)_
 
 ## Completed (most recent 3)
 
 | # | Session | Thread | One-line summary |
 |---|---------|--------|-------------------|
+| 2 | [session_2](completed/session_2.md) | Line B: CMS v3.3 migration | Split `AMBIGUOUS` into `ESCALATE` (exactly 2 candidates) vs. `AMBIGUOUS` (3+, stricter interim threshold). Merged via [#14](https://github.com/icanbwell/patient-matching/pull/14). |
 | 1 | [session_1](completed/session_1.md) | Line B: CMS v3.3 migration | Add `timestamp`/`version` to the audit record (§VII) — audit plumbing only, no matching-behavior change. Merged via [#13](https://github.com/icanbwell/patient-matching/pull/13). |
 | 3 | [session_3](completed/session_3.md) | Evaluation & Statistical Rigor | ONC self-match baseline wired to `rule_eval.py` (1M-record dataset, not the ~28K assumed); pairwise matcher + sampled negatives. Merged via [#11](https://github.com/icanbwell/patient-matching/pull/11). |
 
