@@ -10,6 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
+from .collision import p_collision
+
 
 class FieldRole(Enum):
     """How a field participates in a matching rule."""
@@ -86,8 +88,13 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
             _rf(STREET_LINE, _F),
         ),
         max_fuzzy_fields=2,
-        p_collision_exact=3e-13,
-        p_collision_fuzzy=9e-13,
+        p_collision_exact=p_collision(
+            (_rf(FIRST_NAME, _F), _rf(LAST_NAME, _F), _rf(DOB), _rf(STREET_LINE, _F))
+        ),
+        p_collision_fuzzy=p_collision(
+            (_rf(FIRST_NAME, _F), _rf(LAST_NAME, _F), _rf(DOB), _rf(STREET_LINE, _F)),
+            fuzzy_fields=frozenset({FIRST_NAME, LAST_NAME}),
+        ),
     ),
     MatchingRule(
         rule_id="02",
@@ -99,8 +106,13 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
             _rf(PHONE),
         ),
         max_fuzzy_fields=1,
-        p_collision_exact=1e-14,
-        p_collision_fuzzy=2e-14,
+        p_collision_exact=p_collision(
+            (_rf(FIRST_NAME), _rf(LAST_NAME, _F), _rf(DOB), _rf(PHONE))
+        ),
+        p_collision_fuzzy=p_collision(
+            (_rf(FIRST_NAME), _rf(LAST_NAME, _F), _rf(DOB), _rf(PHONE)),
+            fuzzy_fields=frozenset({LAST_NAME}),
+        ),
     ),
     MatchingRule(
         rule_id="03",
@@ -112,8 +124,13 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
             _rf(EMAIL),
         ),
         max_fuzzy_fields=2,
-        p_collision_exact=1e-14,
-        p_collision_fuzzy=3e-14,
+        p_collision_exact=p_collision(
+            (_rf(FIRST_NAME, _F), _rf(LAST_NAME, _F), _rf(DOB), _rf(EMAIL))
+        ),
+        p_collision_fuzzy=p_collision(
+            (_rf(FIRST_NAME, _F), _rf(LAST_NAME, _F), _rf(DOB), _rf(EMAIL)),
+            fuzzy_fields=frozenset({FIRST_NAME, LAST_NAME}),
+        ),
     ),
     MatchingRule(
         rule_id="04",
@@ -125,8 +142,17 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
             _rf(SSN_LAST4),
         ),
         max_fuzzy_fields=1,
-        p_collision_exact=1e-12,
-        p_collision_fuzzy=2e-12,
+        p_collision_exact=p_collision(
+            (_rf(FIRST_NAME, _F), _rf(LAST_NAME), _rf(DOB), _rf(SSN_LAST4))
+        ),
+        # Computed 1.5e-12, not the v3.2.2-era hardcoded 2e-12: that value implicitly
+        # assumed a first_name fuzzy u of 0.04 (2x exact); the real v3.3 Table 3 states
+        # 0.03 (1.5x). This is the drift this evaluator exists to catch - see
+        # docs/sessions/pending/session_5.md Task 3.
+        p_collision_fuzzy=p_collision(
+            (_rf(FIRST_NAME, _F), _rf(LAST_NAME), _rf(DOB), _rf(SSN_LAST4)),
+            fuzzy_fields=frozenset({FIRST_NAME}),
+        ),
     ),
     MatchingRule(
         rule_id="05",
@@ -138,8 +164,13 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
             _rf(SSN_LAST4),
         ),
         max_fuzzy_fields=1,
-        p_collision_exact=1e-12,
-        p_collision_fuzzy=2e-12,
+        p_collision_exact=p_collision(
+            (_rf(FIRST_NAME), _rf(LAST_NAME, _F), _rf(DOB), _rf(SSN_LAST4))
+        ),
+        p_collision_fuzzy=p_collision(
+            (_rf(FIRST_NAME), _rf(LAST_NAME, _F), _rf(DOB), _rf(SSN_LAST4)),
+            fuzzy_fields=frozenset({LAST_NAME}),
+        ),
     ),
     MatchingRule(
         rule_id="06",
@@ -151,8 +182,15 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
             _rf(ITIN_LAST4),
         ),
         max_fuzzy_fields=1,
-        p_collision_exact=1e-12,
-        p_collision_fuzzy=2e-12,
+        p_collision_exact=p_collision(
+            (_rf(FIRST_NAME, _F), _rf(LAST_NAME), _rf(DOB), _rf(ITIN_LAST4))
+        ),
+        # Same 1.5e-12 drift as rule 04 above (first_name fuzzy u: 0.03, not the
+        # v3.2.2-era 0.04 implicit assumption).
+        p_collision_fuzzy=p_collision(
+            (_rf(FIRST_NAME, _F), _rf(LAST_NAME), _rf(DOB), _rf(ITIN_LAST4)),
+            fuzzy_fields=frozenset({FIRST_NAME}),
+        ),
     ),
     MatchingRule(
         rule_id="07",
@@ -164,8 +202,13 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
             _rf(ITIN_LAST4),
         ),
         max_fuzzy_fields=1,
-        p_collision_exact=1e-12,
-        p_collision_fuzzy=2e-12,
+        p_collision_exact=p_collision(
+            (_rf(FIRST_NAME), _rf(LAST_NAME, _F), _rf(DOB), _rf(ITIN_LAST4))
+        ),
+        p_collision_fuzzy=p_collision(
+            (_rf(FIRST_NAME), _rf(LAST_NAME, _F), _rf(DOB), _rf(ITIN_LAST4)),
+            fuzzy_fields=frozenset({LAST_NAME}),
+        ),
     ),
     MatchingRule(
         rule_id="08",
@@ -176,7 +219,7 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
             _rf(MBI),
         ),
         max_fuzzy_fields=0,
-        p_collision_exact=2e-12,
+        p_collision_exact=p_collision((_rf(FIRST_NAME), _rf(DOB), _rf(MBI))),
     ),
     MatchingRule(
         rule_id="09",
@@ -187,7 +230,7 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
             _rf(LEGAL_ID),
         ),
         max_fuzzy_fields=0,
-        p_collision_exact=2e-12,
+        p_collision_exact=p_collision((_rf(FIRST_NAME), _rf(DOB), _rf(LEGAL_ID))),
     ),
     MatchingRule(
         rule_id="10",
@@ -198,8 +241,11 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
             _rf(LEGAL_ID),
         ),
         max_fuzzy_fields=1,
-        p_collision_exact=5e-13,
-        p_collision_fuzzy=1e-12,
+        p_collision_exact=p_collision((_rf(LAST_NAME, _F), _rf(DOB), _rf(LEGAL_ID))),
+        p_collision_fuzzy=p_collision(
+            (_rf(LAST_NAME, _F), _rf(DOB), _rf(LEGAL_ID)),
+            fuzzy_fields=frozenset({LAST_NAME}),
+        ),
     ),
     MatchingRule(
         rule_id="11",
@@ -210,7 +256,7 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
             _rf(PHONE),
         ),
         max_fuzzy_fields=0,
-        p_collision_exact=2e-12,
+        p_collision_exact=p_collision((_rf(FIRST_NAME), _rf(DOB), _rf(PHONE))),
     ),
     MatchingRule(
         rule_id="12",
@@ -221,7 +267,7 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
             _rf(EMAIL),
         ),
         max_fuzzy_fields=0,
-        p_collision_exact=2e-12,
+        p_collision_exact=p_collision((_rf(FIRST_NAME), _rf(DOB), _rf(EMAIL))),
     ),
     MatchingRule(
         rule_id="13",
@@ -232,7 +278,7 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
             _rf(SSN_LAST4),
         ),
         max_fuzzy_fields=0,
-        p_collision_exact=5e-13,
+        p_collision_exact=p_collision((_rf(LAST_NAME), _rf(PHONE), _rf(SSN_LAST4))),
     ),
     MatchingRule(
         rule_id="14",
@@ -243,7 +289,7 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
             _rf(ITIN_LAST4),
         ),
         max_fuzzy_fields=0,
-        p_collision_exact=5e-13,
+        p_collision_exact=p_collision((_rf(LAST_NAME), _rf(PHONE), _rf(ITIN_LAST4))),
     ),
     MatchingRule(
         rule_id="15",
@@ -254,8 +300,11 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
             _rf(SSN_LAST4),
         ),
         max_fuzzy_fields=1,
-        p_collision_exact=5e-13,
-        p_collision_fuzzy=1e-12,
+        p_collision_exact=p_collision((_rf(LAST_NAME, _F), _rf(EMAIL), _rf(SSN_LAST4))),
+        p_collision_fuzzy=p_collision(
+            (_rf(LAST_NAME, _F), _rf(EMAIL), _rf(SSN_LAST4)),
+            fuzzy_fields=frozenset({LAST_NAME}),
+        ),
     ),
     MatchingRule(
         rule_id="16",
@@ -266,8 +315,13 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
             _rf(ITIN_LAST4),
         ),
         max_fuzzy_fields=1,
-        p_collision_exact=5e-13,
-        p_collision_fuzzy=1e-12,
+        p_collision_exact=p_collision(
+            (_rf(LAST_NAME, _F), _rf(EMAIL), _rf(ITIN_LAST4))
+        ),
+        p_collision_fuzzy=p_collision(
+            (_rf(LAST_NAME, _F), _rf(EMAIL), _rf(ITIN_LAST4)),
+            fuzzy_fields=frozenset({LAST_NAME}),
+        ),
     ),
     MatchingRule(
         rule_id="17",
@@ -278,7 +332,7 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
             _rf(SSN_LAST4),
         ),
         max_fuzzy_fields=0,
-        p_collision_exact=2e-12,
+        p_collision_exact=p_collision((_rf(FIRST_NAME), _rf(PHONE), _rf(SSN_LAST4))),
     ),
     MatchingRule(
         rule_id="18",
@@ -289,7 +343,7 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
             _rf(ITIN_LAST4),
         ),
         max_fuzzy_fields=0,
-        p_collision_exact=2e-12,
+        p_collision_exact=p_collision((_rf(FIRST_NAME), _rf(PHONE), _rf(ITIN_LAST4))),
     ),
     MatchingRule(
         rule_id="19",
@@ -300,7 +354,7 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
             _rf(SSN_LAST4),
         ),
         max_fuzzy_fields=0,
-        p_collision_exact=2e-12,
+        p_collision_exact=p_collision((_rf(FIRST_NAME), _rf(EMAIL), _rf(SSN_LAST4))),
     ),
     MatchingRule(
         rule_id="20",
@@ -311,7 +365,7 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
             _rf(ITIN_LAST4),
         ),
         max_fuzzy_fields=0,
-        p_collision_exact=2e-12,
+        p_collision_exact=p_collision((_rf(FIRST_NAME), _rf(EMAIL), _rf(ITIN_LAST4))),
     ),
     MatchingRule(
         rule_id="21",
@@ -321,7 +375,7 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
             _rf(MBI),
         ),
         max_fuzzy_fields=0,
-        p_collision_exact=1e-12,
+        p_collision_exact=p_collision((_rf(PHONE), _rf(MBI))),
     ),
     MatchingRule(
         rule_id="22",
@@ -331,7 +385,7 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
             _rf(LEGAL_ID),
         ),
         max_fuzzy_fields=0,
-        p_collision_exact=1e-12,
+        p_collision_exact=p_collision((_rf(PHONE), _rf(LEGAL_ID))),
     ),
     MatchingRule(
         rule_id="23",
@@ -341,7 +395,7 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
             _rf(MBI),
         ),
         max_fuzzy_fields=0,
-        p_collision_exact=1e-12,
+        p_collision_exact=p_collision((_rf(EMAIL), _rf(MBI))),
     ),
     MatchingRule(
         rule_id="24",
@@ -351,7 +405,7 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
             _rf(LEGAL_ID),
         ),
         max_fuzzy_fields=0,
-        p_collision_exact=1e-12,
+        p_collision_exact=p_collision((_rf(EMAIL), _rf(LEGAL_ID))),
     ),
     MatchingRule(
         rule_id="25",
@@ -361,13 +415,16 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
             _rf(MBI),
         ),
         max_fuzzy_fields=0,
-        p_collision_exact=1e-12,
+        p_collision_exact=p_collision((_rf(LEGAL_ID), _rf(MBI))),
     ),
     MatchingRule(
         rule_id="26",
         description="Namespace bound unique identifiers (EMPI, FHIR Patient ID, CSP UUID)",
         fields=(_rf(NAMESPACE_ID),),
         max_fuzzy_fields=0,
-        p_collision_exact=0.0,
+        # Computed as 1e-15, not literally 0.0 - see collision.FIELD_U_PROBS's
+        # namespace_id entry for why a small nonzero float is used instead (avoids
+        # masking other fields' probabilities in a product elsewhere).
+        p_collision_exact=p_collision((_rf(NAMESPACE_ID),)),
     ),
 )

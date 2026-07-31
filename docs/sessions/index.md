@@ -11,32 +11,33 @@ run whatever **Suggested Next Session** names below.
 
 ## Suggested Next Session
 
-> **Session 4 — Real-world FHIR data source for `rule_eval.py`.** Session 2 (tiered
-> `AMBIGUOUS`/`ESCALATE` response) is done and its PR is open (see *In Review* below), so it's
-> no longer a valid pick. Of the remaining pending sessions, 4 and 5 are both genuinely
-> startable (4's hard code dependency on session 3 is satisfied; 5 has no dependencies at all);
-> 6 is not yet startable (depends on 5). Picking 4: it's the next Tier-2 statistical-rigor
-> milestone per `conventions.md` and doesn't share Line B's CMS-v3.3-spec-fetch dependency that
-> 5/6 both carry.
+> **Session 4 — Real-world FHIR data source for `rule_eval.py`.** Sessions 2 and 5 are both
+> done, PRs open (see *In Review* below). Session 4 is the only remaining pending session that
+> can start immediately once its `NEEDS HUMAN DECISION` (exact Databricks/Mongo table names
+> for FHIR Patient resources and Person-Patient match links — see `pending/session_4.md`'s
+> "Upstream data/system dependencies") is resolved with Sean; it was deferred once already
+> (2026-07-31) for exactly this reason. Session 6 is not yet startable — it has a hard code
+> dependency on session 5's evaluator, which is `in_review/`, not `completed/`, until session
+> 5's own PR merges.
 
 ## Up Next (execution order)
 
 | # | Session | Thread | Depends on | Size | Status | One-line summary |
 |---|---------|--------|-----------|------|--------|-------------------|
-| 4 | [session_4](pending/session_4.md) | Evaluation & Statistical Rigor | 3 | M | pending | Real-world FHIR data source for `rule_eval.py`, via reproducible queries |
-| 5 | [session_5](pending/session_5.md) | Line B: CMS v3.3 migration | — | M | pending | Table 3 u-probabilities + P(collision) evaluator |
-| 6 | [session_6](pending/session_6.md) | Line B: CMS v3.3 migration | 5 | M/L | pending | Expand Table 2 to v3.3's 37 rules |
+| 4 | [session_4](pending/session_4.md) | Evaluation & Statistical Rigor | 3 | M | pending — blocked on `NEEDS HUMAN DECISION` | Real-world FHIR data source for `rule_eval.py`, via reproducible queries |
+| 6 | [session_6](pending/session_6.md) | Line B: CMS v3.3 migration | 5 | M/L | pending — blocked on session 5 reaching `completed/` | Expand Table 2 to v3.3's 37 rules |
 
 Session 3 merged into `main` (PR [#11](https://github.com/icanbwell/patient-matching/pull/11),
-2026-07-30) — session 4's hard code dependency and sessions 5/6's merge gate are both satisfied
-now, all three remaining pending sessions above are genuinely startable except 6 (still gated
-on 5).
+2026-07-30) — session 4's hard code dependency and sessions 5/6's merge gate are both satisfied.
+Session 4 itself is blocked only on Sean answering its `NEEDS HUMAN DECISION`. Session 6 is
+blocked on session 5 (now `in_review/`) actually merging.
 
 ## In Review
 
 | # | Session | Thread | PR | One-line summary |
 |---|---------|--------|----|--------------------|
 | 2 | [session_2](in_review/session_2.md) | Line B: CMS v3.3 migration | [#14](https://github.com/icanbwell/patient-matching/pull/14) | Split `AMBIGUOUS` into `ESCALATE` (exactly 2 candidates) vs. `AMBIGUOUS` (3+, stricter interim threshold) |
+| 5 | [session_5](in_review/session_5.md) | Line B: CMS v3.3 migration | (pending — see PR link once opened) | Table 3 u-probabilities + P(collision) evaluator; replaces `table2_rules.py`'s 26 hand-typed constants with computed values |
 
 ## Completed (most recent 3)
 
