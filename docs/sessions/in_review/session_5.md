@@ -416,7 +416,7 @@ Validation:
   merge gate is satisfied and this session is eligible to move to `completed/` once its own
   PR merges.
 
-Decision: a PR will be opened from `claude/session-5-collision-evaluator` into `main` and
-left **open** rather than merged — per `conventions.md`'s Definition of Done, merging is
-Sean's call, not the executing agent's. Doc moved to `in_review/` accordingly (PR number
-recorded in a follow-up commit once opened, same pattern as session 2).
+Decision: PR [#16](https://github.com/icanbwell/patient-matching/pull/16) opened from
+`claude/session-5-collision-evaluator` into `main`, left **open** rather than merged — per
+`conventions.md`'s Definition of Done, merging is Sean's call, not the executing agent's. Doc
+moved to `in_review/` accordingly.

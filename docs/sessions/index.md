@@ -37,7 +37,7 @@ blocked on session 5 (now `in_review/`) actually merging.
 | # | Session | Thread | PR | One-line summary |
 |---|---------|--------|----|--------------------|
 | 2 | [session_2](in_review/session_2.md) | Line B: CMS v3.3 migration | [#14](https://github.com/icanbwell/patient-matching/pull/14) | Split `AMBIGUOUS` into `ESCALATE` (exactly 2 candidates) vs. `AMBIGUOUS` (3+, stricter interim threshold) |
-| 5 | [session_5](in_review/session_5.md) | Line B: CMS v3.3 migration | (pending — see PR link once opened) | Table 3 u-probabilities + P(collision) evaluator; replaces `table2_rules.py`'s 26 hand-typed constants with computed values |
+| 5 | [session_5](in_review/session_5.md) | Line B: CMS v3.3 migration | [#16](https://github.com/icanbwell/patient-matching/pull/16) | Table 3 u-probabilities + P(collision) evaluator; replaces `table2_rules.py`'s 26 hand-typed constants with computed values |
 
 ## Completed (most recent 3)
 
