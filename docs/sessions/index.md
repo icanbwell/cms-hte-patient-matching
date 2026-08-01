@@ -7,6 +7,17 @@ run whatever **Suggested Next Session** names below.
 **Status of this set:** `APPROVED` (design reviewed and approved by Sean, 2026-07-28 — see
 `../superpowers/specs/2026-07-28-session-planning-playbook-design.md`).
 
+> **⚠ Concurrent-PR note (2026-08-01, remove once both merge):** this PR (#15, session 2
+> closeout) and PR [#16](https://github.com/icanbwell/patient-matching/pull/16) (session 5)
+> both branched from the same commit and both edit this file's *Suggested Next Session*, *Up
+> Next*, and *In Review* sections independently — whichever merges second will hit a
+> conflict here. When resolving it, don't just pick one side: the reconciled file should
+> reflect **both** moves at once — session 2 in `completed/` (this PR) **and** session 5 in
+> `in_review/` (PR #16) — plus an updated *Suggested Next Session* accounting for both (session
+> 4 still blocked on its `NEEDS HUMAN DECISION`; session 6 still blocked on session 5 actually
+> being in `completed/`, not just `in_review/`). PR #16's version of this file already has that
+> combined reconciliation written out — use it as the template for the merged result.
+
 ---
 
 ## Suggested Next Session
