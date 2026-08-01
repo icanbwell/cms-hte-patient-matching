@@ -260,3 +260,7 @@ Decision: PR [#14](https://github.com/icanbwell/patient-matching/pull/14) opened
 `claude/session-2-tiered-uniqueness` into `main`, left **open** rather than merged — per
 `conventions.md`'s Definition of Done, merging is Sean's call, not the executing agent's. Doc
 moved to `in_review/` accordingly.
+
+PR #14 merged into `main` 2026-07-31 (Sean's merge decision). Doc moved from `in_review/` to
+`completed/` in a later session (2026-08-01), which also updated `index.md` to reflect the
+merge — this bookkeeping-only move was itself out of date until then.
