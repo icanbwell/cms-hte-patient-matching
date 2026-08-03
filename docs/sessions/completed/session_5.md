@@ -420,3 +420,6 @@ Decision: PR [#16](https://github.com/icanbwell/patient-matching/pull/16) opened
 `claude/session-5-collision-evaluator` into `main`, left **open** rather than merged — per
 `conventions.md`'s Definition of Done, merging is Sean's call, not the executing agent's. Doc
 moved to `in_review/` accordingly.
+
+**Bookkeeping close-out (2026-08-03):** PR #16 merged 2026-08-02. Doc moved from `in_review/`
+to `completed/`; `index.md` updated accordingly.
