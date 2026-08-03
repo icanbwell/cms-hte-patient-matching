@@ -260,3 +260,7 @@ Decision: PR [#14](https://github.com/icanbwell/patient-matching/pull/14) opened
 `claude/session-2-tiered-uniqueness` into `main`, left **open** rather than merged — per
 `conventions.md`'s Definition of Done, merging is Sean's call, not the executing agent's. Doc
 moved to `in_review/` accordingly.
+
+PR #14 approved (kenanspruill) and clean (Gecko: no vulnerabilities found); merged into `main`
+by Sean 2026-07-31 (commit `cc3ee1f`). Moved from `in_review/` to `completed/` accordingly, via
+a separate bookkeeping PR (`claude/close-session-2-in-review`), same pattern as session 3.
