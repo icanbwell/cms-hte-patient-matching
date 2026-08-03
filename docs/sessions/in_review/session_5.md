@@ -345,4 +345,78 @@ class TestExistingRulesMatchComputedValues:
 
 ## Execution notes
 
-_(empty at authoring time; filled in by whoever executes the session)_
+Executed 2026-07-31 on feature branch `claude/session-5-collision-evaluator`, cut from
+`main` at `cc3ee1f` (session 2's merge commit). Session 4 was considered first per
+`index.md`'s Suggested Next Session, but its `NEEDS HUMAN DECISION` (exact Databricks/Mongo
+table names) was still unresolved at session-start; Sean chose to defer it and run this
+session instead, since it has no such blocker.
+
+- **Fetched the live CMS v3.3 spec** (Google Doc, file ID
+  `1ABHR6e4N-K9lEj1vc7DuzoAy8CuaAqwqAZSpJH9T4Yg`) before writing any code, per Task 1's
+  instruction not to trust the 2026-07-28 transcription blindly. All 16 `FIELD_U_PROBS`
+  values in Table 3 and all 37 Table 2 rows (including the two intentionally-quirky cases —
+  First Name + Last Name + DOB + ZIP at 3e-12, over threshold; namespace-bound IDs at "≈0")
+  matched this doc's transcription exactly. No meaningful drift found, so the
+  `NEEDS HUMAN DECISION`-if-diverged clause under Open Questions never triggered.
+- **Found and fixed a real circular-import bug in this doc's own Task 2 code sample**:
+  `collision.py`'s top-level `from .table2_rules import RuleField` and `table2_rules.py`'s
+  Task 3 `from .collision import p_collision` are mutually recursive at *runtime*. Depending
+  on which module a caller imports first, Python either resolves it by luck (importing
+  `table2_rules` first, since `RuleField` is already bound by the time `collision` is
+  reached) or fails outright (importing `collision` first — exactly what
+  `test_collision.py`'s own import order does — raises `ImportError: cannot import name
+  'p_collision' from partially initialized module`). Fixed by guarding `collision.py`'s
+  `RuleField` import behind `TYPE_CHECKING`: it's only ever used as a type hint, and this
+  file already has `from __future__ import annotations`, so the import is never needed at
+  runtime, only for mypy. This makes the dependency one-directional
+  (`table2_rules` → `collision`) with no cycle, regardless of import order. Verified via
+  `uv run python -c "from patient_matching.matching.table2_rules import APPROVED_RULES"`
+  (which exercises the table2_rules-first order) and via `test_collision.py`'s own
+  collision-first import order (both work now).
+- **`collision.py`** implements `FIELD_U_PROBS`, `p_collision()`, `evaluate_combination()`,
+  and `APPROVAL_THRESHOLD` exactly per Task 1/2's code samples (with the `TYPE_CHECKING` fix
+  above).
+- **`table2_rules.py`**: all 26 existing rules' `p_collision_exact`/`p_collision_fuzzy` are
+  now computed via `p_collision(...)` instead of hand-typed literals. Every computed value
+  reproduced the previously hand-entered constant (confirmed via a one-off script printing
+  all 26 rules' computed values), except the two changes this doc's Task 3 explicitly
+  predicted and pre-approved: rules 04 and 06's `p_collision_fuzzy` moved from the stale
+  v3.2.2-era 2e-12 to the correct v3.3-era 1.5e-12 (first_name fuzzy u is 0.03, not the old
+  implicit 0.04 assumption), and rule 26's `p_collision_exact` moved from a literal `0.0` to
+  `1e-15` (the small-nonzero-float convention `FIELD_U_PROBS["namespace_id"]` documents, to
+  avoid masking other fields in a product elsewhere). Ruff's format hook reflowed the
+  multi-line `p_collision(...)` call sites on first `pre-commit` run; re-ran and it was clean
+  on the second pass.
+- **Stretch goal (Task 4) completed, not just attempted**: fetched
+  `gist.github.com/imranq2/b5cc7a534a37dfa26922a83e69c686ee` — its `FIELD_U_PROBS` table
+  matches this session's values exactly for every field, field-for-field. One cosmetic
+  difference: the gist represents the namespace-bound-identifier field with a literal `0.0`
+  where this session (deliberately, per Task 1's own comment) uses `1e-15` to avoid a
+  zero-collapsing-the-product bug; not a discrepancy in the underlying spec value, just a
+  defensive implementation choice this repo makes that the gist doesn't need (it doesn't
+  multiply that field into any joint calculation in its worked examples).
+- No changes to `MatchingEngine`'s fuzzy-matching mechanics, and no Table 2 rule
+  additions/removals — both explicitly out of scope, confirmed untouched.
+
+Validation:
+- `uv run pytest patient_matching/matching/tests/test_collision.py -v`: 41 passed (new file).
+- `uv run pytest patient_matching/matching/tests/test_table2_rules.py -v`: 10 passed, no
+  regressions (the existing `test_p_collision_values` test only asserts loose invariants —
+  `>= 0.0` and `fuzzy >= exact` — so it wasn't sensitive to the two expected value changes).
+- `uv run pytest` (full local suite): 373 passed, 2 skipped (the two numpy-optional
+  `evaluation/` harness tests, same as every prior session — numpy isn't a `pyproject.toml`
+  dependency).
+- `docker compose run --rm dev pytest patient_matching/matching/tests/`: 123 passed (up from
+  session 2's 82 — includes this session's 41 new `test_collision.py` cases).
+- `uv run pre-commit run --all-files`: clean (ruff, ruff-format, mypy, bandit, secrets, etc.)
+  after the one auto-reformat pass noted above.
+- Statistical rigor gate: this is rule-*computing* work (session 3's Tier-1 gate applies),
+  but session 3 is already in `completed/` (PR #11, merged 2026-07-30) with its
+  `evaluation/baselines/v3_2_2_onc_baseline.txt` Tier-1 report already on `main` — so the
+  merge gate is satisfied and this session is eligible to move to `completed/` once its own
+  PR merges.
+
+Decision: PR [#16](https://github.com/icanbwell/patient-matching/pull/16) opened from
+`claude/session-5-collision-evaluator` into `main`, left **open** rather than merged — per
+`conventions.md`'s Definition of Done, merging is Sean's call, not the executing agent's. Doc
+moved to `in_review/` accordingly.
