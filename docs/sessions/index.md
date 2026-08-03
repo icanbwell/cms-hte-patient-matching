@@ -7,45 +7,39 @@ run whatever **Suggested Next Session** names below.
 **Status of this set:** `APPROVED` (design reviewed and approved by Sean, 2026-07-28 — see
 `../superpowers/specs/2026-07-28-session-planning-playbook-design.md`).
 
-> **⚠ Concurrent-PR note (2026-08-01, remove once both merge):** this PR (#15, session 2
-> closeout) and PR [#16](https://github.com/icanbwell/patient-matching/pull/16) (session 5)
-> both branched from the same commit and both edit this file's *Suggested Next Session*, *Up
-> Next*, and *In Review* sections independently — whichever merges second will hit a
-> conflict here. When resolving it, don't just pick one side: the reconciled file should
-> reflect **both** moves at once — session 2 in `completed/` (this PR) **and** session 5 in
-> `in_review/` (PR #16) — plus an updated *Suggested Next Session* accounting for both (session
-> 4 still blocked on its `NEEDS HUMAN DECISION`; session 6 still blocked on session 5 actually
-> being in `completed/`, not just `in_review/`). PR #16's version of this file already has that
-> combined reconciliation written out — use it as the template for the merged result.
 
 ---
 
 ## Suggested Next Session
 
-> **Session 4 — Real-world FHIR data source for `rule_eval.py`.** Session 2 (tiered
-> `ESCALATE`/`AMBIGUOUS` response) merged into `main` via PR #14 (2026-07-31), so it's done and
-> off the board entirely. Of the remaining pending sessions, 4 and 5 are both genuinely
-> startable (4's hard code dependency on session 3 is satisfied; 5 has no dependencies at all);
-> 6 is not yet startable (depends on 5). Picking 4: it's the next Tier-2 statistical-rigor
-> milestone per `conventions.md` and doesn't share Line B's CMS-v3.3-spec-fetch dependency that
-> 5/6 both carry.
+> **Session 4 — Real-world FHIR data source for `rule_eval.py`.** Session 2 merged into `main`
+> via PR #14 (2026-07-31) and is now in `completed/`. Session 5's code merged into `main` via PR
+> #16 (2026-08-02); its doc is still in `in_review/` pending a separate bookkeeping move to
+> `completed/` (same pattern as session 2's close-out). Session 4 is the only remaining pending
+> session that can start immediately, and only once its `NEEDS HUMAN DECISION` (exact
+> Databricks/Mongo table names for FHIR Patient resources and Person-Patient match links — see
+> `pending/session_4.md`'s "Upstream data/system dependencies") is resolved with Sean; it was
+> deferred once already (2026-07-31) for exactly this reason. Session 6 is not yet startable —
+> it has a hard code dependency on session 5's evaluator, which needs session 5's doc actually
+> in `completed/` (not just its code merged) per the merge-gate rule below.
 
 ## Up Next (execution order)
 
 | # | Session | Thread | Depends on | Size | Status | One-line summary |
 |---|---------|--------|-----------|------|--------|-------------------|
-| 4 | [session_4](pending/session_4.md) | Evaluation & Statistical Rigor | 3 | M | pending | Real-world FHIR data source for `rule_eval.py`, via reproducible queries |
-| 5 | [session_5](pending/session_5.md) | Line B: CMS v3.3 migration | — | M | pending | Table 3 u-probabilities + P(collision) evaluator |
-| 6 | [session_6](pending/session_6.md) | Line B: CMS v3.3 migration | 5 | M/L | pending | Expand Table 2 to v3.3's 37 rules |
+| 4 | [session_4](pending/session_4.md) | Evaluation & Statistical Rigor | 3 | M | pending — blocked on `NEEDS HUMAN DECISION` | Real-world FHIR data source for `rule_eval.py`, via reproducible queries |
+| 6 | [session_6](pending/session_6.md) | Line B: CMS v3.3 migration | 5 | M/L | pending — blocked on session 5 reaching `completed/` | Expand Table 2 to v3.3's 37 rules |
 
 Session 3 merged into `main` (PR [#11](https://github.com/icanbwell/patient-matching/pull/11),
-2026-07-30) — session 4's hard code dependency and sessions 5/6's merge gate are both satisfied
-now, all three remaining pending sessions above are genuinely startable except 6 (still gated
-on 5).
+2026-07-30) — session 4's hard code dependency and sessions 5/6's merge gate are both satisfied.
+Session 4 itself is blocked only on Sean answering its `NEEDS HUMAN DECISION`. Session 6 is
+blocked on session 5 (now `in_review/`) actually merging.
 
 ## In Review
 
-_(none currently — see `in_review/README.md` for what lands here.)_
+| # | Session | Thread | PR | One-line summary |
+|---|---------|--------|----|--------------------|
+| 5 | [session_5](in_review/session_5.md) | Line B: CMS v3.3 migration | [#16](https://github.com/icanbwell/patient-matching/pull/16) | Table 3 u-probabilities + P(collision) evaluator; replaces `table2_rules.py`'s 26 hand-typed constants with computed values — code merged 2026-08-02, doc awaiting its own bookkeeping move to `completed/` |
 
 ## Completed (most recent 3)
 
