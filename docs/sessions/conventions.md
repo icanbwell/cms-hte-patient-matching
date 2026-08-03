@@ -75,6 +75,15 @@ data/system dependencies, Scope (In scope / Out of scope), Tasks, Unit tests req
 Validation, Open questions, Execution notes. See any `pending/session_N.md` for a filled-in
 example.
 
+**Scope anchor (part of Outcome purpose):** every session's Outcome purpose must name the
+specific `docs/handoff/README.md` line item or CMS spec section (e.g. "§VII audit record",
+"Table 3 u-probabilities", "the mid-August Line B target") it addresses — not just a `Thread`
+tag. This is what keeps the backlog from drifting into unrelated work over many sessions
+authored at different times: every session traces back to one of the two canonical sources
+(the handoff doc's Line A/Line B strategy, or the CMS spec itself), not to another session doc
+or to freeform judgment. `Thread` alone doesn't do this — it's just a coarse label with no
+registry, so nothing stops a typo'd or genuinely new thread from drifting in unnoticed.
+
 ## Reference documents (intentionally NOT copied into this repo)
 
 - **CMS v3.3 spec** (Google Doc, "Draft for Technical Validation," open public-comment
@@ -250,6 +259,9 @@ lifecycle and folders" above.
 
 A session is done when **all** hold:
 1. Every criterion in its Validation section is objectively met.
+1a. Its Outcome purpose names the specific handoff-doc line item or CMS spec section it
+    addresses (see "Anatomy of a session doc"'s scope anchor) — if it doesn't, add that
+    sentence now, before closing out; don't let a session merge without it.
 2. `make tests` is green.
 3. `make run-pre-commit` is clean.
 4. For rule-changing sessions, the statistical rigor gate's Tier 1 requirement is met.
