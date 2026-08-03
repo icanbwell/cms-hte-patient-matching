@@ -420,3 +420,13 @@ Decision: PR [#16](https://github.com/icanbwell/patient-matching/pull/16) opened
 `claude/session-5-collision-evaluator` into `main`, left **open** rather than merged — per
 `conventions.md`'s Definition of Done, merging is Sean's call, not the executing agent's. Doc
 moved to `in_review/` accordingly.
+
+PR #16 approved and merged into `main` 2026-08-02 (Sean's merge decision), after resolving an
+index.md merge conflict against the concurrently-merged PR #15 (session 2 close-out — see that
+PR's own conflict note) and fixing a real gate failure this doc's Validation section didn't
+catch: `mypy` failed on `test_collision.py` with 10 missing return-type annotations (this
+repo's convention, per every other test file, is `-> None` on parametrized test methods with
+typed params) — the "pre-commit run --all-files: clean" claim above only accounted for the one
+`ruff-format` auto-reformat pass on `collision.py`, not this. Fixed and reverified (`make
+run-pre-commit` clean, 123 tests passing in `patient_matching/matching/tests/`) before merging.
+Doc moved from `in_review/` to `completed/` in this follow-up bookkeeping pass.
