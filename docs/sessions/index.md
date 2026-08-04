@@ -12,42 +12,38 @@ run whatever **Suggested Next Session** names below.
 
 ## Suggested Next Session
 
-> **Session 4 — Real-world FHIR data source for `rule_eval.py`.** Session 2 merged into `main`
-> via PR #14 (2026-07-31) and is now in `completed/`. Session 5's code merged into `main` via PR
-> #16 (2026-08-02); its doc is still in `in_review/` pending a separate bookkeeping move to
-> `completed/` (same pattern as session 2's close-out). Session 4 is the only remaining pending
-> session that can start immediately, and only once its `NEEDS HUMAN DECISION` (exact
-> Databricks/Mongo table names for FHIR Patient resources and Person-Patient match links — see
-> `pending/session_4.md`'s "Upstream data/system dependencies") is resolved with Sean; it was
-> deferred once already (2026-07-31) for exactly this reason. Session 6 is not yet startable —
-> it has a hard code dependency on session 5's evaluator, which needs session 5's doc actually
-> in `completed/` (not just its code merged) per the merge-gate rule below.
+> **Session 6 — Expand Table 2 to v3.3's 37 rules.** Session 5's doc moved to `completed/` on
+> 2026-08-03 (PR #16 merged 2026-08-02), which satisfies session 6's hard code dependency on
+> session 5's evaluator per the merge-gate rule. Session 4 is also startable but remains
+> blocked on its `NEEDS HUMAN DECISION` (exact Databricks/Mongo table names for FHIR Patient
+> resources and Person-Patient match links — see `pending/session_4.md`'s "Upstream data/system
+> dependencies"), unresolved since it was first deferred on 2026-07-31. Session 6 has no such
+> blocker, so it's the pick unless Sean resolves session 4's open question first.
 
 ## Up Next (execution order)
 
 | # | Session | Thread | Depends on | Size | Status | One-line summary |
 |---|---------|--------|-----------|------|--------|-------------------|
+| 6 | [session_6](pending/session_6.md) | Line B: CMS v3.3 migration | 5 | M/L | pending — ready to start | Expand Table 2 to v3.3's 37 rules |
 | 4 | [session_4](pending/session_4.md) | Evaluation & Statistical Rigor | 3 | M | pending — blocked on `NEEDS HUMAN DECISION` | Real-world FHIR data source for `rule_eval.py`, via reproducible queries |
-| 6 | [session_6](pending/session_6.md) | Line B: CMS v3.3 migration | 5 | M/L | pending — blocked on session 5 reaching `completed/` | Expand Table 2 to v3.3's 37 rules |
 
 Session 3 merged into `main` (PR [#11](https://github.com/icanbwell/patient-matching/pull/11),
-2026-07-30) — session 4's hard code dependency and sessions 5/6's merge gate are both satisfied.
-Session 4 itself is blocked only on Sean answering its `NEEDS HUMAN DECISION`. Session 6 is
-blocked on session 5 (now `in_review/`) actually merging.
+2026-07-30) and session 5 merged into `main` (PR [#16](https://github.com/icanbwell/patient-matching/pull/16),
+2026-08-02, doc in `completed/` as of 2026-08-03) — session 4's hard code dependency and
+session 6's merge gate are both satisfied. Session 4 itself is blocked only on Sean answering
+its `NEEDS HUMAN DECISION`.
 
 ## In Review
 
-| # | Session | Thread | PR | One-line summary |
-|---|---------|--------|----|--------------------|
-| 5 | [session_5](in_review/session_5.md) | Line B: CMS v3.3 migration | [#16](https://github.com/icanbwell/patient-matching/pull/16) | Table 3 u-probabilities + P(collision) evaluator; replaces `table2_rules.py`'s 26 hand-typed constants with computed values — code merged 2026-08-02, doc awaiting its own bookkeeping move to `completed/` |
+_(none currently)_
 
 ## Completed (most recent 3)
 
 | # | Session | Thread | One-line summary |
 |---|---------|--------|-------------------|
+| 5 | [session_5](completed/session_5.md) | Line B: CMS v3.3 migration | Table 3 u-probabilities + P(collision) evaluator; replaces `table2_rules.py`'s 26 hand-typed constants with computed values. Merged via [#16](https://github.com/icanbwell/patient-matching/pull/16). |
 | 2 | [session_2](completed/session_2.md) | Line B: CMS v3.3 migration | Split `AMBIGUOUS` into `ESCALATE` (exactly 2 candidates) vs. `AMBIGUOUS` (3+, stricter interim threshold). Merged via [#14](https://github.com/icanbwell/patient-matching/pull/14). |
 | 1 | [session_1](completed/session_1.md) | Line B: CMS v3.3 migration | Add `timestamp`/`version` to the audit record (§VII) — audit plumbing only, no matching-behavior change. Merged via [#13](https://github.com/icanbwell/patient-matching/pull/13). |
-| 3 | [session_3](completed/session_3.md) | Evaluation & Statistical Rigor | ONC self-match baseline wired to `rule_eval.py` (1M-record dataset, not the ~28K assumed); pairwise matcher + sampled negatives. Merged via [#11](https://github.com/icanbwell/patient-matching/pull/11). |
 
 ### Keeping this index current (do this when closing a session)
 1. If the session's PR merged immediately: move the row from *Up Next* to the **top** of
