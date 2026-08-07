@@ -37,7 +37,7 @@ just needs the live spec content, not more code dependencies.
 
 | # | Session | Thread | PR | One-line summary |
 |---|---------|--------|----|--------------------|
-| 4 | [session_4](in_review/session_4.md) | Evaluation & Statistical Rigor | (open — see PR link once created) | Real-world FHIR data source (`bronze.fhir_lake.patient_4_0_0` joined to `silver.fhir_lite.person_patient`) for `rule_eval.py`, via reproducible queries; per-field collision rates vs. session 5's Table 3 |
+| 4 | [session_4](in_review/session_4.md) | Evaluation & Statistical Rigor | [#22](https://github.com/icanbwell/patient-matching/pull/22) (open) | Real-world FHIR data source (`bronze.fhir_lake.patient_4_0_0` joined to `silver.fhir_lite.person_patient`) for `rule_eval.py`, via reproducible queries; per-field collision rates vs. session 5's Table 3 |
 
 ## Completed (most recent 3)
 

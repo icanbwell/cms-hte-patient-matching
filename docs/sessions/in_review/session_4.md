@@ -255,6 +255,6 @@ class TestSqlSafetyHelpers:
   no new matching *behavior* — no rule, threshold, or comparator change — only an evaluation
   data source), so no new ONC `ComparisonReport` was generated; session 3's existing baseline
   is unaffected.
-- PR opened per "Every session ends with a PR"; left **open** rather than merged immediately —
-  merging is Zack's/Sean's call, not assumed here. Doc moved to `in_review/`, not
-  `completed/`, until the PR merges.
+- PR opened: [#22](https://github.com/icanbwell/patient-matching/pull/22), per "Every session
+  ends with a PR"; left **open** rather than merged immediately — merging is Zack's/Sean's
+  call, not assumed here. Doc moved to `in_review/`, not `completed/`, until the PR merges.
