@@ -12,30 +12,32 @@ run whatever **Suggested Next Session** names below.
 
 ## Suggested Next Session
 
-> **Session 6 — Expand Table 2 to v3.3's 37 rules.** Session 5's doc moved to `completed/` on
-> 2026-08-03 (PR #16 merged 2026-08-02), which satisfies session 6's hard code dependency on
-> session 5's evaluator per the merge-gate rule. Session 4 is also startable but remains
-> blocked on its `NEEDS HUMAN DECISION` (exact Databricks/Mongo table names for FHIR Patient
-> resources and Person-Patient match links — see `pending/session_4.md`'s "Upstream data/system
-> dependencies"), unresolved since it was first deferred on 2026-07-31. Session 6 has no such
-> blocker, so it's the pick unless Sean resolves session 4's open question first.
+> **Session 6 — Expand Table 2 to v3.3's 37 rules — still blocked, on a different dependency
+> than before.** Session 4's `NEEDS HUMAN DECISION` was resolved by Zack on 2026-08-06 (see
+> `in_review/session_4.md`'s Execution notes) and its session executed the same day: code,
+> tests, and PR are done, PR open pending merge, doc moved to `in_review/`. Session 6 itself
+> remains blocked — not on session 5 (satisfied, `completed/` since 2026-08-03) but on
+> fetching the live CMS v3.3 spec content (Google Doc; see `conventions.md`'s "Reference
+> documents"), which the executing environment on 2026-08-06/07 had no Google Drive access
+> to fetch. Unblocks as soon as either Drive access is authorized or someone pastes the
+> relevant Table 2/DOB-tolerance sections directly into the session.
 
 ## Up Next (execution order)
 
 | # | Session | Thread | Depends on | Size | Status | One-line summary |
 |---|---------|--------|-----------|------|--------|-------------------|
-| 6 | [session_6](pending/session_6.md) | Line B: CMS v3.3 migration | 5 | M/L | pending — ready to start | Expand Table 2 to v3.3's 37 rules |
-| 4 | [session_4](pending/session_4.md) | Evaluation & Statistical Rigor | 3 | M | pending — blocked on `NEEDS HUMAN DECISION` | Real-world FHIR data source for `rule_eval.py`, via reproducible queries |
+| 6 | [session_6](pending/session_6.md) | Line B: CMS v3.3 migration | 5 | M/L | pending — blocked on fetching the live CMS v3.3 spec content | Expand Table 2 to v3.3's 37 rules |
 
 Session 3 merged into `main` (PR [#11](https://github.com/icanbwell/patient-matching/pull/11),
 2026-07-30) and session 5 merged into `main` (PR [#16](https://github.com/icanbwell/patient-matching/pull/16),
-2026-08-02, doc in `completed/` as of 2026-08-03) — session 4's hard code dependency and
-session 6's merge gate are both satisfied. Session 4 itself is blocked only on Sean answering
-its `NEEDS HUMAN DECISION`.
+2026-08-02, doc in `completed/` as of 2026-08-03) — session 6's merge gate is satisfied; it
+just needs the live spec content, not more code dependencies.
 
 ## In Review
 
-_(none currently)_
+| # | Session | Thread | PR | One-line summary |
+|---|---------|--------|----|--------------------|
+| 4 | [session_4](in_review/session_4.md) | Evaluation & Statistical Rigor | (open — see PR link once created) | Real-world FHIR data source (`bronze.fhir_lake.patient_4_0_0` joined to `silver.fhir_lite.person_patient`) for `rule_eval.py`, via reproducible queries; per-field collision rates vs. session 5's Table 3 |
 
 ## Completed (most recent 3)
 
@@ -84,7 +86,7 @@ session_1 (audit fields)         --+
 session_2 (tiered uniqueness)    --+-- independent, no upstream
 session_5 (P(collision) eval)    --+
                                     |
-session_3 (ONC baseline) ----------+--> session_4 (real-world data source)
+session_3 (ONC baseline) ----------+--> session_4 (real-world data source, in_review as of 2026-08-06)
                                     |
 session_5 --------------------------> session_6 (Table 2 v3.3 expansion)
 
