@@ -1,0 +1,90 @@
+﻿Proposal v3.3.6: Multi-household Address Identification Methodology
+A modification to §IV.G (Patient Matching for Vulnerable Populations) of the CMS Patient Matching & Response Proposal, v3.3.0
+
+
+Prepared By: Imran Qureshi | Date: July 30, 2026
+
+
+This proposal resolves an open reference rather than introducing a new requirement. Companion Proposal v3.3.1 already requires that Verified Street Address exclude "shared/institutional living spaces (dormitories, correctional facilities, military barracks, shelters, skilled nursing)" when used as a Household-tier field (Table A, §3.2), and lists "Institutional address exclusion" as a standing administrative guardrail (§3.9), citing "the existing Table 4 caveat and §IV.G subworkgroup" of the base document. Companion Proposal v3.3.4 separately notes that its own Street Address placeholder handling is "distinct from, and in addition to, any institutional-address exclusion elsewhere in the framework." None of v3.3.0, v3.3.1, or v3.3.4 actually specifies how a responding entity determines whether a given address is institutional. This proposal fills that specific gap.
+
+
+
+
+	Bottom line: An address can't be excluded as institutional if there's no defined way to tell it's institutional. This proposal specifies a two-tier method — match against named public facility registries first (CMS, BOP/state DOC, IPEDS, HIFLD), fall back to a postal multi-unit-density signal second, routed to manual review rather than auto-excluded — and requires it wherever the base document and companion Proposals v3.3.1/v3.3.4 already assume institutional addresses get excluded.
+	Proposed Changes to v3.3.0
+Every concrete edit this proposal makes, by section — independent of the discussion that follows.
+
+
+Section
+	Change
+	Summary
+	§IV.G Patient Matching for Vulnerable Populations
+	Add
+	New subsection defining the institutional-address identification methodology (registry match, then postal structural signal, then default residential) that Table A's Verified Street Address row and §3.9's guardrail — both companion Proposal v3.3.1 — already assume exists.
+	§IV.G Patient Matching for Vulnerable Populations
+	Add
+	Reference table of public facility data sources by institution type (skilled nursing/hospital/hospice, correctional, higher-education housing, other group quarters), for use in the registry-match step.
+	§VIII Governance
+	Add
+	The facility-registry reference list is a living reference, extended through the same governance process that maintains Table 2 and — per companion Proposal v3.3.4 — the placeholder value list.
+	Why this matters
+Where: §IV.G subworkgroup and the "existing Table 4 caveat" referenced in companion Proposal v3.3.1 (Table A, §3.2 and §3.9); Street Address handling in companion Proposal v3.3.4 (§V.D)
+
+
+Table A's Verified Street Address row assigns a conservative u-value of 0.00003, on the stated assumption that it "excludes shared/institutional living spaces." That u-value describes ordinary residential address sharing — a household of a handful of related people. A skilled nursing facility, prison, or dormitory can put hundreds or thousands of unrelated residents behind a single street address. If an address like that isn't actually screened out before Household-tier matching runs, rows H-03, H-06, H-09, and H-14 in Table 2-H (each of which pairs Street Line with SSN Last 4, ITIN Last 4, Subscriber ID, or Phone Number) would silently understate the true collision risk for every resident of that facility — the listed P(household collision) values were never computed against that population.
+
+
+Both companion proposals that touch Street Address already assume this screening happens somewhere, but neither one specifies the mechanism: v3.3.1 defers to "the existing Table 4 caveat and §IV.G subworkgroup," and v3.3.4 explicitly carves institutional-address exclusion out of its own placeholder-handling scope rather than defining it. Absent a defined methodology, "institutional addresses are excluded" is a requirement with no way to comply with it.
+What changes
+A responding entity SHALL evaluate a candidate Street Address against the following sequence before it may be used as a Household-tier field:
+
+
+* 1. Registry match (SHALL check first). Normalize the address and match it against the named public facility registries in Appendix A — CMS's Provider of Services file and Care Compare datasets for skilled nursing facilities, hospitals, and hospices; the Federal Bureau of Prisons facility locator and state Department of Corrections rosters for correctional facilities; NCES IPEDS campus address data for higher-education housing; and HIFLD's aggregated group-quarters GIS layers as a cross-category backstop. A match SHALL classify the address as Institutional-Excluded, with the facility type recorded, and the address SHALL NOT be used as a Household-tier field for any query touching that address, regardless of which residents are being compared.
+
+
+* 2. Structural signal (SHOULD apply as a fallback when no registry match is found). Submit the address through CASS-certified postal validation (USPS directly, or a vendor such as Smarty, Melissa, Loqate, or Experian). If validation returns a business/CMRA indicator, or the same base address resolves to an unusually high number of distinct secondary-unit designators in the reference data, flag the address as Unclassified Group Quarters and route it to manual or administrative review rather than excluding it outright.
+
+
+* 3. Default (no match, no flag). An address that clears both steps above is treated as ordinary residential and remains eligible as a Household-tier field exactly as today.
+
+
+Known limitation, stated plainly rather than written around: Step 2 cannot by itself distinguish a large ordinary apartment building from genuine institutional housing — both can show a high count of secondary units and neither is inherently suspicious. That is precisely why Step 2 routes to review instead of automatic exclusion, and it is a gap the §IV.G subworkgroup should validate against real facility and postal data rather than a gap this proposal claims to close outright.
+Appendix A: Reference Data Sources
+Illustrative and not exhaustive — to be adopted as a starting reference and extended through the same §VIII governance process that maintains Table 2 and, per companion Proposal v3.3.4, the placeholder value list.
+
+
+Institution type
+	Public source
+	Coverage note
+	Skilled nursing facility / hospital / hospice
+	CMS Provider of Services file; CMS Care Compare
+	Address-level, near-complete for CMS-certified facilities
+	Correctional (federal)
+	Federal Bureau of Prisons facility locator
+	Address-level, complete for BOP facilities
+	Correctional (state/local)
+	State Department of Corrections rosters; Vera Institute / BJS jail census
+	Address-level but fragmented across states
+	Higher-education housing
+	NCES IPEDS campus address data
+	Campus-level, not dorm-building-level — a match confirms the campus, not necessarily a specific dormitory
+	Aggregated group quarters
+	HIFLD GIS layers
+	Combines several categories above; useful as a single cross-check query
+	Postal structural signal (Step 2 only)
+	CASS-certified validation — USPS or vendors (Smarty, Melissa, Loqate, Experian)
+	Multi-unit/business/CMRA flags signal multi-tenancy, not institution type — review-only, per the limitation above
+	Recommended next steps
+* 1. Present this proposal to the CMS Health Tech Ecosystem working group alongside companion Proposals v3.3.1 and v3.3.4, since it resolves a dependency both already assume.
+
+
+* 2. Adopt the two-step methodology and Appendix A reference table as new §IV.G content for v3.4.0 of the base document.
+
+
+* 3. Validate Step 2's structural-signal thresholds (what counts as an "unusually high" secondary-unit count) against real ecosystem postal data before treating it as more than a manual-review trigger.
+
+
+* 4. Establish a path, through the same §VIII governance process, for ecosystem participants to submit institutional addresses not yet captured by the named registries in Appendix A.
+
+
+* 5. Reconcile with companion Proposal v3.3.1 before either goes to the working group for adoption: confirm Table A's Verified Street Address u-value (0.00003) still holds once institutional addresses are excluded per this methodology, rather than having been estimated against a population that already blends the two.
