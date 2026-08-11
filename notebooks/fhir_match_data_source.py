@@ -191,27 +191,29 @@ def build_person_patient_pairs(
                 )
 
     person_ids = list(by_person.keys())
-    if len(person_ids) >= 2 and n_negative_samples > 0:
-        rng = random.Random(seed)
-        seen: Set[Tuple[int, int]] = set()
-        attempts = 0
-        max_attempts = n_negative_samples * 50 + 100
-        while len(seen) < n_negative_samples and attempts < max_attempts:
-            attempts += 1
-            i, j = rng.randrange(len(person_ids)), rng.randrange(len(person_ids))
-            if i == j or (i, j) in seen or (j, i) in seen:
-                continue
-            seen.add((i, j))
-            pid_a, fields_a = rng.choice(by_person[person_ids[i]])
-            pid_b, fields_b = rng.choice(by_person[person_ids[j]])
-            pairs.append(
-                LabeledPair(
-                    features={"query": fields_a, "candidate": fields_b},
-                    is_true_match=False,
-                    strata={"source": "current_algorithm_link"},
-                    pair_id=f"{pid_a}::{pid_b}",
-                )
+    if len(person_ids) < 2 or n_negative_samples <= 0:
+        return pairs
+
+    rng = random.Random(seed)
+    seen: Set[Tuple[int, int]] = set()
+    attempts = 0
+    max_attempts = n_negative_samples * 50 + 100
+    while len(seen) < n_negative_samples and attempts < max_attempts:
+        attempts += 1
+        i, j = rng.randrange(len(person_ids)), rng.randrange(len(person_ids))
+        if i == j or (i, j) in seen or (j, i) in seen:
+            continue
+        seen.add((i, j))
+        pid_a, fields_a = rng.choice(by_person[person_ids[i]])
+        pid_b, fields_b = rng.choice(by_person[person_ids[j]])
+        pairs.append(
+            LabeledPair(
+                features={"query": fields_a, "candidate": fields_b},
+                is_true_match=False,
+                strata={"source": "current_algorithm_link"},
+                pair_id=f"{pid_a}::{pid_b}",
             )
+        )
     return pairs
 
 
