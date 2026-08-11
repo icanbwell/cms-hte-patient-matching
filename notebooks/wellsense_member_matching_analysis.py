@@ -47,30 +47,20 @@
 
 import json
 import os
-import re
 from datetime import datetime, timedelta
 
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
-# --- SQL-safety helpers -------------------------------------------------------------------
-# Widget values below (table/column names, the client id) get interpolated into spark.sql()
-# f-strings. Validate identifiers with an allowlist regex and escape string-literal values so
-# widget input can never break out of its intended position in the query.
-_IDENTIFIER_RE = re.compile(r"^[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)*$")
+try:
+    from notebooks._sql_safety import _sql_string_literal, _validate_sql_identifier
+except ImportError:  # pragma: no cover - only hit when Databricks doesn't have notebooks/ on sys.path
+    import sys
+    from pathlib import Path
 
-
-def _validate_sql_identifier(name: str) -> str:
-    """Ensure `name` is a bare dotted identifier (letters/digits/underscore/dot only)."""
-    if not name or not _IDENTIFIER_RE.match(name):
-        raise ValueError(f"Unsafe SQL identifier: {name!r}")
-    return name
-
-
-def _sql_string_literal(value: str) -> str:
-    """Escape `value` for safe use as a single-quoted SQL string literal."""
-    return "'" + str(value).replace("'", "''") + "'"
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from _sql_safety import _sql_string_literal, _validate_sql_identifier  # type: ignore[no-redef]
 
 
 # --- Widgets (Databricks). Falls back to defaults when run outside Databricks. ---

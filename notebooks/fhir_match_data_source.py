@@ -23,10 +23,9 @@
 # COMMAND ----------
 
 import random
-import re
 from collections import Counter
 from math import comb
-from typing import Any, Dict, List, Sequence, Set, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 from patient_matching.matching.collision import FIELD_U_PROBS
 from patient_matching.matching.field_extractor import FieldExtractor, PatientFields
@@ -43,24 +42,29 @@ except ImportError:  # pragma: no cover - only hit when Databricks doesn't have 
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "evaluation"))
     from rule_eval import LabeledPair  # type: ignore[no-redef]
 
-# --- SQL-safety helpers -------------------------------------------------------------------
-# Copied verbatim from wellsense_member_matching_analysis.py (lines 61-73 as of 2026-07-28) -
-# widget values (table/schema/catalog names) get interpolated into spark.sql() f-strings, so
-# validate identifiers with an allowlist regex and escape string-literal values so widget
-# input can never break out of its intended position in the query.
-_IDENTIFIER_RE = re.compile(r"^[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)*$")
+try:
+    from notebooks._sql_safety import _validate_sql_identifier
+except ImportError:  # pragma: no cover - only hit when Databricks doesn't have notebooks/ on sys.path
+    import sys
+    from pathlib import Path
 
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from _sql_safety import _validate_sql_identifier  # type: ignore[no-redef]
 
-def _validate_sql_identifier(name: str) -> str:
-    """Ensure `name` is a bare dotted identifier (letters/digits/underscore/dot only)."""
-    if not name or not _IDENTIFIER_RE.match(name):
-        raise ValueError(f"Unsafe SQL identifier: {name!r}")
-    return name
+# Strata tag applied to every LabeledPair built from the current algorithm's existing
+# Person-Patient links - see build_person_patient_pairs's docstring for why this is
+# descriptive only, never ground truth.
+_CURRENT_ALGORITHM_LINK_SOURCE = "current_algorithm_link"
 
+# Negative-sampling retry budget: random (i, j) draws can collide with an already-seen
+# pair or with themselves, so allow enough attempts to fill n_negative_samples without
+# spinning forever on a small person_id pool.
+_NEGATIVE_SAMPLE_RETRY_MULTIPLIER = 50
+_NEGATIVE_SAMPLE_RETRY_BASE = 100
 
-def _sql_string_literal(value: str) -> str:
-    """Escape `value` for safe use as a single-quoted SQL string literal."""
-    return "'" + str(value).replace("'", "''") + "'"
+# Cap on negative samples drawn per run, independent of sample size, to keep local
+# processing tractable.
+_MAX_NEGATIVE_SAMPLES = 2000
 
 
 # --- Widgets (Databricks). Falls back to defaults when run outside Databricks. ------------
@@ -185,7 +189,7 @@ def build_person_patient_pairs(
                     LabeledPair(
                         features={"query": fields_a, "candidate": fields_b},
                         is_true_match=True,
-                        strata={"source": "current_algorithm_link"},
+                        strata={"source": _CURRENT_ALGORITHM_LINK_SOURCE},
                         pair_id=f"{pid_a}::{pid_b}",
                     )
                 )
@@ -197,7 +201,7 @@ def build_person_patient_pairs(
     rng = random.Random(seed)
     seen: Set[Tuple[int, int]] = set()
     attempts = 0
-    max_attempts = n_negative_samples * 50 + 100
+    max_attempts = n_negative_samples * _NEGATIVE_SAMPLE_RETRY_MULTIPLIER + _NEGATIVE_SAMPLE_RETRY_BASE
     while len(seen) < n_negative_samples and attempts < max_attempts:
         attempts += 1
         i, j = rng.randrange(len(person_ids)), rng.randrange(len(person_ids))
@@ -210,7 +214,7 @@ def build_person_patient_pairs(
             LabeledPair(
                 features={"query": fields_a, "candidate": fields_b},
                 is_true_match=False,
-                strata={"source": "current_algorithm_link"},
+                strata={"source": _CURRENT_ALGORITHM_LINK_SOURCE},
                 pair_id=f"{pid_a}::{pid_b}",
             )
         )
@@ -228,7 +232,9 @@ if IN_DATABRICKS:
         )
         for row in joined_rows
     ]
-    labeled_pairs = build_person_patient_pairs(extracted_rows, n_negative_samples=min(len(extracted_rows), 2000))
+    labeled_pairs = build_person_patient_pairs(
+        extracted_rows, n_negative_samples=min(len(extracted_rows), _MAX_NEGATIVE_SAMPLES)
+    )
     print(f"Built {len(labeled_pairs)} LabeledPairs "
           f"({sum(p.is_true_match for p in labeled_pairs)} true-match, "
           f"{sum(not p.is_true_match for p in labeled_pairs)} sampled non-match)")
@@ -247,21 +253,31 @@ else:
 
 # COMMAND ----------
 
-_engine_singleton = None
+_default_engine_singleton: Optional[MatchingEngine] = None
 
 
-def _engine() -> MatchingEngine:
-    global _engine_singleton
-    if _engine_singleton is None:
-        _engine_singleton = MatchingEngine(backend=InMemoryBackend([]))
-    return _engine_singleton
+def _default_engine() -> MatchingEngine:
+    """Lazily-constructed default engine, reused across calls when no engine is injected."""
+    global _default_engine_singleton
+    if _default_engine_singleton is None:
+        _default_engine_singleton = MatchingEngine(backend=InMemoryBackend([]))
+    return _default_engine_singleton
 
 
-def agreement_rate(pairs: Sequence[LabeledPair]) -> float:
+def agreement_rate(pairs: Sequence[LabeledPair], engine: Optional[MatchingEngine] = None) -> float:
+    """How often `engine.evaluate_pair` agrees with each pair's `is_true_match` label.
+
+    `engine` defaults to a lazily-constructed module-level MatchingEngine (this notebook's
+    only caller), but accepts an injected engine/stub so callers - including tests - don't
+    need to go through the module-level singleton.
+    """
     if not pairs:
         return float("nan")
+    active_engine = engine if engine is not None else _default_engine()
     agreements = sum(
-        1 for p in pairs if _engine().evaluate_pair(p.features["query"], p.features["candidate"]) == p.is_true_match
+        1
+        for p in pairs
+        if active_engine.evaluate_pair(p.features["query"], p.features["candidate"]) == p.is_true_match
     )
     return agreements / len(pairs)
 

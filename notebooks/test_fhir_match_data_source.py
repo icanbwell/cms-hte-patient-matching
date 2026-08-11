@@ -1,10 +1,11 @@
 """Tests for fhir_match_data_source.py's non-Databricks-dependent logic.
 
 Real Databricks/Mongo access can't be unit-tested locally (see session_4.md's
-"Unit tests required") - this covers the SQL-safety helpers (copied from
-wellsense_member_matching_analysis.py, same contract) plus the pure
-transform/collision-rate logic that only needs plain dicts, not a live
-Spark session.
+"Unit tests required") - this covers the pure query-building, transform, and
+collision-rate/agreement-rate logic that only needs plain dicts and a stub engine,
+not a live Spark session or the real MatchingEngine. SQL-safety helper tests live in
+`test__sql_safety.py` since `notebooks/_sql_safety.py` is now shared by multiple
+notebooks (PR #22 review).
 
 fhir_match_data_source imports LabeledPair from evaluation/rule_eval.py, which
 requires numpy transitively - see evaluation/test_rule_eval.py's module docstring
@@ -19,37 +20,37 @@ import pytest
 pytest.importorskip("numpy")
 
 from notebooks.fhir_match_data_source import (  # noqa: E402
-    _sql_string_literal,
-    _validate_sql_identifier,
+    _CURRENT_ALGORITHM_LINK_SOURCE,
+    agreement_rate,
+    build_join_query,
     build_person_patient_pairs,
     observed_collision_rate,
     row_to_fhir_patient,
 )
+from evaluation.rule_eval import LabeledPair  # noqa: E402
 
 
-class TestSqlSafetyHelpers:
-    """Same safety contract as wellsense_member_matching_analysis.py's helpers -
-    copied verbatim, so copy its test cases too."""
+class TestBuildJoinQuery:
+    def test_generates_expected_sql(self):
+        query = build_join_query("bronze.fhir_lake.patient_4_0_0", "silver.fhir_lite.person_patient", 5000)
+        assert query == (
+            "SELECT p._uuid, p.name, p.birthDate, p.telecom, p.address, p.identifier, p.gender, "
+            "m.person_uuid AS person_uuid "
+            "FROM bronze.fhir_lake.patient_4_0_0 p "
+            "JOIN silver.fhir_lite.person_patient m ON p._uuid = m.patient_uuid "
+            "LIMIT 5000"
+        )
 
     @pytest.mark.parametrize(
-        "identifier,should_raise",
+        "fhir_table,match_table",
         [
-            ("bronze.fhir_lake.patient_4_0_0", False),
-            ("bronze", False),
-            ("bronze; DROP TABLE x", True),
-            ("bronze.fhir_lake.patient_4_0_0--", True),
-            ("", True),
+            ("bronze; DROP TABLE x", "silver.fhir_lite.person_patient"),
+            ("bronze.fhir_lake.patient_4_0_0", "silver; DROP TABLE x"),
         ],
     )
-    def test_validate_sql_identifier(self, identifier, should_raise):
-        if should_raise:
-            with pytest.raises(ValueError):
-                _validate_sql_identifier(identifier)
-        else:
-            assert _validate_sql_identifier(identifier) == identifier
-
-    def test_sql_string_literal_escapes_quotes(self):
-        assert _sql_string_literal("o'brien") == "'o''brien'"
+    def test_rejects_unsafe_identifiers(self, fhir_table, match_table):
+        with pytest.raises(ValueError):
+            build_join_query(fhir_table, match_table, 5000)
 
 
 class TestRowToFhirPatient:
@@ -149,3 +150,44 @@ class TestObservedCollisionRate:
 
         assert math.isnan(observed_collision_rate([{"a"}]))
         assert math.isnan(observed_collision_rate([]))
+
+
+class _StubEngine:
+    """Fake engine for agreement_rate tests - avoids constructing a real
+    MatchingEngine/InMemoryBackend or going through the module-level singleton."""
+
+    def __init__(self, decision: bool):
+        self._decision = decision
+
+    def evaluate_pair(self, query_fields, candidate_fields):
+        return self._decision
+
+
+class TestAgreementRate:
+    """agreement_rate takes an injected engine (default: the module-level lazy
+    singleton) so it's testable against a stub rather than a real MatchingEngine."""
+
+    def _pair(self, is_true_match):
+        return LabeledPair(
+            features={"query": "q", "candidate": "c"},
+            is_true_match=is_true_match,
+            strata={"source": _CURRENT_ALGORITHM_LINK_SOURCE},
+        )
+
+    def test_empty_pairs_is_nan(self):
+        import math
+
+        assert math.isnan(agreement_rate([], engine=_StubEngine(True)))
+
+    def test_full_agreement_when_engine_always_matches_true_pairs(self):
+        pairs = [self._pair(True), self._pair(True)]
+        assert agreement_rate(pairs, engine=_StubEngine(True)) == 1.0
+
+    def test_zero_agreement_when_engine_disagrees_with_every_label(self):
+        pairs = [self._pair(True), self._pair(True)]
+        assert agreement_rate(pairs, engine=_StubEngine(False)) == 0.0
+
+    def test_partial_agreement(self):
+        pairs = [self._pair(True), self._pair(True), self._pair(False)]
+        # Engine always returns True: agrees on the two True-labeled pairs, disagrees on the False one.
+        assert agreement_rate(pairs, engine=_StubEngine(True)) == pytest.approx(2 / 3)

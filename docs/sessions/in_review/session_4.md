@@ -258,3 +258,30 @@ class TestSqlSafetyHelpers:
 - PR opened: [#22](https://github.com/icanbwell/patient-matching/pull/22), per "Every session
   ends with a PR"; left **open** rather than merged immediately — merging is Zack's/Sean's
   call, not assumed here. Doc moved to `in_review/`, not `completed/`, until the PR merges.
+
+**2026-08-11 — EA review (Sean) addressed:**
+- **Blocking (Rule 01 — untested wiring path):** added tests for `build_join_query` (asserts
+  generated SQL, rejects unsafe identifiers) and for `agreement_rate` against an injected stub
+  engine, rather than only the four previously-tested leaf helpers.
+- **Should-fix (Rule 05 — inject, don't construct):** `agreement_rate` now takes an optional
+  `engine` parameter (default: the lazily-constructed module-level singleton), which is what
+  unblocked writing the Rule 01 test above cleanly.
+- **Should-fix (Rule 10 — duplicated helpers):** extracted `_validate_sql_identifier`/
+  `_sql_string_literal` into `notebooks/_sql_safety.py`, imported by both
+  `fhir_match_data_source.py` and `wellsense_member_matching_analysis.py`. Note this
+  supersedes this session's original Task 2 guidance ("copy them verbatim... duplicating two
+  ~10-line functions is cheaper than a shared import") — that was a reasonable call for the
+  first copy; Sean's review correctly called it out once it became the *second* copy. Also
+  dropped the never-called `_sql_string_literal` import from `fhir_match_data_source.py`'s own
+  body (only its test used it, and that test now lives in `notebooks/test__sql_safety.py`
+  alongside the shared module).
+- **Should-fix (Rule 11 — magic numbers/strings):** named `_CURRENT_ALGORITHM_LINK_SOURCE`,
+  `_NEGATIVE_SAMPLE_RETRY_MULTIPLIER`/`_NEGATIVE_SAMPLE_RETRY_BASE`, and
+  `_MAX_NEGATIVE_SAMPLES`.
+- **Should-fix (Rule 13 — domain sign-off before merge):** not resolved by this fix pass —
+  this is a human sign-off, not something code changes can satisfy. **Still needed before
+  merge:** Sean/Imran review of the actual statistical logic (collision-rate formula,
+  negative-sampling scheme, agreement-rate semantics), separate from the already-recorded
+  table-name decision above.
+- `uv run pytest notebooks/ .` and `uv run ruff check` on all touched files are green (22
+  notebook tests, up from 15; 417 passed overall in this environment).
