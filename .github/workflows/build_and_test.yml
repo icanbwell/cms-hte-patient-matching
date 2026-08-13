@@ -14,7 +14,14 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  validate-packages:
+    uses: icanbwell/actions/.github/workflows/validate-pip-packages.yaml@main
+    with:
+      working-directory: .
+    secrets: inherit
+
   build_and_test:
+    needs: [validate-packages]
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
@@ -36,7 +43,15 @@ jobs:
       # DuckDB's C++ engine from source on every run (~40 minutes). ubuntu-latest is
       # glibc, so this installs from a prebuilt wheel in seconds. The production
       # Dockerfile is unaffected - it's only built at image-publish time, not per PR.
+      #
+      # pyproject.toml's "jfrog" index is now the default (all packages resolve through
+      # it), so this sync needs JFrog auth to succeed at all. Uses the real
+      # JFROG_READ_USER, not an empty string -- Artifactory's virtual-pypi rejects an
+      # empty username with 403 even given a valid token as the password.
       - name: Sync dependencies
+        env:
+          UV_INDEX_JFROG_USERNAME: ${{ secrets.JFROG_READ_USER }}
+          UV_INDEX_JFROG_PASSWORD: ${{ secrets.JFROG_READ_TOKEN }}
         run: uv sync --frozen --all-extras --group dev
 
       # Lint gate - runs before tests. If any check fails, the job stops here and
