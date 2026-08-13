@@ -24,6 +24,22 @@ criteria for go-live."
 This session builds the harness and produces the comparison; it does **not** perform the
 cutover itself (see "Out of scope").
 
+**Design update, 2026-08-13 (Sean, Slack):** rather than (or in addition to — see below)
+comparing the two engines' outputs against *each other* as this doc originally scoped, Sean's
+current thinking is a labeled test set — columns `Outside Record`, `Internal Record`,
+`IsMatch [0,1]` — with both engines scored independently against the same labels. Starting
+point: the straightforward ONC matching approach (session 3's `evaluation/onc_baseline.py`
+data/pairing pattern) plus **simple-negative mining** to generate the non-match rows, rather
+than random negatives. This sidesteps the "is legacy ground truth?" problem this doc's Scope
+item 2 and Open Questions wrestle with — a real `IsMatch` label makes both engines' precision/
+recall directly computable and comparable, not just their agreement with each other. **Sean
+said he'd discuss the test-data simulation methodology with Imran the same day (2026-08-13) —
+"multiple approaches" are still on the table, so treat the labeled-set *shape* (the three
+columns above) as settled, but the *simulation method* as not yet finalized.** Confirm with
+Sean before executing whether this replaces Scope item 1-2's legacy-vs-new comparison outright,
+or runs alongside it — this doc has not been restructured around it pending that confirmation,
+only annotated at each place it's relevant.
+
 ## Upstream sessions (must be completed first)
 
 - **Session 3** (ONC baseline, `completed/`) — this session reuses `evaluation/rule_eval.py`'s
@@ -109,7 +125,12 @@ plus a disagreement-bucket table), never committed data or query output, per the
      pattern).
    - Emit a diff table: agreements, new-engine-only matches (candidate false positives),
      legacy-only matches (candidate false negatives).
-2. **Precision/recall via `rule_eval.compare()`, framed as agreement, not ground truth.** Call
+2. **Precision/recall via `rule_eval.compare()`, framed as agreement, not ground truth** —
+   *see the 2026-08-13 design update above first: Sean's labeled-test-set direction
+   (`Outside Record`/`Internal Record`/`IsMatch`) would give real precision/recall per engine
+   directly, which may supersede this item's "framed as agreement, not ground truth" hedge
+   rather than needing it alongside it. Confirm with Sean which one this session actually
+   delivers before building both.* Call
    `evaluation/rule_eval.py`'s existing `compare()`/`format_report()` with
    `baseline_name="legacy (helix.personmatching)"` and `candidate_name="CMS v3.3 engine"` — this
    is exactly the tool session 3 built for baseline-vs-candidate comparison, reused rather than
@@ -281,7 +302,16 @@ class TestComparisonReportFraming:
 - **`NEEDS HUMAN DECISION — Sean`**: whether to frame legacy as "ground truth" or "baseline" in
   the eventual external writeup. Recommended default for *this session's own* internal reporting
   regardless: always "baseline"/"agreement rate" language, per Step 3's own reasoning — never
-  overclaim precision/recall against a non-ground-truth system.
+  overclaim precision/recall against a non-ground-truth system. (Sean's 2026-08-13 labeled-set
+  direction below may make this moot for the internal report — worth re-asking once that's
+  settled.)
+- **`NEEDS HUMAN DECISION — Sean`** (new, 2026-08-13): does the labeled test-set approach
+  (`Outside Record`/`Internal Record`/`IsMatch`, scoring both engines independently against it)
+  replace Scope items 1-2's legacy-vs-new comparison, or run alongside it? And: the test-data
+  simulation methodology itself is still open — Sean said he'd discuss "multiple approaches"
+  with Imran on 2026-08-13; check *Execution notes* or with Sean directly for the outcome of
+  that conversation before starting Task 3/4. Starting point per Sean: the ONC matching approach
+  (session 3's data) plus simple-negative mining for the non-match rows.
 
 ## Execution notes
 
