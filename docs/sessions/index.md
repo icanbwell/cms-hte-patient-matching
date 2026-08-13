@@ -12,7 +12,10 @@ run whatever **Suggested Next Session** names below.
 
 ## Suggested Next Session
 
-> **Session 6 — Expand Table 2 to v3.3's 37 rules.** Session 5's doc moved to `completed/` on
+> **Session 6 — Expand Table 2 to CMS v3.3 (base + v3.3.1/v3.3.3/v3.3.4/v3.3.6 addenda).**
+> Re-scoped 2026-08-12 — see the doc's "Re-scope note"; it's larger than the original
+> "37 rules" framing (household/individual two-tier architecture, 4 already-merged rules
+> amended, 2 rules explicitly deferred). Session 5's doc moved to `completed/` on
 > 2026-08-03 (PR #16 merged 2026-08-02), which satisfies session 6's hard code dependency on
 > session 5's evaluator per the merge-gate rule. Session 4 is also startable but remains
 > blocked on its `NEEDS HUMAN DECISION` (exact Databricks/Mongo table names for FHIR Patient
@@ -24,7 +27,7 @@ run whatever **Suggested Next Session** names below.
 
 | # | Session | Thread | Depends on | Size | Status | One-line summary |
 |---|---------|--------|-----------|------|--------|-------------------|
-| 6 | [session_6](pending/session_6.md) | Line B: CMS v3.3 migration | 5 | M/L | pending — ready to start | Expand Table 2 to v3.3's 37 rules |
+| 6 | [session_6](pending/session_6.md) | Line B: CMS v3.3 migration | 5 | L | pending — ready to start | Expand Table 2 to CMS v3.3 base + v3.3.1/v3.3.3/v3.3.4/v3.3.6 addenda |
 | 4 | [session_4](pending/session_4.md) | Evaluation & Statistical Rigor | 3 | M | pending — blocked on `NEEDS HUMAN DECISION` | Real-world FHIR data source for `rule_eval.py`, via reproducible queries |
 
 Session 3 merged into `main` (PR [#11](https://github.com/icanbwell/patient-matching/pull/11),
