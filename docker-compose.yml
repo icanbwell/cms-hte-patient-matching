@@ -6,9 +6,18 @@ services:
       dockerfile: Dockerfile
       context: .
       target: development
+      secrets:
+        - jfrog_read_user
+        - jfrog_read_token
     volumes:
       - ./:/usr/src/patient_matching
     container_name: patient_matching_dev
     working_dir: /usr/src/patient_matching
     env_file:
       - .env
+
+secrets:
+  jfrog_read_user:
+    environment: JFROG_READ_USER
+  jfrog_read_token:
+    environment: JFROG_READ_TOKEN

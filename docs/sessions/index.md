@@ -27,6 +27,7 @@ run whatever **Suggested Next Session** names below.
 | # | Session | Thread | Depends on | Size | Status | One-line summary |
 |---|---------|--------|-----------|------|--------|-------------------|
 | 6 | [session_6](pending/session_6.md) | Line B: CMS v3.3 migration | 5 | M/L | pending — blocked on fetching the live CMS v3.3 spec content | Expand Table 2 to v3.3's 37 rules |
+| 8 | [session_8](pending/session_8.md) | Evaluation & Statistical Rigor | 3, 4 (hard); 6 (soft, quality-of-result only) | L | pending — blocked: session 4 not yet in `completed/` (PR #22 open); 2 more `NEEDS HUMAN DECISION` items | Tier 3: legacy comparison harness, precision/recall-as-agreement, disagreement buckets, per-pair explanations |
 
 Session 3 merged into `main` (PR [#11](https://github.com/icanbwell/patient-matching/pull/11),
 2026-07-30) and session 5 merged into `main` (PR [#16](https://github.com/icanbwell/patient-matching/pull/16),
@@ -89,6 +90,11 @@ session_5 (P(collision) eval)    --+
 session_3 (ONC baseline) ----------+--> session_4 (real-world data source, in_review as of 2026-08-06)
                                     |
 session_5 --------------------------> session_6 (Table 2 v3.3 expansion)
+
+session_3 --------------------------> session_8 (legacy comparison harness, Tier 3)
+session_4 --------------------------> session_8 (hard: reuses its real-batch query)
+session_6 -----------------(soft)---> session_8 (session_8's own DoD doesn't need this; only
+                                       the go-live-readiness of its numbers does)
 
 Merge gate (not a code dependency): session_3 must be in completed/ (PR merged into main,
 not just in_review/) before session_5 or session_6 can move to completed/. session_4's

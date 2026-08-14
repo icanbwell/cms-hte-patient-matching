@@ -49,7 +49,13 @@ dev = [
     "pytest-asyncio>=0.23.6",
     "black>=24.2.0",
     "bandit>=1.8.3",
-    "ruff>=0.11.5",
+    # Pinned exactly (not >=) -- .pre-commit-config.yaml's ruff hooks use
+    # `language: system`, running whatever's in this project's own venv, not an
+    # isolated pre-commit environment. An open floor let this migration's
+    # unrelated uv.lock regeneration silently pick up ruff 0.16.2 (new lint
+    # rules, 593 findings) over the previously-locked 0.15.20 -- pinning avoids
+    # bundling an unrelated tooling upgrade into this PR's scope.
+    "ruff==0.15.20",
     "pytest-cov>=6.1.1",
 ]
 
@@ -59,11 +65,7 @@ version = { file = "VERSION" }
 [[tool.uv.index]]
 name = "jfrog"
 url = "https://artifacts.bwell.com/artifactory/api/pypi/virtual-pypi/simple"
-explicit = true
-
-[tool.uv.sources]
-# Private packages hosted on JFrog (not available on PyPI)
-# fhirschemapy requires JFrog
+default = true
 
 [tool.pytest.ini_options]
 addopts = "--capture=fd"
