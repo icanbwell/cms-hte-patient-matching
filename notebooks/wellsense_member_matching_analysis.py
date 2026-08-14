@@ -1,76 +1,90 @@
-# Databricks notebook source
 # ruff: noqa: F821, E501
 # mypy: ignore-errors
-# MAGIC %md
-# MAGIC # WellSense Member Matching — Data Exploration & Open-Issue Investigation
-# MAGIC
-# MAGIC **Author:** Data Science (Zack Malone)  ·  **Context:** WellSense account-creation / member-match triage, July 2026
-# MAGIC
-# MAGIC ## Why this notebook exists
-# MAGIC Several stakeholders have asked to *see the actual data* behind the member-matching discussion, and there has been
-# MAGIC understandable confusion about **which dataset is which**. This notebook does three things:
-# MAGIC
-# MAGIC 1. **Explains the three different data layers** we have been quoting (they are NOT the same data — see the table below).
-# MAGIC 2. **Reproduces the failure-log analysis** visually (score distribution, per-field outcomes, the DOB guardrail, the gender missing-vs-mismatch question).
-# MAGIC 3. **Sets up the open-issue investigation** — the raw value-vs-source reconciliation (Jira **RA-4428**) that answers "is this our bug or upstream data?".
-# MAGIC
-# MAGIC It is written to be read top-to-bottom by a non-specialist. Every section starts with a plain-English note.
-# MAGIC
-# MAGIC ---
-# MAGIC ### The single most important thing to understand: these are THREE different datasets
-# MAGIC
-# MAGIC | Layer | Source | Grain | What it contains | What it does NOT contain | Used for |
-# MAGIC |---|---|---|---|---|---|
-# MAGIC | **A — Failure logs** | `enterprise-person-service` prod logs (`msg="Matching Failure insight"`, PAY-1789/2038) | **1 row per unique person** (deduped, latest mismatch) | The match *score* and per-field *outcomes* (matched / partial / not-matched) | The **actual field values** (no names/DOBs) | "How far below the bar? Which field blocked it?" (the JSON file) |
-# MAGIC | **B — Error dashboard** | Sigma *Connection Matching Error Research* → matching-error / PROA tables | **1 row per pipeline RUN** (retries counted separately) | Daily/weekly error **counts**, review workflow, manual-link disposition | Person-level dedup (a person who retried 4× = 4 rows) | "How many errors per day? Is the trend stable?" |
-# MAGIC | **C — Review / raw values** | Sigma Custom SQL over `bronze.proa.metrics` (+ `bronze.wellsense.ws_eligibility_all`) | 1 row per match run | **Actual values side-by-side**: `dob_bwell` vs `dob_ehr`, `gender_bwell` vs `gender_ehr`, names, postal, address | Complete coverage (only failed/reviewed runs are surfaced) | "Is the difference a typo, a format issue, or genuinely different people?" |
-# MAGIC
-# MAGIC > **So when someone says "146 failures" (Layer A) and someone else says "≈519 errors last 30 days" (Layer B), both are correct** —
-# MAGIC > they are counting different things (unique people vs. individual run attempts; different source systems; slightly different windows).
-# MAGIC > Do not treat the two numbers as a contradiction.
-# MAGIC
-# MAGIC ### Glossary
-# MAGIC - **score** — the algorithm's confidence for a candidate pair, `0.0`–`1.0`. This is the real number to reason about.
-# MAGIC - **threshold = 0.955** — auto-match cutoff. `score ≥ 0.955` → auto-linked; below → not linked (a person may then land in manual review). Single binary cutoff; there is no "review band" inside the code.
-# MAGIC - **match_percent** (in the JSON) — a *derived* display field = `score / threshold`. `0.9548 / 0.955 = 99.98%`. **It is NOT confidence.** Don't read the "95–100%" bucket as "95% sure".
-# MAGIC - **field outcome** — per-field result: `matched`, `partial match`, or `not matched`.
-# MAGIC - **BAI-188** (shipped as **PAY-1940**, ~June 4 2026) — the scoring improvement that added DOB near-miss tolerance, nickname/initial handling, and the "ignore missing fields" rule. The mid-June error drop coincides with this.
+"""WellSense Member Matching — Data Exploration & Open-Issue Investigation.
 
-# COMMAND ----------
+Author: Data Science (Zack Malone). Context: WellSense account-creation / member-match
+triage, July 2026.
 
-# MAGIC %md
-# MAGIC ## 0 · Configuration
-# MAGIC Set the path to the JSON export and (optionally) the warehouse catalog/schema. Everything downstream reads from here.
-# MAGIC The notebook degrades gracefully: the JSON-driven charts need the JSON; the warehouse sections need Spark + table access.
+Several stakeholders have asked to see the actual data behind the member-matching
+discussion, and there has been understandable confusion about which dataset is which.
+This script does three things:
 
-# COMMAND ----------
+1. Explains the three different data layers we have been quoting (they are NOT the
+   same data -- see the table below).
+2. Reproduces the failure-log analysis visually (score distribution, per-field
+   outcomes, the DOB guardrail, the gender missing-vs-mismatch question).
+3. Sets up the open-issue investigation -- the raw value-vs-source reconciliation
+   (Jira RA-4428) that answers "is this our bug or upstream data?".
+
+It is written to be read top-to-bottom by a non-specialist. Every section starts with
+a plain-English note.
+
+The single most important thing to understand: these are THREE different datasets.
+
+  Layer A -- Failure logs
+    Source: `enterprise-person-service` prod logs (msg="Matching Failure insight",
+    PAY-1789/2038). Grain: 1 row per unique person (deduped, latest mismatch).
+    Contains: the match score and per-field outcomes (matched / partial / not-matched).
+    Does NOT contain: the actual field values (no names/DOBs).
+    Used for: "How far below the bar? Which field blocked it?" (the JSON file).
+
+  Layer B -- Error dashboard
+    Source: Sigma "Connection Matching Error Research" -> matching-error / PROA
+    tables. Grain: 1 row per pipeline RUN (retries counted separately).
+    Contains: daily/weekly error counts, review workflow, manual-link disposition.
+    Does NOT contain: person-level dedup (a person who retried 4x = 4 rows).
+    Used for: "How many errors per day? Is the trend stable?"
+
+  Layer C -- Review / raw values
+    Source: Sigma Custom SQL over bronze.proa.metrics (+
+    bronze.wellsense.ws_eligibility_all). Grain: 1 row per match run.
+    Contains: actual values side-by-side (dob_bwell vs dob_ehr, gender_bwell vs
+    gender_ehr, names, postal, address). Does NOT contain: complete coverage (only
+    failed/reviewed runs are surfaced).
+    Used for: "Is the difference a typo, a format issue, or genuinely different
+    people?"
+
+So when someone says "146 failures" (Layer A) and someone else says "~519 errors
+last 30 days" (Layer B), both are correct -- they are counting different things
+(unique people vs. individual run attempts; different source systems; slightly
+different windows). Do not treat the two numbers as a contradiction.
+
+Glossary:
+  score -- the algorithm's confidence for a candidate pair, 0.0-1.0. This is the
+    real number to reason about.
+  threshold = 0.955 -- auto-match cutoff. score >= 0.955 -> auto-linked; below ->
+    not linked (a person may then land in manual review). Single binary cutoff;
+    there is no "review band" inside the code.
+  match_percent (in the JSON) -- a derived display field = score / threshold.
+    0.9548 / 0.955 = 99.98%. It is NOT confidence. Don't read the "95-100%" bucket
+    as "95% sure".
+  field outcome -- per-field result: matched, partial match, or not matched.
+  BAI-188 (shipped as PAY-1940, ~June 4 2026) -- the scoring improvement that added
+    DOB near-miss tolerance, nickname/initial handling, and the "ignore missing
+    fields" rule. The mid-June error drop coincides with this.
+
+Configuration: set the path to the JSON export and (optionally) the warehouse
+catalog/schema below. Everything downstream reads from here. The script degrades
+gracefully: the JSON-driven charts need the JSON; the warehouse sections need Spark
++ table access.
+"""
 
 import json
 import os
-import re
 from datetime import datetime, timedelta
 
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
-# --- SQL-safety helpers -------------------------------------------------------------------
-# Widget values below (table/column names, the client id) get interpolated into spark.sql()
-# f-strings. Validate identifiers with an allowlist regex and escape string-literal values so
-# widget input can never break out of its intended position in the query.
-_IDENTIFIER_RE = re.compile(r"^[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)*$")
+try:
+    from notebooks._sql_safety import _sql_string_literal, _validate_sql_identifier
+except ImportError:  # pragma: no cover - only hit when Databricks doesn't have notebooks/ on sys.path
+    import sys
+    from pathlib import Path
 
-
-def _validate_sql_identifier(name: str) -> str:
-    """Ensure `name` is a bare dotted identifier (letters/digits/underscore/dot only)."""
-    if not name or not _IDENTIFIER_RE.match(name):
-        raise ValueError(f"Unsafe SQL identifier: {name!r}")
-    return name
-
-
-def _sql_string_literal(value: str) -> str:
-    """Escape `value` for safe use as a single-quoted SQL string literal."""
-    return "'" + str(value).replace("'", "''") + "'"
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from _sql_safety import _sql_string_literal, _validate_sql_identifier  # type: ignore[no-redef]
 
 
 # --- Widgets (Databricks). Falls back to defaults when run outside Databricks. ---
@@ -112,9 +126,7 @@ print(f"IN_DATABRICKS={IN_DATABRICKS}\nJSON_PATH={JSON_PATH}")
 print(f"Source (WellSense feed) = {WS_CATALOG}.{WS_SCHEMA}.ws_eligibility_all")
 print(f"Source (match runs)     = {PROA_TABLE}   client = {WS_CLIENT!r}  (client_col={'auto' if not CLIENT_COL else CLIENT_COL})")
 
-# COMMAND ----------
-
-# DBTITLE 1,Resolve which raw column identifies the WellSense client (slug varies; client id does not)
+# Resolve which raw column identifies the WellSense client (slug varies; client id does not)
 # In the dashboard, clientId='wellsense' is stable while `slug` is the EHR connection (e.g. middleton_family_medicine)
 # and varies per run — so we must filter on the CLIENT, not the slug. `bronze.proa.metrics` has no literal
 # `client_id` column (the workbook's Custom SQL derives it), so we auto-detect which raw column carries 'wellsense'.
@@ -155,18 +167,13 @@ else:
     CLIENT_PREDICATE = f"LOWER(`<client_col>`) LIKE {_sql_string_literal(f'%{WS_CLIENT.lower()}%')}"  # resolved at runtime in Databricks
 print("WellSense client predicate:", CLIENT_PREDICATE)
 
-# COMMAND ----------
+# LAYER A — The failure logs (the JSON file)
+#
+# **Plain English:** this is a list of the sign-ups that did *not* auto-match in the last 30 days, one row per person.
+# For each one we know *how confident* the algorithm was and *which fields* agreed — but **not the actual names/dates**
+# (those live in Layer C). This layer answers "how bad were the misses, and what blocked them?"
 
-# MAGIC %md
-# MAGIC # LAYER A — The failure logs (the JSON file)
-# MAGIC
-# MAGIC **Plain English:** this is a list of the sign-ups that did *not* auto-match in the last 30 days, one row per person.
-# MAGIC For each one we know *how confident* the algorithm was and *which fields* agreed — but **not the actual names/dates**
-# MAGIC (those live in Layer C). This layer answers "how bad were the misses, and what blocked them?"
-
-# COMMAND ----------
-
-# DBTITLE 1,Load the JSON and show the headline metadata
+# Load the JSON and show the headline metadata
 # Only these roots are allowed to be read from — the widget/env value is analyst-supplied but
 # must not be able to point outside the expected DBFS/Volumes locations (or the notebook's own
 # local directory in the non-Databricks fallback).
@@ -210,16 +217,11 @@ THRESHOLD = float(persons["threshold"].iloc[0])
 print(f"\nMatch threshold (from data): {THRESHOLD}")
 display(persons.head(10))
 
-# COMMAND ----------
+# A1 · Score distribution — how far below the bar are the failures?
+# **Why this matters:** if failures were clustered *just* under 0.955, tuning the algorithm might recover them.
+# They are not — most sit far below, meaning the two records genuinely look like different people.
 
-# MAGIC %md
-# MAGIC ## A1 · Score distribution — how far below the bar are the failures?
-# MAGIC **Why this matters:** if failures were clustered *just* under 0.955, tuning the algorithm might recover them.
-# MAGIC They are not — most sit far below, meaning the two records genuinely look like different people.
-
-# COMMAND ----------
-
-# DBTITLE 1,Score histogram with the 0.955 threshold marked
+# Score histogram with the 0.955 threshold marked
 scores = persons["score"].astype(float)
 mean_s, median_s = scores.mean(), scores.median()
 far_below = (scores <= THRESHOLD - 0.20).mean()
@@ -243,16 +245,11 @@ print(f"Genuine near-misses (within 0.05 of the bar): {near_miss}")
 print("\nTakeaway: the typical failure is nowhere near the bar. Lowering the threshold to catch them\n"
       "would mean auto-linking people who only share ~2 of 5 fields — i.e. linking different people.")
 
-# COMMAND ----------
+# A2 · Per-field outcomes — which fields agree, which block the match?
+# **Why this matters:** this is where DOB and gender come under scrutiny. Note the **"missing data" column** —
+# it directly answers the question *"is gender mismatching or just missing?"*.
 
-# MAGIC %md
-# MAGIC ## A2 · Per-field outcomes — which fields agree, which block the match?
-# MAGIC **Why this matters:** this is where DOB and gender come under scrutiny. Note the **"missing data" column** —
-# MAGIC it directly answers the question *"is gender mismatching or just missing?"*.
-
-# COMMAND ----------
-
-# DBTITLE 1,Stacked bar of field outcomes + the missing-vs-mismatch answer
+# Stacked bar of field outcomes + the missing-vs-mismatch answer
 pft = pd.DataFrame(data["per_field_outcome_table"]).T
 pft = pft[["matched", "partial match", "not matched", "missing data"]]
 display(pft)
@@ -274,16 +271,11 @@ print(f"\n→ 'missing data' for gender = {gender['missing data']}.  All {gender
       "   ≥3 other fields are present — so it never shows up here as 'not matched'.)\n"
       "  This is the data-backed answer to 'is gender missing or mismatching?' → mismatching.")
 
-# COMMAND ----------
+# A3 · How many of the 5 fields agree per record?  And what is the *sole* blocker?
+# **Why this matters:** shows that failures typically agree on only ~2 of 5 fields, and pinpoints DOB as the
+# field that single-handedly blocks the most otherwise-good records.
 
-# MAGIC %md
-# MAGIC ## A3 · How many of the 5 fields agree per record?  And what is the *sole* blocker?
-# MAGIC **Why this matters:** shows that failures typically agree on only ~2 of 5 fields, and pinpoints DOB as the
-# MAGIC field that single-handedly blocks the most otherwise-good records.
-
-# COMMAND ----------
-
-# DBTITLE 1,Fields-matched distribution + sole-blocker tally
+# Fields-matched distribution + sole-blocker tally
 FIELDS = ["firstName", "lastName", "gender", "dateOfBirth", "postalCode"]
 fo = persons[[f"field_outcomes.{f}" for f in FIELDS]].copy()
 fo.columns = FIELDS
@@ -310,17 +302,12 @@ display(fig)
 print("Sole blocker counts:", sole_blocker)
 print("→ Gender is NEVER the lone blocker. DOB is the lone blocker far more than anything else.")
 
-# COMMAND ----------
+# A4 · The guardrail visual — "perfect except DOB" still can't reach the bar
+# **This is the single most important chart for the "why don't you just fix it?" conversation.**
+# These records match on name, gender, AND ZIP — everything except the birthday — yet they top out around **0.80**,
+# nowhere near 0.955. To auto-pass them we'd have to drop the bar ~15 points, which would start auto-linking strangers.
 
-# MAGIC %md
-# MAGIC ## A4 · The guardrail visual — "perfect except DOB" still can't reach the bar
-# MAGIC **This is the single most important chart for the "why don't you just fix it?" conversation.**
-# MAGIC These records match on name, gender, AND ZIP — everything except the birthday — yet they top out around **0.80**,
-# MAGIC nowhere near 0.955. To auto-pass them we'd have to drop the bar ~15 points, which would start auto-linking strangers.
-
-# COMMAND ----------
-
-# DBTITLE 1,Records blocked by DOB alone, with all 4 other fields perfect
+# Records blocked by DOB alone, with all 4 other fields perfect
 perfect_except_dob = persons[
     (persons["field_outcomes.dateOfBirth"] == "not matched")
     & (persons["field_outcomes.firstName"] == "matched")
@@ -349,21 +336,16 @@ print("\nTAKEAWAY for non-technical stakeholders: DOB is a strong identity signa
       "the wrong person), not a bug — but it means these cases are ONLY recoverable by fixing the birthday data,\n"
       "not by tuning the algorithm.")
 
-# COMMAND ----------
+# LAYER B — The error dashboard (volume & trend)
+#
+# **Plain English:** this counts *how many* match errors happen per day (from the Sigma *Connection Matching Error
+# Research* workbook). It counts **run attempts**, so a person who retried 4 times shows up 4 times — which is why
+# its totals are larger than Layer A's person counts. This layer answers "is the problem getting better, worse, or holding?"
+#
+# The daily counts below are a **snapshot** captured on 2026-07-15 (aggregate counts only — no PHI). Replace the
+# `DAILY_ERRORS_SNAPSHOT` dict with the live query in the next cell once you wire up the warehouse table.
 
-# MAGIC %md
-# MAGIC # LAYER B — The error dashboard (volume & trend)
-# MAGIC
-# MAGIC **Plain English:** this counts *how many* match errors happen per day (from the Sigma *Connection Matching Error
-# MAGIC Research* workbook). It counts **run attempts**, so a person who retried 4 times shows up 4 times — which is why
-# MAGIC its totals are larger than Layer A's person counts. This layer answers "is the problem getting better, worse, or holding?"
-# MAGIC
-# MAGIC The daily counts below are a **snapshot** captured on 2026-07-15 (aggregate counts only — no PHI). Replace the
-# MAGIC `DAILY_ERRORS_SNAPSHOT` dict with the live query in the next cell once you wire up the warehouse table.
-
-# COMMAND ----------
-
-# DBTITLE 1,Daily error counts (snapshot 2026-07-15) — safe aggregate, no PHI
+# Daily error counts (snapshot 2026-07-15) — safe aggregate, no PHI
 # Source: Sigma element "Matching Errors by Day" (S2V14RkfL9), collapsed across review status.
 DAILY_ERRORS_SNAPSHOT = {
     "2026-05-17": 38, "2026-05-18": 22, "2026-05-19": 19, "2026-05-20": 44, "2026-05-21": 45,
@@ -414,9 +396,7 @@ else:
 
 display(daily.rename("errors").to_frame())
 
-# COMMAND ----------
-
-# DBTITLE 1,Volume, 30-day windows, step-change and a stability check
+# Volume, 30-day windows, step-change and a stability check
 today = pd.Timestamp("2026-07-15")
 last30 = daily[daily.index >= today - timedelta(days=29)]
 prior30 = daily[(daily.index >= today - timedelta(days=59)) & (daily.index < today - timedelta(days=29))]
@@ -449,9 +429,7 @@ print(f"\nRatio: ~{last30.mean():.0f} errors/day ÷ ~{REGS_PER_DAY} registration
       f"≈ {last30.mean()/REGS_PER_DAY*100:.1f} per 100 (~1 in {REGS_PER_DAY/last30.mean():.0f}); "
       f"down from ~{pre_drop.mean()/REGS_PER_DAY*100:.0f} per 100 at the May peak.")
 
-# COMMAND ----------
-
-# DBTITLE 1,The trend chart — big drop in June, flat ever since
+# The trend chart — big drop in June, flat ever since
 fig, ax = plt.subplots(figsize=(13, 5))
 ax.plot(daily.index, daily.values, marker="o", ms=3, lw=1, color="#455a64", label="errors/day")
 ax.plot(daily.index, daily.rolling(7).mean(), lw=3, color="#1565c0", label="7-day average")
@@ -468,17 +446,12 @@ print("How to talk about this: 'flat at a low level' is the SUCCESS state, not a
       "improvement you settle onto a floor set by upstream data quality — you do not keep declining linearly.\n"
       "This corroborates the ticket analytics (tickets holding/improving); it does not contradict them.")
 
-# COMMAND ----------
+# A↔B · Reconciling "146 people" with "≈500+ errors" — the same failures through two lenses
+# **Plain English:** the two headline numbers are not in conflict. Layer A counts **unique people**; Layer B counts
+# **run attempts**, and one struggling person typically generates several failed attempts (retries). This overlay
+# shows the run-attempt bars sitting above the unique-people line over the window where both datasets exist.
 
-# MAGIC %md
-# MAGIC ## A↔B · Reconciling "146 people" with "≈500+ errors" — the same failures through two lenses
-# MAGIC **Plain English:** the two headline numbers are not in conflict. Layer A counts **unique people**; Layer B counts
-# MAGIC **run attempts**, and one struggling person typically generates several failed attempts (retries). This overlay
-# MAGIC shows the run-attempt bars sitting above the unique-people line over the window where both datasets exist.
-
-# COMMAND ----------
-
-# DBTITLE 1,Overlay unique people (Layer A) vs run attempts (Layer B) + the retry ratio
+# Overlay unique people (Layer A) vs run attempts (Layer B) + the retry ratio
 # Layer A: one row per unique person → bucket by the day of their latest recorded mismatch.
 personsA = persons.copy()
 personsA["day"] = (
@@ -513,38 +486,33 @@ print("\nTakeaway: quote whichever number matches the question — 'people affec
       "'error events' (Layer B) for system load — but never present the two totals as a discrepancy. The gap IS\n"
       "the retry behaviour, and it is expected.")
 
-# COMMAND ----------
+# LAYER C — Raw value reconciliation  (the OPEN ISSUE · Jira RA-4428)
+#
+# **Plain English:** Layers A and B tell us *that* a field disagreed and *how often* — but not *why*. The only way to
+# know whether a DOB mismatch is **our bug** (e.g. a date-format problem) or **upstream data** (genuinely different /
+# missing birthday) is to look at the **actual values side-by-side**. That is exactly what stakeholders mean by
+# *"look at the real data,"* and it is tracked as **RA-4428**.
+#
+# Where the raw values live (confirmed by tracing the Sigma workbook, incl. what turned out NOT to work):
+# - The `dob_bwell`/`dob_ehr`, **`gender_bwell`/`gender_ehr`**, name/postal pairs + `total_score` are produced by the
+#   workbook's **Custom SQL** element ("Input Query"). They are **not** flat columns and **not** a nested struct on
+#   `bronze.proa.metrics` — that table only carries run-level fields (`matched`, `run_id`, `client_person_id`, `slug`,
+#   `scope`, …), which is why a `DESCRIBE`/explode approach fails. The pairs come from a source the Custom SQL joins.
+# - **Easiest reliable path:** don't re-derive it — reuse what Sigma already computed. Either **export** the
+#   *Member Match Fail Review* / *Matching Error Table* element to **CSV** and read it, or **paste the Custom SQL**
+#   text into the cell below. The next cell supports both via `RECON_SOURCE`.
+# - **`bronze.wellsense.ws_eligibility_all`** — the WellSense **source** feed, useful to independently confirm the
+#   "ehr"/source side (`date_of_birth`, `gender_code`, `zipcode`). Join key: `member_id`.
+#
+# > **Gender is captured** in the Custom SQL (`gender_bwell`/`gender_ehr`); only the curated *review* subset omits it —
+# > so surfacing gender for triage is a Sigma view tweak, not a data-collection gap.
+#
+# What we already learned from a sample of the review table (2026-07-15)
+# - Birthdays are stored **`YYYY-MM-DD` on BOTH sides** → **the "our code mis-parses dates" theory is largely ruled out.** Differences are real.
+# - The mismatches break into clean buckets: **genuinely different** (`2002-01-28` vs `2023-02-06`), **small typo** (`1995-03-21` vs `1995-03-23`), **large single-digit typo** (`1998-12-06` vs `1988-12-06` — human-linked but auto-rejected to avoid parent/child false links), and **missing** (`""` → score ≈ 0.051).
+# - The job now is to **quantify those buckets** → that tells everyone the *max recoverable by us* vs the *irreducible upstream floor*.
 
-# MAGIC %md
-# MAGIC # LAYER C — Raw value reconciliation  (the OPEN ISSUE · Jira RA-4428)
-# MAGIC
-# MAGIC **Plain English:** Layers A and B tell us *that* a field disagreed and *how often* — but not *why*. The only way to
-# MAGIC know whether a DOB mismatch is **our bug** (e.g. a date-format problem) or **upstream data** (genuinely different /
-# MAGIC missing birthday) is to look at the **actual values side-by-side**. That is exactly what stakeholders mean by
-# MAGIC *"look at the real data,"* and it is tracked as **RA-4428**.
-# MAGIC
-# MAGIC Where the raw values live (confirmed by tracing the Sigma workbook, incl. what turned out NOT to work):
-# MAGIC - The `dob_bwell`/`dob_ehr`, **`gender_bwell`/`gender_ehr`**, name/postal pairs + `total_score` are produced by the
-# MAGIC   workbook's **Custom SQL** element ("Input Query"). They are **not** flat columns and **not** a nested struct on
-# MAGIC   `bronze.proa.metrics` — that table only carries run-level fields (`matched`, `run_id`, `client_person_id`, `slug`,
-# MAGIC   `scope`, …), which is why a `DESCRIBE`/explode approach fails. The pairs come from a source the Custom SQL joins.
-# MAGIC - **Easiest reliable path:** don't re-derive it — reuse what Sigma already computed. Either **export** the
-# MAGIC   *Member Match Fail Review* / *Matching Error Table* element to **CSV** and read it, or **paste the Custom SQL**
-# MAGIC   text into the cell below. The next cell supports both via `RECON_SOURCE`.
-# MAGIC - **`bronze.wellsense.ws_eligibility_all`** — the WellSense **source** feed, useful to independently confirm the
-# MAGIC   "ehr"/source side (`date_of_birth`, `gender_code`, `zipcode`). Join key: `member_id`.
-# MAGIC
-# MAGIC > **Gender is captured** in the Custom SQL (`gender_bwell`/`gender_ehr`); only the curated *review* subset omits it —
-# MAGIC > so surfacing gender for triage is a Sigma view tweak, not a data-collection gap.
-# MAGIC
-# MAGIC ### What we already learned from a sample of the review table (2026-07-15)
-# MAGIC - Birthdays are stored **`YYYY-MM-DD` on BOTH sides** → **the "our code mis-parses dates" theory is largely ruled out.** Differences are real.
-# MAGIC - The mismatches break into clean buckets: **genuinely different** (`2002-01-28` vs `2023-02-06`), **small typo** (`1995-03-21` vs `1995-03-23`), **large single-digit typo** (`1998-12-06` vs `1988-12-06` — human-linked but auto-rejected to avoid parent/child false links), and **missing** (`""` → score ≈ 0.051).
-# MAGIC - The job now is to **quantify those buckets** → that tells everyone the *max recoverable by us* vs the *irreducible upstream floor*.
-
-# COMMAND ----------
-
-# DBTITLE 1,A reusable DOB classifier — mirrors what the algorithm auto-recovers vs. not
+# A reusable DOB classifier — mirrors what the algorithm auto-recovers vs. not
 def classify_dob_pair(a, b):
     """Classify a (bwell, ehr) DOB pair. Mirrors helix.personmatching's graduated DOB logic so analysts can
     see which cases the algorithm ALREADY recovers vs. which are genuinely out of reach.
@@ -607,9 +575,7 @@ for a, b, expected in _examples:
     flag = "OK " if got == expected else "!! "
     print(f"  {flag}{a or '∅':<12} vs {b or '∅':<12} -> {got:22s} (expected {expected})")
 
-# COMMAND ----------
-
-# DBTITLE 1,Load the bwell-vs-ehr demographic pairs (the reconciliation input)
+# Load the bwell-vs-ehr demographic pairs (the reconciliation input)
 # IMPORTANT: the dob_bwell/dob_ehr/gender_* pairs are NOT flat columns in bronze.proa.metrics. They are built by
 # the Sigma workbook's *Custom SQL* element ("Input Query") from a source that isn't exposed as a plain table, so
 # we do NOT try to re-derive them here. Pick whichever RECON_SOURCE is easiest for you:
@@ -656,9 +622,7 @@ if len(recon):
                         "gender_bwell", "gender_ehr", "postal_code_bwell", "postal_code_ehr"] if c in recon.columns]
     display(recon[keep].head(20) if keep else recon.head(20))
 
-# COMMAND ----------
-
-# DBTITLE 1,Pull the WellSense SOURCE demographics for the failed members (Layer C, source side)
+# Pull the WellSense SOURCE demographics for the failed members (Layer C, source side)
 # member_id in the JSON looks like 'wellsense-B0090511500'; the source table stores the bare id.
 member_ids = (
     persons["memberIdentifier"].dropna().str.replace("^wellsense-", "", regex=True).unique().tolist()
@@ -687,20 +651,15 @@ else:
     print("(Skipped live query — not running in Databricks. Run in the workspace with table access to populate `src_pdf`.)")
     src_pdf = pd.DataFrame()
 
-# COMMAND ----------
+# C1 · Reconcile: join the failure list to the source feed and classify each DOB / gender difference
+# This is the payoff cell. It produces the bucket counts that settle "our bug vs. upstream data".
+#
+# > **Note on the user-entered ("bwell") side:** the cleanest source of the value the member *typed* is the
+# > *Member Match Fail Review* table's `Dob Bwell` / name columns (join on `Client Person Id` / `Run Id`). If that
+# > table is materialised to the warehouse, join it here; otherwise export it from Sigma and read it as a second
+# > DataFrame. The classifier above works on any (bwell, ehr) pair regardless of where the two values come from.
 
-# MAGIC %md
-# MAGIC ## C1 · Reconcile: join the failure list to the source feed and classify each DOB / gender difference
-# MAGIC This is the payoff cell. It produces the bucket counts that settle "our bug vs. upstream data".
-# MAGIC
-# MAGIC > **Note on the user-entered ("bwell") side:** the cleanest source of the value the member *typed* is the
-# MAGIC > *Member Match Fail Review* table's `Dob Bwell` / name columns (join on `Client Person Id` / `Run Id`). If that
-# MAGIC > table is materialised to the warehouse, join it here; otherwise export it from Sigma and read it as a second
-# MAGIC > DataFrame. The classifier above works on any (bwell, ehr) pair regardless of where the two values come from.
-
-# COMMAND ----------
-
-# DBTITLE 1,DOB reconciliation buckets (fill in the bwell-side values to run end-to-end)
+# DOB reconciliation buckets (fill in the bwell-side values to run end-to-end)
 # `recon` is produced directly from bronze.proa.metrics in the "Pull the bwell-vs-ehr demographic pairs" cell
 # above (columns: dob_bwell, dob_ehr, gender_bwell, gender_ehr, total_score, client_person_id, …).
 #
@@ -737,9 +696,7 @@ if isinstance(recon, pd.DataFrame) and len(recon):
 else:
     print("`recon` is empty — populate it from the 'Pull the bwell-vs-ehr demographic pairs' cell above, then re-run.")
 
-# COMMAND ----------
-
-# DBTITLE 1,Gender normalization check — the one clear code gap
+# Gender normalization check — the one clear code gap
 def normalize_gender(g):
     """The algorithm today ONLY lowercases gender — it has no M/F <-> male/female mapping, so 'M' vs 'male'
     scores as a NON-match. This helper shows what a correct normalisation would do; use it to measure how many
@@ -778,26 +735,23 @@ if isinstance(recon, pd.DataFrame) and len(recon) and {"gender_bwell", "gender_e
 else:
     print("(Populate `recon` with gender_bwell/gender_ehr to see the gender buckets.)")
 
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC # Findings & recommendations
-# MAGIC
-# MAGIC **What the data supports (Layers A & B — done):**
-# MAGIC 1. Failures are **not near-misses** — 3 of 4 miss the 0.955 bar by >0.20; the typical failure agrees on only ~2 of 5 fields. Lowering the bar would auto-link *different* people.
-# MAGIC 2. **DOB is the dominant blocker** (89% of failures). 13 records are perfect on the other 4 fields and still cap at **~0.80** — recoverable only by fixing the birthday data, not by tuning.
-# MAGIC 3. **Gender is never the lone blocker**, and in this dataset gender failures are genuine male/female conflicts, **not missing values**. Missing/unknown gender is already de-weighted in the algorithm.
-# MAGIC 4. **Volume is down ~80% since late May and flat since mid-June** (slope ≈ 0/week) — the improvement is holding. "Flat at a low level" is the success state.
-# MAGIC
-# MAGIC **What still needs the raw data (Layer C — RA-4428, the open item):**
-# MAGIC 5. Run `run_dob_reconciliation` on the joined values to split DOB mismatches into **our-fix / already-recovered / upstream** buckets. The 2026-07-15 sample suggests *most are upstream* (ISO format on both sides rules out a parse bug), but we should quantify it.
-# MAGIC 6. Add a **gender pair** to the review table and run `gender_reconcile` — the `M/F ↔ male/female` normalisation is the one clear, low-risk **code** fix.
-# MAGIC
-# MAGIC **Ownership (so the pieces are clear):**
-# MAGIC - *Data Science*: Layers A/B analysis (done) + the two bounded fixes (gender normalisation, confirm DOB parsing) + running the RA-4428 classification once the joined data lands.
-# MAGIC - *Reporting*: the RA-4428 join (Zendesk ticket + eligibility source).
-# MAGIC - *Eng / CX / WellSense*: the six product/CX causes and the WellSense Case Head / file-quality conversation.
-# MAGIC
-# MAGIC **The expectation to keep setting:** matching compares two independently-authored records, so some pairs will always
-# MAGIC genuinely disagree. A small, stable manual-review queue is the designed safety margin — the alternative (loosening the
-# MAGIC bar) mathematically links different people, the costlier error in healthcare. The goal is *low and stable*, not *zero*.
+# Findings & recommendations
+#
+# **What the data supports (Layers A & B — done):**
+# 1. Failures are **not near-misses** — 3 of 4 miss the 0.955 bar by >0.20; the typical failure agrees on only ~2 of 5 fields. Lowering the bar would auto-link *different* people.
+# 2. **DOB is the dominant blocker** (89% of failures). 13 records are perfect on the other 4 fields and still cap at **~0.80** — recoverable only by fixing the birthday data, not by tuning.
+# 3. **Gender is never the lone blocker**, and in this dataset gender failures are genuine male/female conflicts, **not missing values**. Missing/unknown gender is already de-weighted in the algorithm.
+# 4. **Volume is down ~80% since late May and flat since mid-June** (slope ≈ 0/week) — the improvement is holding. "Flat at a low level" is the success state.
+#
+# **What still needs the raw data (Layer C — RA-4428, the open item):**
+# 5. Run `run_dob_reconciliation` on the joined values to split DOB mismatches into **our-fix / already-recovered / upstream** buckets. The 2026-07-15 sample suggests *most are upstream* (ISO format on both sides rules out a parse bug), but we should quantify it.
+# 6. Add a **gender pair** to the review table and run `gender_reconcile` — the `M/F ↔ male/female` normalisation is the one clear, low-risk **code** fix.
+#
+# **Ownership (so the pieces are clear):**
+# - *Data Science*: Layers A/B analysis (done) + the two bounded fixes (gender normalisation, confirm DOB parsing) + running the RA-4428 classification once the joined data lands.
+# - *Reporting*: the RA-4428 join (Zendesk ticket + eligibility source).
+# - *Eng / CX / WellSense*: the six product/CX causes and the WellSense Case Head / file-quality conversation.
+#
+# **The expectation to keep setting:** matching compares two independently-authored records, so some pairs will always
+# genuinely disagree. A small, stable manual-review queue is the designed safety margin — the alternative (loosening the
+# bar) mathematically links different people, the costlier error in healthcare. The goal is *low and stable*, not *zero*.

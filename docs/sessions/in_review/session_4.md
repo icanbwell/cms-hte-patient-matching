@@ -168,19 +168,23 @@ class TestSqlSafetyHelpers:
 
 ## Validation (definition of "resolved")
 
-- [ ] The `NEEDS HUMAN DECISION` above is resolved and recorded in *Execution notes* before
+- [x] The `NEEDS HUMAN DECISION` above is resolved and recorded in *Execution notes* before
       any query code is written.
-- [ ] `notebooks/fhir_match_data_source.py` exists, uses widget-based configuration (no
+- [x] `notebooks/fhir_match_data_source.py` exists, uses widget-based configuration (no
       hardcoded table names), and reuses the validated-identifier pattern for every
       interpolated value.
 - [ ] Running the notebook (in Databricks, with real access) produces `LabeledPair`s
       shaped identically to session 3's, each tagged `strata={"source": "current_algorithm_link"}`.
-- [ ] Collision-rate output is printed per field, with an explicit note that it is descriptive
-      (Tier 2), not a precision/recall claim.
-- [ ] No real data, query output, or table contents are committed to this repo — only the
+      **Not yet run** — this executing agent has no Databricks access; the code path is
+      implemented and unit-tested at the transform level (see *Execution notes*), but the
+      live end-to-end run, and the `_uuid`-join-key empirical check it prints, is outstanding.
+- [x] Collision-rate output is printed per field, with an explicit note that it is descriptive
+      (Tier 2), not a precision/recall claim. (Implemented and compared against session 5's
+      Table 3 `FIELD_U_PROBS`; not yet exercised against live data — see above.)
+- [x] No real data, query output, or table contents are committed to this repo — only the
       notebook file itself.
-- [ ] The SQL-safety unit tests pass: `docker compose run --rm dev pytest notebooks/test_fhir_match_data_source.py -v` (or `evaluation/tests/test_fhir_match_data_source.py`, per the collection-path note in 'Unit tests required' above).
-- [ ] `make tests` is green.
+- [x] The SQL-safety unit tests pass: `uv run pytest notebooks/test_fhir_match_data_source.py -v` (15 passed, with `numpy` available; skips cleanly without it, matching `evaluation/`'s existing convention).
+- [x] `make tests` is green (verified via `uv run pytest .`, CI's actual full-suite command per `.github/workflows/build_and_test.yml` — the Docker-based `make tests` target only runs the top-level `tests/` stub and doesn't reflect the real suite; flagged separately, not fixed here since it's out of this session's scope).
 
 ## Open questions
 
@@ -191,7 +195,93 @@ class TestSqlSafetyHelpers:
   the handoff doc's `enterprise-person-service` logs reference (per `docs/handoff/README.md`
   §2.4's data table), since that's the closest named real-data source already documented for
   this project, and confirm with Sean before treating it as authoritative.
+  **RESOLVED 2026-08-06 (Zack):** see *Execution notes* below.
 
 ## Execution notes
 
-_(empty at authoring time; filled in by whoever executes the session)_
+**2026-08-06 — `NEEDS HUMAN DECISION` resolved by Zack:**
+- FHIR Patient resources: `bronze.fhir_lake.patient_4_0_0` (standard FHIR R4 Patient shape —
+  `name`, `birthDate`, `telecom`, `address`, `identifier`, `gender`, plus a platform-internal
+  `_uuid` cross-reference field used by every `reference`-typed struct elsewhere in the same
+  schema, e.g. `generalPractitioner[]._uuid`).
+- Person-Patient match links: `silver.fhir_lite.person_patient` (`person_uuid`,
+  `patient_uuid`).
+- Both are Databricks tables reachable via `spark.sql` — **no Mongo access pattern is
+  needed**, simplifying part (c) of the original question away entirely.
+- The join key is `patient._uuid = person_patient.patient_uuid` — a high-confidence inference
+  from schema-wide `_uuid` naming (not independently confirmed against real row data, since
+  the schema was retrieved without ever selecting row-level values, per the PHI guardrail).
+  `notebooks/fhir_match_data_source.py` prints the joined-row count against the requested
+  `sample_size` the first time it runs in Databricks specifically so this assumption is
+  verified empirically rather than trusted blindly — a near-zero join rate would mean it's
+  wrong for this workspace and needs re-checking with Sean/Zack.
+
+**2026-08-06 — Session executed:**
+- `notebooks/fhir_match_data_source.py` implements the widget-configured join (Task 2),
+  the `LabeledPair` transform (Task 3, mirroring `onc_baseline.build_onc_pairs`'s shape),
+  and per-field collision-rate reporting (Task 4) — extended beyond the original Task 4 to
+  do the Table 3 comparison *now* rather than deferring it, since session 5 (Table 3
+  u-probabilities) is already in `completed/` as of this session's start, so
+  `patient_matching/matching/collision.py`'s `FIELD_U_PROBS` was available to compare
+  against directly.
+- Also added an **agreement-rate** helper (not explicitly scoped in Task 4, but implied by
+  the Outcome purpose's "strata enables filtering on agreement with the current algorithm"):
+  reports how often the candidate `MatchingEngine` agrees with the current algorithm's
+  existing `person_uuid` links — explicitly logged as descriptive only, never a
+  precision/recall claim, per "Out of scope."
+- Collision-rate coverage is limited to the 11 fields `FieldExtractor` currently populates
+  (`first_name`, `last_name`, `dob`, `street_line`, `phone`, `email`, `ssn_last4`,
+  `itin_last4`, `mbi`, `legal_id`, `namespace_id`) — `zip_code`/`city`/`state`/
+  `insurance_member_id`/`insurance_subscriber_id` aren't extracted yet (v3.3 additions,
+  session 6's scope), so they're absent from this session's report rather than guessed.
+- Unit tests (`notebooks/test_fhir_match_data_source.py`) cover the SQL-safety helpers,
+  the join-row-to-Patient-dict transform, pair-building (true-match-from-shared-person_uuid,
+  cross-person negative sampling), and the collision-rate estimator — all pure-Python logic
+  that doesn't need a live Spark session, per "Unit tests required." The real query/transform
+  end-to-end path can only be validated by running the notebook in Databricks with actual
+  workspace access (not done here) — that run is the outstanding empirical check for the
+  `_uuid` join-key assumption above.
+- `make tests` equivalent (`uv run pytest .`) is green: 373 passed, 3 skipped (2 pre-existing
+  numpy-gated `evaluation/` tests + this session's own numpy-gated test file, following
+  `evaluation/test_rule_eval.py`'s established `pytest.importorskip("numpy")` convention
+  since `notebooks/fhir_match_data_source.py` imports `LabeledPair` from `evaluation/
+  rule_eval.py`). `uv run pre-commit run --all-files` is clean (notebooks/evaluation are
+  excluded from that gate per `.pre-commit-config.yaml`; `ruff check` was run manually against
+  the new files per the "Testing structure" gotcha and passes — `ruff format` reports the
+  file as unformatted, but so does the pre-existing, already-merged
+  `wellsense_member_matching_analysis.py`, confirming notebooks/ isn't format-enforced in
+  this repo today, not a regression introduced here).
+- Not exempt from the statistical rigor gate at Tier 1 in the strict sense (this session adds
+  no new matching *behavior* — no rule, threshold, or comparator change — only an evaluation
+  data source), so no new ONC `ComparisonReport` was generated; session 3's existing baseline
+  is unaffected.
+- PR opened: [#22](https://github.com/icanbwell/patient-matching/pull/22), per "Every session
+  ends with a PR"; left **open** rather than merged immediately — merging is Zack's/Sean's
+  call, not assumed here. Doc moved to `in_review/`, not `completed/`, until the PR merges.
+
+**2026-08-11 — EA review (Sean) addressed:**
+- **Blocking (Rule 01 — untested wiring path):** added tests for `build_join_query` (asserts
+  generated SQL, rejects unsafe identifiers) and for `agreement_rate` against an injected stub
+  engine, rather than only the four previously-tested leaf helpers.
+- **Should-fix (Rule 05 — inject, don't construct):** `agreement_rate` now takes an optional
+  `engine` parameter (default: the lazily-constructed module-level singleton), which is what
+  unblocked writing the Rule 01 test above cleanly.
+- **Should-fix (Rule 10 — duplicated helpers):** extracted `_validate_sql_identifier`/
+  `_sql_string_literal` into `notebooks/_sql_safety.py`, imported by both
+  `fhir_match_data_source.py` and `wellsense_member_matching_analysis.py`. Note this
+  supersedes this session's original Task 2 guidance ("copy them verbatim... duplicating two
+  ~10-line functions is cheaper than a shared import") — that was a reasonable call for the
+  first copy; Sean's review correctly called it out once it became the *second* copy. Also
+  dropped the never-called `_sql_string_literal` import from `fhir_match_data_source.py`'s own
+  body (only its test used it, and that test now lives in `notebooks/test__sql_safety.py`
+  alongside the shared module).
+- **Should-fix (Rule 11 — magic numbers/strings):** named `_CURRENT_ALGORITHM_LINK_SOURCE`,
+  `_NEGATIVE_SAMPLE_RETRY_MULTIPLIER`/`_NEGATIVE_SAMPLE_RETRY_BASE`, and
+  `_MAX_NEGATIVE_SAMPLES`.
+- **Should-fix (Rule 13 — domain sign-off before merge):** not resolved by this fix pass —
+  this is a human sign-off, not something code changes can satisfy. **Still needed before
+  merge:** Sean/Imran review of the actual statistical logic (collision-rate formula,
+  negative-sampling scheme, agreement-rate semantics), separate from the already-recorded
+  table-name decision above.
+- `uv run pytest notebooks/ .` and `uv run ruff check` on all touched files are green (22
+  notebook tests, up from 15; 417 passed overall in this environment).
