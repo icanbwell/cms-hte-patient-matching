@@ -37,6 +37,19 @@ said he'd discuss the test-data simulation methodology with Imran the same day (
 "multiple approaches" are still on the table, so treat the labeled-set *shape* (the three
 columns above) as settled, but the *simulation method* as not yet finalized.** Confirm with
 Sean before executing whether this replaces Scope item 1-2's legacy-vs-new comparison outright,
+
+**Update, 2026-08-14 (resolved — see `session_9.md`):** the Slack conversation with Imran
+happened 2026-08-14 (one day later than expected above), and the simulation methodology is now
+resolved: true-match rows come from single-edit-distance mutations of a real record (matching
+the CMS spec's own fuzzy-tolerance definition); true-non-match rows come from mining real,
+distinct-record pairs that collide on several fields — not from asserting a mutation is "a
+different person," which would only test the algorithm's own tolerance rather than reality.
+This is now built as **session_9** (`docs/sessions/in_review/session_9.md`,
+`evaluation/mutations.py` + `evaluation/hard_negatives.py` + `evaluation/labeled_pairs.py`),
+authored as an upstream dependency of this session rather than folded into it, since this
+session's own scope (cross-repo legacy comparison, adjudication, disagreement bucketing) is
+already large. **This does not yet resolve whether the labeled-set approach replaces or runs
+alongside Scope items 1-2 below — that decision is still open, now tracked in "Open questions."**
 or runs alongside it — this doc has not been restructured around it pending that confirmation,
 only annotated at each place it's relevant.
 
@@ -305,13 +318,18 @@ class TestComparisonReportFraming:
   overclaim precision/recall against a non-ground-truth system. (Sean's 2026-08-13 labeled-set
   direction below may make this moot for the internal report — worth re-asking once that's
   settled.)
-- **`NEEDS HUMAN DECISION — Sean`** (new, 2026-08-13): does the labeled test-set approach
-  (`Outside Record`/`Internal Record`/`IsMatch`, scoring both engines independently against it)
-  replace Scope items 1-2's legacy-vs-new comparison, or run alongside it? And: the test-data
-  simulation methodology itself is still open — Sean said he'd discuss "multiple approaches"
-  with Imran on 2026-08-13; check *Execution notes* or with Sean directly for the outcome of
-  that conversation before starting Task 3/4. Starting point per Sean: the ONC matching approach
-  (session 3's data) plus simple-negative mining for the non-match rows.
+- **`NEEDS HUMAN DECISION — Sean`** (updated 2026-08-14, was new 2026-08-13): does the labeled
+  test-set approach (`Outside Record`/`Internal Record`/`IsMatch`, scoring both engines
+  independently against it) replace Scope items 1-2's legacy-vs-new comparison, or run alongside
+  it? **The simulation-methodology half of this question is now resolved — see session_9 and the
+  2026-08-14 update above. The replace-vs-alongside half is still open.**
+
+## Upstream sessions (must be completed first) — addendum, 2026-08-14
+
+- **Session 9** (`docs/sessions/in_review/session_9.md`) — supplies the test-data simulation
+  methodology this session's Task 3/4 were waiting on (`evaluation/mutations.py`,
+  `evaluation/hard_negatives.py`, `evaluation/labeled_pairs.py`). Do not start Task 3/4 until
+  session 9 is `completed/` and the replace-vs-alongside question above is resolved with Sean.
 
 ## Execution notes
 

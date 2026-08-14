@@ -21,13 +21,18 @@ run whatever **Suggested Next Session** names below.
 > documents"), which the executing environment on 2026-08-06/07 had no Google Drive access
 > to fetch. Unblocks as soon as either Drive access is authorized or someone pastes the
 > relevant Table 2/DOB-tolerance sections directly into the session.
+>
+> **2026-08-14 addendum:** session_9 (new, `in_review/session_9.md`) resolved session_8's
+> 2026-08-13 open question about the test-data simulation methodology (mutation-based fuzzy
+> positives + mined real-record hard negatives). Session_8 now also depends on session_9, in
+> addition to its existing session 4 blocker — see session_8.md's 2026-08-14 update.
 
 ## Up Next (execution order)
 
 | # | Session | Thread | Depends on | Size | Status | One-line summary |
 |---|---------|--------|-----------|------|--------|-------------------|
 | 6 | [session_6](pending/session_6.md) | Line B: CMS v3.3 migration | 5 | M/L | pending — blocked on fetching the live CMS v3.3 spec content | Expand Table 2 to v3.3's 37 rules |
-| 8 | [session_8](pending/session_8.md) | Evaluation & Statistical Rigor | 3, 4 (hard); 6 (soft, quality-of-result only) | L | pending — blocked: session 4 not yet in `completed/` (PR #22 open); 2 more `NEEDS HUMAN DECISION` items | Tier 3: legacy comparison harness, precision/recall-as-agreement, disagreement buckets, per-pair explanations |
+| 8 | [session_8](pending/session_8.md) | Evaluation & Statistical Rigor | 3, 4, 9 (hard); 6 (soft, quality-of-result only) | L | pending — blocked: session 4 not yet in `completed/` (PR #22 open); session 9 not yet in `completed/` (PR open); 1 more `NEEDS HUMAN DECISION` (replace-vs-alongside, see session_8.md) | Tier 3: legacy comparison harness, precision/recall-as-agreement, disagreement buckets, per-pair explanations |
 
 Session 3 merged into `main` (PR [#11](https://github.com/icanbwell/patient-matching/pull/11),
 2026-07-30) and session 5 merged into `main` (PR [#16](https://github.com/icanbwell/patient-matching/pull/16),
@@ -39,6 +44,7 @@ just needs the live spec content, not more code dependencies.
 | # | Session | Thread | PR | One-line summary |
 |---|---------|--------|----|--------------------|
 | 4 | [session_4](in_review/session_4.md) | Evaluation & Statistical Rigor | [#22](https://github.com/icanbwell/patient-matching/pull/22) (open) | Real-world FHIR data source (`bronze.fhir_lake.patient_4_0_0` joined to `silver.fhir_lite.person_patient`) for `rule_eval.py`, via reproducible queries; per-field collision rates vs. session 5's Table 3 |
+| 9 | [session_9](in_review/session_9.md) | Evaluation & Statistical Rigor | (open — see PR) | Synthetic CMS test-dataset generation: single-edit-distance fuzzy mutations (true matches) + mined real-record hard negatives (true non-matches), resolving session_8's test-data simulation methodology question |
 
 ## Completed (most recent 3)
 
@@ -93,8 +99,12 @@ session_5 --------------------------> session_6 (Table 2 v3.3 expansion)
 
 session_3 --------------------------> session_8 (legacy comparison harness, Tier 3)
 session_4 --------------------------> session_8 (hard: reuses its real-batch query)
+session_9 --------------------------> session_8 (hard: supplies the test-data simulation
+                                       methodology - fuzzy mutations + mined hard negatives)
 session_6 -----------------(soft)---> session_8 (session_8's own DoD doesn't need this; only
                                        the go-live-readiness of its numbers does)
+
+session_3 --------------------------> session_9 (reuses onc_loader.py/rule_eval.py directly)
 
 Merge gate (not a code dependency): session_3 must be in completed/ (PR merged into main,
 not just in_review/) before session_5 or session_6 can move to completed/. session_4's
