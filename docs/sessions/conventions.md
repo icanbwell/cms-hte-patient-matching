@@ -11,6 +11,36 @@ that context is needed.) Sessions are submitted for Sean's review (self-review d
 Malone's PTO, 2026-07-21 -> 2026-08-01); a rejected session moves to `rejected/` (kept, not
 deleted — see `rejected/README.md`).
 
+## Mode
+
+**Files-only** — never both with a tracker; one authority per fact. State lives in this repo's
+folders (`pending/ in_review/ completed/ rejected/` — the legacy layout name; the
+`session-planning-setup` skill's tooling recognizes it as a permanently-supported variant, not a
+migration target) plus `index.md`. See "Session lifecycle and folders" below for the exact
+transition rules.
+
+## People
+
+- **Reviewer:** Sean Hegarty.
+- **Backup reviewer:** Zack Malone — the normal reviewer; Sean self-reviewed 2026-07-21 ->
+  2026-08-01 during Zack's PTO (see this file's intro above).
+- **Reciprocal review:** not applicable — a two-person review model, not reciprocal.
+- **Close notifications:** none formalized — the merged PR and the `index.md` update are the
+  record.
+- **WIP limit:** not enforced. `index.md` has carried more than one row in *In Review*
+  simultaneously without issue so far; revisit if that starts causing actual collisions.
+
+## The principles
+
+This repo operates under the `session-planning-setup` skill's core principles — SELF-CONTAINED,
+RATCHET, DECLARE, PRE-SETTLE, PARAMETERIZE, SCRATCH-EXIT — see that skill's
+`references/principles.md` for full definitions rather than restating them here.
+
+**SCRATCH-EXIT: applies.** See "Code exits scratch space as soon as it earns it" below —
+`notebooks/` is the scratch layer; code exits into `patient_matching/<subpackage>/` once it's
+general, reliable, and worth structuring, with `evaluation/rule_eval.py` as the one deliberate
+exception (see that section for why).
+
 ## The "start the next session" protocol
 
 When a human opens a fresh agent conversation and says **"start the next session,"** the agent
@@ -84,6 +114,41 @@ authored at different times: every session traces back to one of the two canonic
 or to freeform judgment. `Thread` alone doesn't do this — it's just a coarse label with no
 registry, so nothing stops a typo'd or genuinely new thread from drifting in unnoticed.
 
+## Sizing
+
+Inferred from observed session sizes to date (sessions 1-9), not a rubric Sean has explicitly
+calibrated — treat as a draft to correct, not a settled answer:
+
+- **S:** under 2 hours — a single function/fix, one sitting (e.g. session 1's audit-field
+  addition).
+- **M:** half a day — 2-4 new files or one new module plus tests (e.g. session 4, session 9).
+- **L:** up to a full day — a new cross-cutting subsystem, multiple modules, or a dependency on
+  another repo's code (e.g. session 8).
+- **XL:** split before authoring; if genuinely irreducible, queue as XL with the no-split reason
+  recorded in the doc.
+
+Second-party size check: solo — self-graded (Sean, or whoever authors the session).
+
+## Hot files
+
+Shared files multiple sessions are likely to touch, where footprint collisions concentrate:
+
+- `patient_matching/matching/table2_rules.py` — the Table 2 rule set; sessions 5 and 6 both
+  touch it, and any future rule-adding session will too.
+- `docs/sessions/index.md` — every session's close-out writes here; two sessions closing at
+  the same time can collide on this file.
+- `evaluation/rule_eval.py` — the shared comparison harness every rule-changing session's Tier 1
+  statistical-rigor gate (see below) depends on.
+
+## PR labels
+
+**Not yet adopted in this repo.** GitHub labels here are the generic repo defaults (`bug`,
+`enhancement`, `dependencies`, `Major`/`Minor`/`Patch` for semver bumps) — no `type:*`/`risk:*`
+scheme exists, unlike the `session-planning-setup` skill's default recommendation
+(`references/integration.md`). `NEEDS HUMAN DECISION — Sean`: adopt that scheme, or continue
+without it. No recommended default given — this is a process-overhead-vs-value call for a
+solo/two-person review model, not a technical one.
+
 ## Reference documents (intentionally NOT copied into this repo)
 
 - **CMS v3.3 spec** (Google Doc, "Draft for Technical Validation," open public-comment
@@ -98,6 +163,27 @@ registry, so nothing stops a typo'd or genuinely new thread from drifting in unn
 - **ONC patient-matching test dataset**: a public, de-identified, versioned benchmark (the
   2017 ONC Patient Matching Algorithm Challenge dataset) — copied into this repo as test
   fixtures (session 3) because it's static and published, unlike the two documents above.
+
+## Centralized docs
+
+**None — this repo's docs are its own Markdown files** (`docs/sessions/`, `docs/handoff/`, the
+committed spec copies above). Draft inference, not confirmed with Sean.
+
+- Space/root: none.
+- Company-wide initiative guide: none, with one nuance worth flagging — session 9's CMS-
+  compliance work also references a cross-org workgroup Google Doc (a shared test-dataset
+  proposal, not a b.well-internal Confluence page). Treat that the same way this section treats
+  a company-wide initiative doc if a future session needs to update it.
+- Which pages correlate with which paths: `docs/sessions/confluence-links.md` (added by this
+  update, starts empty — that's the expected steady state for a repo with no centralized docs,
+  not a gap to fill).
+
+## Capturing friction as you go
+
+Durable, project-wide facts go straight into this repo's `CLAUDE.md` as found (none exists yet
+for `patient-matching` specifically — a candidate future session) or directly into this file;
+thread-specific context goes into each session's own *Execution notes* at close, not the other
+way around. No company-wide initiative doc exists to also update (see "Centralized docs" above).
 
 ## Testing structure: parameterization over duplication
 
