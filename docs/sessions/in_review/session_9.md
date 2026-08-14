@@ -86,6 +86,12 @@ persisted to this repo or any external system — same pattern as `onc_baseline.
    migration against the Google Doc and Slack thread, including the flagged-but-unresolved claim
    about the ONC dataset's duplicate-identity risk (Doc §4) and the explicitly-deferred
    client-type field-availability and Person-Patient-link-mining ideas.
+5. **`evaluation/SYNTHETIC_DATA_SETUP.md`** — setup/execution walkthrough (env setup, running
+   tests, running the demo script), plus a "Memory & scale" section addressing a real prior
+   failure: loading the full ~1,000,000-record ONC dataset and transforming it at scale has
+   crashed a Databricks cluster before (per Sean, 2026-08-14). `labeled_pairs.py`'s `__main__`
+   defaults to one sampled-down shard (`DEFAULT_SAMPLE_SIZE`, overridable via `SAMPLE_SIZE`)
+   rather than `onc_baseline.py`'s existing all-9-shards pattern, for exactly this reason.
 
 ### Out of scope
 
@@ -115,7 +121,9 @@ persisted to this repo or any external system — same pattern as `onc_baseline.
 2. Write `evaluation/hard_negatives.py`'s shared-ZIP+DOB blocking miner.
 3. Write `evaluation/labeled_pairs.py`'s assembly function and `__main__` smoke-run block.
 4. Write `evaluation/SYNTHETIC_DATA_COMPARISON.md`.
-5. Update `session_8.md` to record this session's resolution of its 2026-08-13 open question,
+5. Write `evaluation/SYNTHETIC_DATA_SETUP.md`, and make `labeled_pairs.py`'s `__main__` default
+   to a sampled single shard rather than all 9, per the memory/scale risk it documents.
+6. Update `session_8.md` to record this session's resolution of its 2026-08-13 open question,
    and this new upstream dependency.
 
 ## Unit tests required
@@ -148,6 +156,9 @@ seed. See the actual test files for the full parametrized case tables.
       prior prototype, what was left behind and why, the hard-negative-vs-mutation distinction,
       the flagged-but-unresolved ONC duplicate-identity claim, coverage against Doc §2's
       categories, and explicitly deferred ideas.
+- [x] `evaluation/SYNTHETIC_DATA_SETUP.md` exists and covers setup, test/demo execution, and the
+      memory/scale risk; `labeled_pairs.py`'s `__main__` loads one sampled shard by default, not
+      all 9.
 - [ ] `session_8.md` updated to record this session's resolution (done as part of this PR — see
       that file's changelog).
 - [ ] Sean/Imran/Adam review this PR and confirm the methodology direction before session_8

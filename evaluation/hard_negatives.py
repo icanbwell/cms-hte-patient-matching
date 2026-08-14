@@ -74,7 +74,11 @@ def mine_shared_address_hard_negatives(
 
     Blocking by (postalCode, birthDate) is O(n) rather than O(n^2): each
     patient is placed in exactly one bucket, and only within-bucket pairs
-    (a small fraction of the full population) are ever compared.
+    (a small fraction of the full population) are ever compared. The `n`
+    itself is the caller's responsibility, though - this function assumes
+    `patients` is already a reasonably-sized, already-in-memory list. See
+    SYNTHETIC_DATA_SETUP.md's "Memory & scale" section before passing it the
+    full ~1,000,000-record ONC dataset at once.
     """
     buckets: Dict[Tuple[str, str], List[Patient]] = defaultdict(list)
     for patient in patients:

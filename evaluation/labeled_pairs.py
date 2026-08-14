@@ -16,10 +16,24 @@ SYNTHETIC_DATA_COMPARISON.md for the full division of responsibility.
 Run standalone from the repo root:
 
     PYTHONPATH=. python evaluation/labeled_pairs.py
+
+MEMORY & SCALE - read before raising SAMPLE_SIZE or passing more than one ONC
+shard. `onc_loader.load_onc_patients()` reads its input CSV(s) into a single
+Python list of nested dicts with no streaming, and NormalizationManager then
+produces a second full copy of that list. Materializing all ~1,000,000 ONC
+records this way (all 9 shards) - and then running mutation/normalization
+transforms across all of them at once - is exactly the failure pattern that
+has previously crashed a Databricks cluster running this dataset (per Sean,
+2026-08-14). This script defaults to one shard, sampled down further, for
+exactly that reason. See SYNTHETIC_DATA_SETUP.md's "Memory & scale" section
+before scaling this up, and note that `onc_baseline.py`'s own `__main__`
+(session 3) loads all 9 shards unconditionally - the same risk exists there,
+not just in this file.
 """
 
 from __future__ import annotations
 
+import os
 import random
 from collections import Counter
 from pathlib import Path
@@ -32,6 +46,13 @@ from rule_eval import LabeledPair
 
 from patient_matching.matching.field_extractor import FieldExtractor
 from patient_matching.normalization.manager import NormalizationManager
+
+# Keeps a standalone run's memory footprint small by default: one shard
+# (~110K rows, not all 9 / ~1M), sampled further down to this count. Override
+# via the SAMPLE_SIZE env var only after reading SYNTHETIC_DATA_SETUP.md's
+# "Memory & scale" section - this default exists because of a prior real
+# cluster crash running this dataset at full scale, not as an arbitrary limit.
+DEFAULT_SAMPLE_SIZE = 2000
 
 
 def build_labeled_pairs(
@@ -82,13 +103,24 @@ def build_labeled_pairs(
 
 
 if __name__ == "__main__":
+    sample_size = int(os.environ.get("SAMPLE_SIZE", DEFAULT_SAMPLE_SIZE))
     onc_dir = Path(__file__).parent / "fixtures" / "onc"
-    patients = load_onc_patients(sorted(onc_dir.glob("*.csv")))
+    # One shard only, not sorted(onc_dir.glob("*.csv")) (all 9) - see this
+    # module's docstring and SYNTHETIC_DATA_SETUP.md before changing this.
+    shard = sorted(onc_dir.glob("*.csv"))[0]
+    patients = load_onc_patients([shard])[:sample_size]
     pairs = build_labeled_pairs(patients)
     counts = Counter(
         (p.strata.get("pair_type"), p.strata.get("mutation")) for p in pairs
     )
-    print(f"Built {len(pairs)} labeled pairs from {len(patients)} ONC patients:")
+    print(
+        f"Built {len(pairs)} labeled pairs from {len(patients)} ONC patients "
+        f"(one shard, sampled to SAMPLE_SIZE={sample_size}):"
+    )
     for (pair_type, mutation), count in sorted(counts.items(), key=lambda kv: -kv[1]):
         label = f"{pair_type}/{mutation}" if mutation else pair_type
         print(f"  {label}: {count}")
+    print(
+        "\nThis intentionally does not load all 9 ONC shards (~1,000,000 records) - "
+        "see SYNTHETIC_DATA_SETUP.md's \"Memory & scale\" section before scaling up."
+    )

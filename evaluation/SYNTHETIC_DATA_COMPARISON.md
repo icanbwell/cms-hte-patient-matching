@@ -105,6 +105,19 @@ settled.
   — ONC's available fields don't support most of these directly; would need either additional
   synthetic construction or a different seed population.
 
+## Memory & scale — a known risk, not new to this session
+
+Loading the full ONC dataset and transforming it at scale has crashed a Databricks cluster
+before (per Sean, 2026-08-14). `onc_loader.load_onc_patients()` has no streaming — it
+materializes whatever CSVs you pass it as one Python list — and `NormalizationManager`
+produces a second full copy on top of that. `evaluation/onc_baseline.py`'s own `__main__`
+(session 3) already loads all 9 ONC shards (~1,000,000 records) unconditionally this way; this
+session doesn't fix that, but `labeled_pairs.py`'s `__main__` defaults to one sampled-down
+shard rather than repeating the all-shards pattern. See `SYNTHETIC_DATA_SETUP.md`'s "Memory &
+scale" section for the full guidance (including how to scale this up safely, e.g. via Spark on
+Databricks rather than a single-process Python list, if the Doc's §4 ≥1,000,000-record
+validation is ever attempted against this code).
+
 ## Where this fits in `patient-matching`'s process
 
 This is `docs/sessions/pending/session_9.md`, authored as an upstream dependency of
