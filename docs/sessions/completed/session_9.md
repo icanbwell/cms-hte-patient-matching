@@ -1,6 +1,6 @@
 # Session 9 — Synthetic CMS Test-Dataset Generation: Fuzzy Mutations + Hard-Negative Mining
 
-**Status:** in_review (this session's PR is open at authoring time — see below)
+**Status:** completed (PR #27 merged 2026-08-14 — reviewed by Kenan Spruill)
 **Thread:** Evaluation & Statistical Rigor Framework
 **Estimated size:** M — two new small modules (mutation generators, hard-negative miner), one
 assembly module wiring them into `rule_eval.LabeledPair`, and a comparison write-up.
@@ -159,10 +159,13 @@ seed. See the actual test files for the full parametrized case tables.
 - [x] `evaluation/SYNTHETIC_DATA_SETUP.md` exists and covers setup, test/demo execution, and the
       memory/scale risk; `labeled_pairs.py`'s `__main__` loads one sampled shard by default, not
       all 9.
-- [ ] `session_8.md` updated to record this session's resolution (done as part of this PR — see
+- [x] `session_8.md` updated to record this session's resolution (done as part of this PR — see
       that file's changelog).
-- [ ] Sean/Imran/Adam review this PR and confirm the methodology direction before session_8
-      builds on top of it.
+- [x] PR reviewed and approved (Kenan Spruill, GitHub) and merged 2026-08-14. **Partial:**
+      Imran/Adam have not formally reviewed via GitHub — the methodology itself was built
+      directly from Sean's 2026-08-14 Slack design discussion with Imran, but neither has signed
+      off on the PR specifically. Follow up with them before treating the methodology direction
+      as fully confirmed, per the original plan.
 
 ## Open questions
 
@@ -186,3 +189,8 @@ guidance for the CMS v3.3 spec's own live-draft handling). Code and tests writte
 locally (`uv run pytest`, `ruff check`, `mypy`, and a real-data smoke run) before opening the PR.
 `session_8.md` and `docs/sessions/index.md` updated in the same PR to record this session's
 resolution of session_8's 2026-08-13 open question and register session_9 in the index.
+
+**Close-out (2026-08-14):** PR #27 approved by Kenan Spruill and merged into `main` same day.
+Doc moved `in_review/` -> `completed/`; `index.md` updated accordingly. Imran/Adam have not yet
+formally reviewed the PR itself (see Validation) — the "replace vs. run alongside" open question
+for session_8 remains open regardless of that follow-up.
