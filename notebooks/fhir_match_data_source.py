@@ -1,26 +1,26 @@
-# Databricks notebook source
 # ruff: noqa: F821, E501
 # mypy: ignore-errors
-# MAGIC %md
-# MAGIC # Real-World FHIR Match Data Source — Tier 2 Statistical Rigor
-# MAGIC
-# MAGIC **Author:** Data Science  ·  **Context:** `docs/sessions/pending/session_4.md` — Line B: CMS v3.3 migration,
-# MAGIC Evaluation & Statistical Rigor Framework.
-# MAGIC
-# MAGIC Session 3's ONC baseline proves the engine's self-match integrity on public, synthetic data. This notebook
-# MAGIC builds the real-population complement: a reproducible query over `bronze.fhir_lake.patient_4_0_0` (FHIR
-# MAGIC Patient resources) joined to `silver.fhir_lite.person_patient` (the current algorithm's existing
-# MAGIC Person-Patient links), producing (a) `rule_eval.LabeledPair`s tagged `strata={"source":
-# MAGIC "current_algorithm_link"}` and (b) observed per-field **collision rates** compared against Table 3's
-# MAGIC conservative u-probabilities (`patient_matching/matching/collision.py`, session 5).
-# MAGIC
-# MAGIC **Never a precision/recall/FPR claim** — the current algorithm's links are not ground truth (they're
-# MAGIC produced by the very algorithm this repo aims to replace/compare against). This notebook reports
-# MAGIC **agreement rate** with those links (descriptive) and **collision rate** (a well-posed statistical
-# MAGIC quantity), per session_4.md's "Out of scope" note. No row-level data or query output is committed to
-# MAGIC this repo — only this parameterized notebook.
+"""Real-World FHIR Match Data Source -- Tier 2 Statistical Rigor.
 
-# COMMAND ----------
+Author: Data Science. Context: `docs/sessions/pending/session_4.md` -- Line B: CMS
+v3.3 migration, Evaluation & Statistical Rigor Framework.
+
+Session 3's ONC baseline proves the engine's self-match integrity on public,
+synthetic data. This notebook builds the real-population complement: a reproducible
+query over `bronze.fhir_lake.patient_4_0_0` (FHIR Patient resources) joined to
+`silver.fhir_lite.person_patient` (the current algorithm's existing Person-Patient
+links), producing (a) `rule_eval.LabeledPair`s tagged
+`strata={"source": "current_algorithm_link"}` and (b) observed per-field collision
+rates compared against Table 3's conservative u-probabilities
+(`patient_matching/matching/collision.py`, session 5).
+
+Never a precision/recall/FPR claim -- the current algorithm's links are not ground
+truth (they're produced by the very algorithm this repo aims to replace/compare
+against). This notebook reports agreement rate with those links (descriptive) and
+collision rate (a well-posed statistical quantity), per session_4.md's "Out of
+scope" note. No row-level data or query output is committed to this repo -- only
+this parameterized notebook.
+"""
 
 import random
 from collections import Counter
@@ -97,18 +97,14 @@ except NameError:
 print(f"IN_DATABRICKS={IN_DATABRICKS}")
 print(f"FHIR_TABLE={FHIR_TABLE}  MATCH_TABLE={MATCH_TABLE}  SAMPLE_SIZE={SAMPLE_SIZE}")
 
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## 1 · Query: sample FHIR Patients joined to their existing Person-Patient link
-# MAGIC
-# MAGIC Joins on `patient._uuid = person_patient.patient_uuid` — `_uuid` is the platform's internal
-# MAGIC cross-reference identifier (the same field every `reference`-typed struct elsewhere in this schema uses
-# MAGIC to point at a Patient, e.g. `generalPractitioner[]._uuid`), not the FHIR-spec `id` field. **Assumption to
-# MAGIC verify empirically the first time this runs**: check the printed match-rate below (matched rows ÷
-# MAGIC `SAMPLE_SIZE`) — a near-zero rate would mean this join key guess is wrong for this workspace.
-
-# COMMAND ----------
+# 1. Query: sample FHIR Patients joined to their existing Person-Patient link.
+# Joins on `patient._uuid = person_patient.patient_uuid` -- `_uuid` is the platform's
+# internal cross-reference identifier (the same field every `reference`-typed struct
+# elsewhere in this schema uses to point at a Patient, e.g.
+# `generalPractitioner[]._uuid`), not the FHIR-spec `id` field. Assumption to verify
+# empirically the first time this runs: check the printed match-rate below (matched
+# rows / SAMPLE_SIZE) -- a near-zero rate would mean this join key guess is wrong for
+# this workspace.
 
 _PATIENT_COLUMNS = ("_uuid", "name", "birthDate", "telecom", "address", "identifier", "gender")
 
@@ -136,16 +132,11 @@ else:
           "notebook/cluster with real workspace access to pull real data.")
     joined_rows = []
 
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## 2 · Transform: join-row -> FHIR Patient dict -> LabeledPairs
-# MAGIC
-# MAGIC Mirrors `evaluation/onc_baseline.py::build_onc_pairs`'s shape (normalize, then `FieldExtractor.extract`,
-# MAGIC `features={"query": ..., "candidate": ...}`) so this session's `LabeledPair`s slot into the same
-# MAGIC `rule_eval.py` machinery session 3 already validated - just sourced from a live join instead of a CSV.
-
-# COMMAND ----------
+# 2. Transform: join-row -> FHIR Patient dict -> LabeledPairs.
+# Mirrors `evaluation/onc_baseline.py::build_onc_pairs`'s shape (normalize, then
+# `FieldExtractor.extract`, `features={"query": ..., "candidate": ...}`) so this
+# session's `LabeledPair`s slot into the same `rule_eval.py` machinery session 3
+# already validated - just sourced from a live join instead of a CSV.
 
 _PATIENT_LIST_FIELDS = ("name", "telecom", "address", "identifier")
 
@@ -242,16 +233,11 @@ else:
     extracted_rows = []
     labeled_pairs = []
 
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## 3 · Agreement rate — does the NEW engine agree with the current algorithm's links?
-# MAGIC
-# MAGIC **Descriptive only** — the current algorithm's links are not ground truth, so this is NOT a
-# MAGIC precision/recall/FPR claim (session_4.md's "Out of scope"). It answers "how often does the candidate
-# MAGIC engine's decision match what the current algorithm already decided?", not "is the candidate correct?".
-
-# COMMAND ----------
+# 3. Agreement rate -- does the NEW engine agree with the current algorithm's links?
+# Descriptive only -- the current algorithm's links are not ground truth, so this is
+# NOT a precision/recall/FPR claim (session_4.md's "Out of scope"). It answers "how
+# often does the candidate engine's decision match what the current algorithm already
+# decided?", not "is the candidate correct?".
 
 _default_engine_singleton: Optional[MatchingEngine] = None
 
@@ -287,18 +273,13 @@ if IN_DATABRICKS and labeled_pairs:
     print(f"Agreement with current algorithm's existing links: {rate:.1%} "
           f"(descriptive statistic — NOT precision/recall; the current algorithm's links are not ground truth)")
 
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## 4 · Observed per-field collision rates vs. Table 3's conservative u-probabilities
-# MAGIC
-# MAGIC `observed_collision_rate` estimates P(two random *distinct people* share >=1 common value for a field)
-# MAGIC as `sum_v C(n_v, 2) / C(N, 2)` — the same collision-probability framing
-# MAGIC `patient_matching/matching/collision.py`'s Table 3 u-probabilities use, just computed empirically on this
-# MAGIC sample instead of transcribed from the CMS spec. One row per distinct `person_uuid` (not per raw Patient
-# MAGIC record) so a person with multiple linked Patient records isn't double-counted.
-
-# COMMAND ----------
+# 4. Observed per-field collision rates vs. Table 3's conservative u-probabilities.
+# `observed_collision_rate` estimates P(two random distinct people share >=1 common
+# value for a field) as `sum_v C(n_v, 2) / C(N, 2)` -- the same collision-probability
+# framing `patient_matching/matching/collision.py`'s Table 3 u-probabilities use, just
+# computed empirically on this sample instead of transcribed from the CMS spec. One
+# row per distinct `person_uuid` (not per raw Patient record) so a person with
+# multiple linked Patient records isn't double-counted.
 
 
 def observed_collision_rate(values_per_person: Sequence[Set[str]]) -> float:
