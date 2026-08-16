@@ -2,6 +2,7 @@
 
 from typing import Any, Dict
 
+from patient_matching.matching.field_extractor import FieldExtractor
 from patient_matching.normalization.manager import NormalizationManager
 
 
@@ -247,3 +248,45 @@ class TestNormalizationManager:
         nicks = result["name"][0].get("_nicknames", [])
         assert len(nicks) > 0
         assert "bob" in nicks or "rob" in nicks
+
+
+class TestPlaceholderDobExcludedEndToEnd:
+    """CMS spec SS D.6 (docs/CMS_Patient_Matching_Proposal_v3.2.2.txt): dates of
+    birth before (current year - 120) or after (current date + 2 days) are
+    unavailable for matching. patient_matching/normalization/placeholder_detector.py's
+    is_placeholder_date() already has its own unit tests for that threshold;
+    what these tests confirm is that the behavior is actually wired end-to-end
+    through NormalizationManager.normalize() into FieldExtractor.extract() -
+    session_10's normalization-edge-case coverage (docs/sessions/pending/session_10.md)."""
+
+    def setup_method(self) -> None:
+        self.manager = NormalizationManager()
+        self.extractor = FieldExtractor()
+
+    def _patient(self, birth_date: str) -> Dict[str, Any]:
+        return {
+            "resourceType": "Patient",
+            "name": [{"family": "Smith", "given": ["Pat"]}],
+            "birthDate": birth_date,
+            "telecom": [],
+            "address": [],
+            "identifier": [],
+        }
+
+    def test_dob_over_120_years_old_never_reaches_extracted_fields(self) -> None:
+        normalized = self.manager.normalize(self._patient("1850-01-01"))
+        fields = self.extractor.extract(normalized)
+        assert fields.dob == set()
+
+    def test_dob_more_than_two_days_in_the_future_never_reaches_extracted_fields(self) -> None:
+        from datetime import date, timedelta
+
+        far_future = (date.today() + timedelta(days=10)).isoformat()
+        normalized = self.manager.normalize(self._patient(far_future))
+        fields = self.extractor.extract(normalized)
+        assert fields.dob == set()
+
+    def test_valid_recent_dob_still_reaches_extracted_fields(self) -> None:
+        normalized = self.manager.normalize(self._patient("1990-01-15"))
+        fields = self.extractor.extract(normalized)
+        assert fields.dob == {"1990-01-15"}

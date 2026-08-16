@@ -85,8 +85,8 @@ settled.
 | Fuzzy-eligible field, single-character edit | **Yes** — `mutations.py`'s `typo_edit`/`transpose_characters` default to exactly one edit, matching the spec's literal tolerance definition. |
 | Negative pair per combination (two distinct patients sharing nothing on that combination) | **Partially** — `onc_baseline.py`'s existing random cross-pair sampling covers the general case; not combination-specific. |
 | Administrative Restrictions (e.g. family-shared insurance IDs) | **No** — not attempted this PR; ONC's field set has no insurance/plan-ID column to construct this from. **Planned: `docs/sessions/pending/session_11.md`**, blocked on session_6 adding insurance-identifier fields. |
-| Named special/high-risk populations (twins, shelters, shared address, etc.) | **Narrow start only** — `hard_negatives.py`'s shared-ZIP+DOB mining is a proxy for "shared address," nothing else in this list. **Planned: `docs/sessions/pending/session_10.md`** (all named categories except literal twins, which the CMS spec itself treats as a separate, unresolvable case — see that session's "Out of scope"). |
-| Normalization edge cases (diacritics, placeholder DOBs, punctuation) | **No** — `patient_matching/normalization/` already exists and may cover some of this independently; not evaluated here. **Planned: `docs/sessions/pending/session_10.md`**, exercising the existing normalizer end-to-end rather than duplicating its unit tests. |
+| Named special/high-risk populations (twins, shelters, shared address, etc.) | **Yes, except literal twins** — session_10 (`evaluation/special_populations.py`) adds `mine_shared_surname_household_negatives()` (multi-generational households, mined real ONC pairs) and `construct_institutional_negatives()` (the other 8 named categories, constructed via a fabricated-but-marked-synthetic shared address over otherwise-distinct real ONC identities). Literal twins remain a separate, unresolvable case per the CMS spec itself — see session_10.md's "Out of scope". |
+| Normalization edge cases (diacritics, placeholder DOBs, punctuation) | **Yes** — session_10 (`evaluation/normalization_edge_cases.py`) adds `diacritic_variant()`/`punctuation_variant()` true-match pairs exercised end-to-end through `NormalizationManager`+`FieldExtractor`; a separate integration test (`patient_matching/normalization/tests/test_manager.py::TestPlaceholderDobExcludedEndToEnd`) confirms placeholder/out-of-range DOB never reaches a matchable field, without duplicating `placeholder_detector.py`'s own unit tests of the D.6 threshold itself. |
 
 ## Known gaps / explicitly deferred (per design discussion, 2026-08-14)
 
@@ -105,12 +105,12 @@ settled.
   gate — not a near-term blocker).
 - **Administrative-restriction and twin/shelter/institutional special-population pairs** (Doc §2)
   — ONC's available fields don't support most of these directly; would need either additional
-  synthetic construction or a different seed population. **Now planned:** non-twin special
-  populations and normalization edge cases in `docs/sessions/pending/session_10.md` (fully
-  unblocked); administrative-restriction/insurance-identifier pairs in
-  `docs/sessions/pending/session_11.md` (blocked on session_6). Literal twins deliberately
-  excluded from both — see session_10.md's "Out of scope" and `index.md`'s "Candidate future
-  sessions."
+  synthetic construction or a different seed population. **Non-twin special populations and
+  normalization edge cases: done** (session_10 — `evaluation/special_populations.py`,
+  `evaluation/normalization_edge_cases.py`). **Still planned:** administrative-restriction/
+  insurance-identifier pairs in `docs/sessions/pending/session_11.md` (blocked on session_6, which
+  is on hold — see `docs/sessions/index.md`). Literal twins deliberately excluded from both — see
+  session_10.md's "Out of scope" and `index.md`'s "Candidate future sessions."
 
 ## Memory & scale — a known risk, not new to this session
 

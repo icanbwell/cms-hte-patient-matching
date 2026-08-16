@@ -808,39 +808,89 @@ collision-free across all 8 institution types, and the diacritic/punctuation no-
 
 ## Validation (definition of "resolved")
 
-- [ ] `evaluation/special_populations.py` and `evaluation/normalization_edge_cases.py` exist and
+- [x] `evaluation/special_populations.py` and `evaluation/normalization_edge_cases.py` exist and
       import cleanly.
-- [ ] `uv run pytest evaluation/test_special_populations.py evaluation/test_normalization_edge_cases.py evaluation/test_labeled_pairs.py -v`
-      passes.
-- [ ] The placeholder-DOB end-to-end test passes, confirming `PatientFields.dob` is empty for an
-      out-of-range date after the full normalize→extract pipeline.
-- [ ] `PYTHONPATH=. python evaluation/labeled_pairs.py` still runs against real ONC fixture data
+- [x] `pytest evaluation/test_special_populations.py evaluation/test_normalization_edge_cases.py evaluation/test_labeled_pairs.py -v`
+      passes (13 + 13 + 9 = 35 passed).
+- [x] The placeholder-DOB end-to-end test passes, confirming `PatientFields.dob` is empty for an
+      out-of-range date after the full normalize→extract pipeline (3 tests in
+      `TestPlaceholderDobExcludedEndToEnd`, all passing).
+- [x] `PYTHONPATH=. python evaluation/labeled_pairs.py` still runs against real ONC fixture data
       without error and now reports non-zero counts for `normalization_edge_case` (both `diacritic`
-      and `punctuation`) and `special_population` (`multi_generational_household` plus at least one
-      `institution_type`) pair types, alongside session_9's existing `fuzzy_variant`/`hard_negative`
-      counts.
-- [ ] `ruff check` is clean on all new/changed files; `mypy` reports zero new errors.
-- [ ] `evaluation/SYNTHETIC_DATA_COMPARISON.md`'s coverage table is updated (both rows) and the
-      coincidental-vs.-constructed-sharing note is added.
-- [ ] `make tests` is green (full suite, not just the new tests).
-- [ ] `make run-pre-commit` is clean.
-- [ ] Per `conventions.md`'s statistical rigor gate: this session does not itself change matching
-      *behavior* (no `MatchingEngine`/`table2_rules.py` edits), so the Tier-1 gate does not apply —
-      confirm this by checking the diff touches only `evaluation/` and one `patient_matching/normalization/`
-      (or new `evaluation/`) test file before closing.
+      and `punctuation`) and `special_population` (`multi_generational_household` plus all 8
+      `institution_type`s) pair types, alongside session_9's existing `fuzzy_variant`/`hard_negative`
+      counts — see Execution notes for the actual counts observed.
+- [x] `ruff check`/`mypy --strict`/`bandit` clean on all new/changed files, modulo pre-existing
+      style drift (see Execution notes — verified against already-merged sibling files, not
+      newly introduced).
+- [x] `evaluation/SYNTHETIC_DATA_COMPARISON.md`'s coverage table is updated (both rows) and the
+      coincidental-vs.-constructed-sharing distinction is documented (inline in the coverage table
+      and in `special_populations.py`'s own module docstring).
+- [ ] `make tests` is green (full suite, not just the new tests) — **could not run**; see
+      Execution notes.
+- [ ] `make run-pre-commit` is clean — **could not run**; see Execution notes.
+- [x] Per `conventions.md`'s statistical rigor gate: this session does not itself change matching
+      *behavior* (no `MatchingEngine`/`table2_rules.py` edits) — confirmed the diff touches only
+      `evaluation/*.py` plus `patient_matching/normalization/tests/test_manager.py` (a new test
+      class, no production code under `patient_matching/` changed) — Tier-1 gate does not apply.
 
 ## Open questions
 
-- Exact home for the placeholder-DOB pipeline test (`patient_matching/normalization/tests/test_manager.py`
-  vs. a new `evaluation/test_placeholder_dob_pipeline.py`) is left to whoever executes this
-  session — either is a legitimate location; pick based on which reads more naturally once the
-  actual diff exists, not a `NEEDS HUMAN DECISION`.
-- Whether `institutional_group_size=3` (9 institution-type pairs total: `3 choose 2 = 3` pairs ×
-  8 types = 24 constructed pairs per `build_labeled_pairs()` call) is the right default density is
-  the session author's call, not a human decision — recommended default is 3, matching a small,
-  representative group per institution without meaningfully changing `labeled_pairs.py`'s overall
-  memory footprint at the existing `DEFAULT_SAMPLE_SIZE=2000` scale.
+- Exact home for the placeholder-DOB pipeline test: resolved as
+  `patient_matching/normalization/tests/test_manager.py` (new `TestPlaceholderDobExcludedEndToEnd`
+  class) rather than a new `evaluation/` file, since it reads naturally alongside
+  `TestNormalizationManager`'s other end-to-end normalize() checks in the same file.
+- `institutional_group_size=3` kept at its recommended default (24 constructed institutional pairs
+  per `build_labeled_pairs()` call, plus whatever `mine_shared_surname_household_negatives()` finds
+  naturally) — no reason found during implementation to change it.
 
 ## Execution notes
 
-_(empty at authoring time; filled in by whoever executes the session)_
+Executed 2026-08-16. All code and tests written per the plan above; no deviations from the
+designed module/function shapes.
+
+**Test execution environment:** this sandbox has no JFrog credentials (`uv sync` fails resolving
+`fastapi` from the private index) and no `.env` file, so neither `uv run pytest`/`uv run
+pre-commit` nor `make tests`/`make run-pre-commit` (Docker-based, needs `.env`) could actually run.
+Substituted: an existing local `.venv` (already had `patient_matching`'s core deps) supplemented
+with `numpy`, `usaddress-scourgify` (note: NOT plain `scourgify` — that's a different, incompatible
+PyPI package; must be `usaddress-scourgify` per `pyproject.toml`) from public PyPI, then ran the
+full suite directly: **481 passed** (up from a confirmed 448-passing baseline before this
+session's changes — net +33 tests: 13 + 13 in the two new test files, +4 in `test_labeled_pairs.py`
+net of 2 renamed-in-place, +3 in `test_manager.py`).
+
+Also confirmed the local git `pre-commit` hook is broken independent of this session (references a
+`pre-commit.Dockerfile` removed by commit `d51b080`, "Run pre-commit and tests directly via uv
+instead of Docker in CI") — pre-existing environment drift, not caused by this session.
+
+**Lint verification methodology:** this venv has `ruff==0.16.1` installed, not the repo's pinned
+`ruff==0.15.20` (`conventions.md`: "pinned deliberately, not floating"), and the two differ in
+default-enabled rules (e.g. `UP006`/`UP035`/`DTZ011`). Rather than trust raw `ruff check` output,
+every finding was checked against already-merged sibling files
+(`evaluation/mutations.py`, `evaluation/hard_negatives.py`,
+`patient_matching/normalization/placeholder_detector.py`) run through the *same* venv — all three
+produce the identical classes of finding despite being known-clean, merged code, confirming the
+findings are version drift, not real regressions. The one finding that was NOT drift (`I001`
+import-block sorting in the two new test files) was fixed via
+`ruff check --fix --select I001` scoped to just those two files. `mypy --strict` reported zero new
+errors beyond `evaluation/rule_eval.py`'s 8 pre-existing errors (unchanged before/after this
+session's diff) and the `evaluation/test_*.py` untyped-helper pattern already present in
+`test_mutations.py` (same class of finding, not new). `bandit` reported zero findings.
+
+**Smoke run counts** (`PYTHONPATH=. python evaluation/labeled_pairs.py`, one ONC shard sampled to
+2000 patients, default seed): 6289 total pairs — `normalization_edge_case/diacritic`: 2000,
+`normalization_edge_case/punctuation`: 2000, `special_population/multi_generational_household`:
+261, `fuzzy_variant/*` (session 9, unchanged mutation types): 2000 total, `hard_negative`: 4,
+`special_population/<institution_type>`: 3 each across all 8 types (24 total). The 261-count
+household figure is a real, visible-in-output volume from this ONC sample's actual surname/ZIP
+distribution — not a silent cap, per the "no silent caps" principle.
+
+**Not run / left for actual PR review:** `make tests` and `make run-pre-commit`, per the
+environment limitation above. Whoever reviews the PR in an environment with working JFrog/Docker
+credentials should run both before merging, per `conventions.md`'s Definition of Done.
+
+**Close-out:** PR opened from `claude/session-10-special-populations`. Left in `pending/` rather
+than moved to `in_review/`/`completed/` — merging is a human decision per `conventions.md` ("Every
+session ends with a PR" + Sean's review), not something to do unilaterally; whoever merges the PR
+should then move this doc to `completed/` and update `index.md` per the "Keeping this index
+current" steps.

@@ -13,6 +13,13 @@ Session_8 is expected to consume this module's `LabeledPair` output directly
 for its labeled-set comparison; this module does not score pairs itself - see
 SYNTHETIC_DATA_COMPARISON.md for the full division of responsibility.
 
+Session 10 extends this module with two further categories, both additive
+(default-on, appended alongside session 9's existing pairs rather than
+replacing them): normalization-edge-case true-matches
+(normalization_edge_cases.py - diacritics, punctuation/whitespace) and
+special-population true-non-matches (special_populations.py - mined
+multi-generational-household pairs and constructed institutional pairs).
+
 Run standalone from the repo root:
 
     PYTHONPATH=. python evaluation/labeled_pairs.py
@@ -41,8 +48,14 @@ from typing import Any, Dict, List
 
 from hard_negatives import mine_shared_address_hard_negatives
 from mutations import generate_fuzzy_variant
+from normalization_edge_cases import diacritic_variant, punctuation_variant
 from onc_loader import load_onc_patients
 from rule_eval import LabeledPair
+from special_populations import (
+    INSTITUTION_TYPES,
+    construct_institutional_negatives,
+    mine_shared_surname_household_negatives,
+)
 
 from patient_matching.matching.field_extractor import FieldExtractor
 from patient_matching.normalization.manager import NormalizationManager
@@ -59,10 +72,16 @@ def build_labeled_pairs(
     patients: List[Dict[str, Any]],
     *,
     n_fuzzy_variants_per_patient: int = 1,
+    include_normalization_edge_cases: bool = True,
+    include_special_populations: bool = True,
+    institutional_group_size: int = 3,
     seed: int = 0,
 ) -> List[LabeledPair]:
-    """Build LabeledPairs from ONC patients: fuzzy-variant true-matches plus
-    mined-hard-negative true-non-matches.
+    """Build LabeledPairs from ONC patients: fuzzy-variant true-matches,
+    mined-hard-negative true-non-matches (session 9), plus (session 10)
+    normalization-edge-case true-matches and special-population
+    true-non-matches (mined multi-generational-household pairs and
+    constructed institutional pairs).
 
     Patients are run through NormalizationManager before mutation/extraction,
     matching onc_baseline.py's build_onc_pairs contract (every MatchingEngine
@@ -87,6 +106,25 @@ def build_labeled_pairs(
                     pair_id=f"{p['id']}::{mutation_type}",
                 )
             )
+        if include_normalization_edge_cases:
+            diacritic = diacritic_variant(p, rng=rng)
+            pairs.append(
+                LabeledPair(
+                    features={"query": q_fields, "candidate": extractor.extract(diacritic)},
+                    is_true_match=True,
+                    strata={"pair_type": "normalization_edge_case", "case": "diacritic"},
+                    pair_id=f"{p['id']}::diacritic",
+                )
+            )
+            punctuated = punctuation_variant(p, rng=rng)
+            pairs.append(
+                LabeledPair(
+                    features={"query": q_fields, "candidate": extractor.extract(punctuated)},
+                    is_true_match=True,
+                    strata={"pair_type": "normalization_edge_case", "case": "punctuation"},
+                    pair_id=f"{p['id']}::punctuation",
+                )
+            )
 
     for candidate in mine_shared_address_hard_negatives(normalized):
         q_fields = extractor.extract(candidate.query)
@@ -99,6 +137,43 @@ def build_labeled_pairs(
                 pair_id=f"{candidate.query['id']}::{candidate.candidate['id']}",
             )
         )
+
+    if include_special_populations:
+        for household_candidate in mine_shared_surname_household_negatives(normalized):
+            pairs.append(
+                LabeledPair(
+                    features={
+                        "query": extractor.extract(household_candidate.query),
+                        "candidate": extractor.extract(household_candidate.candidate),
+                    },
+                    is_true_match=False,
+                    strata={
+                        "pair_type": "special_population",
+                        "category": "multi_generational_household",
+                        **household_candidate.shared_fields,
+                    },
+                    pair_id=f"{household_candidate.query['id']}::{household_candidate.candidate['id']}::household",
+                )
+            )
+        for institution_type in INSTITUTION_TYPES:
+            for institutional_candidate in construct_institutional_negatives(
+                normalized, institution_type, group_size=institutional_group_size, rng=rng
+            ):
+                pairs.append(
+                    LabeledPair(
+                        features={
+                            "query": extractor.extract(institutional_candidate.query),
+                            "candidate": extractor.extract(institutional_candidate.candidate),
+                        },
+                        is_true_match=False,
+                        strata={"pair_type": "special_population", "category": institution_type},
+                        pair_id=(
+                            f"{institutional_candidate.query['id']}::"
+                            f"{institutional_candidate.candidate['id']}::{institution_type}"
+                        ),
+                    )
+                )
+
     return pairs
 
 
@@ -111,14 +186,18 @@ if __name__ == "__main__":
     patients = load_onc_patients([shard])[:sample_size]
     pairs = build_labeled_pairs(patients)
     counts = Counter(
-        (p.strata.get("pair_type"), p.strata.get("mutation")) for p in pairs
+        (
+            p.strata.get("pair_type"),
+            p.strata.get("mutation") or p.strata.get("case") or p.strata.get("category"),
+        )
+        for p in pairs
     )
     print(
         f"Built {len(pairs)} labeled pairs from {len(patients)} ONC patients "
         f"(one shard, sampled to SAMPLE_SIZE={sample_size}):"
     )
-    for (pair_type, mutation), count in sorted(counts.items(), key=lambda kv: -kv[1]):
-        label = f"{pair_type}/{mutation}" if mutation else pair_type
+    for (pair_type, subtype), count in sorted(counts.items(), key=lambda kv: -kv[1]):
+        label = f"{pair_type}/{subtype}" if subtype else pair_type
         print(f"  {label}: {count}")
     print(
         "\nThis intentionally does not load all 9 ONC shards (~1,000,000 records) - "
