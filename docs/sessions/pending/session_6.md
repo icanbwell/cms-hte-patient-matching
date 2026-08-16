@@ -10,6 +10,12 @@ note" below.
 
 > Read `../conventions.md` first.
 
+**On hold (Imran, 2026-08-16):** do not start this session yet, even once the live-spec-fetch
+blocker (below) clears — separate from that blocker, Imran asked to hold off adding the v3.3
+37-rule expansion for now. Confirm with him before beginning. Session 11
+(`docs/sessions/pending/session_11.md`) has a hard dependency on this session and is therefore
+on hold too.
+
 ## Re-scope note (2026-08-12)
 
 This doc was originally authored 2026-07-28 against CMS Proposal **v3.3.0 alone** — the
