@@ -21,6 +21,7 @@ from .field_extractor import FieldExtractor, PatientFields
 from .match_result import MatchOutcome, MatchResult, RuleEvaluation
 from .table2_rules import (
     APPROVED_RULES,
+    DOB,
     FieldRole,
     MatchingRule,
 )
@@ -213,11 +214,17 @@ class MatchingEngine:
                 evaluation.field_outcomes[rf.name] = "exact"
                 continue
 
-            # Try fuzzy if eligible
+            # Try fuzzy if eligible. DOB uses CMS v3.3's +/-1 day date
+            # tolerance (dob_fuzzy_match), not the generic string
+            # edit-distance comparison every other fuzzy-eligible field uses.
             if (
                 rf.role == FieldRole.FUZZY_ELIGIBLE
                 and rule.max_fuzzy_fields > 0
-                and self._comparator.fuzzy_match(q_values, c_values)
+                and (
+                    self._comparator.dob_fuzzy_match(q_values, c_values)
+                    if rf.name == DOB
+                    else self._comparator.fuzzy_match(q_values, c_values)
+                )
             ):
                 fuzzy_count += 1
                 if fuzzy_count <= rule.max_fuzzy_fields:

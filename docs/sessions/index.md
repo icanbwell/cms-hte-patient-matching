@@ -36,10 +36,15 @@ run whatever **Suggested Next Session** names below.
 > **session_11** (administrative-restriction + insurance-identifier labeled pairs) has a hard
 > dependency on session_6 and cannot start before it.
 >
-> **2026-08-16, on hold:** Imran asked to hold off starting **session_6** (v3.3's 37-rule
-> expansion) for now, independent of its existing live-spec-fetch blocker — see session_6.md's own
-> hold note. **Session_11** inherits this hold via its hard dependency on session_6. **Session_10**
-> is unaffected (no dependency on session_6) and remains the best immediately-startable pick.
+> **2026-08-16, session_6 partially executed:** Imran first asked to hold session_6 entirely,
+> then refined that to "skip adding the new [Table 2] rules, do the rest" — so **session_6's
+> Tasks 1-2 (the three new canonical fields end-to-end, DOB +/-1 day fuzzy comparison) are done**
+> (branch `claude/session-6-fields-dob-fuzzy`), while **Tasks 3-4 (the 11 new rule definitions
+> and their gating flag) remain on hold**, independent of the live-spec-fetch blocker below —
+> see session_6.md's own note and Execution notes for exactly what shipped. `APPROVED_RULES` is
+> still 26 rules, unchanged. **Session_11** still can't start: its Member-ID-anchored true-match
+> pairs need Task 3's rules (27-30) to actually exist, not just the fields. **Session_10** was
+> and remains unaffected either way.
 > Also per Imran, 2026-08-16: this CMS test-dataset generation backlog (sessions 9/10/11) is
 > explicitly scoped to the workgroup Doc's Option A (ONC) + Option B (programmatic construction)
 > only — Option C (company-submitted de-identified real data) stays out of scope until he says
@@ -70,9 +75,9 @@ run whatever **Suggested Next Session** names below.
 | # | Session | Thread | Depends on | Size | Status | One-line summary |
 |---|---------|--------|-----------|------|--------|-------------------|
 | 10 | [session_10](pending/session_10.md) | Evaluation & Statistical Rigor | 9 (satisfied, `completed/`) | M/L | pending — fully unblocked | Special-population non-match pairs (shelters, institutions, multi-generational households) + normalization edge-case pairs (diacritics, punctuation, placeholder DOB) |
-| 6 | [session_6](pending/session_6.md) | Line B: CMS v3.3 migration | 5 | L | pending — **on hold (Imran, 2026-08-16)**, also blocked on fetching the live CMS v3.3 spec content | Expand Table 2 to CMS v3.3 base + v3.3.1/v3.3.3/v3.3.4/v3.3.6 addenda |
+| 6 | [session_6](pending/session_6.md) | Line B: CMS v3.3 migration | 5 | L | pending — **Tasks 1-2 done (2026-08-16: fields + DOB fuzzy comparator), Tasks 3-4 on hold (Imran, 2026-08-16)**; Tasks 3-4 also blocked on fetching the live CMS v3.3 spec content | Expand Table 2 to CMS v3.3 base + v3.3.1/v3.3.3/v3.3.4/v3.3.6 addenda (fields + DOB fuzzy mode done; the rules themselves on hold) |
 | 8 | [session_8](https://github.com/icanbwell/cms-hte-patient-matching-test-set/blob/main/docs/sessions/pending/session_8.md) (moved) | Evaluation & Statistical Rigor | 3, 4, 9 (hard, all satisfied); 6 (soft, quality-of-result only) | L | pending — hard code dependencies satisfied (session 4: PR #22 merged, live run 2026-08-18 via PR #36; session 9: PR #27 merged); blocked on 3 `NEEDS HUMAN DECISION` items — see the moved session_8.md | Tier 3: legacy comparison harness, precision/recall-as-agreement, disagreement buckets, per-pair explanations |
-| 11 | [session_11](pending/session_11.md) | Evaluation & Statistical Rigor | 6 (hard); 10 (soft, shared-file coordination only) | M/L | pending — blocked on session 6, which is **on hold (Imran, 2026-08-16)** | Administrative-restriction (Table 4 Subscriber-ID+DOB) + insurance-identifier (Member/Subscriber ID, rules 27-32) labeled pairs — first session to fabricate synthetic field values outright rather than mutate/mine real ONC records |
+| 11 | [session_11](pending/session_11.md) | Evaluation & Statistical Rigor | 6 (hard); 10 (soft, shared-file coordination only) | M/L | pending — blocked on session 6's Tasks 3-4 (the actual rules, still **on hold, Imran 2026-08-16**); the fields Tasks 1-2 added are available but insufficient on their own | Administrative-restriction (Table 4 Subscriber-ID+DOB) + insurance-identifier (Member/Subscriber ID, rules 27-32) labeled pairs — first session to fabricate synthetic field values outright rather than mutate/mine real ONC records |
 
 Session 3 merged into `main` (PR [#11](https://github.com/icanbwell/patient-matching/pull/11),
 2026-07-30) and session 5 merged into `main` (PR [#16](https://github.com/icanbwell/patient-matching/pull/16),

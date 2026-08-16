@@ -10,12 +10,17 @@ Fuzzy matching constraints:
 
 from __future__ import annotations
 
+from datetime import date
 from typing import Set
 
 from rapidfuzz.distance import DamerauLevenshtein
 
 MIN_FUZZY_LENGTH = 5
 MAX_DAMERAU_LEVENSHTEIN_DISTANCE = 1
+# CMS v3.3's DOB tolerance (docs/sessions/pending/session_6.md, Task 2):
+# exact date comparison +/-1 day, not edit distance - DOB is a date, not a
+# name/street string, so this is deliberately separate from fuzzy_match.
+DOB_FUZZY_TOLERANCE_DAYS = 1
 
 
 class FieldComparator:
@@ -52,6 +57,27 @@ class FieldComparator:
                 if dist <= MAX_DAMERAU_LEVENSHTEIN_DISTANCE:
                     return True
 
+        return False
+
+    @staticmethod
+    def dob_fuzzy_match(query_values: Set[str], candidate_values: Set[str]) -> bool:
+        """CMS v3.3 DOB tolerance: +/-1 day, exact date comparison (not edit
+        distance).
+
+        Both value sets are ISO 8601 date strings (YYYY-MM-DD). A query DOB
+        matches a candidate DOB if they're the same day or adjacent by up to
+        DOB_FUZZY_TOLERANCE_DAYS days. Not yet used by any Table 2 rule - see
+        docs/sessions/pending/session_6.md.
+        """
+        try:
+            q_dates = {date.fromisoformat(v) for v in query_values}
+            c_dates = {date.fromisoformat(v) for v in candidate_values}
+        except ValueError:
+            return False  # partial/malformed dates never fuzzy-match, per SS V.A.5
+        for q in q_dates:
+            for c in c_dates:
+                if abs((q - c).days) <= DOB_FUZZY_TOLERANCE_DAYS:
+                    return True
         return False
 
     @staticmethod

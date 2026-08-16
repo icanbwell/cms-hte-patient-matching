@@ -13,8 +13,12 @@ from patient_matching.matching.match_result import MatchOutcome
 from patient_matching.matching.matching_engine import MatchingEngine
 from patient_matching.matching.table2_rules import (
     APPROVED_RULES,
+    DOB,
+    FIRST_NAME,
+    FieldRole,
+    MatchingRule,
+    RuleField,
 )
-
 
 # ── helpers ──────────────────────────────────────────────────────────
 
@@ -281,6 +285,46 @@ class TestMatchingEngineRuleEvaluations:
         evals = [e for e in result.rule_evaluations if e.rule_id == "26"]
         assert len(evals) == 1
         assert evals[0].field_outcomes.get("namespace_id") == "exact"
+
+
+class TestMatchingEngineDobFuzzyDispatch:
+    """CMS v3.3's DOB tolerance (+/-1 day, not edit distance) - no rule in
+    APPROVED_RULES marks DOB fuzzy-eligible yet (docs/sessions/pending/
+    session_6.md's Task 3 - adding actual v3.3 rules - is deliberately not
+    done), so this exercises the dispatch via a synthetic rule rather than
+    APPROVED_RULES, proving MatchingEngine calls dob_fuzzy_match (not the
+    generic string fuzzy_match) specifically for the DOB field."""
+
+    _dob_fuzzy_rule = (
+        MatchingRule(
+            rule_id="dob-fuzzy-test",
+            description="First Name + DOB* (test-only rule)",
+            fields=(
+                RuleField(name=FIRST_NAME, role=FieldRole.EXACT),
+                RuleField(name=DOB, role=FieldRole.FUZZY_ELIGIBLE),
+            ),
+            max_fuzzy_fields=1,
+        ),
+    )
+
+    def test_dob_one_day_off_matches_via_dob_fuzzy_not_string_fuzzy(self) -> None:
+        """1990-01-15 vs 1990-01-16 (1-day gap) has Damerau-Levenshtein
+        distance > 1 (multiple digits differ), so the generic string
+        fuzzy_match would reject it - only dob_fuzzy_match's date-arithmetic
+        tolerance permits this."""
+        candidate = _make_patient(dob="1990-01-16")
+        query = _make_patient(dob="1990-01-15")
+        engine = MatchingEngine(backend=InMemoryBackend([candidate]), rules=self._dob_fuzzy_rule)
+        result = engine.match(query)
+        assert result.outcome == MatchOutcome.MATCH
+        assert result.rule_evaluations[0].field_outcomes["dob"] == "fuzzy"
+
+    def test_dob_two_days_off_does_not_match(self) -> None:
+        candidate = _make_patient(dob="1990-01-17")
+        query = _make_patient(dob="1990-01-15")
+        engine = MatchingEngine(backend=InMemoryBackend([candidate]), rules=self._dob_fuzzy_rule)
+        result = engine.match(query)
+        assert result.outcome == MatchOutcome.NO_MATCH
 
 
 class TestAuditFields:

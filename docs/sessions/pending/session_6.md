@@ -10,11 +10,18 @@ note" below.
 
 > Read `../conventions.md` first.
 
-**On hold (Imran, 2026-08-16):** do not start this session yet, even once the live-spec-fetch
-blocker (below) clears — separate from that blocker, Imran asked to hold off adding the v3.3
-37-rule expansion for now. Confirm with him before beginning. Session 11
-(`docs/sessions/pending/session_11.md`) has a hard dependency on this session and is therefore
-on hold too.
+**Partially executed, 2026-08-16 (Imran):** Imran asked to skip adding the actual v3.3 Table 2
+rules for now but land the rest of this session's scope — so **Tasks 1 and 2 below are done**
+(the three new canonical fields end-to-end, and the DOB +/-1 day fuzzy comparison mode), on
+branch `claude/session-6-fields-dob-fuzzy`. **Task 3 (the 11 new rule definitions) and Task 4
+(the `ENABLE_HOUSEHOLD_RISK_RULES` flag and exclusions, which exist only to support Task 3's
+rules) remain on hold** — `APPROVED_RULES` is still exactly the 26 v3.2.2 rules, unchanged. See
+Execution notes for what actually shipped and why the live-spec-fetch blocker no longer applies
+to what's left (Task 3/4 still need the live spec re-verified before rule numbering/values are
+implemented, per this doc's original text below). **Session 11**
+(`docs/sessions/pending/session_11.md`) still has a hard dependency on Task 3's rules for its
+Member-ID-anchored true-match pairs (rules 27-30), so it remains blocked, even though the fields
+those pairs need (`insurance_member_ids`/`insurance_subscriber_ids`) now exist.
 
 ## Re-scope note (2026-08-12)
 
@@ -435,11 +442,35 @@ New test files needed:
 
 ## Validation (definition of "resolved")
 
-- [ ] `zip_code`, `insurance_member_id`, `insurance_subscriber_id` are extractable via
-      `FieldExtractor`/`PatientFields`, with placeholder values already stripped per Task 5,
-      and tests covering at least one populated and one empty/placeholder case each.
-- [ ] `FieldComparator.dob_fuzzy_match` exists, is used by `MatchingEngine` specifically for
-      the `dob` field, and all boundary cases pass.
+Split by what actually shipped (Tasks 1-2) vs. what's still deferred (Tasks 3-4) — this session
+is not fully resolved and should stay in `pending/` until Tasks 3-4 execute (or are formally
+descoped for good, which is Imran's call, not recorded here as a decision yet).
+
+**Tasks 1-2 (done, 2026-08-16):**
+- [x] `zip_code`, `insurance_member_id`, `insurance_subscriber_id` are extractable via
+      `FieldExtractor`/`PatientFields`, with tests covering at least one populated and one
+      empty case each (plus a payer-namespace-missing exclusion case per SS IV.H).
+- [x] `FieldComparator.dob_fuzzy_match` exists, is used by `MatchingEngine` specifically for
+      the `dob` field (not the generic string `fuzzy_match`), and all six boundary cases pass.
+      Proven via a synthetic test-only rule (no `APPROVED_RULES` rule marks DOB fuzzy-eligible
+      yet, since Task 3 is deferred) showing the dispatch is wired correctly and, concretely,
+      that the generic string comparator would have produced the *wrong* answer for a 2-day DOB
+      gap (Damerau-Levenshtein distance 1 on "...-15"/"...-17" would incorrectly allow it).
+- [x] `make tests`-equivalent: full local suite green, 497 passed (up from 481 before this
+      branch — see Execution notes for why `make tests` itself couldn't run in this sandbox).
+- [x] `make run-pre-commit`-equivalent: `ruff`/`mypy --strict`/`bandit` run manually, clean
+      (see Execution notes for methodology).
+
+**Tasks 3-4 (deliberately not done, per Imran's 2026-08-16 direction):**
+- [ ] `APPROVED_RULES` has 32 entries with `ENABLE_HOUSEHOLD_RISK_RULES = False` (the default),
+      and 37 entries if that flag is manually flipped to `True` in a test. **Not done —
+      `APPROVED_RULES` still has exactly 26 entries, unchanged.**
+- [ ] First Name + Last Name + DOB + ZIP is not constructible as any rule in `APPROVED_RULES`,
+      under either flag setting. **Vacuously true today (no new rules exist at all), not yet
+      exercised as a real guard.**
+- [ ] Every new rule's `p_collision_exact`/`_fuzzy` (computed via session 5's evaluator)
+      matches the spec's own stated figure in the Task 3 table above, within rounding. **Not
+      applicable — no new rules added.**
 - [ ] Rules 27-33 exist as Category 1 (flat) rules with `p_collision` figures matching the
       Scope table above.
 - [ ] H-01 through H-14 and I-01 through I-03 exist as reusable rows with `p_collision`
@@ -450,7 +481,9 @@ New test files needed:
 - [ ] Rules 13-16 no longer exist as flat rules anywhere in the rule set (confirm the old
       3-field literal is gone, not just shadowed).
 - [ ] No `enable_household_risk_rules`-style flag exists anywhere in the new code — the
-      household/individual architecture is unconditional, per the callout in Task 4.
+      household/individual architecture is unconditional, per the callout in Task 4. **Once
+      this lands, it supersedes the flag-default item above rather than coexisting with it —
+      see the "Resolved, no longer open" note under Open questions.**
 - [ ] Rules 39, 40, and any institutional-address registry/postal-validation logic are **not**
       present in this session's diff — confirm via the PR description explicitly stating they
       were evaluated and deferred, per "Out of scope," so a reviewer doesn't wonder if they
@@ -458,8 +491,11 @@ New test files needed:
 - [ ] `make tests` is green (full suite — this touches shared field-extraction/comparator code
       and amends already-merged rules 13-16, so regressions in rules 01-26 are the main risk).
 - [ ] `make run-pre-commit` is clean.
+
 - [ ] Per `conventions.md`'s statistical rigor gate: this session does not move to
-      `completed/` until session 3's Tier-1 `ComparisonReport` exists.
+      `completed/` until session 3's Tier-1 `ComparisonReport` exists. **Still applies to
+      Tasks 3-4 whenever they execute; Tasks 1-2 alone don't change matching behavior (no rule
+      uses the new fields/comparator yet), so the gate doesn't block what's already landed.**
 
 ## Open questions
 
@@ -474,16 +510,72 @@ New test files needed:
   raises (calling an address-verification service on every patient address; caching addresses
   as an added attack surface). Until decided, Street-Line-based Household rows are implemented
   at the code level but should not be relied on for institutional-address-heavy populations.
+- **`NEEDS HUMAN DECISION — Sean/Imran`** (stated in Scope above): whether to enable
+  `ENABLE_HOUSEHOLD_RISK_RULES` by default before the CMS v3.3 comment period resolves. Moot
+  until Tasks 3-4 actually execute — once they do, per the callout in Task 4, v3.3.1's
+  structural fix removes the flag entirely and this question becomes moot for good rather
+  than needing an answer; see the "Resolved, no longer open" note below for the original
+  version of this same question.
 - The exact FHIR identifier type codes for `insurance_member_id`/`insurance_subscriber_id`
   extraction (Task 1) were deliberately left for implementation time rather than guessed —
-  this is a legitimate implementation detail the executing agent resolves by reading
-  `patient_matching/fhir_client/`/`patient_matching/ial2_extraction/`'s actual identifier
-  shapes, not a `NEEDS HUMAN DECISION`.
+  **resolved during Task 1's execution**: `type.coding[].code == "MB"` for Member ID (the CMS
+  spec itself names this HL7 v2 Table 0203 code for Coverage-derived Member ID); no equivalent
+  standard code exists in the spec text for Subscriber ID (represented on `Coverage.subscriberId`,
+  not as a typed identifier at all), so `"SUBSCRIBER"` was adopted as an explicit repo-local
+  convention, documented as such in `field_extractor.py` — revisit if/when real Coverage-to-
+  Patient flattening ETL exists (none does yet in `fhir_client/`/`ial2_extraction/`, confirmed by
+  grep before deciding).
+- **New, raised by Tasks 1-2's execution:** is it acceptable to leave `zip_code`/
+  `insurance_member_id`/`insurance_subscriber_id`/`dob_fuzzy_match` fully implemented but
+  completely unused by any `APPROVED_RULES` entry indefinitely, or should Task 3-4 be
+  prioritized soon so this isn't dead infrastructure for long? Not a blocking question — just
+  flagging the tradeoff for whoever decides when to lift the hold.
 - **Resolved, no longer open**: the original doc's `NEEDS HUMAN DECISION — Sean/Imran` on
-  whether to enable a household-risk rule cluster by default. Superseded by v3.3.1's
-  structural fix — see the callout in Task 4. Listed here only so it isn't mistaken for a
-  still-open item from the original version of this doc.
+  whether to enable a household-risk rule cluster by default, as a permanent code-level
+  decision. Superseded by v3.3.1's structural fix — see the callout in Task 4. The interim
+  `ENABLE_HOUSEHOLD_RISK_RULES` question above is a distinct, temporary question that exists
+  only because Tasks 3-4 haven't landed yet; it disappears once they do. Listed here only so
+  this isn't mistaken for a still-open item from the original version of this doc.
 
 ## Execution notes
 
-_(empty at authoring time; filled in by whoever executes the session)_
+**2026-08-16 (Imran's descope: skip Task 3/4, land Task 1/2):**
+
+Executed on branch `claude/session-6-fields-dob-fuzzy` (stacked on
+`claude/session-10-special-populations`, which was already ahead of `main`). Task 1: added
+`ZIP_CODE`/`INSURANCE_MEMBER_ID`/`INSURANCE_SUBSCRIBER_ID` constants to `table2_rules.py`;
+`zip_codes`/`insurance_member_ids`/`insurance_subscriber_ids` to `PatientFields` and
+`get_values()`; extraction logic in `field_extractor.py`'s `_extract_addresses` (ZIP) and
+`_extract_identifiers` (insurance IDs, gated on a payer namespace being present per SS IV.H).
+Task 2: `FieldComparator.dob_fuzzy_match` + `DOB_FUZZY_TOLERANCE_DAYS` in `field_comparator.py`;
+`MatchingEngine._evaluate_rule`'s fuzzy branch now dispatches to `dob_fuzzy_match` specifically
+for the `dob` field. Task 3 (11 new rules) and Task 4 (the flag + exclusions that only exist to
+gate Task 3's rules) were not started at all — no changes to `APPROVED_RULES`.
+
+TDD followed throughout: every new behavior had a failing test confirmed red (import error or
+assertion failure) before the corresponding implementation, per `conventions.md`'s TDD approach.
+
+16 new/changed tests: 5 in `test_field_extractor.py`, 9 in `test_field_comparator.py` (6
+parametrized boundary cases + 3 more), 2 in `test_matching_engine.py` (a synthetic-rule dispatch
+test proving `dob_fuzzy_match` is actually wired in, not just defined). Full suite: 497 passed
+(baseline 481 immediately before this branch). `patient_matching/matching/collision.py`'s
+`FIELD_U_PROBS` already had `zip_code`/`insurance_member_id`/`insurance_subscriber_id` entries
+from session 5 (unused until now) - no changes needed there.
+
+**Same environment limitation as session_10** (documented in `session_10.md`'s Execution notes):
+this sandbox has no JFrog credentials or `.env`, so `make tests`/`make run-pre-commit` couldn't
+run. Substituted local `.venv` + `PYTHONPATH=. pytest` (497 passed) and manual `ruff`/`mypy
+--strict`/`bandit` on every changed file, cross-checked against already-merged sibling files to
+separate genuine findings from this sandbox's `ruff==0.16.1` vs. the pinned `ruff==0.15.20` drift
+(same methodology as session_10). Two genuine import-sort issues in files this branch touched
+were fixed (`test_field_comparator.py`, `test_matching_engine.py`); the one pre-existing
+`matching_engine.py` import-sort finding predates this branch (confirmed against `HEAD`) and was
+left alone.
+
+**Close-out:** PR opened from `claude/session-6-fields-dob-fuzzy` onto
+`claude/session-10-special-populations`. Left in `pending/`, not moved to `in_review/`/
+`completed/` — this session isn't actually resolved (Tasks 3-4 remain), and moving isn't a
+unilateral call regardless (merging is a human decision per `conventions.md`). Whoever decides
+to lift the hold and execute Tasks 3-4 should treat this as a continuation of this same session
+doc (not a new session number), since the doc's own Tasks 3/4 and their validation criteria
+already describe that remaining work in full.

@@ -67,6 +67,14 @@ ITIN_LAST4 = "itin_last4"
 MBI = "mbi"
 LEGAL_ID = "legal_id"
 NAMESPACE_ID = "namespace_id"
+# CMS v3.3 fields (docs/sessions/pending/session_6.md, Task 1). Extraction and
+# collision u-probabilities (collision.FIELD_U_PROBS) exist for these; no
+# Table 2 rule uses them yet - that part of session_6 is deliberately deferred,
+# per Imran's 2026-08-16 direction (skip adding new rules, land the field
+# infrastructure only). See docs/sessions/index.md.
+ZIP_CODE = "zip_code"
+INSURANCE_MEMBER_ID = "insurance_member_id"
+INSURANCE_SUBSCRIBER_ID = "insurance_subscriber_id"
 
 # Helper constructors
 _E = FieldRole.EXACT

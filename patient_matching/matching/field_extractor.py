@@ -30,6 +30,14 @@ class PatientFields:
         mbi: Medicare Beneficiary Identifier.
         legal_ids: Legal ID values (DL, passport) with namespace.
         namespace_ids: Namespace-bound unique identifiers.
+        zip_codes: 5-digit ZIP codes (CMS v3.3; not yet used by any Table 2
+            rule - see docs/sessions/pending/session_6.md).
+        insurance_member_ids: Individual-level insurance Member ID, namespace-
+            scoped to the payer ("{system}|{value}"). CMS v3.3; not yet used
+            by any Table 2 rule.
+        insurance_subscriber_ids: Policyholder-level insurance Subscriber ID,
+            namespace-scoped to the payer ("{system}|{value}"). CMS v3.3; not
+            yet used by any Table 2 rule.
     """
 
     first_names: Set[str] = field(default_factory=set)
@@ -44,6 +52,9 @@ class PatientFields:
     mbi: Set[str] = field(default_factory=set)
     legal_ids: Set[str] = field(default_factory=set)
     namespace_ids: Set[str] = field(default_factory=set)
+    zip_codes: Set[str] = field(default_factory=set)
+    insurance_member_ids: Set[str] = field(default_factory=set)
+    insurance_subscriber_ids: Set[str] = field(default_factory=set)
 
     def get_values(self, field_name: str) -> Set[str]:
         """Get the set of values for a canonical field name."""
@@ -59,6 +70,9 @@ class PatientFields:
             "mbi": self.mbi,
             "legal_id": self.legal_ids,
             "namespace_id": self.namespace_ids,
+            "zip_code": self.zip_codes,
+            "insurance_member_id": self.insurance_member_ids,
+            "insurance_subscriber_id": self.insurance_subscriber_ids,
         }
         return mapping.get(field_name, set())
 
@@ -73,6 +87,17 @@ _ITIN_SYSTEM = "urn:oid:2.16.840.1.113883.4.4"
 _MBI_SYSTEM = "http://hl7.org/fhir/sid/us-mbi"
 _DL_CODE = "DL"
 _NAMESPACE_CODES = {"RI", "MR", "AN", "PI"}
+# Insurance identifier type codes (CMS v3.3, SS IV.H). "MB" (individual Member
+# Number) is the code the CMS spec itself names for Coverage-derived Member ID
+# ("Coverage.identifier with type.coding.code = 'MB'"). No equivalent
+# standard HL7 v2 Table 0203 code is specified in the spec for Subscriber ID
+# (represented on Coverage.subscriberId, not as a typed identifier at all) -
+# "SUBSCRIBER" is a repo-local convention pending real Coverage-to-Patient
+# flattening logic (none exists yet in fhir_client/ or ial2_extraction/), per
+# docs/sessions/pending/session_6.md Task 1's "decide at implementation time"
+# note. Revisit both if/when that ETL is built.
+_MEMBER_ID_CODE = "MB"
+_SUBSCRIBER_ID_CODE = "SUBSCRIBER"
 
 
 class FieldExtractor:
@@ -148,11 +173,14 @@ class FieldExtractor:
 
     @staticmethod
     def _extract_addresses(patient: Dict[str, Any], fields: PatientFields) -> None:
-        """Extract street lines from all addresses."""
+        """Extract street lines and ZIP codes from all addresses."""
         for addr in patient.get("address", []):
             for line in addr.get("line", []):
                 if line:
                     fields.street_lines.add(line)
+            postal_code = addr.get("postalCode", "")
+            if postal_code:
+                fields.zip_codes.add(postal_code)
 
     @staticmethod
     def _extract_identifiers(patient: Dict[str, Any], fields: PatientFields) -> None:
@@ -177,6 +205,15 @@ class FieldExtractor:
                     fields.itin_last4.add(last4)
             elif system == _MBI_SYSTEM:
                 fields.mbi.add(value)
+            elif _MEMBER_ID_CODE in codes:
+                # Per CMS spec SS IV.H: an insurance identifier without a
+                # co-submitted Payer ID (here, `system`) SHALL NOT be
+                # evaluated under any insurance identifier combination.
+                if system:
+                    fields.insurance_member_ids.add(f"{system}|{value}")
+            elif _SUBSCRIBER_ID_CODE in codes:
+                if system:
+                    fields.insurance_subscriber_ids.add(f"{system}|{value}")
             elif _DL_CODE in codes:
                 # Legal ID: combine assigner namespace + value
                 assigner = ident.get("assigner", {}).get("display", "")

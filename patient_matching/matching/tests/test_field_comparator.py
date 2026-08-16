@@ -3,9 +3,10 @@
 import pytest
 
 from patient_matching.matching.field_comparator import (
-    FieldComparator,
+    DOB_FUZZY_TOLERANCE_DAYS,
     MAX_DAMERAU_LEVENSHTEIN_DISTANCE,
     MIN_FUZZY_LENGTH,
+    FieldComparator,
 )
 
 
@@ -85,9 +86,41 @@ class TestIsFuzzyOnly:
         assert comparator.is_fuzzy_only({"jon"}, {"joh"}) is False
 
 
+class TestDobFuzzyMatch:
+    """CMS v3.3's DOB tolerance: exact date comparison +/-1 day, not edit
+    distance (DOB is a date, not a name/street string) - see
+    docs/sessions/pending/session_6.md Task 2."""
+
+    @pytest.mark.parametrize(
+        "query_dob,candidate_dob,expected",
+        [
+            ("1990-01-15", "1990-01-15", True),  # exact
+            ("1990-01-15", "1990-01-14", True),  # -1 day
+            ("1990-01-15", "1990-01-16", True),  # +1 day
+            ("1990-01-15", "1990-01-13", False),  # -2 days, out of tolerance
+            ("1990-01-15", "1990-01-17", False),  # +2 days, out of tolerance
+            ("1990-01-01", "1989-12-31", True),  # year boundary, -1 day
+        ],
+    )
+    def test_dob_fuzzy_boundary(self, query_dob: str, candidate_dob: str, expected: bool) -> None:
+        assert FieldComparator.dob_fuzzy_match({query_dob}, {candidate_dob}) == expected
+
+    def test_malformed_date_never_matches(self) -> None:
+        assert FieldComparator.dob_fuzzy_match({"not-a-date"}, {"1990-01-15"}) is False
+
+    def test_empty_sets_never_match(self) -> None:
+        assert FieldComparator.dob_fuzzy_match(set(), set()) is False
+
+    def test_matches_if_any_pair_within_tolerance(self) -> None:
+        assert FieldComparator.dob_fuzzy_match({"1990-01-15", "2000-06-01"}, {"1990-01-16"}) is True
+
+
 class TestConstants:
     def test_min_fuzzy_length(self) -> None:
         assert MIN_FUZZY_LENGTH == 5
 
     def test_max_distance(self) -> None:
         assert MAX_DAMERAU_LEVENSHTEIN_DISTANCE == 1
+
+    def test_dob_fuzzy_tolerance_days(self) -> None:
+        assert DOB_FUZZY_TOLERANCE_DAYS == 1
