@@ -589,6 +589,21 @@ below), and add a short new section describing `special_populations.py`'s coinci
 constructed-sharing distinction (for a future reader deciding whether to trust a given pair as
 "real" or "constructed").
 
+**6. (Added post-implementation, same PR — Imran asked "did you create the test dataset?" once
+Tasks 1-5 landed, and the honest answer was no: `LabeledPair` output is in-memory only and holds
+this repo's own internal `PatientFields`, not the Doc §3 portable format.) Materialize an actual
+test-case manifest file.** New `evaluation/export_test_dataset.py`: refactor
+`labeled_pairs.py`'s pair-generation loop into a shared `generate_raw_pairs()` generator
+(yielding raw FHIR `Patient` pairs before extraction, behavior-preserving — `build_labeled_pairs()`
+now wraps it) so this task doesn't duplicate the mutation/mining/construction logic; build
+`LabeledCaseRecord(case_id, source, target, expected_match, rationale)` from the same generator,
+keeping raw FHIR JSON instead of extracted fields; write one JSON-Lines row per record
+(`write_jsonl()`). Generate and commit a sample (`evaluation/cases/sample_labeled_pairs.jsonl`,
+same `SAMPLE_SIZE=2000`/one-shard/seed-0 default as `labeled_pairs.py`'s own smoke run) as a
+concrete, reproducible artifact — not just a script that could be run. Document in
+`SYNTHETIC_DATA_SETUP.md` ("Materializing a portable test-case file") and
+`SYNTHETIC_DATA_COMPARISON.md` (new "Coverage against the Doc's §3 test case format" section).
+
 ### Out of scope
 
 - **Literal twins** (identical first name + last name + DOB + address). The CMS spec (§IV.G)
@@ -614,6 +629,13 @@ constructed-sharing distinction (for a future reader deciding whether to trust a
   existing PHI guardrail, which already prohibits real WellSense/Databricks/Mongo data in this
   repo's fixtures. This session's mined/constructed pairs stay entirely within Option A+B; no
   task here reaches for real de-identified data.
+- **The Doc §8 reference scoring harness** (a `cms-match-harness score` CLI, adapter contract,
+  TP/FP/TN/FN aggregation and reporting). Task 6 produces only the manifest (the dataset), per
+  Design Principle 1's algorithm-agnostic split — scoring against it is session_8's eventual Tier
+  3 harness territory, not this session's.
+- **Publishing `evaluation/cases/`'s output to the Doc §8-recommended neutral cross-org repo.**
+  This repo remains b.well's own staging copy (`SYNTHETIC_DATA_COMPARISON.md`'s "Repo-ownership
+  note"); Task 6 only materializes the file locally.
 
 ## Tasks
 
@@ -628,6 +650,11 @@ constructed-sharing distinction (for a future reader deciding whether to trust a
 4. Add the placeholder-DOB pipeline integration test (Task 4 above).
 5. Update `evaluation/SYNTHETIC_DATA_COMPARISON.md`'s coverage table and add the
    coincidental-vs.-constructed-sharing note.
+6. Refactor `labeled_pairs.py` to expose `generate_raw_pairs()`; write
+   `evaluation/export_test_dataset.py` (`LabeledCaseRecord`, `build_test_case_records()`,
+   `format_rationale()`, `write_jsonl()`); generate and commit
+   `evaluation/cases/sample_labeled_pairs.jsonl`; update `SYNTHETIC_DATA_SETUP.md` and
+   `SYNTHETIC_DATA_COMPARISON.md`.
 
 ## Unit tests required
 
@@ -806,6 +833,16 @@ Cover decision boundaries per `conventions.md`'s testing-structure section: the
 collision-free across all 8 institution types, and the diacritic/punctuation no-op floor
 (`_MIN_MUTATABLE_LENGTH`).
 
+**Task 6 tests:** `evaluation/test_export_test_dataset.py` (`importorskip("numpy")`, same
+convention — it imports `labeled_pairs`, which imports `rule_eval`). Covers: `format_rationale()`
+folding `mutation`/`case`/`category` into the `"<pair_type>/<subtype>"` head vs. leaving other
+strata keys as `"key=value"` context; `build_test_case_records()` producing raw FHIR-shaped
+records deterministically given a seed, with both `expected_match` values represented;
+`write_jsonl()` producing one JSON object per line and creating missing parent directories. The
+`generate_raw_pairs()` refactor itself is covered by the *existing*
+`evaluation/test_labeled_pairs.py` suite passing unchanged (a true refactor produces no test
+diff — that's the equivalence proof, not a new test).
+
 ## Validation (definition of "resolved")
 
 - [x] `evaluation/special_populations.py` and `evaluation/normalization_edge_cases.py` exist and
@@ -833,6 +870,15 @@ collision-free across all 8 institution types, and the diacritic/punctuation no-
       *behavior* (no `MatchingEngine`/`table2_rules.py` edits) — confirmed the diff touches only
       `evaluation/*.py` plus `patient_matching/normalization/tests/test_manager.py` (a new test
       class, no production code under `patient_matching/` changed) — Tier-1 gate does not apply.
+- [x] **Task 6:** `evaluation/export_test_dataset.py` exists, imports cleanly, and every test in
+      `evaluation/test_export_test_dataset.py` passes (9 passed).
+- [x] `generate_raw_pairs()` refactor is behavior-preserving: `evaluation/test_labeled_pairs.py`'s
+      existing 9 tests pass unchanged (no test edits needed for the refactor itself).
+- [x] `PYTHONPATH=. python evaluation/export_test_dataset.py` runs against real ONC fixture data
+      and writes `evaluation/cases/sample_labeled_pairs.jsonl` (6,289 cases: 6,000
+      `expected_match=true`, 289 `expected_match=false`, from `SAMPLE_SIZE=2000` on one shard) —
+      committed to the repo as a concrete artifact, not left as a script nobody's run.
+- [x] `SYNTHETIC_DATA_SETUP.md` and `SYNTHETIC_DATA_COMPARISON.md` updated for Task 6.
 
 ## Open questions
 
@@ -888,6 +934,21 @@ distribution — not a silent cap, per the "no silent caps" principle.
 **Not run / left for actual PR review:** `make tests` and `make run-pre-commit`, per the
 environment limitation above. Whoever reviews the PR in an environment with working JFrog/Docker
 credentials should run both before merging, per `conventions.md`'s Definition of Done.
+
+**Task 6 addendum, 2026-08-16 (same PR, later in the day):** Imran asked "did you create the test
+dataset?" after Tasks 1-5 landed — the honest answer at that point was no: `LabeledPair` was
+in-memory-only and held this repo's internal `PatientFields`, not the Doc §3 portable FHIR-JSON
+manifest format. Confirmed with him this was a real gap (not something already covered
+elsewhere), then closed it: refactored `labeled_pairs.py` to expose `generate_raw_pairs()`
+(confirmed behavior-preserving — `test_labeled_pairs.py`'s existing 9 tests pass unchanged, no
+edits needed), added `evaluation/export_test_dataset.py` (9 new tests, all passing), and
+generated + committed `evaluation/cases/sample_labeled_pairs.jsonl` (6,289 cases, 5.7MB,
+reproducible via `SAMPLE_SIZE=2000`/one-shard/seed=0). Renamed the initially-drafted
+`TestCaseRecord` dataclass to `LabeledCaseRecord` after pytest's own collection warned it looked
+like a test class (name starting with `Test`) — caught before commit, not a functional bug.
+Full local suite: 490 passed (up from 481 immediately before this addendum). Same environment
+methodology as the rest of this session (manual `ruff`/`mypy --strict`/`bandit`, cross-checked
+against already-clean files to rule out the sandbox's ruff-version drift) — all clean.
 
 **Close-out:** PR opened from `claude/session-10-special-populations`. Left in `pending/` rather
 than moved to `in_review/`/`completed/` — merging is a human decision per `conventions.md` ("Every

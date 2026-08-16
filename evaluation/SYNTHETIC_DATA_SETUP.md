@@ -62,6 +62,40 @@ candidates = mine_shared_address_hard_negatives(patients)          # List[HardNe
 pairs = build_labeled_pairs(patients, n_fuzzy_variants_per_patient=1, seed=0)  # List[LabeledPair]
 ```
 
+## Materializing a portable test-case file
+
+`labeled_pairs.py`'s `LabeledPair` output (above) is in-memory only and holds already-extracted
+`PatientFields`, not raw FHIR JSON — it's this repo's own internal representation, meant for
+`MatchingEngine.evaluate_pair()`, not something another organization could point their own
+matching algorithm at. `export_test_dataset.py` builds the actual portable manifest the
+cross-org workgroup Doc's Section 3 describes ("the artifact the workgroup actually shares and
+versions, not code") — one JSON Lines row per test case, with a stable `case_id`, `source`/
+`target` FHIR Patient JSON, `expected_match`, and a `rationale` string:
+
+```
+PYTHONPATH=. uv run python evaluation/export_test_dataset.py
+```
+
+Same one-shard, `SAMPLE_SIZE`-limited default as `labeled_pairs.py` (see "Memory & scale"
+below), writing to `evaluation/cases/sample_labeled_pairs.jsonl` by default (override with the
+`OUTPUT_PATH` env var). A committed copy of this file exists at that path already, generated
+from `SAMPLE_SIZE=2000` on one ONC shard with the default seed — regenerate it any time by
+re-running the command above; it's fully reproducible given the same inputs.
+
+To build the manifest programmatically instead of via the file:
+
+```python
+from export_test_dataset import build_test_case_records, write_jsonl
+
+records = build_test_case_records(patients, seed=0)   # List[LabeledCaseRecord]
+write_jsonl(records, Path("my_output.jsonl"))
+```
+
+`labeled_pairs.build_labeled_pairs()` and `export_test_dataset.build_test_case_records()` both
+build from the same underlying generator, `labeled_pairs.generate_raw_pairs()` — the mutation/
+mining/construction logic itself is written exactly once; only what's kept from each generated
+pair (extracted `PatientFields` vs. raw FHIR JSON) differs between the two callers.
+
 ## Memory & scale — read before running this against the full ONC dataset
 
 This is a real, previously-encountered failure mode, not a hypothetical one: loading the full
@@ -87,7 +121,10 @@ None of this is new to this session's code specifically — `evaluation/onc_base
 `__main__` (session 3) already loads all 9 shards unconditionally and runs the same
 normalize-then-transform pattern. This session's code doesn't fix that; it just doesn't make it
 worse by default, since `labeled_pairs.py`'s `__main__` loads one shard and samples it down
-rather than following `onc_baseline.py`'s all-shards pattern.
+rather than following `onc_baseline.py`'s all-shards pattern. `export_test_dataset.py`'s
+`__main__` follows the identical default (one shard, `SAMPLE_SIZE`-limited) since it shares
+`generate_raw_pairs()` with `labeled_pairs.py` — the same caution applies before raising
+`SAMPLE_SIZE` or passing it more than one shard's worth of patients.
 
 **Practical guidance if you need to scale this up:**
 

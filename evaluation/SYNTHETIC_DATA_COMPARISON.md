@@ -88,6 +88,37 @@ settled.
 | Named special/high-risk populations (twins, shelters, shared address, etc.) | **Yes, except literal twins** — session_10 (`evaluation/special_populations.py`) adds `mine_shared_surname_household_negatives()` (multi-generational households, mined real ONC pairs) and `construct_institutional_negatives()` (the other 8 named categories, constructed via a fabricated-but-marked-synthetic shared address over otherwise-distinct real ONC identities). Literal twins remain a separate, unresolvable case per the CMS spec itself — see session_10.md's "Out of scope". |
 | Normalization edge cases (diacritics, placeholder DOBs, punctuation) | **Yes** — session_10 (`evaluation/normalization_edge_cases.py`) adds `diacritic_variant()`/`punctuation_variant()` true-match pairs exercised end-to-end through `NormalizationManager`+`FieldExtractor`; a separate integration test (`patient_matching/normalization/tests/test_manager.py::TestPlaceholderDobExcludedEndToEnd`) confirms placeholder/out-of-range DOB never reaches a matchable field, without duplicating `placeholder_detector.py`'s own unit tests of the D.6 threshold itself. |
 
+## Coverage against the Doc's §3 test case format
+
+The Doc's Section 3 calls for "a portable, tool-agnostic manifest format... one row per test
+case... with columns for a stable case ID, the source and target Patient resources (as FHIR
+JSON), the expected outcome, and a rationale/provenance string" — explicitly "the artifact the
+workgroup actually shares and versions, not code."
+
+Through session_10, this repo's generated pairs existed only as `rule_eval.LabeledPair` objects —
+in-memory, holding already-extracted `PatientFields` (this repo's own internal representation,
+consumed by `MatchingEngine.evaluate_pair()`), not raw FHIR JSON, and never persisted anywhere.
+That's sufficient for this repo's own internal evaluation (session_8's eventual harness) but does
+**not** satisfy Section 3: another organization couldn't run their own algorithm against
+extracted `PatientFields` from this repo's specific field model.
+
+`evaluation/export_test_dataset.py` (session_10 continuation, same PR) closes this: it builds the
+Section 3 manifest directly — `LabeledCaseRecord(case_id, source, target, expected_match,
+rationale)` — from the exact same generation logic `build_labeled_pairs()` uses
+(`labeled_pairs.generate_raw_pairs()`, refactored out so the mutation/mining/construction logic
+in `mutations.py`/`hard_negatives.py`/`normalization_edge_cases.py`/`special_populations.py` is
+written once, not duplicated), and `write_jsonl()` serializes it to JSON Lines. A committed
+sample (`evaluation/cases/sample_labeled_pairs.jsonl`, 6,289 cases from `SAMPLE_SIZE=2000` on one
+ONC shard, seed 0) is checked into this repo as a concrete, reproducible artifact — regenerate it
+any time via `PYTHONPATH=. python evaluation/export_test_dataset.py`, per
+`SYNTHETIC_DATA_SETUP.md`'s "Materializing a portable test-case file" section.
+
+Not yet addressed from Section 3: the Doc also proposes a reference scoring harness (`harness/`
+in its example repo layout) and a `cms-match-harness score` CLI contract — that's session_8's
+eventual Tier 3 harness territory, not this session's; `export_test_dataset.py` only produces the
+manifest, per Design Principle 1's "algorithm-agnostic" split (the dataset and the scoring logic
+are separate concerns).
+
 ## Known gaps / explicitly deferred (per design discussion, 2026-08-14)
 
 - **Client-type field-availability modeling** (e.g. "payer clients have phone numbers X% of the

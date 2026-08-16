@@ -43,8 +43,9 @@ from __future__ import annotations
 import os
 import random
 from collections import Counter
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, Iterator, List, Mapping
 
 from hard_negatives import mine_shared_address_hard_negatives
 from mutations import generate_fuzzy_variant
@@ -60,12 +61,125 @@ from special_populations import (
 from patient_matching.matching.field_extractor import FieldExtractor
 from patient_matching.normalization.manager import NormalizationManager
 
+Patient = Dict[str, Any]
+
 # Keeps a standalone run's memory footprint small by default: one shard
 # (~110K rows, not all 9 / ~1M), sampled further down to this count. Override
 # via the SAMPLE_SIZE env var only after reading SYNTHETIC_DATA_SETUP.md's
 # "Memory & scale" section - this default exists because of a prior real
 # cluster crash running this dataset at full scale, not as an arbitrary limit.
 DEFAULT_SAMPLE_SIZE = 2000
+
+
+@dataclass(frozen=True)
+class RawPair:
+    """One generated (query, candidate) pair before field extraction - the
+    shared representation both build_labeled_pairs() (extracted PatientFields,
+    for MatchingEngine.evaluate_pair()) and export_test_dataset.py (raw FHIR
+    JSON, for a portable test-case manifest) are built from, so the mutation/
+    mining/construction logic in mutations.py/hard_negatives.py/
+    normalization_edge_cases.py/special_populations.py is written exactly
+    once."""
+
+    pair_id: str
+    query_patient: Patient
+    candidate_patient: Patient
+    is_true_match: bool
+    strata: Mapping[str, Any]
+
+
+def generate_raw_pairs(
+    patients: List[Patient],
+    *,
+    n_fuzzy_variants_per_patient: int = 1,
+    include_normalization_edge_cases: bool = True,
+    include_special_populations: bool = True,
+    institutional_group_size: int = 3,
+    seed: int = 0,
+) -> Iterator[RawPair]:
+    """Yield RawPairs from ONC patients: fuzzy-variant true-matches,
+    mined-hard-negative true-non-matches (session 9), plus (session 10)
+    normalization-edge-case true-matches and special-population
+    true-non-matches (mined multi-generational-household pairs and
+    constructed institutional pairs).
+
+    Patients are run through NormalizationManager first, matching
+    onc_baseline.py's build_onc_pairs contract (every MatchingEngine caller
+    must normalize first; FieldExtractor assumes it) - both this function's
+    consumers (build_labeled_pairs(), export_test_dataset.py) rely on
+    receiving already-normalized Patient dicts, not raw ONC records.
+    """
+    normalizer = NormalizationManager()
+    normalized = [normalizer.normalize(p) for p in patients]
+    rng = random.Random(seed)
+
+    for p in normalized:
+        for _ in range(n_fuzzy_variants_per_patient):
+            variant, mutation_type = generate_fuzzy_variant(p, rng=rng)
+            yield RawPair(
+                pair_id=f"{p['id']}::{mutation_type}",
+                query_patient=p,
+                candidate_patient=variant,
+                is_true_match=True,
+                strata={"pair_type": "fuzzy_variant", "mutation": mutation_type},
+            )
+        if include_normalization_edge_cases:
+            diacritic = diacritic_variant(p, rng=rng)
+            yield RawPair(
+                pair_id=f"{p['id']}::diacritic",
+                query_patient=p,
+                candidate_patient=diacritic,
+                is_true_match=True,
+                strata={"pair_type": "normalization_edge_case", "case": "diacritic"},
+            )
+            punctuated = punctuation_variant(p, rng=rng)
+            yield RawPair(
+                pair_id=f"{p['id']}::punctuation",
+                query_patient=p,
+                candidate_patient=punctuated,
+                is_true_match=True,
+                strata={"pair_type": "normalization_edge_case", "case": "punctuation"},
+            )
+
+    for candidate in mine_shared_address_hard_negatives(normalized):
+        yield RawPair(
+            pair_id=f"{candidate.query['id']}::{candidate.candidate['id']}",
+            query_patient=candidate.query,
+            candidate_patient=candidate.candidate,
+            is_true_match=False,
+            strata={"pair_type": "hard_negative", **candidate.shared_fields},
+        )
+
+    if include_special_populations:
+        for household_candidate in mine_shared_surname_household_negatives(normalized):
+            yield RawPair(
+                pair_id=(
+                    f"{household_candidate.query['id']}::"
+                    f"{household_candidate.candidate['id']}::household"
+                ),
+                query_patient=household_candidate.query,
+                candidate_patient=household_candidate.candidate,
+                is_true_match=False,
+                strata={
+                    "pair_type": "special_population",
+                    "category": "multi_generational_household",
+                    **household_candidate.shared_fields,
+                },
+            )
+        for institution_type in INSTITUTION_TYPES:
+            for institutional_candidate in construct_institutional_negatives(
+                normalized, institution_type, group_size=institutional_group_size, rng=rng
+            ):
+                yield RawPair(
+                    pair_id=(
+                        f"{institutional_candidate.query['id']}::"
+                        f"{institutional_candidate.candidate['id']}::{institution_type}"
+                    ),
+                    query_patient=institutional_candidate.query,
+                    candidate_patient=institutional_candidate.candidate,
+                    is_true_match=False,
+                    strata={"pair_type": "special_population", "category": institution_type},
+                )
 
 
 def build_labeled_pairs(
@@ -77,104 +191,30 @@ def build_labeled_pairs(
     institutional_group_size: int = 3,
     seed: int = 0,
 ) -> List[LabeledPair]:
-    """Build LabeledPairs from ONC patients: fuzzy-variant true-matches,
-    mined-hard-negative true-non-matches (session 9), plus (session 10)
-    normalization-edge-case true-matches and special-population
-    true-non-matches (mined multi-generational-household pairs and
-    constructed institutional pairs).
-
-    Patients are run through NormalizationManager before mutation/extraction,
-    matching onc_baseline.py's build_onc_pairs contract (every MatchingEngine
-    caller must normalize first; FieldExtractor assumes it).
+    """Build LabeledPairs (extracted PatientFields, for
+    MatchingEngine.evaluate_pair()) from ONC patients - see
+    generate_raw_pairs() for the underlying generation logic this wraps.
     """
-    normalizer = NormalizationManager()
     extractor = FieldExtractor()
-    normalized = [normalizer.normalize(p) for p in patients]
-    rng = random.Random(seed)
-    pairs: List[LabeledPair] = []
-
-    for p in normalized:
-        q_fields = extractor.extract(p)
-        for _ in range(n_fuzzy_variants_per_patient):
-            variant, mutation_type = generate_fuzzy_variant(p, rng=rng)
-            c_fields = extractor.extract(variant)
-            pairs.append(
-                LabeledPair(
-                    features={"query": q_fields, "candidate": c_fields},
-                    is_true_match=True,
-                    strata={"pair_type": "fuzzy_variant", "mutation": mutation_type},
-                    pair_id=f"{p['id']}::{mutation_type}",
-                )
-            )
-        if include_normalization_edge_cases:
-            diacritic = diacritic_variant(p, rng=rng)
-            pairs.append(
-                LabeledPair(
-                    features={"query": q_fields, "candidate": extractor.extract(diacritic)},
-                    is_true_match=True,
-                    strata={"pair_type": "normalization_edge_case", "case": "diacritic"},
-                    pair_id=f"{p['id']}::diacritic",
-                )
-            )
-            punctuated = punctuation_variant(p, rng=rng)
-            pairs.append(
-                LabeledPair(
-                    features={"query": q_fields, "candidate": extractor.extract(punctuated)},
-                    is_true_match=True,
-                    strata={"pair_type": "normalization_edge_case", "case": "punctuation"},
-                    pair_id=f"{p['id']}::punctuation",
-                )
-            )
-
-    for candidate in mine_shared_address_hard_negatives(normalized):
-        q_fields = extractor.extract(candidate.query)
-        c_fields = extractor.extract(candidate.candidate)
-        pairs.append(
-            LabeledPair(
-                features={"query": q_fields, "candidate": c_fields},
-                is_true_match=False,
-                strata={"pair_type": "hard_negative", **candidate.shared_fields},
-                pair_id=f"{candidate.query['id']}::{candidate.candidate['id']}",
-            )
+    return [
+        LabeledPair(
+            features={
+                "query": extractor.extract(raw.query_patient),
+                "candidate": extractor.extract(raw.candidate_patient),
+            },
+            is_true_match=raw.is_true_match,
+            strata=raw.strata,
+            pair_id=raw.pair_id,
         )
-
-    if include_special_populations:
-        for household_candidate in mine_shared_surname_household_negatives(normalized):
-            pairs.append(
-                LabeledPair(
-                    features={
-                        "query": extractor.extract(household_candidate.query),
-                        "candidate": extractor.extract(household_candidate.candidate),
-                    },
-                    is_true_match=False,
-                    strata={
-                        "pair_type": "special_population",
-                        "category": "multi_generational_household",
-                        **household_candidate.shared_fields,
-                    },
-                    pair_id=f"{household_candidate.query['id']}::{household_candidate.candidate['id']}::household",
-                )
-            )
-        for institution_type in INSTITUTION_TYPES:
-            for institutional_candidate in construct_institutional_negatives(
-                normalized, institution_type, group_size=institutional_group_size, rng=rng
-            ):
-                pairs.append(
-                    LabeledPair(
-                        features={
-                            "query": extractor.extract(institutional_candidate.query),
-                            "candidate": extractor.extract(institutional_candidate.candidate),
-                        },
-                        is_true_match=False,
-                        strata={"pair_type": "special_population", "category": institution_type},
-                        pair_id=(
-                            f"{institutional_candidate.query['id']}::"
-                            f"{institutional_candidate.candidate['id']}::{institution_type}"
-                        ),
-                    )
-                )
-
-    return pairs
+        for raw in generate_raw_pairs(
+            patients,
+            n_fuzzy_variants_per_patient=n_fuzzy_variants_per_patient,
+            include_normalization_edge_cases=include_normalization_edge_cases,
+            include_special_populations=include_special_populations,
+            institutional_group_size=institutional_group_size,
+            seed=seed,
+        )
+    ]
 
 
 if __name__ == "__main__":
