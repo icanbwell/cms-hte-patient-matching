@@ -84,9 +84,9 @@ settled.
 | Every approved Table 2 combination, exact match | Not this PR's job — pre-existing (`evaluation/onc_baseline.py`'s self-match true-positive pairs already exercise this). |
 | Fuzzy-eligible field, single-character edit | **Yes** — `mutations.py`'s `typo_edit`/`transpose_characters` default to exactly one edit, matching the spec's literal tolerance definition. |
 | Negative pair per combination (two distinct patients sharing nothing on that combination) | **Partially** — `onc_baseline.py`'s existing random cross-pair sampling covers the general case; not combination-specific. |
-| Administrative Restrictions (e.g. family-shared insurance IDs) | **No** — not attempted this PR; ONC's field set has no insurance/plan-ID column to construct this from. |
-| Named special/high-risk populations (twins, shelters, shared address, etc.) | **Narrow start only** — `hard_negatives.py`'s shared-ZIP+DOB mining is a proxy for "shared address," nothing else in this list. |
-| Normalization edge cases (diacritics, placeholder DOBs, punctuation) | **No** — `patient_matching/normalization/` already exists and may cover some of this independently; not evaluated here. |
+| Administrative Restrictions (e.g. family-shared insurance IDs) | **No** — not attempted this PR; ONC's field set has no insurance/plan-ID column to construct this from. **Planned: `docs/sessions/pending/session_11.md`**, blocked on session_6 adding insurance-identifier fields. |
+| Named special/high-risk populations (twins, shelters, shared address, etc.) | **Narrow start only** — `hard_negatives.py`'s shared-ZIP+DOB mining is a proxy for "shared address," nothing else in this list. **Planned: `docs/sessions/pending/session_10.md`** (all named categories except literal twins, which the CMS spec itself treats as a separate, unresolvable case — see that session's "Out of scope"). |
+| Normalization edge cases (diacritics, placeholder DOBs, punctuation) | **No** — `patient_matching/normalization/` already exists and may cover some of this independently; not evaluated here. **Planned: `docs/sessions/pending/session_10.md`**, exercising the existing normalizer end-to-end rather than duplicating its unit tests. |
 
 ## Known gaps / explicitly deferred (per design discussion, 2026-08-14)
 
@@ -100,10 +100,17 @@ settled.
   this would treat the current matching algorithm's own decisions as ground truth for building
   its replacement's test data, which is circular. Not pursued.
 - **≥1,000,000-record empirical collision-rate validation** (Doc §4) — a different exercise from
-  labeled-pair testing; not attempted here.
+  labeled-pair testing; not attempted here. Tracked as a candidate future session in
+  `docs/sessions/index.md`, not yet authored (Tier 3 per `conventions.md`'s statistical rigor
+  gate — not a near-term blocker).
 - **Administrative-restriction and twin/shelter/institutional special-population pairs** (Doc §2)
   — ONC's available fields don't support most of these directly; would need either additional
-  synthetic construction or a different seed population.
+  synthetic construction or a different seed population. **Now planned:** non-twin special
+  populations and normalization edge cases in `docs/sessions/pending/session_10.md` (fully
+  unblocked); administrative-restriction/insurance-identifier pairs in
+  `docs/sessions/pending/session_11.md` (blocked on session_6). Literal twins deliberately
+  excluded from both — see session_10.md's "Out of scope" and `index.md`'s "Candidate future
+  sessions."
 
 ## Memory & scale — a known risk, not new to this session
 
