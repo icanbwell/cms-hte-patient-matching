@@ -26,23 +26,41 @@ run whatever **Suggested Next Session** names below.
 > **2026-08-14 addendum:** session_9 (PR #27 merged 2026-08-14) resolved session_8's
 > 2026-08-13 open question about the test-data simulation methodology (mutation-based fuzzy
 > positives + mined real-record hard negatives). Session_8's session_9 dependency is now
-> satisfied; it still needs session 4 in `completed/` (PR #22 open) and the
-> `NEEDS HUMAN DECISION` on replace-vs-alongside — see session_8.md's 2026-08-14 update.
+> satisfied.
 >
-> **2026-08-18 addendum:** the test-set generation code (`evaluation/`, its demo notebooks,
-> and session docs 8/9/10/11) moved to
+> **2026-08-16 addendum:** two new sessions authored, closing the remaining gaps
+> `evaluation/SYNTHETIC_DATA_COMPARISON.md` flagged after session_9 — **session_10**
+> (special-population + normalization-edge-case labeled pairs) is fully unblocked (its only
+> upstream, session_9, is `completed/`) and is a strong candidate for **actual next session** if a
+> lower-risk, immediately-startable pick is wanted over session_6/8's external blockers.
+> **session_11** (administrative-restriction + insurance-identifier labeled pairs) has a hard
+> dependency on session_6 and cannot start before it.
+>
+> **2026-08-18 addendum (session 4):** session 4 is now `completed/` (PR #22 merged
+> 2026-08-14; live Databricks run completed 2026-08-18 after PR #36 fixed a real null-field
+> bug the run surfaced — see session_4.md's Execution notes). Session_8's hard dependency on
+> session 4 is satisfied. It still needs 3 `NEEDS HUMAN DECISION` items resolved (eval-only
+> dependency on `helix-personmatching`, adjudicator identity, replace-vs-alongside — see
+> session_8.md) before it can start.
+>
+> **2026-08-18 addendum (repo move, later same day):** the test-set generation code
+> (`evaluation/`, its demo notebooks, and session docs 8/9/10/11) moved to
 > [icanbwell/cms-hte-patient-matching-test-set](https://github.com/icanbwell/cms-hte-patient-matching-test-set)
 > ([PR #1](https://github.com/icanbwell/cms-hte-patient-matching-test-set/pull/1)). Session 8's
-> doc now lives there; its dependency on session_9 (also moved) is unaffected, but session 6
-> in this repo is a hard dependency of the moved session 11 — check the new repo for its
-> current status before starting session 6.
+> doc — including the dependency/`NEEDS HUMAN DECISION` state above — now lives there; check
+> the new repo for its current status. `evaluation/SYNTHETIC_DATA_COMPARISON.md`'s
+> session_10/11 cross-references (added above, 2026-08-16) moved with it — apply the
+> equivalent update there if still needed. Session 6 in this repo remains a hard dependency of
+> the moved session 11.
 
 ## Up Next (execution order)
 
 | # | Session | Thread | Depends on | Size | Status | One-line summary |
 |---|---------|--------|-----------|------|--------|-------------------|
+| 10 | [session_10](pending/session_10.md) | Evaluation & Statistical Rigor | 9 (satisfied, `completed/`) | M/L | pending — fully unblocked | Special-population non-match pairs (shelters, institutions, multi-generational households) + normalization edge-case pairs (diacritics, punctuation, placeholder DOB) |
 | 6 | [session_6](pending/session_6.md) | Line B: CMS v3.3 migration | 5 | L | pending — blocked on fetching the live CMS v3.3 spec content | Expand Table 2 to CMS v3.3 base + v3.3.1/v3.3.3/v3.3.4/v3.3.6 addenda |
-| 8 | [session_8](https://github.com/icanbwell/cms-hte-patient-matching-test-set/blob/main/docs/sessions/pending/session_8.md) (moved) | Evaluation & Statistical Rigor | 3, 4, 9 (hard); 6 (soft, quality-of-result only) | L | pending — session 9 dependency now satisfied (moved, PR #27 merged 2026-08-14); still blocked on session 4 (`in_review/`, PR #22 open) and 1 `NEEDS HUMAN DECISION` (replace-vs-alongside, see session_8.md) | Tier 3: legacy comparison harness, precision/recall-as-agreement, disagreement buckets, per-pair explanations |
+| 8 | [session_8](https://github.com/icanbwell/cms-hte-patient-matching-test-set/blob/main/docs/sessions/pending/session_8.md) (moved) | Evaluation & Statistical Rigor | 3, 4, 9 (hard, all satisfied); 6 (soft, quality-of-result only) | L | pending — hard code dependencies satisfied (session 4: PR #22 merged, live run 2026-08-18 via PR #36; session 9: PR #27 merged); blocked on 3 `NEEDS HUMAN DECISION` items — see the moved session_8.md | Tier 3: legacy comparison harness, precision/recall-as-agreement, disagreement buckets, per-pair explanations |
+| 11 | [session_11](pending/session_11.md) | Evaluation & Statistical Rigor | 6 (hard); 10 (soft, shared-file coordination only) | M/L | pending — blocked on session 6 | Administrative-restriction (Table 4 Subscriber-ID+DOB) + insurance-identifier (Member/Subscriber ID, rules 27-32) labeled pairs — first session to fabricate synthetic field values outright rather than mutate/mine real ONC records |
 
 Session 3 merged into `main` (PR [#11](https://github.com/icanbwell/patient-matching/pull/11),
 2026-07-30) and session 5 merged into `main` (PR [#16](https://github.com/icanbwell/patient-matching/pull/16),
@@ -80,6 +98,29 @@ _(none yet — see `rejected/README.md`)_
 
 ## Candidate future sessions (not yet authored)
 
+- **≥1,000,000-record empirical collision-rate validation (Doc §4).** A population-scale
+  statistical exercise — grouping a large population by each Table 2 combination's normalized key
+  and counting genuine collisions — distinct from session_10/11's labeled-pair testing. Matches
+  `conventions.md`'s statistical-rigor-gate **Tier 3** ("explicitly not a near-term blocker...
+  track as a pre-production-cutover milestone"). Session 3's `onc_baseline.py` and session 9/10/11's
+  `labeled_pairs.py` already flag the known Databricks OOM risk of materializing the full ~1M-record
+  ONC set at once — this session would need a streaming/blocked-counting approach (or a Spark job)
+  rather than reusing the existing in-memory pattern. Not yet sized or authored.
+- **Doc §1 Option C (company-submitted de-identified real data) as a seed-population layer.**
+  The workgroup Doc's recommended default (Option D) optionally layers in real, company-vetted
+  edge cases on top of Option A (ONC) + Option B (programmatic construction). Imran explicitly
+  scoped this backlog down to Option A + Option B only, 2026-08-16 — Option C stays deferred
+  until he says otherwise, consistent with `conventions.md`'s PHI guardrail (already prohibits
+  real WellSense/Databricks/Mongo data in this repo's fixtures). Sessions 9/10/11 all stay within
+  A+B; if this is revisited, it needs its own session addressing the Doc §1 de-identification-
+  adequacy-review gate first, not just a data-source swap.
+- **Literal-twins vulnerable-population test pack.** The CMS spec (§IV.G) proposes a dedicated
+  "Patient Matching for Vulnerable Populations" subworkgroup (twins/multiple-births, shared living
+  spaces, unstable-demographic populations, transliterated/non-Latin names) rather than folding
+  this into the general Table 2 test suite — session_10 deliberately excludes literal twins from
+  its special-population pairs for exactly this reason (see session_10.md's "Out of scope"). Wait
+  for that subworkgroup's own guidance before authoring; not a gap this backlog should close
+  unilaterally.
 - **P(collision) evaluator: per-value (name-frequency-conditioned) collision probability.**
   `NEEDS HUMAN DECISION — Sean/Imran`: a genuine methodology deviation from the published CMS
   approach (which uses static per-field constants), needs Imran's sign-off as domain lead
@@ -116,6 +157,13 @@ session_6 -----------------(soft)---> session_8 (session_8's own DoD doesn't nee
 
 session_3 --------------------------> session_9 (completed; reused onc_loader.py/rule_eval.py
                                        directly)
+
+session_9 (completed) ---------------> session_10 (special populations + normalization edge
+                                       cases; extends hard_negatives.py/labeled_pairs.py directly)
+session_6 --------------------------> session_11 (hard; needs insurance_member_id/
+                                       insurance_subscriber_id PatientFields + their extraction)
+session_10 -.(soft, file coord only).-> session_11 (both extend labeled_pairs.py's
+                                       build_labeled_pairs() signature)
 
 Merge gate (not a code dependency): session_3 must be in completed/ (PR merged into main,
 not just in_review/) before session_5 or session_6 can move to completed/. session_4's
