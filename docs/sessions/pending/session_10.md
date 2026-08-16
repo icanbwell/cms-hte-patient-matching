@@ -950,6 +950,20 @@ Full local suite: 490 passed (up from 481 immediately before this addendum). Sam
 methodology as the rest of this session (manual `ruff`/`mypy --strict`/`bandit`, cross-checked
 against already-clean files to rule out the sandbox's ruff-version drift) — all clean.
 
+**Task 7 addendum, 2026-08-16 (same PR, immediately after Task 6):** Imran asked for a doc
+explaining how to actually test a matching algorithm against the new dataset. Added
+`evaluation/cases/README.md` — covers the file format, data provenance (what's real ONC vs.
+mutated vs. fabricated-and-marked-synthetic), a generic bring-your-own-algorithm adapter pattern
+(Option A, any language/organization, per the Doc's Section 6 adapter contract), a concrete
+worked example running this repo's own `MatchingEngine.evaluate_pair()` against the file (Option
+B), per-`rationale`-category metric breakdown (per Section 5's "don't report one blended
+number"), and what the dataset does *not* cover yet (collision-rate validation, administrative
+restrictions, twins). Both code snippets were actually run before committing, not just written:
+Option B's `MatchingEngine` snippet was executed against the first 200 real cases (185 TP / 0 FP
+/ 0 TN / 15 FN — sensible given that slice is dominated by the file's early true-match rows) and
+Option A's generic snippet was checked for syntactic validity. Cross-referenced from
+`SYNTHETIC_DATA_SETUP.md`.
+
 **Close-out:** PR opened from `claude/session-10-special-populations`. Left in `pending/` rather
 than moved to `in_review/`/`completed/` — merging is a human decision per `conventions.md` ("Every
 session ends with a PR" + Sean's review), not something to do unilaterally; whoever merges the PR

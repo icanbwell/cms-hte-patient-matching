@@ -80,7 +80,9 @@ Same one-shard, `SAMPLE_SIZE`-limited default as `labeled_pairs.py` (see "Memory
 below), writing to `evaluation/cases/sample_labeled_pairs.jsonl` by default (override with the
 `OUTPUT_PATH` env var). A committed copy of this file exists at that path already, generated
 from `SAMPLE_SIZE=2000` on one ONC shard with the default seed — regenerate it any time by
-re-running the command above; it's fully reproducible given the same inputs.
+re-running the command above; it's fully reproducible given the same inputs. See
+**`evaluation/cases/README.md`** for how to actually test a matching algorithm (this repo's own,
+or a different organization's entirely) against the file.
 
 To build the manifest programmatically instead of via the file:
 
