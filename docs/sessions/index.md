@@ -12,15 +12,16 @@ run whatever **Suggested Next Session** names below.
 
 ## Suggested Next Session
 
-> **Session 6 — Expand Table 2 to v3.3's 37 rules — still blocked, on a different dependency
-> than before.** Session 4's `NEEDS HUMAN DECISION` was resolved by Zack on 2026-08-06 (see
-> `in_review/session_4.md`'s Execution notes) and its session executed the same day: code,
-> tests, and PR are done, PR open pending merge, doc moved to `in_review/`. Session 6 itself
-> remains blocked — not on session 5 (satisfied, `completed/` since 2026-08-03) but on
-> fetching the live CMS v3.3 spec content (Google Doc; see `conventions.md`'s "Reference
-> documents"), which the executing environment on 2026-08-06/07 had no Google Drive access
-> to fetch. Unblocks as soon as either Drive access is authorized or someone pastes the
-> relevant Table 2/DOB-tolerance sections directly into the session.
+> **Session 6 — Expand Table 2 to CMS v3.3 (base + v3.3.1/v3.3.3/v3.3.4/v3.3.6 addenda).**
+> Re-scoped 2026-08-12 — see the doc's "Re-scope note"; it's larger than the original
+> "37 rules" framing (household/individual two-tier architecture, 4 already-merged rules
+> amended, 2 rules explicitly deferred). Session 5's doc moved to `completed/` on
+> 2026-08-03 (PR #16 merged 2026-08-02), which satisfies session 6's hard code dependency on
+> session 5's evaluator per the merge-gate rule. Session 6 remains blocked only on fetching
+> the live CMS v3.3 spec content (Google Doc; see `conventions.md`'s "Reference documents"),
+> which the executing environment on 2026-08-06/07 had no Google Drive access to fetch.
+> Unblocks as soon as either Drive access is authorized or someone pastes the relevant
+> Table 2/DOB-tolerance sections directly into the session.
 >
 > **2026-08-14 addendum:** session_9 (`completed/session_9.md`, PR #27 merged 2026-08-14)
 > resolved session_8's 2026-08-13 open question about the test-data simulation methodology
@@ -32,7 +33,7 @@ run whatever **Suggested Next Session** names below.
 
 | # | Session | Thread | Depends on | Size | Status | One-line summary |
 |---|---------|--------|-----------|------|--------|-------------------|
-| 6 | [session_6](pending/session_6.md) | Line B: CMS v3.3 migration | 5 | M/L | pending — blocked on fetching the live CMS v3.3 spec content | Expand Table 2 to v3.3's 37 rules |
+| 6 | [session_6](pending/session_6.md) | Line B: CMS v3.3 migration | 5 | L | pending — blocked on fetching the live CMS v3.3 spec content | Expand Table 2 to CMS v3.3 base + v3.3.1/v3.3.3/v3.3.4/v3.3.6 addenda |
 | 8 | [session_8](pending/session_8.md) | Evaluation & Statistical Rigor | 3, 4, 9 (hard); 6 (soft, quality-of-result only) | L | pending — session 9 dependency now satisfied (`completed/`, PR #27 merged 2026-08-14); still blocked on session 4 (`in_review/`, PR #22 open) and 1 `NEEDS HUMAN DECISION` (replace-vs-alongside, see session_8.md) | Tier 3: legacy comparison harness, precision/recall-as-agreement, disagreement buckets, per-pair explanations |
 
 Session 3 merged into `main` (PR [#11](https://github.com/icanbwell/patient-matching/pull/11),
