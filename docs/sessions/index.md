@@ -17,36 +17,43 @@ run whatever **Suggested Next Session** names below.
 > "37 rules" framing (household/individual two-tier architecture, 4 already-merged rules
 > amended, 2 rules explicitly deferred). Session 5's doc moved to `completed/` on
 > 2026-08-03 (PR #16 merged 2026-08-02), which satisfies session 6's hard code dependency on
-> session 5's evaluator per the merge-gate rule. Session 4 is also startable but remains
-> blocked on its `NEEDS HUMAN DECISION` (exact Databricks/Mongo table names for FHIR Patient
-> resources and Person-Patient match links — see `pending/session_4.md`'s "Upstream data/system
-> dependencies"), unresolved since it was first deferred on 2026-07-31. Session 6 has no such
-> blocker, so it's the pick unless Sean resolves session 4's open question first.
+> session 5's evaluator per the merge-gate rule. Session 6 remains blocked only on fetching
+> the live CMS v3.3 spec content (Google Doc; see `conventions.md`'s "Reference documents"),
+> which the executing environment on 2026-08-06/07 had no Google Drive access to fetch.
+> Unblocks as soon as either Drive access is authorized or someone pastes the relevant
+> Table 2/DOB-tolerance sections directly into the session.
+>
+> **2026-08-14 addendum:** session_9 (`completed/session_9.md`, PR #27 merged 2026-08-14)
+> resolved session_8's 2026-08-13 open question about the test-data simulation methodology
+> (mutation-based fuzzy positives + mined real-record hard negatives). Session_8's session_9
+> dependency is now satisfied; it still needs session 4 in `completed/` (PR #22 open) and the
+> `NEEDS HUMAN DECISION` on replace-vs-alongside — see session_8.md's 2026-08-14 update.
 
 ## Up Next (execution order)
 
 | # | Session | Thread | Depends on | Size | Status | One-line summary |
 |---|---------|--------|-----------|------|--------|-------------------|
-| 6 | [session_6](pending/session_6.md) | Line B: CMS v3.3 migration | 5 | L | pending — ready to start | Expand Table 2 to CMS v3.3 base + v3.3.1/v3.3.3/v3.3.4/v3.3.6 addenda |
-| 4 | [session_4](pending/session_4.md) | Evaluation & Statistical Rigor | 3 | M | pending — blocked on `NEEDS HUMAN DECISION` | Real-world FHIR data source for `rule_eval.py`, via reproducible queries |
+| 6 | [session_6](pending/session_6.md) | Line B: CMS v3.3 migration | 5 | L | pending — blocked on fetching the live CMS v3.3 spec content | Expand Table 2 to CMS v3.3 base + v3.3.1/v3.3.3/v3.3.4/v3.3.6 addenda |
+| 8 | [session_8](pending/session_8.md) | Evaluation & Statistical Rigor | 3, 4, 9 (hard); 6 (soft, quality-of-result only) | L | pending — session 9 dependency now satisfied (`completed/`, PR #27 merged 2026-08-14); still blocked on session 4 (`in_review/`, PR #22 open) and 1 `NEEDS HUMAN DECISION` (replace-vs-alongside, see session_8.md) | Tier 3: legacy comparison harness, precision/recall-as-agreement, disagreement buckets, per-pair explanations |
 
 Session 3 merged into `main` (PR [#11](https://github.com/icanbwell/patient-matching/pull/11),
 2026-07-30) and session 5 merged into `main` (PR [#16](https://github.com/icanbwell/patient-matching/pull/16),
-2026-08-02, doc in `completed/` as of 2026-08-03) — session 4's hard code dependency and
-session 6's merge gate are both satisfied. Session 4 itself is blocked only on Sean answering
-its `NEEDS HUMAN DECISION`.
+2026-08-02, doc in `completed/` as of 2026-08-03) — session 6's merge gate is satisfied; it
+just needs the live spec content, not more code dependencies.
 
 ## In Review
 
-_(none currently)_
+| # | Session | Thread | PR | One-line summary |
+|---|---------|--------|----|--------------------|
+| 4 | [session_4](in_review/session_4.md) | Evaluation & Statistical Rigor | [#22](https://github.com/icanbwell/patient-matching/pull/22) (open) | Real-world FHIR data source (`bronze.fhir_lake.patient_4_0_0` joined to `silver.fhir_lite.person_patient`) for `rule_eval.py`, via reproducible queries; per-field collision rates vs. session 5's Table 3 |
 
 ## Completed (most recent 3)
 
 | # | Session | Thread | One-line summary |
 |---|---------|--------|-------------------|
+| 9 | [session_9](completed/session_9.md) | Evaluation & Statistical Rigor | Synthetic CMS test-dataset generation: single-edit-distance fuzzy mutations (true matches) + mined real-record hard negatives (true non-matches), resolving session_8's test-data simulation methodology question. Merged via [#27](https://github.com/icanbwell/patient-matching/pull/27). |
 | 5 | [session_5](completed/session_5.md) | Line B: CMS v3.3 migration | Table 3 u-probabilities + P(collision) evaluator; replaces `table2_rules.py`'s 26 hand-typed constants with computed values. Merged via [#16](https://github.com/icanbwell/patient-matching/pull/16). |
 | 2 | [session_2](completed/session_2.md) | Line B: CMS v3.3 migration | Split `AMBIGUOUS` into `ESCALATE` (exactly 2 candidates) vs. `AMBIGUOUS` (3+, stricter interim threshold). Merged via [#14](https://github.com/icanbwell/patient-matching/pull/14). |
-| 1 | [session_1](completed/session_1.md) | Line B: CMS v3.3 migration | Add `timestamp`/`version` to the audit record (§VII) — audit plumbing only, no matching-behavior change. Merged via [#13](https://github.com/icanbwell/patient-matching/pull/13). |
 
 ### Keeping this index current (do this when closing a session)
 1. If the session's PR merged immediately: move the row from *Up Next* to the **top** of
@@ -87,9 +94,20 @@ session_1 (audit fields)         --+
 session_2 (tiered uniqueness)    --+-- independent, no upstream
 session_5 (P(collision) eval)    --+
                                     |
-session_3 (ONC baseline) ----------+--> session_4 (real-world data source)
+session_3 (ONC baseline) ----------+--> session_4 (real-world data source, in_review as of 2026-08-06)
                                     |
 session_5 --------------------------> session_6 (Table 2 v3.3 expansion)
+
+session_3 --------------------------> session_8 (legacy comparison harness, Tier 3)
+session_4 --------------------------> session_8 (hard: reuses its real-batch query)
+session_9 (completed) ---------------> session_8 (hard, satisfied: supplied the test-data
+                                       simulation methodology - fuzzy mutations + mined hard
+                                       negatives)
+session_6 -----------------(soft)---> session_8 (session_8's own DoD doesn't need this; only
+                                       the go-live-readiness of its numbers does)
+
+session_3 --------------------------> session_9 (completed; reused onc_loader.py/rule_eval.py
+                                       directly)
 
 Merge gate (not a code dependency): session_3 must be in completed/ (PR merged into main,
 not just in_review/) before session_5 or session_6 can move to completed/. session_4's
