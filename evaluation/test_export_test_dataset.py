@@ -16,6 +16,7 @@ from export_test_dataset import (  # noqa: E402
     LabeledCaseRecord,
     build_test_case_records,
     format_rationale,
+    uniform_frequency,
     write_jsonl,
 )
 
@@ -58,6 +59,13 @@ class TestFormatRationale:
         assert rationale == "fuzzy_variant"
 
 
+class TestUniformFrequency:
+    def test_always_returns_one_regardless_of_rationale(self):
+        assert uniform_frequency("fuzzy_variant/dob_day") == 1.0
+        assert uniform_frequency("special_population/shelter") == 1.0
+        assert uniform_frequency("anything else entirely") == 1.0
+
+
 class TestBuildLabeledCaseRecords:
     def test_produces_records_with_raw_fhir_patients(self):
         patients = [_patient("p1"), _patient("p2", family="Jones", given="Robert")]
@@ -70,6 +78,21 @@ class TestBuildLabeledCaseRecords:
             assert isinstance(r.expected_match, bool)
             assert r.rationale
             assert r.case_id
+
+    def test_defaults_every_record_to_uniform_frequency(self):
+        """No real-world-prevalence weighting yet - every case counts equally
+        until a real, cited frequency_lookup is supplied (see a follow-up PR
+        for that)."""
+        patients = [_patient("p1"), _patient("p2", family="Jones", given="Robert")]
+        records = build_test_case_records(patients, seed=0)
+        assert all(r.frequency == 1.0 for r in records)
+
+    def test_custom_frequency_lookup_is_applied_per_rationale(self):
+        patients = [_patient("p1")]
+        records = build_test_case_records(
+            patients, seed=0, frequency_lookup=lambda rationale: 42.0
+        )
+        assert all(r.frequency == 42.0 for r in records)
 
     def test_is_deterministic_given_a_seed(self):
         patients = [_patient("p1"), _patient("p2", family="Jones", given="Robert")]
@@ -113,6 +136,7 @@ class TestWriteJsonl:
         assert first["target"]["id"] == "p2"
         assert first["expected_match"] is True
         assert first["rationale"] == "fuzzy_variant/dob_day"
+        assert first["frequency"] == 1.0
 
     def test_creates_parent_directory_if_missing(self, tmp_path):
         records = [

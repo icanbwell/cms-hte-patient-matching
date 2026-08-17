@@ -964,6 +964,30 @@ Option B's `MatchingEngine` snippet was executed against the first 200 real case
 Option A's generic snippet was checked for syntactic validity. Cross-referenced from
 `SYNTHETIC_DATA_SETUP.md`.
 
+**Task 8, 2026-08-16 (new stacked PR, `claude/session-10-frequency-uniform`, based on
+`claude/session-10-special-populations`):** After the "is 6,289 cases sufficient?" discussion
+surfaced the per-category sample-size gaps above, Imran separately asked whether the dataset
+represents each test case's real-world frequency — it doesn't, and hadn't been documented as a
+gap. Per his direction, split the fix into two stacked PRs so the mechanical schema change and
+the actual (debatable) frequency values get reviewed separately:
+
+- **This PR (Task 8):** add a `frequency: float = 1.0` field to `LabeledCaseRecord`, a
+  `uniform_frequency()` default lookup (every case weighted equally), and a `frequency_lookup`
+  parameter on `build_test_case_records()` so a real lookup can be swapped in later without
+  touching the generation logic. Regenerated `sample_labeled_pairs.jsonl` with the new field
+  (still all `1.0`). Documented in `cases/README.md`'s new "Frequency and real-world
+  representativeness" section — explicit that raw per-category counts in this file are a
+  generation artifact, not a prevalence signal, per the same tension Doc §1/§5 already raise.
+  3 new tests in `test_export_test_dataset.py`; full suite 493 passed (up from 490).
+- **Next PR (Task 9, not yet done as of this note):** `evaluation/prevalence_estimates.py` with
+  real, cited public-source estimates per category, for Imran to review — see the research
+  findings gathered via a dedicated research agent (US Census 2020 Group Quarters data, Pew
+  Research on multigenerational households, CDC twin-birth rates, record-linkage error-rate
+  literature) before that PR is opened, since several categories (hotel/short-term housing,
+  halfway house, non-correctional group homes, migrant camps, and all `fuzzy_variant` subtypes
+  individually) have **no authoritative public split available** and must be left at the neutral
+  default with an explicit "no public estimate found" note rather than a guessed value.
+
 **Close-out:** PR opened from `claude/session-10-special-populations`. Left in `pending/` rather
 than moved to `in_review/`/`completed/` — merging is a human decision per `conventions.md` ("Every
 session ends with a PR" + Sean's review), not something to do unilaterally; whoever merges the PR

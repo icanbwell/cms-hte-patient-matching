@@ -30,6 +30,7 @@ One JSON object per line (JSON Lines / `.jsonl`):
 | `target` | The "Internal Record" / candidate FHIR `Patient` resource. |
 | `expected_match` | The gold label — `true` if `source` and `target` represent the same person. |
 | `rationale` | Which category/provenance this case traces to (e.g. `fuzzy_variant/dob_day`, `hard_negative`, `special_population/shelter`, `normalization_edge_case/diacritic`) — per Design Principle 2, every case traces to a specific reason, not a black box. See `SYNTHETIC_DATA_COMPARISON.md`'s "Coverage against the Doc's §2 ground-truth pair categories" for what each `rationale` prefix means. |
+| `frequency` | A relative real-world-prevalence weight for this case's category — **currently `1.0` for every case** (uniform), meaning no real-world weighting has been applied yet. See "Frequency and real-world representativeness" below before using this field or the file's raw per-category case counts to infer anything about real-world prevalence. |
 
 **Data provenance, read before trusting a result:** every `source`/`target` pair here is either a
 real ONC 2017 Patient Matching Algorithm Challenge record (a public, synthetic, non-PHI dataset —
@@ -38,6 +39,35 @@ institutional-category pairs additionally carry a **fabricated address**, delibe
 synthetic (`"SYNTHETIC TEST ADDRESS"` in the address line, a reserved `000xx` ZIP block) — see
 `evaluation/special_populations.py`'s module docstring for exactly which fields are real vs.
 constructed, per case category.
+
+## Frequency and real-world representativeness
+
+**The number of cases in each `rationale` category is an artifact of how this file was
+generated, not a signal about how often that scenario occurs in the real world.** For example,
+`normalization_edge_case` cases are 64% of this file because the generator emits exactly one
+diacritic and one punctuation variant per source patient — not because accented or hyphenated
+names are that common. Conversely, `hard_negative` has only 4 cases because that's how many
+coincidental ZIP+DOB collisions happened to occur in a 2,000-patient sample — not because that
+scenario is rare in reality. **Do not compute an aggregate "expected real-world accuracy" number
+by weighting categories according to their raw counts in this file.**
+
+The workgroup Doc itself flags this as an open, unresolved methodology question (§1: "Maintain
+frequency of use cases per real world datasets," "Make sure the test dataset follows the real
+world frequency so metrics are relevant to distribution"), and separately (§5) warns against the
+naive fix of just reshaping the curated dataset to mirror real-world prevalence — doing so would
+make rare-but-high-risk categories (e.g., shared institutional addresses) nearly disappear from
+the test set, undermining the whole point of testing them deliberately.
+
+This repo's approach: keep the file's raw case counts driven by what's needed for statistical
+power per category (see the discussion above), and carry real-world prevalence as **separate
+metadata** — the `frequency` field — that a consumer can use to compute a prevalence-weighted
+aggregate metric without needing the file itself to mirror real-world proportions.
+
+**Current state: every case's `frequency` is `1.0`** (uniform — see
+`export_test_dataset.uniform_frequency()`). Real, publicly-sourced prevalence estimates per
+category are being added in a follow-up PR (`evaluation/prevalence_estimates.py`) — check
+`docs/sessions/pending/session_10.md`'s Execution notes for whether that's landed yet, and review
+the cited sources there before trusting any non-1.0 value you see.
 
 ## Option A: bring your own algorithm (any language, any organization)
 

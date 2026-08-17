@@ -31,12 +31,13 @@ import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Callable, Dict, List
 
 from labeled_pairs import DEFAULT_SAMPLE_SIZE, generate_raw_pairs
 from onc_loader import load_onc_patients
 
 Patient = Dict[str, Any]
+FrequencyLookup = Callable[[str], float]
 
 # cases/ (not a bare repo-root cases/, per the Doc's own proposed layout for
 # the eventual neutral cross-org repo) - this repo is b.well's staging copy,
@@ -56,6 +57,15 @@ class LabeledCaseRecord:
         rationale: Which category/provenance this case traces to (Design
             Principle 2: "every test case traces to a specific spec
             provision").
+        frequency: Relative real-world prevalence weight for this case's
+            category - NOT the raw count of how many cases of this category
+            exist in the file (that's a generation-parameter artifact, e.g.
+            SAMPLE_SIZE or institutional_group_size, not a prevalence signal).
+            Defaults to 1.0 for every case via uniform_frequency() (below) -
+            i.e. no real-world weighting applied yet. See
+            evaluation/prevalence_estimates.py (a follow-up PR) for real,
+            cited public-source estimates per category, and this module's
+            `frequency_lookup` parameter for how to supply them.
     """
 
     case_id: str
@@ -63,6 +73,16 @@ class LabeledCaseRecord:
     target: Patient
     expected_match: bool
     rationale: str
+    frequency: float = 1.0
+
+
+def uniform_frequency(rationale: str) -> float:
+    """Default frequency_lookup: every case weighted equally (1.0),
+    regardless of category - i.e. this dataset's raw per-category case
+    counts are NOT a real-world-prevalence signal (see LabeledCaseRecord's
+    `frequency` docstring). Kept as the default rather than silently
+    guessing a real-world weight."""
+    return 1.0
 
 
 def format_rationale(strata: Dict[str, Any]) -> str:
@@ -97,34 +117,46 @@ def build_test_case_records(
     include_special_populations: bool = True,
     institutional_group_size: int = 3,
     seed: int = 0,
+    frequency_lookup: FrequencyLookup = uniform_frequency,
 ) -> List[LabeledCaseRecord]:
     """Build the portable test-case manifest from ONC patients, using the
     same generation logic build_labeled_pairs() uses (labeled_pairs.
     generate_raw_pairs()) but keeping the raw FHIR Patient dicts instead of
     extracting PatientFields.
+
+    `frequency_lookup` maps each case's formatted `rationale` string to a
+    `frequency` weight (default: uniform_frequency(), every case weighted
+    1.0). Pass a different lookup (e.g. evaluation/prevalence_estimates.py's
+    real, cited estimates) to apply real-world-prevalence weighting without
+    touching this function.
     """
-    return [
-        LabeledCaseRecord(
-            case_id=raw.pair_id,
-            source=raw.query_patient,
-            target=raw.candidate_patient,
-            expected_match=raw.is_true_match,
-            rationale=format_rationale(dict(raw.strata)),
+    records = []
+    for raw in generate_raw_pairs(
+        patients,
+        n_fuzzy_variants_per_patient=n_fuzzy_variants_per_patient,
+        include_normalization_edge_cases=include_normalization_edge_cases,
+        include_special_populations=include_special_populations,
+        institutional_group_size=institutional_group_size,
+        seed=seed,
+    ):
+        rationale = format_rationale(dict(raw.strata))
+        records.append(
+            LabeledCaseRecord(
+                case_id=raw.pair_id,
+                source=raw.query_patient,
+                target=raw.candidate_patient,
+                expected_match=raw.is_true_match,
+                rationale=rationale,
+                frequency=frequency_lookup(rationale),
+            )
         )
-        for raw in generate_raw_pairs(
-            patients,
-            n_fuzzy_variants_per_patient=n_fuzzy_variants_per_patient,
-            include_normalization_edge_cases=include_normalization_edge_cases,
-            include_special_populations=include_special_populations,
-            institutional_group_size=institutional_group_size,
-            seed=seed,
-        )
-    ]
+    return records
 
 
 def write_jsonl(records: List[LabeledCaseRecord], path: Path) -> None:
     """Write one JSON object per line - case_id, source, target,
-    expected_match, rationale - creating parent directories if needed."""
+    expected_match, rationale, frequency - creating parent directories if
+    needed."""
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w") as f:
         for record in records:
@@ -136,6 +168,7 @@ def write_jsonl(records: List[LabeledCaseRecord], path: Path) -> None:
                         "target": record.target,
                         "expected_match": record.expected_match,
                         "rationale": record.rationale,
+                        "frequency": record.frequency,
                     }
                 )
                 + "\n"
