@@ -176,12 +176,20 @@ def write_jsonl(records: List[LabeledCaseRecord], path: Path) -> None:
 
 
 if __name__ == "__main__":
+    # researched_frequency() applies evaluation/prevalence_estimates.py's real,
+    # cited public-source prevalence weights (pending Imran's review as of
+    # this writing - see docs/sessions/pending/session_10.md's Task 9 notes).
+    # Pass frequency_lookup=uniform_frequency explicitly (or call
+    # build_test_case_records() directly) to opt back out to the neutral
+    # default.
+    from prevalence_estimates import researched_frequency
+
     sample_size = int(os.environ.get("SAMPLE_SIZE", DEFAULT_SAMPLE_SIZE))
     onc_dir = Path(__file__).parent / "fixtures" / "onc"
     # One shard only - see this module's and labeled_pairs.py's docstrings.
     shard = sorted(onc_dir.glob("*.csv"))[0]
     patients = load_onc_patients([shard])[:sample_size]
-    records = build_test_case_records(patients)
+    records = build_test_case_records(patients, frequency_lookup=researched_frequency)
     output_path = Path(os.environ.get("OUTPUT_PATH", str(DEFAULT_OUTPUT_PATH)))
     write_jsonl(records, output_path)
     n_true = sum(r.expected_match for r in records)

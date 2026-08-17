@@ -979,14 +979,46 @@ the actual (debatable) frequency values get reviewed separately:
   representativeness" section — explicit that raw per-category counts in this file are a
   generation artifact, not a prevalence signal, per the same tension Doc §1/§5 already raise.
   3 new tests in `test_export_test_dataset.py`; full suite 493 passed (up from 490).
-- **Next PR (Task 9, not yet done as of this note):** `evaluation/prevalence_estimates.py` with
-  real, cited public-source estimates per category, for Imran to review — see the research
-  findings gathered via a dedicated research agent (US Census 2020 Group Quarters data, Pew
-  Research on multigenerational households, CDC twin-birth rates, record-linkage error-rate
-  literature) before that PR is opened, since several categories (hotel/short-term housing,
-  halfway house, non-correctional group homes, migrant camps, and all `fuzzy_variant` subtypes
-  individually) have **no authoritative public split available** and must be left at the neutral
-  default with an explicit "no public estimate found" note rather than a guessed value.
+**Task 9, 2026-08-16 (new stacked PR, `claude/session-10-frequency-estimates`, based on
+`claude/session-10-frequency-uniform`): FOR IMRAN'S REVIEW, not yet accepted as a default.**
+Research conducted via a dedicated research agent (public sources only, per Option A+B-only
+scoping): U.S. Census Bureau 2020 Census Group Quarters data, Pew Research Center on
+multigenerational households and marital surname choices, CDC/NCHS twin-birth rates,
+record-linkage literature (Zech et al. 2016, RAND 2008, Pew/ONC match-rate figures) for
+data-entry-error context.
+
+- `evaluation/prevalence_estimates.py` (new) — `PrevalenceEstimate` dataclass
+  (`value`/`has_public_estimate`/`is_direct_measurement`/`source`/`notes`),
+  `PREVALENCE_ESTIMATES` dict keyed by the exact `rationale` prefixes this repo's generators
+  produce, `researched_frequency()` (a `frequency_lookup` implementation, strips
+  `format_rationale()`'s parenthetical context before lookup, falls back to `NEUTRAL_FREQUENCY`
+  for anything not yet in the dict).
+  - **Real, direct-measurement estimates (5):** `shelter` (0.06%), `nursing_facility` (0.49%),
+    `correctional_institution` (0.59%), `dormitory` (0.84%) — all U.S. Census 2020 Group Quarters
+    — and `multi_generational_household` (18%, Pew Research 2022).
+  - **Real, proxy estimates with documented caveats (2):** `diacritic` (20%, Hispanic-origin
+    population share as a proxy — explicitly not a direct measurement) and `punctuation` (6%,
+    Gooding & Kreider's "nonconventional surname" figure — married women only, doesn't cover men,
+    apostrophes, or non-marital hyphenated birth surnames).
+  - **Explicit "no public estimate found" placeholders, left at `NEUTRAL_FREQUENCY=1.0` (13):**
+    `hotel_short_term_housing`/`halfway_house`/`group_home`/`migrant_camp` (bundled into an
+    undifferentiated Census "Other noninstitutional facilities" catch-all with no further public
+    split), all 10 `fuzzy_variant` subtypes (no source decomposes data-entry error by edit type —
+    only coarser downstream match-failure rates exist), and `hard_negative` (a coincidental
+    field-collision question, already governed by this repo's own P(collision) framework, not a
+    demographic-prevalence one).
+  - CDC's 2023 twin-birth rate (30.7 per 1,000 live births) is recorded as a module constant for
+    documentation completeness, per Imran's original "represent frequency" ask — not applied to
+    any category, since literal twins aren't generated (see Task 6's "Out of scope").
+- `export_test_dataset.py`'s `__main__` now uses `frequency_lookup=researched_frequency`;
+  `build_test_case_records()`'s own default stays `uniform_frequency` (opt-in, not silently
+  changed for library callers). `sample_labeled_pairs.jsonl` regenerated with the real values.
+- `cases/README.md` — full citation table with the "direct measurement vs. proxy vs. no public
+  estimate" distinction, explicit "read the `notes` field before trusting any of these."
+- 102 new tests in `test_prevalence_estimates.py` (completeness — every category this repo can
+  actually generate has an entry; invariants — placeholders are pinned to `NEUTRAL_FREQUENCY` and
+  never silently pass as `is_direct_measurement=True`; lookup correctness including the
+  parenthetical-context-stripping case). Full suite 595 passed (up from 493).
 
 **Close-out:** PR opened from `claude/session-10-special-populations`. Left in `pending/` rather
 than moved to `in_review/`/`completed/` — merging is a human decision per `conventions.md` ("Every

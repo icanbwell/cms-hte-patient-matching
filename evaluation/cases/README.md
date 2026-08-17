@@ -63,11 +63,36 @@ power per category (see the discussion above), and carry real-world prevalence a
 metadata** — the `frequency` field — that a consumer can use to compute a prevalence-weighted
 aggregate metric without needing the file itself to mirror real-world proportions.
 
-**Current state: every case's `frequency` is `1.0`** (uniform — see
-`export_test_dataset.uniform_frequency()`). Real, publicly-sourced prevalence estimates per
-category are being added in a follow-up PR (`evaluation/prevalence_estimates.py`) — check
-`docs/sessions/pending/session_10.md`'s Execution notes for whether that's landed yet, and review
-the cited sources there before trusting any non-1.0 value you see.
+**Current state: `evaluation/prevalence_estimates.py` supplies real, publicly-sourced estimates
+for some categories — pending Imran's review, not yet treated as final.** The committed
+`sample_labeled_pairs.jsonl` was regenerated using these estimates (via
+`export_test_dataset.py`'s `__main__`, `frequency_lookup=researched_frequency`). Pass
+`frequency_lookup=uniform_frequency` (or call `build_test_case_records()` with no
+`frequency_lookup` argument) if you want every case weighted equally instead.
+
+Every entry in `prevalence_estimates.PREVALENCE_ESTIMATES` is either a real, cited public-source
+estimate, or an explicit `has_public_estimate=False` placeholder pinned to `1.0` — never a
+guessed number standing in for real data. Sources are exclusively public (U.S. Census Bureau,
+CDC/NCHS, Pew Research Center, peer-reviewed record-linkage literature) — no b.well/WellSense
+client data, per this backlog's Option A+B-only scoping.
+
+| Category | `frequency` | Source | Direct measurement? |
+|---|---:|---|:---:|
+| `special_population/shelter` | 0.0006 | U.S. Census Bureau, "The Emergency and Transitional Shelter Population: 2020" (2024) | Yes |
+| `special_population/nursing_facility` | 0.0049 | U.S. Census Bureau, 2020 Census Group Quarters release (2021) | Yes |
+| `special_population/correctional_institution` | 0.0059 | U.S. Census Bureau, 2020 Census Group Quarters release (2021) | Yes |
+| `special_population/dormitory` | 0.0084 | U.S. Census Bureau, 2020 Census Group Quarters release (2021) | Yes |
+| `special_population/multi_generational_household` | 0.18 | Pew Research Center, "The Demographics of Multigenerational Households" (2022) | Yes |
+| `normalization_edge_case/diacritic` | 0.20 | U.S. Census Bureau population estimates (2024) — Hispanic/Latino population share | **No — proxy** |
+| `normalization_edge_case/punctuation` | 0.06 | Gooding & Kreider (U.S. Census Bureau), "Women's Marital Naming Choices in a Nationally Representative Sample" | **No — proxy, married women only** |
+| `special_population/hotel_short_term_housing`, `halfway_house`, `group_home`, `migrant_camp` | 1.0 (placeholder) | U.S. Census Bureau, 2020 Census Group Quarters release (2021) | **No public split exists** — bundled into an undifferentiated ~0.35%-of-population catch-all with no further breakdown |
+| `fuzzy_variant/*` (all 10 mutation types) | 1.0 (placeholder) | Zech et al. 2016; Pew Charitable Trusts 2018 | **No public per-edit-type rate exists** — only coarser, downstream match-failure rates are published |
+| `hard_negative` | 1.0 (placeholder) | N/A | Not a demographic prevalence question — governed by this repo's own P(collision) framework instead |
+
+**Read `prevalence_estimates.py`'s per-entry `notes` before trusting any of these** — several
+carry real caveats (the diacritic and punctuation estimates are proxies for a related-but-not-
+identical population, not direct measurements of the thing being tested) that matter for how
+much weight to put on them.
 
 ## Option A: bring your own algorithm (any language, any organization)
 
