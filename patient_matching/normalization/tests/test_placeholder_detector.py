@@ -116,3 +116,33 @@ class TestPlaceholderSSN:
 
     def test_real_ssn_not_placeholder(self) -> None:
         assert not self.detector.is_placeholder_ssn("123-45-6789")
+
+
+class TestPlaceholderSubscriberId:
+    """v3.3.4: Subscriber/Member ID placeholder detection (session 6)."""
+
+    def setup_method(self) -> None:
+        self.detector = PlaceholderDetector()
+
+    def test_all_zeros(self) -> None:
+        assert self.detector.is_placeholder_subscriber_id("0000000")
+
+    def test_all_nines(self) -> None:
+        assert self.detector.is_placeholder_subscriber_id("999999")
+
+    def test_pending(self) -> None:
+        assert self.detector.is_placeholder_subscriber_id("PENDING")
+        assert self.detector.is_placeholder_subscriber_id("pending")
+
+    def test_tbd(self) -> None:
+        assert self.detector.is_placeholder_subscriber_id("TBD")
+
+    def test_none_literal(self) -> None:
+        assert self.detector.is_placeholder_subscriber_id("NONE")
+
+    def test_empty_string(self) -> None:
+        assert self.detector.is_placeholder_subscriber_id("")
+
+    def test_real_looking_id_not_placeholder(self) -> None:
+        assert not self.detector.is_placeholder_subscriber_id("M123456789")
+        assert not self.detector.is_placeholder_subscriber_id("W900123456")

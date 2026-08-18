@@ -20,6 +20,7 @@ from ..matching.match_result import MatchOutcome, MatchResult
 from ..matching.matching_engine import MatchingEngine
 from ..matching.field_extractor import FieldExtractor
 from ..matching.field_comparator import FieldComparator
+from ..matching.household_rules import CATEGORY_2_RULES
 from ..matching.table2_rules import APPROVED_RULES, MatchingRule
 from ..normalization.manager import NormalizationManager
 
@@ -219,14 +220,28 @@ def _compute_confidence(result: MatchResult) -> float:
     if not result.matched_rule_id:
         return 0.0
 
-    # Look up the rule's P(collision)
-    for rule in APPROVED_RULES:
-        if rule.rule_id == result.matched_rule_id:
-            if result.match_type == "fuzzy":
-                p_collision = rule.p_collision_fuzzy
-            else:
-                p_collision = rule.p_collision_exact
+    # Look up the rule's P(collision). Flat (Category 1) rules and
+    # household/individual (Category 2) rules share the same rule_id/
+    # p_collision_exact/p_collision_fuzzy attribute shape but aren't a
+    # common type, so they're searched via two loops rather than one
+    # heterogeneous tuple (mypy can't type-check `object` attribute access).
+    for flat_rule in APPROVED_RULES:
+        if flat_rule.rule_id == result.matched_rule_id:
+            p_collision = (
+                flat_rule.p_collision_fuzzy
+                if result.match_type == "fuzzy"
+                else flat_rule.p_collision_exact
+            )
             # Confidence = 1 - P(collision), clamped to [0, 1]
+            return max(0.0, min(1.0, 1.0 - p_collision))
+
+    for hh_rule in CATEGORY_2_RULES:
+        if hh_rule.rule_id == result.matched_rule_id:
+            p_collision = (
+                hh_rule.p_collision_fuzzy
+                if result.match_type == "fuzzy"
+                else hh_rule.p_collision_exact
+            )
             return max(0.0, min(1.0, 1.0 - p_collision))
 
     return 0.0

@@ -12,48 +12,49 @@ run whatever **Suggested Next Session** names below.
 
 ## Suggested Next Session
 
-> **Session 6 — Expand Table 2 to CMS v3.3 (base + v3.3.1/v3.3.3/v3.3.4/v3.3.6 addenda).**
-> Re-scoped 2026-08-12 — see the doc's "Re-scope note"; it's larger than the original
-> "37 rules" framing (household/individual two-tier architecture, 4 already-merged rules
-> amended, 2 rules explicitly deferred). Session 5's doc moved to `completed/` on
-> 2026-08-03 (PR #16 merged 2026-08-02), which satisfies session 6's hard code dependency on
-> session 5's evaluator per the merge-gate rule. Session 6 remains blocked only on fetching
-> the live CMS v3.3 spec content (Google Doc; see `conventions.md`'s "Reference documents"),
-> which the executing environment on 2026-08-06/07 had no Google Drive access to fetch.
-> Unblocks as soon as either Drive access is authorized or someone pastes the relevant
-> Table 2/DOB-tolerance sections directly into the session.
+> **Session 8 — Legacy comparison harness (Tier 3).** Session 6 (below) is now `in_review/`
+> (PR opened 2026-08-18) with its hard code dependency (session 5) satisfied. Session 8's
+> remaining blockers are 3 `NEEDS HUMAN DECISION` items (eval-only dependency on
+> `helix-personmatching`, adjudicator identity, replace-vs-alongside the labeled-set approach)
+> — not code. Once those are answered, session 8 is the next session to run; session 6's
+> merge is a soft/quality dependency for it, not a hard gate (see session_8.md).
 >
 > **2026-08-14 addendum:** session_9 (PR #27 merged 2026-08-14) resolved session_8's
 > 2026-08-13 open question about the test-data simulation methodology (mutation-based fuzzy
 > positives + mined real-record hard negatives). Session_8's session_9 dependency is now
-> satisfied; it still needs session 4 in `completed/` (PR #22 open) and the
-> `NEEDS HUMAN DECISION` on replace-vs-alongside — see session_8.md's 2026-08-14 update.
+> satisfied.
 >
-> **2026-08-18 addendum:** the test-set generation code (`evaluation/`, its demo notebooks,
-> and session docs 8/9/10/11) moved to
+> **2026-08-18 addendum (session 4):** session 4 is now `completed/` (PR #22 merged
+> 2026-08-14; live Databricks run completed 2026-08-18 after PR #36 fixed a real null-field
+> bug the run surfaced — see session_4.md's Execution notes). Session_8's hard dependency on
+> session 4 is satisfied. It still needs 3 `NEEDS HUMAN DECISION` items resolved (eval-only
+> dependency on `helix-personmatching`, adjudicator identity, replace-vs-alongside — see
+> session_8.md) before it can start.
+>
+> **2026-08-18 addendum (repo move, later same day):** the test-set generation code
+> (`evaluation/`, its demo notebooks, and session docs 8/9/10/11) moved to
 > [icanbwell/cms-hte-patient-matching-test-set](https://github.com/icanbwell/cms-hte-patient-matching-test-set)
 > ([PR #1](https://github.com/icanbwell/cms-hte-patient-matching-test-set/pull/1)). Session 8's
-> doc now lives there; its dependency on session_9 (also moved) is unaffected, but session 6
-> in this repo is a hard dependency of the moved session 11 — check the new repo for its
-> current status before starting session 6.
+> doc — including the dependency/`NEEDS HUMAN DECISION` state above — now lives there; check
+> the new repo for its current status. Session 6 in this repo remains a hard dependency of the
+> moved session 11.
 
 ## Up Next (execution order)
 
 | # | Session | Thread | Depends on | Size | Status | One-line summary |
 |---|---------|--------|-----------|------|--------|-------------------|
-| 6 | [session_6](pending/session_6.md) | Line B: CMS v3.3 migration | 5 | L | pending — blocked on fetching the live CMS v3.3 spec content | Expand Table 2 to CMS v3.3 base + v3.3.1/v3.3.3/v3.3.4/v3.3.6 addenda |
-| 8 | [session_8](https://github.com/icanbwell/cms-hte-patient-matching-test-set/blob/main/docs/sessions/pending/session_8.md) (moved) | Evaluation & Statistical Rigor | 3, 4, 9 (hard); 6 (soft, quality-of-result only) | L | pending — session 9 dependency now satisfied (moved, PR #27 merged 2026-08-14); still blocked on session 4 (`in_review/`, PR #22 open) and 1 `NEEDS HUMAN DECISION` (replace-vs-alongside, see session_8.md) | Tier 3: legacy comparison harness, precision/recall-as-agreement, disagreement buckets, per-pair explanations |
+| 8 | [session_8](https://github.com/icanbwell/cms-hte-patient-matching-test-set/blob/main/docs/sessions/pending/session_8.md) (moved) | Evaluation & Statistical Rigor | 3, 4, 9 (hard, all satisfied); 6 (soft, quality-of-result only) | L | pending — hard code dependencies satisfied (session 4: PR #22 merged, live run 2026-08-18 via PR #36; session 9: PR #27 merged); blocked on 3 `NEEDS HUMAN DECISION` items — see the moved session_8.md | Tier 3: legacy comparison harness, precision/recall-as-agreement, disagreement buckets, per-pair explanations |
 
 Session 3 merged into `main` (PR [#11](https://github.com/icanbwell/patient-matching/pull/11),
 2026-07-30) and session 5 merged into `main` (PR [#16](https://github.com/icanbwell/patient-matching/pull/16),
-2026-08-02, doc in `completed/` as of 2026-08-03) — session 6's merge gate is satisfied; it
-just needs the live spec content, not more code dependencies.
+2026-08-02, doc in `completed/` as of 2026-08-03) — both of session 6's dependencies are
+satisfied; session 6 itself moved to `in_review/` below on 2026-08-18.
 
 ## In Review
 
 | # | Session | Thread | PR | One-line summary |
 |---|---------|--------|----|--------------------|
-| 4 | [session_4](in_review/session_4.md) | Evaluation & Statistical Rigor | [#22](https://github.com/icanbwell/patient-matching/pull/22) (open) | Real-world FHIR data source (`bronze.fhir_lake.patient_4_0_0` joined to `silver.fhir_lite.person_patient`) for `rule_eval.py`, via reproducible queries; per-field collision rates vs. session 5's Table 3 |
+| 6 | [session_6](in_review/session_6.md) | Line B: CMS v3.3 migration | Table 2 v3.3.0 base + v3.3.1/v3.3.3/v3.3.4/v3.3.6 addenda: 3 new fields, DOB +/-1 day fuzzy, Household/Individual two-step architecture (rules 13-16 amended, 34/35/37/38 new), 30 flat + 8 two-step = 38 rules total. Rules 39/40 and v3.3.6 institutional-address integration explicitly deferred. |
 
 ## Completed (most recent 3)
 
@@ -104,7 +105,7 @@ session_5 (P(collision) eval)    --+
                                     |
 session_3 (ONC baseline) ----------+--> session_4 (real-world data source, in_review as of 2026-08-06)
                                     |
-session_5 --------------------------> session_6 (Table 2 v3.3 expansion)
+session_5 --------------------------> session_6 (Table 2 v3.3 expansion, in_review as of 2026-08-18)
 
 session_3 --------------------------> session_8 (legacy comparison harness, Tier 3)
 session_4 --------------------------> session_8 (hard: reuses its real-batch query)

@@ -1,6 +1,7 @@
 # Session 6 — Expand Table 2 to CMS v3.3 (base spec + addenda v3.3.1/v3.3.3/v3.3.4/v3.3.6)
 
-**Status:** pending
+**Status:** in_review (PR opened 2026-08-18) — Tasks 1-5 complete, Rules 39/40 and v3.3.6
+institutional-address integration remain explicitly out of scope per this doc
 **Thread:** Line B: CMS v3.3 migration
 **Estimated size:** L — larger than originally scoped. Three new canonical fields, a new DOB
 fuzzy mode, a new two-tier Household/Individual evaluation architecture, 8 rules reclassified
@@ -429,31 +430,40 @@ New test files needed:
 
 ## Validation (definition of "resolved")
 
-- [ ] `zip_code`, `insurance_member_id`, `insurance_subscriber_id` are extractable via
+- [x] `zip_code`, `insurance_member_id`, `insurance_subscriber_id` are extractable via
       `FieldExtractor`/`PatientFields`, with placeholder values already stripped per Task 5,
       and tests covering at least one populated and one empty/placeholder case each.
-- [ ] `FieldComparator.dob_fuzzy_match` exists, is used by `MatchingEngine` specifically for
+- [x] `FieldComparator.dob_fuzzy_match` exists, is used by `MatchingEngine` specifically for
       the `dob` field, and all boundary cases pass.
-- [ ] Rules 27-33 exist as Category 1 (flat) rules with `p_collision` figures matching the
-      Scope table above.
-- [ ] H-01 through H-14 and I-01 through I-03 exist as reusable rows with `p_collision`
+- [x] Rules 27-33 exist as Category 1 (flat) rules with `p_collision` figures matching the
+      Scope table above (verified by direct computation, not just eyeballing — see Execution
+      notes).
+- [x] H-01 through H-14 and I-01 through I-03 exist as reusable rows with `p_collision`
       figures matching the tables above.
-- [ ] Rules 13, 14, 15, 16, 34, 35, 37, 38 exist as Category 2 (household+individual) rules,
+- [x] Rules 13, 14, 15, 16, 34, 35, 37, 38 exist as Category 2 (household+individual) rules,
       each pairing the H-row/I-row specified in the pairings table above, with combined
       `p_collision` matching that table.
-- [ ] Rules 13-16 no longer exist as flat rules anywhere in the rule set (confirm the old
-      3-field literal is gone, not just shadowed).
-- [ ] No `enable_household_risk_rules`-style flag exists anywhere in the new code — the
+- [x] Rules 13-16 no longer exist as flat rules anywhere in the rule set (confirm the old
+      3-field literal is gone, not just shadowed) — enforced by
+      `test_13_through_16_are_not_in_the_flat_rule_set`.
+- [x] No `enable_household_risk_rules`-style flag exists anywhere in the new code — the
       household/individual architecture is unconditional, per the callout in Task 4.
-- [ ] Rules 39, 40, and any institutional-address registry/postal-validation logic are **not**
-      present in this session's diff — confirm via the PR description explicitly stating they
-      were evaluated and deferred, per "Out of scope," so a reviewer doesn't wonder if they
-      were simply missed.
-- [ ] `make tests` is green (full suite — this touches shared field-extraction/comparator code
-      and amends already-merged rules 13-16, so regressions in rules 01-26 are the main risk).
-- [ ] `make run-pre-commit` is clean.
-- [ ] Per `conventions.md`'s statistical rigor gate: this session does not move to
-      `completed/` until session 3's Tier-1 `ComparisonReport` exists.
+- [x] Rules 39, 40, and any institutional-address registry/postal-validation logic are **not**
+      present in this session's diff — evaluated and deferred, per "Out of scope"; see PR
+      description.
+- [x] `uv run pytest .` is green (full suite — this touches shared field-extraction/comparator
+      code and amends already-merged rules 13-16; 439 passed, up from 377, no regressions).
+      `make tests` itself is a pre-existing weaker gate (per sessions 1-3's notes, it only runs
+      the top-level `tests/` stub) — not re-litigated here.
+- [x] `uv run pre-commit run` is clean on all touched files (ruff, ruff-format, mypy, bandit,
+      detect-secrets).
+- [x] Per `conventions.md`'s statistical rigor gate: session 3's Tier-1 `ComparisonReport`
+      already exists on `main` (`evaluation/baselines/v3_2_2_onc_baseline.txt`, session 3,
+      `completed/`) — the merge gate is satisfied. No new report was generated for this
+      session's own rule changes, matching session 5's precedent (its own Execution notes:
+      "the merge gate is satisfied" was sufficient, not a requirement to re-run the baseline
+      for every rule-computing session). A fresh v3.3-vs-v3.2.2 comparison is exactly the kind
+      of evidence session 8 (Tier 3) is designed to produce once its own blockers clear.
 
 ## Open questions
 
@@ -480,4 +490,76 @@ New test files needed:
 
 ## Execution notes
 
-_(empty at authoring time; filled in by whoever executes the session)_
+Executed 2026-08-18 on branch `claude/session-6-cms-v33-table2-expansion`, cut from `main`.
+
+**Correction found while executing, not guessed in advance:** this doc's Scope section
+(Task 3) describes Rule 36 (`Last Name* + DOB + Phone Number`) as "already in `_V322_RULES`"
+and something to merely "confirm." That's incorrect for this repo's actual state — grepped
+`table2_rules.py` before writing any code and confirmed only 26 rules exist (01-26); no rule
+combines exactly Last Name + DOB + Phone with no First Name. Rule 36 had to be **built new**,
+not confirmed. Computed via `p_collision()`: exact 5.0e-13, fuzzy 1.0e-12 (Last Name fuzzy u
+0.01) — both clear the 2e-12 threshold, consistent with it being CMS-approved.
+
+**Design decision: DOB fuzzy-eligibility does not consume `max_fuzzy_fields`.** Table 3
+(`collision.FIELD_U_PROBS`) has no separate fuzzy u-probability for `dob` — confirmed by
+computing rule 28's published figures (5e-13 exact / 1e-12 fuzzy): the 2x fuzzy multiplier
+only reconciles if it comes from Last Name going fuzzy (u 0.01 vs 0.005 exact), never from
+DOB. So DOB's +/-1 day tolerance is a date-comparison mechanism, not the generic
+Damerau-Levenshtein budget `max_fuzzy_fields` was designed to cap. Implemented as a
+name-based dispatch in `MatchingEngine._verify_fields` (`rf.name == DOB` routes to
+`FieldComparator.dob_fuzzy_match` and is recorded in `fuzzy_fields`/`match_type` for audit,
+but never increments `fuzzy_count`). Verified directly: rule 28 with both Last Name
+(Damerau-Levenshtein) and DOB (+/-1 day) simultaneously fuzzy does not trigger
+`fuzzy_exceeded` for either field (`test_dob_within_one_day_and_last_name_fuzzy_both_match_simultaneously`).
+
+**Design decision: household/individual two-step resolution reuses `_build_result` unmodified,
+rather than building a second escalation mechanism.** Task 4d's wording ("applied at each step
+instead of once") could be read as requiring an independent 1/2/3+ escalation gate at the
+household step itself. Implemented instead as two sequential field-verification narrowing
+passes (household-tier fields, then individual-tier fields on the surviving set) whose final
+result flows into the engine's existing, completely unmodified cross-rule aggregation in
+`_build_result` — exactly the mechanism flat rules already use. This is a deliberate,
+documented choice (see `MatchingEngine._evaluate_household_individual_rule`'s docstring): a
+separate household-step escalation signal would duplicate logic Task 4d explicitly says not to
+duplicate, and this design still correctly handles the realistic case a household search
+surfaces multiple members (verified: `test_correct_household_member_resolves_among_several`).
+
+**Found and fixed a real, pre-existing bug this session's own testing needs exposed:**
+`MatchingEngine.__init__` used `self._rules = rules or APPROVED_RULES` — since an empty tuple
+`()` is falsy in Python, explicitly passing `rules=()` to fully disable flat rules silently
+fell back to all 30 rules instead. Fixed to `rules if rules is not None else APPROVED_RULES`,
+matching the pattern this session already used for the new `household_individual_rules`
+parameter. No prior test exercised `rules=()`, so this was never caught before.
+
+**Task 1 implementation choices, resolved at execution time per the doc's own instruction:**
+- FHIR identifier type codes: `"MB"` (Member Number) / `"SN"` (Subscriber Number), the standard
+  HL7 v2-0203 Identifier Type codes — grepped `patient_matching/fhir_client/` and
+  `patient_matching/ial2_extraction/` first per the doc's instruction; neither had an existing
+  convention for these two fields, so there was nothing to match against.
+- Placeholder suppression (Task 5) was wired into `normalizer.py`'s existing
+  `_normalize_identifiers` (which already suppresses placeholder SSNs the same way), **not**
+  into `FieldExtractor` as the doc's literal wording suggested. `FieldExtractor` has zero
+  `PlaceholderDetector` dependency today — placeholder suppression is an established
+  normalization-layer concern in this codebase, running before extraction ever sees the value.
+  Wiring it there instead achieves the identical DoD outcome ("stripped before they ever reach
+  `PatientFields`") via the existing architectural pattern rather than introducing a new one.
+
+**Deferred exactly as scoped, confirmed not present in this diff:** Rules 39/40 and any
+v3.3.6 institutional-address registry/postal-validation logic. No
+`enable_household_risk_rules`-style flag was added anywhere (v3.3.1's structural fix makes one
+unnecessary, per Task 4's callout).
+
+Validation:
+- `uv run pytest .`: 439 passed (up from 377 pre-session), 0 skipped/failed regressions.
+- `uv run ruff check` / `ruff format --check`: clean.
+- `uv run mypy patient_matching/`: clean (0 errors, 92 files).
+- `uv run pre-commit run` on all touched files: clean (ruff, ruff-format, mypy, bandit,
+  detect-secrets, standard hooks).
+- Every new H-row, I-row, Category 1 rule (27-33, 36), and Category 2 rule (13-16, 34, 35, 37,
+  38) figure was cross-checked by direct computation against this doc's own tables before
+  writing tests — all matched exactly (see `test_household_rules.py` and
+  `test_table2_rules.py`).
+
+Decision: PR opened from `claude/session-6-cms-v33-table2-expansion` into `main`, left **open**
+rather than merged — per `conventions.md`'s Definition of Done, merging is Sean's call. Doc
+moved to `in_review/` and `index.md` updated accordingly, in the same PR.

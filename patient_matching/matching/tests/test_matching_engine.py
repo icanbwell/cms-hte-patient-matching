@@ -11,12 +11,28 @@ from patient_matching.matching.backend import (
 )
 from patient_matching.matching.match_result import MatchOutcome
 from patient_matching.matching.matching_engine import MatchingEngine
+from patient_matching.matching.household_rules import (
+    CATEGORY_2_RULES,
+    HouseholdIndividualRule,
+)
 from patient_matching.matching.table2_rules import (
     APPROVED_RULES,
+    MatchingRule,
 )
 
 
 # ── helpers ──────────────────────────────────────────────────────────
+
+
+def _rule_by_id(rule_id: str) -> MatchingRule:
+    """Look up a rule by ID rather than a fragile positional index - rule
+    order/count shifted when session 6 amended rules 13-16 into Category 2
+    and inserted new rules 27-33/36."""
+    return next(r for r in APPROVED_RULES if r.rule_id == rule_id)
+
+
+def _category2_rule_by_id(rule_id: str) -> HouseholdIndividualRule:
+    return next(r for r in CATEGORY_2_RULES if r.rule_id == rule_id)
 
 
 def _make_patient(
@@ -27,13 +43,21 @@ def _make_patient(
     phone: Optional[str] = "+12125551234",
     email: Optional[str] = "john@gmail.com",
     ssn_last4: Optional[str] = "6789",
+    itin_last4: Optional[str] = None,
     street: Optional[str] = "123 main st",
+    zip_code: Optional[str] = None,
     suffix: Optional[str] = None,
     mbi: Optional[str] = None,
     legal_id: Optional[str] = None,
     namespace_id: Optional[str] = None,
+    insurance_subscriber_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Build a minimal normalized FHIR Patient dict."""
+    address: Dict[str, Any] = {}
+    if street:
+        address["line"] = [street]
+    if zip_code:
+        address["postalCode"] = zip_code
     patient: Dict[str, Any] = {
         "resourceType": "Patient",
         "name": [
@@ -44,9 +68,24 @@ def _make_patient(
         ],
         "birthDate": dob,
         "telecom": [],
-        "address": [{"line": [street]}] if street else [],
+        "address": [address] if address else [],
         "identifier": [],
     }
+    if itin_last4:
+        patient["identifier"].append(
+            {
+                "system": "urn:oid:2.16.840.1.113883.4.4",
+                "value": f"xxx-xx-{itin_last4}",
+            }
+        )
+    if insurance_subscriber_id:
+        patient["identifier"].append(
+            {
+                "system": "https://payer.example/subscriber-id",
+                "type": {"coding": [{"code": "SN"}]},
+                "value": insurance_subscriber_id,
+            }
+        )
     if suffix:
         patient["name"][0]["suffix"] = [suffix]
     if phone:
@@ -236,12 +275,13 @@ class TestMatchingEngineSuffixConflict:
 class TestMatchingEngineRuleSubset:
     def test_custom_rule_subset(self) -> None:
         """Engine should respect a custom subset of rules."""
-        single_rule = (APPROVED_RULES[25],)  # Rule 26: namespace_id
+        single_rule = (_rule_by_id("26"),)  # Rule 26: namespace_id
         candidate = _make_patient(namespace_id="MRN001")
         query = _make_patient(namespace_id="MRN001")
         engine = MatchingEngine(
             backend=InMemoryBackend([candidate]),
             rules=single_rule,
+            household_individual_rules=(),
         )
         result = engine.match(query)
         assert result.outcome == MatchOutcome.MATCH
@@ -249,12 +289,13 @@ class TestMatchingEngineRuleSubset:
 
     def test_rule_skipped_when_query_missing_fields(self) -> None:
         """Rule should be skipped if query lacks required fields."""
-        single_rule = (APPROVED_RULES[7],)  # Rule 08: First Name + DOB + MBI
+        single_rule = (_rule_by_id("08"),)  # Rule 08: First Name + DOB + MBI
         query = _make_patient(mbi=None)  # No MBI
         candidate = _make_patient(mbi="1EG4TE5MK73")
         engine = MatchingEngine(
             backend=InMemoryBackend([candidate]),
             rules=single_rule,
+            household_individual_rules=(),
         )
         result = engine.match(query)
         assert result.outcome == MatchOutcome.NO_MATCH
@@ -270,12 +311,13 @@ class TestMatchingEngineRuleEvaluations:
 
     def test_evaluation_field_outcomes(self) -> None:
         """Rule 26 eval should have namespace_id as exact."""
-        single_rule = (APPROVED_RULES[25],)
+        single_rule = (_rule_by_id("26"),)
         candidate = _make_patient(namespace_id="MRN001")
         query = _make_patient(namespace_id="MRN001")
         engine = MatchingEngine(
             backend=InMemoryBackend([candidate]),
             rules=single_rule,
+            household_individual_rules=(),
         )
         result = engine.match(query)
         evals = [e for e in result.rule_evaluations if e.rule_id == "26"]
@@ -308,3 +350,211 @@ class TestAuditFields:
 
         repo_version = open("VERSION").read().strip()
         assert _PACKAGE_VERSION == repo_version
+
+
+class TestHouseholdIndividualRules:
+    """CMS v3.3.1 two-step (Category 2) rules 13/34/38, engine-level.
+
+    Each test isolates household_individual_rules to exactly the rule under
+    test - _make_patient's shared defaults (same phone/street/email across
+    patients unless overridden) mean leaving all 8 rules active would let
+    an unrelated rule (e.g. 37's Phone+Street) independently resolve a
+    match, masking what the rule under test actually did.
+    """
+
+    def test_household_member_with_different_individual_fields_does_not_match(
+        self,
+    ) -> None:
+        """Rule 13: SSN Last 4 + Phone (household) + First Name/DOB
+        (individual). A household member sharing SSN-last-4 and phone but
+        with different First Name/DOB must not resolve."""
+        rule_13 = _category2_rule_by_id("13")
+        household_member = _make_patient(
+            first="jane", last="smith", dob="1988-05-01", ssn_last4="6789"
+        )
+        query = _make_patient(
+            first="john", last="smith", dob="1990-01-15", ssn_last4="6789"
+        )
+        engine = MatchingEngine(
+            backend=InMemoryBackend([household_member]),
+            rules=(),
+            household_individual_rules=(rule_13,),
+        )
+        result = engine.match(query)
+        assert result.outcome == MatchOutcome.NO_MATCH
+
+    def test_correct_household_member_resolves_among_several(self) -> None:
+        """Household step can legitimately surface multiple candidates
+        (household members sharing SSN+phone); individual step must narrow
+        to only the one whose First Name/DOB also match."""
+        rule_13 = _category2_rule_by_id("13")
+        the_person = _make_patient(
+            first="john", last="smith", dob="1990-01-15", ssn_last4="6789"
+        )
+        household_member = _make_patient(
+            first="jane", last="smith", dob="1988-05-01", ssn_last4="6789"
+        )
+        query = _make_patient(
+            first="john", last="smith", dob="1990-01-15", ssn_last4="6789"
+        )
+        engine = MatchingEngine(
+            backend=InMemoryBackend([the_person, household_member]),
+            rules=(),
+            household_individual_rules=(rule_13,),
+        )
+        result = engine.match(query)
+        assert result.outcome == MatchOutcome.MATCH
+        assert result.matched_rule_id == "13"
+        assert result.matched_patients == [the_person]
+
+    def test_no_household_match_declines(self) -> None:
+        """Zero household-tier matches (different SSN last 4) -> no match,
+        even though First Name/DOB (individual-tier) agree."""
+        rule_13 = _category2_rule_by_id("13")
+        candidate = _make_patient(ssn_last4="0000")
+        query = _make_patient(ssn_last4="6789")
+        engine = MatchingEngine(
+            backend=InMemoryBackend([candidate]),
+            rules=(),
+            household_individual_rules=(rule_13,),
+        )
+        result = engine.match(query)
+        assert result.outcome == MatchOutcome.NO_MATCH
+
+    def test_last_name_difference_does_not_block_amended_rules(self) -> None:
+        """v3.3.1: Last Name is non-blocking corroboration for rules 13-16 -
+        a household+individual match must succeed even when Last Name
+        differs (the exact blended-family case these rules exist to fix)."""
+        rule_13 = _category2_rule_by_id("13")
+        candidate = _make_patient(
+            first="john", last="jones", dob="1990-01-15", ssn_last4="6789"
+        )
+        query = _make_patient(
+            first="john", last="smith", dob="1990-01-15", ssn_last4="6789"
+        )
+        engine = MatchingEngine(
+            backend=InMemoryBackend([candidate]),
+            rules=(),
+            household_individual_rules=(rule_13,),
+        )
+        result = engine.match(query)
+        assert result.outcome == MatchOutcome.MATCH
+        assert result.matched_rule_id == "13"
+
+    def test_rule_38_subscriber_id_household(self) -> None:
+        rule_38 = _category2_rule_by_id("38")
+        candidate = _make_patient(
+            first="john",
+            last="smith",
+            dob="1990-01-15",
+            ssn_last4=None,
+            insurance_subscriber_id="W900123456",
+        )
+        query = _make_patient(
+            first="john",
+            last="smith",
+            dob="1990-01-15",
+            ssn_last4=None,
+            insurance_subscriber_id="W900123456",
+        )
+        engine = MatchingEngine(
+            backend=InMemoryBackend([candidate]),
+            rules=(),
+            household_individual_rules=(rule_38,),
+        )
+        result = engine.match(query)
+        assert result.outcome == MatchOutcome.MATCH
+        assert result.matched_rule_id == "38"
+
+    def test_household_individual_rules_can_be_disabled(self) -> None:
+        candidate = _make_patient(ssn_last4="6789")
+        query = _make_patient(ssn_last4="6789")
+        engine = MatchingEngine(
+            backend=InMemoryBackend([candidate]),
+            rules=(),  # flat rules also disabled so only rules=() is under test
+            household_individual_rules=(),
+        )
+        result = engine.match(query)
+        assert result.outcome == MatchOutcome.NO_MATCH
+
+    def test_rules_param_does_not_disable_category_2_default(self) -> None:
+        """Passing a restrictive `rules` subset must not silently also
+        restrict household_individual_rules - they're independent per
+        MatchingEngine's constructor contract."""
+        rule_08 = _rule_by_id("08")  # First Name + DOB + MBI - unrelated
+        candidate = _make_patient(ssn_last4="6789")
+        query = _make_patient(ssn_last4="6789")
+        engine = MatchingEngine(
+            backend=InMemoryBackend([candidate]),
+            rules=(rule_08,),
+        )
+        result = engine.match(query)
+        # rule_08 can't match (no MBI on either patient), but the default
+        # CATEGORY_2_RULES should still resolve rule 13 (SSN+Phone
+        # household, First Name/DOB individual - both share defaults).
+        assert result.outcome == MatchOutcome.MATCH
+        assert result.matched_rule_id == "13"
+
+
+class TestDobFuzzyDispatch:
+    """Rule 28: Last Name* + DOB* (+/-1 day) + Member ID."""
+
+    def _make_member_id_patient(
+        self, *, first: str, last: str, dob: str, member_id: str
+    ) -> Dict[str, Any]:
+        return {
+            "resourceType": "Patient",
+            "name": [{"family": last, "given": [first]}],
+            "birthDate": dob,
+            "telecom": [],
+            "address": [],
+            "identifier": [
+                {
+                    "system": "https://payer.example/member-id",
+                    "type": {"coding": [{"code": "MB"}]},
+                    "value": member_id,
+                }
+            ],
+        }
+
+    def test_dob_within_one_day_and_last_name_fuzzy_both_match_simultaneously(
+        self,
+    ) -> None:
+        """DOB fuzzy-eligibility must not consume max_fuzzy_fields - both
+        Last Name (Damerau-Levenshtein) and DOB (+/-1 day) going fuzzy at
+        once must not trigger 'fuzzy_exceeded' for either."""
+        rule_28 = _rule_by_id("28")
+        candidate = self._make_member_id_patient(
+            first="john", last="smyth", dob="1990-01-16", member_id="M1"
+        )
+        query = self._make_member_id_patient(
+            first="john", last="smith", dob="1990-01-15", member_id="M1"
+        )
+        engine = MatchingEngine(
+            backend=InMemoryBackend([candidate]),
+            rules=(rule_28,),
+            household_individual_rules=(),
+        )
+        result = engine.match(query)
+        assert result.outcome == MatchOutcome.MATCH
+        evaluation = next(
+            e for e in result.rule_evaluations if e.rule_id == "28" and e.matched
+        )
+        assert evaluation.field_outcomes["last_name"] == "fuzzy"
+        assert evaluation.field_outcomes["dob"] == "fuzzy"
+
+    def test_dob_two_days_off_does_not_match(self) -> None:
+        rule_28 = _rule_by_id("28")
+        candidate = self._make_member_id_patient(
+            first="john", last="smith", dob="1990-01-17", member_id="M1"
+        )
+        query = self._make_member_id_patient(
+            first="john", last="smith", dob="1990-01-15", member_id="M1"
+        )
+        engine = MatchingEngine(
+            backend=InMemoryBackend([candidate]),
+            rules=(rule_28,),
+            household_individual_rules=(),
+        )
+        result = engine.match(query)
+        assert result.outcome == MatchOutcome.NO_MATCH
