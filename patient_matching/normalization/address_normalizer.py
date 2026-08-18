@@ -61,7 +61,7 @@ class AddressNormalizer:
 
         Returns None if the address is a placeholder.
         """
-        lines: List[str] = addr.get("line", [])
+        lines: List[str] = addr.get("line") or []
         city = addr.get("city", "")
         state = addr.get("state", "")
         postal_code = addr.get("postalCode", "")
