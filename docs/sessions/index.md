@@ -54,7 +54,7 @@ satisfied; session 6 itself moved to `in_review/` below on 2026-08-18.
 
 | # | Session | Thread | PR | One-line summary |
 |---|---------|--------|----|--------------------|
-| 6 | [session_6](in_review/session_6.md) | Line B: CMS v3.3 migration | Table 2 v3.3.0 base + v3.3.1/v3.3.3/v3.3.4/v3.3.6 addenda: 3 new fields, DOB +/-1 day fuzzy, Household/Individual two-step architecture (rules 13-16 amended, 34/35/37/38 new), 30 flat + 8 two-step = 38 rules total. Rules 39/40 and v3.3.6 institutional-address integration explicitly deferred. |
+| 6 | [session_6](in_review/session_6.md) | Line B: CMS v3.3 migration | [#39](https://github.com/icanbwell/patient-matching/pull/39) (open) | Table 2 v3.3.0 base + v3.3.1/v3.3.3/v3.3.4/v3.3.6 addenda: 3 new fields, DOB +/-1 day fuzzy, Household/Individual two-step architecture (rules 13-16 amended, 34/35/37/38 new), 30 flat + 8 two-step = 38 rules total. Rules 39/40 and v3.3.6 institutional-address integration explicitly deferred. |
 
 ## Completed (most recent 3)
 

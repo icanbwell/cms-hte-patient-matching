@@ -1,7 +1,8 @@
 # Session 6 — Expand Table 2 to CMS v3.3 (base spec + addenda v3.3.1/v3.3.3/v3.3.4/v3.3.6)
 
-**Status:** in_review (PR opened 2026-08-18) — Tasks 1-5 complete, Rules 39/40 and v3.3.6
-institutional-address integration remain explicitly out of scope per this doc
+**Status:** in_review ([PR #39](https://github.com/icanbwell/patient-matching/pull/39), opened
+2026-08-18) — Tasks 1-5 complete, Rules 39/40 and v3.3.6 institutional-address integration
+remain explicitly out of scope per this doc
 **Thread:** Line B: CMS v3.3 migration
 **Estimated size:** L — larger than originally scoped. Three new canonical fields, a new DOB
 fuzzy mode, a new two-tier Household/Individual evaluation architecture, 8 rules reclassified
