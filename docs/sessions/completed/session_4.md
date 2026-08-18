@@ -1,6 +1,7 @@
 # Session 4 — Real-World FHIR Data Source for `rule_eval.py`, via Reproducible Queries
 
-**Status:** pending
+**Status:** completed (PR #22 merged 2026-08-14; live Databricks run completed 2026-08-18 after
+a real bug it surfaced was fixed in PR #36 — see 2026-08-18 Execution notes)
 **Thread:** Evaluation & Statistical Rigor Framework
 **Estimated size:** M — mostly a new Databricks notebook following an existing pattern, plus
 wiring its output into session 3's `LabeledPair` shape.
@@ -173,11 +174,12 @@ class TestSqlSafetyHelpers:
 - [x] `notebooks/fhir_match_data_source.py` exists, uses widget-based configuration (no
       hardcoded table names), and reuses the validated-identifier pattern for every
       interpolated value.
-- [ ] Running the notebook (in Databricks, with real access) produces `LabeledPair`s
+- [x] Running the notebook (in Databricks, with real access) produces `LabeledPair`s
       shaped identically to session 3's, each tagged `strata={"source": "current_algorithm_link"}`.
-      **Not yet run** — this executing agent has no Databricks access; the code path is
-      implemented and unit-tested at the transform level (see *Execution notes*), but the
-      live end-to-end run, and the `_uuid`-join-key empirical check it prints, is outstanding.
+      **Run 2026-08-18 (Zack, prod Databricks)** — see *Execution notes* below for the full
+      output and interpretation. The `_uuid`-join-key empirical check passed: 5000/5000 requested
+      rows joined (100%), confirming `patient._uuid = person_patient.patient_uuid` is the correct
+      join key for this workspace.
 - [x] Collision-rate output is printed per field, with an explicit note that it is descriptive
       (Tier 2), not a precision/recall claim. (Implemented and compared against session 5's
       Table 3 `FIELD_U_PROBS`; not yet exercised against live data — see above.)
@@ -285,3 +287,81 @@ class TestSqlSafetyHelpers:
   table-name decision above.
 - `uv run pytest notebooks/ .` and `uv run ruff check` on all touched files are green (22
   notebook tests, up from 15; 417 passed overall in this environment).
+
+**2026-08-18 — Live run in prod Databricks (Zack), the outstanding empirical check from
+2026-08-06 closed out:**
+
+- **A real bug surfaced and was fixed first.** The first run attempt crashed ~30 minutes in
+  (after the join query returned) with `TypeError: 'NoneType' object is not iterable`, inside
+  `NameNormalizer._normalize_human_name`. Root cause: `dict.get(key, default)` only substitutes
+  `default` when `key` is *absent* from the dict — real FHIR data from
+  `bronze.fhir_lake.patient_4_0_0` has fields (e.g. `name.suffix`) present but explicitly `null`,
+  which `.get()` passes through as `None`, crashing downstream iteration. ONC's synthetic data
+  (session 3) never exercises this shape, so it was never caught until this live run. Fixed
+  across `name_normalizer.py`, `field_extractor.py`, `address_normalizer.py`, and
+  `normalizer.py`'s identifier handling — see [PR #36](https://github.com/icanbwell/patient-matching/pull/36)
+  and `docs/LEARNINGS.md`. Confirmed via local regression tests (each new test fails on the
+  pre-fix code, passes post-fix) that this was a real bug in production data shape, not a
+  Databricks-environment artifact.
+- **Re-ran after the fix — completed successfully, no crash.** Full output:
+  ```
+  IN_DATABRICKS=True
+  FHIR_TABLE=bronze.fhir_lake.patient_4_0_0  MATCH_TABLE=silver.fhir_lite.person_patient  SAMPLE_SIZE=5000
+  Joined rows: 5000 of requested sample_size=5000
+  Built 2000 LabeledPairs (0 true-match, 2000 sampled non-match)
+  Agreement with current algorithm's existing links: 100.0% (descriptive statistic — NOT precision/recall)
+
+  field                   observed   Table 3 u (exact)
+  first_name              0.005929            0.020000
+  last_name               0.000288            0.005000
+  dob                     0.000141            0.000100
+  street_line             0.000276            0.000030
+  phone                   0.000155            0.000001
+  email                   0.000168            0.000001
+  ssn_last4               0.000000            0.000100
+  itin_last4              0.000000            0.000100
+  mbi                     0.000000            0.000001
+  legal_id                0.000000            0.000001
+  namespace_id            0.000209            0.000000
+  ```
+- **How to read this, for Sean/Imran:**
+  - **Join-key check: passed.** 5000/5000 rows joined (100%) — this is the number the
+    2026-08-06 Execution notes flagged as "not independently confirmed against real row data."
+    A near-zero ratio would have meant `patient._uuid = person_patient.patient_uuid` is the
+    wrong join key for this workspace; 100% confirms it's right.
+  - **0 true-match pairs is expected, not a bug.** `build_person_patient_pairs` only forms a
+    true-match pair when two *sampled* rows share the same `person_uuid` (i.e., the same person
+    has ≥2 linked Patient records in the sample). With a random 5,000-row sample drawn against a
+    much larger table, the odds of pulling two rows for the same person are low — this is a
+    property of random sampling at this size, not evidence anything is broken.
+  - **Because of that, "100% agreement" is not strong evidence.** Agreement-rate here measures
+    whether this engine's `evaluate_pair()` agrees with the current production algorithm's
+    existing links. With 0 true-match pairs in this run, the number only reflects agreement on
+    *non*-matches (2,000 sampled cross-pairs) — both engines correctly said "no" to obviously
+    different people. That's a sanity check, not a validation of matching *positive* cases. A
+    larger sample (or a sample deliberately biased toward `person_uuid`s with multiple linked
+    `patient_uuid`s, the way session 8's design already proposes for its own batch) would be
+    needed to get a true-match-pair count worth reading.
+  - **The collision-rate table is the actual Tier-2 deliverable** (real-population validation of
+    Table 3's assumed collision probabilities, from session 5). Reading "observed" vs. "Table 3
+    u (exact)": Table 3's values are meant to be *conservative upper bounds* — CMS assumed
+    "these fields collide with roughly this frequency in the general population," and the
+    engine's approval math is safe as long as reality is *at or below* that assumption.
+    - `first_name`, `last_name`, `ssn_last4`, `itin_last4`, `mbi`, `legal_id` all observed
+      **lower** collision than Table 3 assumes — consistent with the spec's own numbers being
+      conservative, no concern.
+    - `dob`, `street_line`, `phone`, `email`, `namespace_id` observed **higher** collision than
+      Table 3 assumes — by roughly 1.4x (`dob`), 9x (`street_line`), 155x (`phone`), 168x
+      (`email`), and effectively infinite (`namespace_id`, which Table 3 treats as ≈0 but this
+      sample observed at 0.02%). **This is exactly the kind of finding session 4's Outcome
+      purpose says needs a human read before relying on it for a rule decision** — it does not
+      by itself mean any Table 2 rule is unsafe (rules combine multiple fields multiplicatively,
+      and no single field's collision rate alone determines a rule's total P(collision)), but
+      Sean/Imran should look at whether `phone`/`email`/`street_line`'s real collision rates
+      change the math for any rule that leans on them alone or in a two-field combination.
+    - **Caveat on all of the above**: `n=5000` from a single random sample is a small, unbiased
+      but not-yet-repeated read. Treat this as a first data point, not a final verdict — re-run
+      with a larger or differently-sampled batch before treating any of these deltas as settled.
+- **Sean/Imran's outstanding sign-off requirement (2026-08-11 EA review, Rule 13) is still
+  open** — this run gives them real numbers to look at, but does not substitute for their
+  explicit review of the collision-rate/agreement-rate methodology itself.
