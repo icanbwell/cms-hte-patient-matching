@@ -72,6 +72,27 @@ _(none yet — see `rejected/README.md`)_
 
 ## Candidate future sessions (not yet authored)
 
+- **Parent/child delegated access** ([full draft: `pending/session_7.md`](pending/session_7.md)
+  — written up despite the "not yet authored" heading here because Jira `SD-1416` and a Slack
+  design discussion with Imran/Alvin already exist and are worth capturing, but it is **not**
+  in `Up Next` above and **confirmed not startable in this repo, period**). Prompted by
+  Citizen's parent-account-to-child-records connection failures. As of 2026-08-07, Imran
+  confirmed directly: **"Parent-guardian relationships are not patient matching. They are
+  delegated access."** — a category rejection, not a qualification. There is no
+  matching-side component to this at all (an earlier 2026-08-04 hypothesis that Imran's own
+  proposed Rule 39 might partly answer this is now superseded — see `session_7.md`'s
+  2026-08-07 update). The entire problem is authorizing a parent's account to access an
+  already-matched child's record, and per Imran that's **jurisdiction-dependent** ("this is
+  legal question and different in each state," "identity is different than control") — no
+  existing internal or external framework answers it (the Cambia doc Imran shared covers
+  identity-proofing only, not authorization, and is itself still unresolved, targeting a
+  re-draft 2026-08-14). Confirmed out of scope for `patient-matching`,
+  `helix.personmatching`, and `helix.personmatching-service` alike — see `session_7.md` for
+  the full `NEEDS HUMAN DECISION` list, now centered on Legal/Compliance ownership and which
+  service should hold the eventual access-control capability. Note per Matt Sables (Slack,
+  2026-08-04): the 52.3%-failure number that escalated this was later found to be a
+  client-side reporting misread, not an active production issue — the capability gap is still
+  real, but the urgency has softened since the 2026-07-17 discussion.
 - **P(collision) evaluator: per-value (name-frequency-conditioned) collision probability.**
   `NEEDS HUMAN DECISION — Sean/Imran`: a genuine methodology deviation from the published CMS
   approach (which uses static per-field constants), needs Imran's sign-off as domain lead
