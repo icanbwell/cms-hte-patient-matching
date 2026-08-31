@@ -23,18 +23,26 @@ run whatever **Suggested Next Session** names below.
 > Unblocks as soon as either Drive access is authorized or someone pastes the relevant
 > Table 2/DOB-tolerance sections directly into the session.
 >
-> **2026-08-14 addendum:** session_9 (`completed/session_9.md`, PR #27 merged 2026-08-14)
-> resolved session_8's 2026-08-13 open question about the test-data simulation methodology
-> (mutation-based fuzzy positives + mined real-record hard negatives). Session_8's session_9
-> dependency is now satisfied; it still needs session 4 in `completed/` (PR #22 open) and the
+> **2026-08-14 addendum:** session_9 (PR #27 merged 2026-08-14) resolved session_8's
+> 2026-08-13 open question about the test-data simulation methodology (mutation-based fuzzy
+> positives + mined real-record hard negatives). Session_8's session_9 dependency is now
+> satisfied; it still needs session 4 in `completed/` (PR #22 open) and the
 > `NEEDS HUMAN DECISION` on replace-vs-alongside — see session_8.md's 2026-08-14 update.
+>
+> **2026-08-18 addendum:** the test-set generation code (`evaluation/`, its demo notebooks,
+> and session docs 8/9/10/11) moved to
+> [icanbwell/cms-hte-patient-matching-test-set](https://github.com/icanbwell/cms-hte-patient-matching-test-set)
+> ([PR #1](https://github.com/icanbwell/cms-hte-patient-matching-test-set/pull/1)). Session 8's
+> doc now lives there; its dependency on session_9 (also moved) is unaffected, but session 6
+> in this repo is a hard dependency of the moved session 11 — check the new repo for its
+> current status before starting session 6.
 
 ## Up Next (execution order)
 
 | # | Session | Thread | Depends on | Size | Status | One-line summary |
 |---|---------|--------|-----------|------|--------|-------------------|
 | 6 | [session_6](pending/session_6.md) | Line B: CMS v3.3 migration | 5 | L | pending — blocked on fetching the live CMS v3.3 spec content | Expand Table 2 to CMS v3.3 base + v3.3.1/v3.3.3/v3.3.4/v3.3.6 addenda |
-| 8 | [session_8](pending/session_8.md) | Evaluation & Statistical Rigor | 3, 4, 9 (hard); 6 (soft, quality-of-result only) | L | pending — session 9 dependency now satisfied (`completed/`, PR #27 merged 2026-08-14); still blocked on session 4 (`in_review/`, PR #22 open) and 1 `NEEDS HUMAN DECISION` (replace-vs-alongside, see session_8.md) | Tier 3: legacy comparison harness, precision/recall-as-agreement, disagreement buckets, per-pair explanations |
+| 8 | [session_8](https://github.com/icanbwell/cms-hte-patient-matching-test-set/blob/main/docs/sessions/pending/session_8.md) (moved) | Evaluation & Statistical Rigor | 3, 4, 9 (hard); 6 (soft, quality-of-result only) | L | pending — session 9 dependency now satisfied (moved, PR #27 merged 2026-08-14); still blocked on session 4 (`in_review/`, PR #22 open) and 1 `NEEDS HUMAN DECISION` (replace-vs-alongside, see session_8.md) | Tier 3: legacy comparison harness, precision/recall-as-agreement, disagreement buckets, per-pair explanations |
 
 Session 3 merged into `main` (PR [#11](https://github.com/icanbwell/patient-matching/pull/11),
 2026-07-30) and session 5 merged into `main` (PR [#16](https://github.com/icanbwell/patient-matching/pull/16),
@@ -51,7 +59,7 @@ just needs the live spec content, not more code dependencies.
 
 | # | Session | Thread | One-line summary |
 |---|---------|--------|-------------------|
-| 9 | [session_9](completed/session_9.md) | Evaluation & Statistical Rigor | Synthetic CMS test-dataset generation: single-edit-distance fuzzy mutations (true matches) + mined real-record hard negatives (true non-matches), resolving session_8's test-data simulation methodology question. Merged via [#27](https://github.com/icanbwell/patient-matching/pull/27). |
+| 9 | [session_9](https://github.com/icanbwell/cms-hte-patient-matching-test-set/blob/main/docs/sessions/completed/session_9.md) (moved) | Evaluation & Statistical Rigor | Synthetic CMS test-dataset generation: single-edit-distance fuzzy mutations (true matches) + mined real-record hard negatives (true non-matches), resolving session_8's test-data simulation methodology question. Merged via [#27](https://github.com/icanbwell/patient-matching/pull/27). |
 | 5 | [session_5](completed/session_5.md) | Line B: CMS v3.3 migration | Table 3 u-probabilities + P(collision) evaluator; replaces `table2_rules.py`'s 26 hand-typed constants with computed values. Merged via [#16](https://github.com/icanbwell/patient-matching/pull/16). |
 | 2 | [session_2](completed/session_2.md) | Line B: CMS v3.3 migration | Split `AMBIGUOUS` into `ESCALATE` (exactly 2 candidates) vs. `AMBIGUOUS` (3+, stricter interim threshold). Merged via [#14](https://github.com/icanbwell/patient-matching/pull/14). |
 

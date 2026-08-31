@@ -16,9 +16,11 @@ description: >-
 
 Adding rules on intuition is how you overfit and quietly raise false positives. This skill runs
 any candidate change through the same statistical harness so the decision is evidence-based and
-comparable across proposals. The harness lives at **`evaluation/rule_eval.py`**; the full spec,
-data protocol, and decision rules are in **`evaluation/DESIGN.md`**; a runnable example is
-**`notebooks/rule_eval_demo.ipynb`**.
+comparable across proposals. The harness now lives in the sibling
+**[cms-hte-patient-matching-test-set](https://github.com/icanbwell/cms-hte-patient-matching-test-set)**
+repo (assumed cloned alongside this one, e.g. `../cms-hte-patient-matching-test-set`):
+`evaluation/rule_eval.py`; the full spec, data protocol, and decision rules are in
+`evaluation/DESIGN.md`; a runnable example is `notebooks/rule_eval_demo.ipynb`.
 
 ## What counts as a "rule"
 
@@ -36,9 +38,10 @@ just `lambda f: f["score"] >= 0.94`.
    The **holdout (70%) is protected** — never tune on it. Stratify on the gold label (preserves
    base rate) and on demographic strata; **always include a `dob_present:"no"` stratum** so a
    DOB-reliant rule's degradation on CMS-sourced (missing-DOB) records is visible.
-3. **Compare on the holdout only:**
+3. **Compare on the holdout only** (run from the `cms-hte-patient-matching-test-set` checkout,
+   or point `sys.path` at it):
    ```python
-   import sys; sys.path.insert(0, "evaluation")   # or install: pip install numpy scipy pandas matplotlib
+   import sys; sys.path.insert(0, "../cms-hte-patient-matching-test-set/evaluation")
    import rule_eval as re
    report = re.compare(baseline, candidate, holdout,
                        candidate_name="my-rule",
