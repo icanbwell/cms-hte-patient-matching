@@ -60,9 +60,9 @@ satisfied; session 6 itself moved to `in_review/` below on 2026-08-18.
 
 | # | Session | Thread | One-line summary |
 |---|---------|--------|-------------------|
+| 4 | [session_4](completed/session_4.md) | Evaluation & Statistical Rigor | Real-world FHIR data source (`bronze.fhir_lake.patient_4_0_0` joined to `silver.fhir_lite.person_patient`) for `rule_eval.py`. Code merged via [#22](https://github.com/icanbwell/patient-matching/pull/22); live Databricks run completed 2026-08-18 (see session doc for full output/interpretation), after [#36](https://github.com/icanbwell/patient-matching/pull/36) fixed a real null-field crash the run surfaced. |
 | 9 | [session_9](https://github.com/icanbwell/cms-hte-patient-matching-test-set/blob/main/docs/sessions/completed/session_9.md) (moved) | Evaluation & Statistical Rigor | Synthetic CMS test-dataset generation: single-edit-distance fuzzy mutations (true matches) + mined real-record hard negatives (true non-matches), resolving session_8's test-data simulation methodology question. Merged via [#27](https://github.com/icanbwell/patient-matching/pull/27). |
 | 5 | [session_5](completed/session_5.md) | Line B: CMS v3.3 migration | Table 3 u-probabilities + P(collision) evaluator; replaces `table2_rules.py`'s 26 hand-typed constants with computed values. Merged via [#16](https://github.com/icanbwell/patient-matching/pull/16). |
-| 2 | [session_2](completed/session_2.md) | Line B: CMS v3.3 migration | Split `AMBIGUOUS` into `ESCALATE` (exactly 2 candidates) vs. `AMBIGUOUS` (3+, stricter interim threshold). Merged via [#14](https://github.com/icanbwell/patient-matching/pull/14). |
 
 ### Keeping this index current (do this when closing a session)
 1. If the session's PR merged immediately: move the row from *Up Next* to the **top** of
@@ -103,12 +103,12 @@ session_1 (audit fields)         --+
 session_2 (tiered uniqueness)    --+-- independent, no upstream
 session_5 (P(collision) eval)    --+
                                     |
-session_3 (ONC baseline) ----------+--> session_4 (real-world data source, in_review as of 2026-08-06)
+session_3 (ONC baseline) ----------+--> session_4 (completed 2026-08-18; real-world data source)
                                     |
 session_5 --------------------------> session_6 (Table 2 v3.3 expansion, in_review as of 2026-08-18)
 
 session_3 --------------------------> session_8 (legacy comparison harness, Tier 3)
-session_4 --------------------------> session_8 (hard: reuses its real-batch query)
+session_4 (completed) ---------------> session_8 (hard, satisfied: reuses its real-batch query)
 session_9 (completed) ---------------> session_8 (hard, satisfied: supplied the test-data
                                        simulation methodology - fuzzy mutations + mined hard
                                        negatives)
