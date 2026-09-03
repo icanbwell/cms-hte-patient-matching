@@ -147,6 +147,14 @@ _PLACEHOLDER_EMAIL_PATTERNS: List[Pattern[str]] = [
     re.compile(r"@(example\.com|test\.com|invalid|nowhere)$", re.IGNORECASE),
 ]
 
+# v3.3.4: all-zero/all-nine strings, and common payer default/test-enrollment
+# values ("PENDING", "TBD", "NONE") for Subscriber/Member IDs.
+_PLACEHOLDER_SUBSCRIBER_ID_PATTERNS: List[Pattern[str]] = [
+    re.compile(r"^0+$"),
+    re.compile(r"^9+$"),
+    re.compile(r"^(pending|tbd|none)$", re.IGNORECASE),
+]
+
 
 @dataclass(frozen=True)
 class PlaceholderDetector:
@@ -251,6 +259,18 @@ class PlaceholderDetector:
 
         for pattern in _PLACEHOLDER_SSN_PATTERNS:
             if pattern.match(ssn):
+                return True
+
+        return False
+
+    def is_placeholder_subscriber_id(self, value: str) -> bool:
+        """Check if a Subscriber/Member ID is a placeholder value (v3.3.4)."""
+        if not value:
+            return True
+
+        stripped = value.strip()
+        for pattern in _PLACEHOLDER_SUBSCRIBER_ID_PATTERNS:
+            if pattern.match(stripped):
                 return True
 
         return False

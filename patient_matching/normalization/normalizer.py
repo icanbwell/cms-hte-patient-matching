@@ -124,7 +124,7 @@ class PatientNormalizer:
     def _normalize_identifiers(
         self, identifiers: list[Dict[str, Any]]
     ) -> list[Dict[str, Any]]:
-        """Filter out placeholder identifiers (e.g. fake SSNs)."""
+        """Filter out placeholder identifiers (e.g. fake SSNs, fake Subscriber/Member IDs)."""
         result = []
         for ident in identifiers:
             value = ident.get("value", "")
@@ -133,6 +133,15 @@ class PatientNormalizer:
             # Check SSN placeholders
             if system == "http://hl7.org/fhir/sid/us-ssn":
                 if self._placeholders.is_placeholder_ssn(value):
+                    continue
+
+            # Check Subscriber/Member ID placeholders (v3.3.4). HL7 v2-0203
+            # Identifier Type codes "MB" (Member Number) / "SN" (Subscriber
+            # Number) - see field_extractor.py's matching constants.
+            type_codings = ident.get("type", {}).get("coding", [])
+            codes = {c.get("code", "") for c in type_codings}
+            if codes & {"MB", "SN"}:
+                if self._placeholders.is_placeholder_subscriber_id(value):
                     continue
 
             # Check general placeholders

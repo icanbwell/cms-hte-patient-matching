@@ -10,12 +10,14 @@ Fuzzy matching constraints:
 
 from __future__ import annotations
 
+from datetime import date
 from typing import Set
 
 from rapidfuzz.distance import DamerauLevenshtein
 
 MIN_FUZZY_LENGTH = 5
 MAX_DAMERAU_LEVENSHTEIN_DISTANCE = 1
+DOB_FUZZY_TOLERANCE_DAYS = 1
 
 
 class FieldComparator:
@@ -52,6 +54,26 @@ class FieldComparator:
                 if dist <= MAX_DAMERAU_LEVENSHTEIN_DISTANCE:
                     return True
 
+        return False
+
+    @staticmethod
+    def dob_fuzzy_match(query_values: Set[str], candidate_values: Set[str]) -> bool:
+        """CMS v3.3 DOB tolerance: +/-1 day, exact calendar-date comparison.
+
+        Not a string edit-distance comparison - DOB is a date, not a name or
+        street string, so Damerau-Levenshtein doesn't apply. Malformed/partial
+        dates never fuzzy-match (fail closed, per the placeholder-date
+        handling elsewhere in this codebase).
+        """
+        try:
+            q_dates = {date.fromisoformat(v) for v in query_values}
+            c_dates = {date.fromisoformat(v) for v in candidate_values}
+        except ValueError:
+            return False
+        for q in q_dates:
+            for c in c_dates:
+                if abs((q - c).days) <= DOB_FUZZY_TOLERANCE_DAYS:
+                    return True
         return False
 
     @staticmethod

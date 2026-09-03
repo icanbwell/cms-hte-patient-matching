@@ -91,3 +91,31 @@ class TestConstants:
 
     def test_max_distance(self) -> None:
         assert MAX_DAMERAU_LEVENSHTEIN_DISTANCE == 1
+
+
+class TestDobFuzzyMatch:
+    """CMS v3.3 DOB tolerance: +/-1 day, exact calendar-date comparison."""
+
+    def test_exact_same_date_matches(self, comparator: FieldComparator) -> None:
+        assert comparator.dob_fuzzy_match({"1990-01-15"}, {"1990-01-15"}) is True
+
+    def test_one_day_before_matches(self, comparator: FieldComparator) -> None:
+        assert comparator.dob_fuzzy_match({"1990-01-15"}, {"1990-01-14"}) is True
+
+    def test_one_day_after_matches(self, comparator: FieldComparator) -> None:
+        assert comparator.dob_fuzzy_match({"1990-01-15"}, {"1990-01-16"}) is True
+
+    def test_two_days_does_not_match(self, comparator: FieldComparator) -> None:
+        assert comparator.dob_fuzzy_match({"1990-01-15"}, {"1990-01-17"}) is False
+
+    def test_month_boundary_one_day_matches(self, comparator: FieldComparator) -> None:
+        assert comparator.dob_fuzzy_match({"1990-02-01"}, {"1990-01-31"}) is True
+
+    def test_year_boundary_one_day_matches(self, comparator: FieldComparator) -> None:
+        assert comparator.dob_fuzzy_match({"1990-01-01"}, {"1989-12-31"}) is True
+
+    def test_malformed_date_never_matches(self, comparator: FieldComparator) -> None:
+        assert comparator.dob_fuzzy_match({"not-a-date"}, {"1990-01-15"}) is False
+
+    def test_partial_date_never_matches(self, comparator: FieldComparator) -> None:
+        assert comparator.dob_fuzzy_match({"1990-01"}, {"1990-01-15"}) is False

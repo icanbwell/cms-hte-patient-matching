@@ -67,6 +67,10 @@ ITIN_LAST4 = "itin_last4"
 MBI = "mbi"
 LEGAL_ID = "legal_id"
 NAMESPACE_ID = "namespace_id"
+# CMS v3.3 additions (session 6)
+ZIP_CODE = "zip_code"
+INSURANCE_MEMBER_ID = "insurance_member_id"
+INSURANCE_SUBSCRIBER_ID = "insurance_subscriber_id"
 
 # Helper constructors
 _E = FieldRole.EXACT
@@ -77,6 +81,12 @@ def _rf(name: str, role: FieldRole = _E) -> RuleField:
     return RuleField(name=name, role=role)
 
 
+# Rules 13, 14, 15, 16 (v3.2.2 flat combinations using Last Name + Phone/Email +
+# SSN/ITIN Last 4) were amended by CMS v3.3.1 into the Household/Individual
+# two-step architecture, since Phone/Email/SSN-Last-4 are frequently shared by
+# an entire household and can only establish "same household," not "same
+# person," on their own. Their Category 2 replacements live in
+# household_rules.py's CATEGORY_2_RULES, alongside new rules 34/35/37/38.
 APPROVED_RULES: tuple[MatchingRule, ...] = (
     MatchingRule(
         rule_id="01",
@@ -270,60 +280,6 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
         p_collision_exact=p_collision((_rf(FIRST_NAME), _rf(DOB), _rf(EMAIL))),
     ),
     MatchingRule(
-        rule_id="13",
-        description="Last Name + Phone Number + SSN Last 4",
-        fields=(
-            _rf(LAST_NAME),
-            _rf(PHONE),
-            _rf(SSN_LAST4),
-        ),
-        max_fuzzy_fields=0,
-        p_collision_exact=p_collision((_rf(LAST_NAME), _rf(PHONE), _rf(SSN_LAST4))),
-    ),
-    MatchingRule(
-        rule_id="14",
-        description="Last Name + Phone Number + ITIN Last 4",
-        fields=(
-            _rf(LAST_NAME),
-            _rf(PHONE),
-            _rf(ITIN_LAST4),
-        ),
-        max_fuzzy_fields=0,
-        p_collision_exact=p_collision((_rf(LAST_NAME), _rf(PHONE), _rf(ITIN_LAST4))),
-    ),
-    MatchingRule(
-        rule_id="15",
-        description="Last Name* + Email Address + SSN Last 4",
-        fields=(
-            _rf(LAST_NAME, _F),
-            _rf(EMAIL),
-            _rf(SSN_LAST4),
-        ),
-        max_fuzzy_fields=1,
-        p_collision_exact=p_collision((_rf(LAST_NAME, _F), _rf(EMAIL), _rf(SSN_LAST4))),
-        p_collision_fuzzy=p_collision(
-            (_rf(LAST_NAME, _F), _rf(EMAIL), _rf(SSN_LAST4)),
-            fuzzy_fields=frozenset({LAST_NAME}),
-        ),
-    ),
-    MatchingRule(
-        rule_id="16",
-        description="Last Name* + Email Address + ITIN Last 4",
-        fields=(
-            _rf(LAST_NAME, _F),
-            _rf(EMAIL),
-            _rf(ITIN_LAST4),
-        ),
-        max_fuzzy_fields=1,
-        p_collision_exact=p_collision(
-            (_rf(LAST_NAME, _F), _rf(EMAIL), _rf(ITIN_LAST4))
-        ),
-        p_collision_fuzzy=p_collision(
-            (_rf(LAST_NAME, _F), _rf(EMAIL), _rf(ITIN_LAST4)),
-            fuzzy_fields=frozenset({LAST_NAME}),
-        ),
-    ),
-    MatchingRule(
         rule_id="17",
         description="First Name + Phone Number + SSN Last 4",
         fields=(
@@ -426,5 +382,156 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
         # namespace_id entry for why a small nonzero float is used instead (avoids
         # masking other fields' probabilities in a product elsewhere).
         p_collision_exact=p_collision((_rf(NAMESPACE_ID),)),
+    ),
+    # --- CMS v3.3.0 base spec additions (session 6) ---
+    MatchingRule(
+        rule_id="27",
+        description="First Name + DOB + Member ID (payer namespace)",
+        fields=(
+            _rf(FIRST_NAME),
+            _rf(DOB),
+            _rf(INSURANCE_MEMBER_ID),
+        ),
+        max_fuzzy_fields=0,
+        p_collision_exact=p_collision(
+            (_rf(FIRST_NAME), _rf(DOB), _rf(INSURANCE_MEMBER_ID))
+        ),
+    ),
+    MatchingRule(
+        rule_id="28",
+        description="Last Name* + DOB* (+/-1 day) + Member ID (payer namespace)",
+        fields=(
+            _rf(LAST_NAME, _F),
+            _rf(DOB, _F),
+            _rf(INSURANCE_MEMBER_ID),
+        ),
+        max_fuzzy_fields=1,
+        p_collision_exact=p_collision(
+            (_rf(LAST_NAME, _F), _rf(DOB, _F), _rf(INSURANCE_MEMBER_ID))
+        ),
+        # DOB's +/-1 day tolerance (session 6, field_comparator.dob_fuzzy_match) has
+        # no separate u-probability in Table 3 (FIELD_U_PROBS["dob"] carries no
+        # fuzzy variant) - CMS's own figures below only reconcile if the fuzzy
+        # figure comes from Last Name going fuzzy (u 0.01, exactly 2x the exact
+        # 0.005), not from DOB. See matching_engine.py's DOB-fuzzy dispatch note
+        # for why DOB fuzzy-eligibility doesn't consume max_fuzzy_fields.
+        p_collision_fuzzy=p_collision(
+            (_rf(LAST_NAME, _F), _rf(DOB, _F), _rf(INSURANCE_MEMBER_ID)),
+            fuzzy_fields=frozenset({LAST_NAME}),
+        ),
+    ),
+    MatchingRule(
+        rule_id="29",
+        description="Phone Number + Member ID (payer namespace)",
+        fields=(
+            _rf(PHONE),
+            _rf(INSURANCE_MEMBER_ID),
+        ),
+        max_fuzzy_fields=0,
+        p_collision_exact=p_collision((_rf(PHONE), _rf(INSURANCE_MEMBER_ID))),
+    ),
+    MatchingRule(
+        rule_id="30",
+        description="Email Address + Member ID (payer namespace)",
+        fields=(
+            _rf(EMAIL),
+            _rf(INSURANCE_MEMBER_ID),
+        ),
+        max_fuzzy_fields=0,
+        p_collision_exact=p_collision((_rf(EMAIL), _rf(INSURANCE_MEMBER_ID))),
+    ),
+    MatchingRule(
+        rule_id="31",
+        description="First Name* + Last Name + DOB + Subscriber ID (payer namespace)",
+        fields=(
+            _rf(FIRST_NAME, _F),
+            _rf(LAST_NAME),
+            _rf(DOB),
+            _rf(INSURANCE_SUBSCRIBER_ID),
+        ),
+        max_fuzzy_fields=1,
+        p_collision_exact=p_collision(
+            (
+                _rf(FIRST_NAME, _F),
+                _rf(LAST_NAME),
+                _rf(DOB),
+                _rf(INSURANCE_SUBSCRIBER_ID),
+            )
+        ),
+        # 1.5e-12, not 2e-12 - first_name fuzzy u is 0.03 (1.5x exact), same
+        # correction already applied to rules 04/06 by session 5.
+        p_collision_fuzzy=p_collision(
+            (
+                _rf(FIRST_NAME, _F),
+                _rf(LAST_NAME),
+                _rf(DOB),
+                _rf(INSURANCE_SUBSCRIBER_ID),
+            ),
+            fuzzy_fields=frozenset({FIRST_NAME}),
+        ),
+    ),
+    MatchingRule(
+        rule_id="32",
+        description="First Name + Last Name* + DOB + Subscriber ID (payer namespace)",
+        fields=(
+            _rf(FIRST_NAME),
+            _rf(LAST_NAME, _F),
+            _rf(DOB),
+            _rf(INSURANCE_SUBSCRIBER_ID),
+        ),
+        max_fuzzy_fields=1,
+        p_collision_exact=p_collision(
+            (
+                _rf(FIRST_NAME),
+                _rf(LAST_NAME, _F),
+                _rf(DOB),
+                _rf(INSURANCE_SUBSCRIBER_ID),
+            )
+        ),
+        p_collision_fuzzy=p_collision(
+            (
+                _rf(FIRST_NAME),
+                _rf(LAST_NAME, _F),
+                _rf(DOB),
+                _rf(INSURANCE_SUBSCRIBER_ID),
+            ),
+            fuzzy_fields=frozenset({LAST_NAME}),
+        ),
+    ),
+    MatchingRule(
+        rule_id="33",
+        description="First Name* + Last Name* + Phone Number + ZIP Code",
+        fields=(
+            _rf(FIRST_NAME, _F),
+            _rf(LAST_NAME, _F),
+            _rf(PHONE),
+            _rf(ZIP_CODE),
+        ),
+        max_fuzzy_fields=2,
+        p_collision_exact=p_collision(
+            (_rf(FIRST_NAME, _F), _rf(LAST_NAME, _F), _rf(PHONE), _rf(ZIP_CODE))
+        ),
+        p_collision_fuzzy=p_collision(
+            (_rf(FIRST_NAME, _F), _rf(LAST_NAME, _F), _rf(PHONE), _rf(ZIP_CODE)),
+            fuzzy_fields=frozenset({FIRST_NAME, LAST_NAME}),
+        ),
+    ),
+    # --- v3.3.1 SS3.6: confirmed unaffected, retained as a flat "legacy exception"
+    # with a multiple-birth caveat (no First Name field, can't disambiguate twins
+    # sharing a household/DOB - twin handling itself is out of session 6's scope).
+    MatchingRule(
+        rule_id="36",
+        description="Last Name* + DOB + Phone Number (legacy exception; no twin disambiguation)",
+        fields=(
+            _rf(LAST_NAME, _F),
+            _rf(DOB),
+            _rf(PHONE),
+        ),
+        max_fuzzy_fields=1,
+        p_collision_exact=p_collision((_rf(LAST_NAME, _F), _rf(DOB), _rf(PHONE))),
+        p_collision_fuzzy=p_collision(
+            (_rf(LAST_NAME, _F), _rf(DOB), _rf(PHONE)),
+            fuzzy_fields=frozenset({LAST_NAME}),
+        ),
     ),
 )

@@ -30,6 +30,11 @@ class PatientFields:
         mbi: Medicare Beneficiary Identifier.
         legal_ids: Legal ID values (DL, passport) with namespace.
         namespace_ids: Namespace-bound unique identifiers.
+        zip_codes: 5-digit ZIP codes from all addresses (CMS v3.3).
+        insurance_member_ids: Payer-namespace-scoped, individual-level
+            insurance Member IDs (CMS v3.3).
+        insurance_subscriber_ids: Payer-namespace-scoped, policyholder-level
+            insurance Subscriber IDs (CMS v3.3).
     """
 
     first_names: Set[str] = field(default_factory=set)
@@ -44,6 +49,9 @@ class PatientFields:
     mbi: Set[str] = field(default_factory=set)
     legal_ids: Set[str] = field(default_factory=set)
     namespace_ids: Set[str] = field(default_factory=set)
+    zip_codes: Set[str] = field(default_factory=set)
+    insurance_member_ids: Set[str] = field(default_factory=set)
+    insurance_subscriber_ids: Set[str] = field(default_factory=set)
 
     def get_values(self, field_name: str) -> Set[str]:
         """Get the set of values for a canonical field name."""
@@ -59,6 +67,9 @@ class PatientFields:
             "mbi": self.mbi,
             "legal_id": self.legal_ids,
             "namespace_id": self.namespace_ids,
+            "zip_code": self.zip_codes,
+            "insurance_member_id": self.insurance_member_ids,
+            "insurance_subscriber_id": self.insurance_subscriber_ids,
         }
         return mapping.get(field_name, set())
 
@@ -73,6 +84,9 @@ _ITIN_SYSTEM = "urn:oid:2.16.840.1.113883.4.4"
 _MBI_SYSTEM = "http://hl7.org/fhir/sid/us-mbi"
 _DL_CODE = "DL"
 _NAMESPACE_CODES = {"RI", "MR", "AN", "PI"}
+# HL7 v2-0203 Identifier Type codes for insurance identifiers (CMS v3.3).
+_MEMBER_ID_CODE = "MB"
+_SUBSCRIBER_ID_CODE = "SN"
 
 
 class FieldExtractor:
@@ -148,11 +162,14 @@ class FieldExtractor:
 
     @staticmethod
     def _extract_addresses(patient: Dict[str, Any], fields: PatientFields) -> None:
-        """Extract street lines from all addresses."""
+        """Extract street lines and ZIP codes from all addresses."""
         for addr in patient.get("address") or []:
             for line in addr.get("line") or []:
                 if line:
                     fields.street_lines.add(line)
+            postal_code = addr.get("postalCode", "")
+            if postal_code:
+                fields.zip_codes.add(postal_code)
 
     @staticmethod
     def _extract_identifiers(patient: Dict[str, Any], fields: PatientFields) -> None:
@@ -184,6 +201,17 @@ class FieldExtractor:
                     fields.legal_ids.add(f"{assigner}|{value}")
                 else:
                     fields.legal_ids.add(value)
+            elif _MEMBER_ID_CODE in codes:
+                # Payer-namespace-scoped per CMS v3.3: system (the payer's
+                # namespace) + value. A bare value with no namespace is
+                # excluded, per "the bare subscriber base value without
+                # dependent suffix SHALL NOT be treated as a Member ID" -
+                # the same principle applies to an unscoped Member ID.
+                if system:
+                    fields.insurance_member_ids.add(f"{system}|{value}")
+            elif _SUBSCRIBER_ID_CODE in codes:
+                if system:
+                    fields.insurance_subscriber_ids.add(f"{system}|{value}")
             elif codes & _NAMESPACE_CODES:
                 # Namespace-bound identifiers: system + value
                 if system:

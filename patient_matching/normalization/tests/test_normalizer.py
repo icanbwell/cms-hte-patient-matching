@@ -159,3 +159,35 @@ class TestPatientNormalizer:
         }
         result = self.normalizer.normalize(patient)
         assert "identifier" not in result
+
+    def test_placeholder_subscriber_id_removed(self) -> None:
+        """v3.3.4: a payer default/test-enrollment Subscriber ID value is
+        stripped before it ever reaches FieldExtractor (session 6)."""
+        patient = {
+            "resourceType": "Patient",
+            "name": [{"family": "Smith", "given": ["John"]}],
+            "identifier": [
+                {
+                    "system": "https://payer.example/subscriber-id",
+                    "type": {"coding": [{"code": "SN"}]},
+                    "value": "PENDING",
+                }
+            ],
+        }
+        result = self.normalizer.normalize(patient)
+        assert "identifier" not in result
+
+    def test_real_subscriber_id_kept(self) -> None:
+        patient = {
+            "resourceType": "Patient",
+            "name": [{"family": "Smith", "given": ["John"]}],
+            "identifier": [
+                {
+                    "system": "https://payer.example/subscriber-id",
+                    "type": {"coding": [{"code": "SN"}]},
+                    "value": "W900123456",
+                }
+            ],
+        }
+        result = self.normalizer.normalize(patient)
+        assert result["identifier"][0]["value"] == "W900123456"

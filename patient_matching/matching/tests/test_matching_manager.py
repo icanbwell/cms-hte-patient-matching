@@ -54,7 +54,11 @@ class TestMatchingManager:
     def test_rule_count(self) -> None:
         backend = InMemoryBackend([])
         manager = MatchingManager(backend=backend)
-        assert manager.rule_count == 26
+        # 30 flat (Category 1) rules; the 8 household/individual (Category 2)
+        # rules amending 13-16 and adding 34/35/37/38 aren't counted here -
+        # rule_count only reflects self._rules, matching MatchingManager's
+        # own "rules" constructor param semantics (session 6).
+        assert manager.rule_count == 30
 
     def test_custom_rules(self) -> None:
         backend = InMemoryBackend([])

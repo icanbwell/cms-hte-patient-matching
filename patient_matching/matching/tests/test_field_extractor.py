@@ -216,3 +216,83 @@ class TestFieldExtractor:
         assert fields.first_names == set()
         assert fields.last_names == set()
         assert fields.dob == set()
+
+
+class TestFieldExtractorCmsV33Fields:
+    """zip_code, insurance_member_id, insurance_subscriber_id (session 6)."""
+
+    def test_extract_zip_code(self, extractor: FieldExtractor) -> None:
+        patient: Dict[str, Any] = {
+            "address": [{"line": ["123 main st"], "postalCode": "10001"}]
+        }
+        fields = extractor.extract(patient)
+        assert "10001" in fields.zip_codes
+
+    def test_no_zip_code_when_absent(self, extractor: FieldExtractor) -> None:
+        patient: Dict[str, Any] = {"address": [{"line": ["123 main st"]}]}
+        fields = extractor.extract(patient)
+        assert fields.zip_codes == set()
+
+    def test_extract_insurance_member_id_namespace_scoped(
+        self, extractor: FieldExtractor
+    ) -> None:
+        patient: Dict[str, Any] = {
+            "identifier": [
+                {
+                    "system": "https://payer.example/member-id",
+                    "type": {"coding": [{"code": "MB"}]},
+                    "value": "M123456",
+                }
+            ]
+        }
+        fields = extractor.extract(patient)
+        assert "https://payer.example/member-id|M123456" in fields.insurance_member_ids
+
+    def test_member_id_without_namespace_is_excluded(
+        self, extractor: FieldExtractor
+    ) -> None:
+        """Per CMS v3.3: an unscoped ID has no payer namespace to bind to."""
+        patient: Dict[str, Any] = {
+            "identifier": [{"type": {"coding": [{"code": "MB"}]}, "value": "M123456"}]
+        }
+        fields = extractor.extract(patient)
+        assert fields.insurance_member_ids == set()
+
+    def test_extract_insurance_subscriber_id_namespace_scoped(
+        self, extractor: FieldExtractor
+    ) -> None:
+        patient: Dict[str, Any] = {
+            "identifier": [
+                {
+                    "system": "https://payer.example/subscriber-id",
+                    "type": {"coding": [{"code": "SN"}]},
+                    "value": "S987654",
+                }
+            ]
+        }
+        fields = extractor.extract(patient)
+        assert (
+            "https://payer.example/subscriber-id|S987654"
+            in fields.insurance_subscriber_ids
+        )
+
+    def test_member_and_subscriber_id_are_distinct_fields(
+        self, extractor: FieldExtractor
+    ) -> None:
+        patient: Dict[str, Any] = {
+            "identifier": [
+                {
+                    "system": "https://payer.example/x",
+                    "type": {"coding": [{"code": "MB"}]},
+                    "value": "M1",
+                },
+                {
+                    "system": "https://payer.example/x",
+                    "type": {"coding": [{"code": "SN"}]},
+                    "value": "S1",
+                },
+            ]
+        }
+        fields = extractor.extract(patient)
+        assert fields.insurance_member_ids == {"https://payer.example/x|M1"}
+        assert fields.insurance_subscriber_ids == {"https://payer.example/x|S1"}
