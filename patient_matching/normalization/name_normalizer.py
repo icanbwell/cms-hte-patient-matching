@@ -178,12 +178,12 @@ class NameNormalizer:
 
         Returns None if the name is detected as a placeholder.
         """
-        family = name_entry.get("family", "")
-        given_list: List[str] = name_entry.get("given", [])
-        suffix_list: List[str] = name_entry.get("suffix", [])
-        prefix_list: List[str] = name_entry.get("prefix", [])
-        text = name_entry.get("text", "")
-        use = name_entry.get("use", "")
+        family = name_entry.get("family") or ""
+        given_list: List[str] = name_entry.get("given") or []
+        suffix_list: List[str] = name_entry.get("suffix") or []
+        prefix_list: List[str] = name_entry.get("prefix") or []
+        text = name_entry.get("text") or ""
+        use = name_entry.get("use") or ""
 
         # Normalize components
         norm_family = normalize_text(family) if family else ""

@@ -178,3 +178,41 @@ class TestFieldExtractor:
         assert fields.first_names == set()
         assert fields.last_names == set()
         assert fields.phones == set()
+
+    def test_extract_ignores_null_subfields(self, extractor: FieldExtractor) -> None:
+        """Real FHIR payloads can have any of these fields present but
+        explicitly `null` rather than omitted or `[]`/`""`. Caught via a live
+        run against `bronze.fhir_lake.patient_4_0_0`."""
+        patient: Dict[str, Any] = {
+            "name": [
+                {
+                    "family": None,
+                    "given": None,
+                    "suffix": None,
+                    "_nicknames": None,
+                }
+            ],
+            "telecom": [{"system": None, "value": None}],
+            "address": [{"line": None}],
+            "identifier": [
+                {"system": None, "value": "123", "type": None, "assigner": None}
+            ],
+        }
+        fields = extractor.extract(patient)
+        assert fields.first_names == set()
+        assert fields.last_names == set()
+        assert fields.suffixes == set()
+        assert fields.phones == set()
+        assert fields.street_lines == set()
+
+    def test_extract_null_top_level_lists(self, extractor: FieldExtractor) -> None:
+        patient: Dict[str, Any] = {
+            "name": None,
+            "telecom": None,
+            "address": None,
+            "identifier": None,
+        }
+        fields = extractor.extract(patient)
+        assert fields.first_names == set()
+        assert fields.last_names == set()
+        assert fields.dob == set()

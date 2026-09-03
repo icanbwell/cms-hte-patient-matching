@@ -56,7 +56,6 @@ deliberately never copies, not a regression).
 
 ---
 
-Claude: update the Root.io/JFrog Migration Guide
-(https://icanbwell.atlassian.net/wiki/spaces/CIE/pages/6195544074/Root.io+Jfrog+Migration+Guide)
+Update the Root.io/JFrog Migration Guide (internal Confluence)
 and the `jfrog-pypi-migrate` skill's `dockerfile-python-uv.md` reference (the empty-username
 bug in #2) with these notes, then delete this file.

@@ -7,8 +7,8 @@ These documents let a fresh agent conversation execute a scoped piece of work en
 + demo notebook") merged into `main` on 2026-07-29 (commit `cf9b71b`); sessions now build
 directly on `main`, which is the integration branch for this backlog. (Prior to that merge,
 sessions built on `claude/cms-matching-v1` because `main` had no code yet — see git history if
-that context is needed.) Sessions are submitted for Sean's review (self-review during Zack
-Malone's PTO, 2026-07-21 -> 2026-08-01); a rejected session moves to `rejected/` (kept, not
+that context is needed.) Sessions are submitted for the project lead's review (self-review during the DS author's
+PTO, 2026-07-21 -> 2026-08-01); a rejected session moves to `rejected/` (kept, not
 deleted — see `rejected/README.md`).
 
 ## Mode
@@ -21,9 +21,9 @@ transition rules.
 
 ## People
 
-- **Reviewer:** Sean Hegarty.
-- **Backup reviewer:** Zack Malone — the normal reviewer; Sean self-reviewed 2026-07-21 ->
-  2026-08-01 during Zack's PTO (see this file's intro above).
+- **Reviewer:** the project lead.
+- **Backup reviewer:** the DS author — the normal reviewer; the project lead self-reviewed 2026-07-21 ->
+  2026-08-01 during the DS author's PTO (see this file's intro above).
 - **Reciprocal review:** not applicable — a two-person review model, not reciprocal.
 - **Close notifications:** none formalized — the merged PR and the `index.md` update are the
   record.
@@ -53,11 +53,11 @@ does exactly this, in order:
    Confirm each is already in `completed/` — meaning its PR has actually **merged into
    `main`**, not just that the doc says the work is finished. A dependency sitting in
    `in_review/` (PR open, not yet merged) does **not** satisfy this: branching from `main` now
-   won't have that session's code. If the dependency isn't in `completed/`, **stop** and tell
-   Sean which dependency is missing (and whether it's merely `in_review/` vs. not started at
+   won't have that session's code. If the dependency isn't in `completed/`, **stop** and report
+   which dependency is missing (and whether it's merely `in_review/` vs. not started at
    all), and ask whether to proceed anyway.
 4. **Resolve open questions.** If any question in the session is still tagged
-   `NEEDS HUMAN DECISION`, ask Sean now, before writing any code.
+   `NEEDS HUMAN DECISION`, ask the project lead now, before writing any code.
 5. **Set up an isolated workspace** — a feature branch cut from `main` (see
    "Workspace isolation" below) — never directly on `main` itself.
 6. **Execute the tasks in order**, test-first, per the TDD validation loop below.
@@ -66,7 +66,7 @@ does exactly this, in order:
    never closed by merging or fast-forwarding without one), then either:
    - **merged now** (self-reviewed clean, no reason to wait): move the doc to `completed/` and
      update `index.md`'s *Completed* table; or
-   - **PR left open** (e.g. waiting on Sean's explicit go-ahead, since merging is his call to
+   - **PR left open** (e.g. waiting on the project lead's explicit go-ahead, since merging is their call to
      make): move the doc to `in_review/` instead (see that folder's README), update `index.md`
      to reflect that, and record the decision in *Execution notes*. Come back and move it from
      `in_review/` to `completed/` once the PR actually merges — that move can happen in a later,
@@ -85,7 +85,7 @@ docs/sessions/
   pending/         session_N.md files not yet started (the queue; order = suggested execution order)
   in_review/       session_N.md files whose work is done and PR is open, but not yet merged
   completed/       session_N.md files that met their Definition of Done (PR merged into main)
-  rejected/        session_N.md files Sean decided not to pursue (kept, not deleted)
+  rejected/        session_N.md files the project lead decided not to pursue (kept, not deleted)
 ```
 
 A session moves **pending -> in_review** once its own work is done and its PR is open but not
@@ -93,7 +93,7 @@ yet merged, then **in_review -> completed** once that PR merges (these two moves
 different sessions/conversations — see the "start the next session" protocol's step 7). A
 session that merges immediately (no reason to wait) can skip `in_review/` and go straight
 **pending -> completed**. A session moves **pending -> rejected** at any point before
-`completed/` when Sean decides against it. Sessions are never edited in place after execution
+`completed/` when the project lead decides against it. Sessions are never edited in place after execution
 starts; if the plan turns out wrong mid-execution, finish or cleanly abandon, note it in
 *Execution notes*, and author a follow-up session rather than rewriting history.
 
@@ -116,7 +116,7 @@ registry, so nothing stops a typo'd or genuinely new thread from drifting in unn
 
 ## Sizing
 
-Inferred from observed session sizes to date (sessions 1-9), not a rubric Sean has explicitly
+Inferred from observed session sizes to date (sessions 1-9), not a rubric the project lead has explicitly
 calibrated — treat as a draft to correct, not a settled answer:
 
 - **S:** under 2 hours — a single function/fix, one sitting (e.g. session 1's audit-field
@@ -127,7 +127,7 @@ calibrated — treat as a draft to correct, not a settled answer:
 - **XL:** split before authoring; if genuinely irreducible, queue as XL with the no-split reason
   recorded in the doc.
 
-Second-party size check: solo — self-graded (Sean, or whoever authors the session).
+Second-party size check: solo — self-graded (the project lead, or whoever authors the session).
 
 ## Hot files
 
@@ -145,7 +145,7 @@ Shared files multiple sessions are likely to touch, where footprint collisions c
 **Not yet adopted in this repo.** GitHub labels here are the generic repo defaults (`bug`,
 `enhancement`, `dependencies`, `Major`/`Minor`/`Patch` for semver bumps) — no `type:*`/`risk:*`
 scheme exists, unlike the `session-planning-setup` skill's default recommendation
-(`references/integration.md`). `NEEDS HUMAN DECISION — Sean`: adopt that scheme, or continue
+(`references/integration.md`). `NEEDS HUMAN DECISION`: adopt that scheme, or continue
 without it. No recommended default given — this is a process-overhead-vs-value call for a
 solo/two-person review model, not a technical one.
 
@@ -167,12 +167,12 @@ solo/two-person review model, not a technical one.
 ## Centralized docs
 
 **None — this repo's docs are its own Markdown files** (`docs/sessions/`, `docs/handoff/`, the
-committed spec copies above). Draft inference, not confirmed with Sean.
+committed spec copies above). Draft inference, not externally confirmed.
 
 - Space/root: none.
 - Company-wide initiative guide: none, with one nuance worth flagging — session 9's CMS-
   compliance work also references a cross-org workgroup Google Doc (a shared test-dataset
-  proposal, not a b.well-internal Confluence page). Treat that the same way this section treats
+  proposal, not an internal Confluence page). Treat that the same way this section treats
   a company-wide initiative doc if a future session needs to update it.
 - Which pages correlate with which paths: `docs/sessions/confluence-links.md` (added by this
   update, starts empty — that's the expected steady state for a repo with no centralized docs,
@@ -255,7 +255,7 @@ in scope for this backlog.
 
 - The system still runs end-to-end after the session, not just "the new part works."
 - No capability is silently removed. Retiring something on purpose requires explicit sign-off
-  from Sean, recorded in the session's *Execution notes*.
+  from the project lead, recorded in the session's *Execution notes*.
 - A behavior-preserving change (refactor, optimization) carries an **equivalence test** —
   proof the new path produces the same result as the old one.
 - **No half-migrations land.** If a session can't reach a clean, green, at-least-as-capable
@@ -291,10 +291,10 @@ development:
 
 ## PHI / data-handling guardrail
 
-WellSense/reconciliation data and any real FHIR Patient/Person data from Databricks or Mongo
+Payer client/reconciliation data and any real FHIR Patient/Person data from Databricks or Mongo
 is PHI and must stay in governed environments — never exported into this repo's notebooks,
 test fixtures, or committed queries' *output*. All matching/normalization test fixtures in
-this repo must use synthetic or public data (the ONC dataset qualifies; WellSense data does
+this repo must use synthetic or public data (the ONC dataset qualifies; payer client data does
 not). Real-data sessions (4) commit only parameterized query *definitions*
 (`notebooks/wellsense_member_matching_analysis.py`'s pattern: Databricks widgets, SQL-identifier
 validation helpers), never query output or raw records. Enforced by review today, not an
@@ -303,7 +303,7 @@ literals in `notebooks/`).
 
 ## Security guardrail (ahead of any PR merge)
 
-Confirm b.well's standard security tooling is active before any session's PR merges: Aikido
+Confirm the standard security tooling is active before any session's PR merges: Aikido
 scanning enabled on the GitHub repo, the existing bandit/detect-private-key/
 detect-aws-credentials pre-commit hooks staying active, no secrets in `docker.env`,
 `.gitignore` covering local env files. Verified as part of the separate PR-review pass, not
@@ -311,7 +311,7 @@ per-session.
 
 ## Workspace isolation per session
 
-A feature branch cut from `main`, merged back into `main` via PR (self-reviewed by Sean) —
+A feature branch cut from `main`, merged back into `main` via PR (self-reviewed by the project lead) —
 this satisfies "never directly on the base branch." (Before PR #3 merged on 2026-07-29, this
 section pointed at `claude/cms-matching-v1` instead of `main`, back when `main` had no code.)
 
@@ -319,12 +319,12 @@ section pointed at `claude/cms-matching-v1` instead of `main`, back when `main` 
 
 **Every session, no exceptions, ends by opening a PR from its feature branch into
 `main`** — never a direct merge, fast-forward, or push straight to `main` without one, even
-though Sean is self-reviewing during Zack's PTO. The PR is what makes a session's diff visible
+during self-review periods. The PR is what makes a session's diff visible
 and reviewable as a single unit, gives Aikido/Gecko's automated scans a checkpoint to run
 against (per the Security guardrail above) before the change lands, and gives *Execution
 notes* a natural home (the PR description) alongside the session doc's own copy. A session is
 not done until its PR is merged — see Definition of Done below. If a PR is intentionally left
-open past a session's other criteria being met (e.g. waiting on Sean's explicit go-ahead to
+open past a session's other criteria being met (e.g. waiting on the project lead's explicit go-ahead to
 merge), that's a valid stopping point, but it must be recorded as such in *Execution notes*
 (not silently skipped) and the doc moved to `in_review/`, not `completed/` — see "Session
 lifecycle and folders" above.
@@ -332,7 +332,7 @@ lifecycle and folders" above.
 ## Dependency and ordering rules
 
 - Don't start a session whose upstream sessions aren't in `completed/` (merged into `main`,
-  not just `in_review/`) without explicit sign-off from Sean.
+  not just `in_review/`) without explicit sign-off from the project lead.
 - `index.md`'s Up Next order reflects dependencies but isn't the only valid order —
   independent sessions may be reordered.
 - A session with only a *merge-gate* dependency (see the statistical rigor gate) rather than a
@@ -354,7 +354,7 @@ A session is done when **all** hold:
 5. The end state is stable and at least as capable as the start state — if not, the session
    does not merge; revert and write up the blocker instead.
 6. Work is committed on its feature branch, a PR from that branch into `main`
-   is open, and it has been merged (see "Every session ends with a PR" above) — or, if Sean has
+   is open, and it has been merged (see "Every session ends with a PR" above) — or, if the project lead has
    explicitly said to leave it open rather than merge yet, that decision is recorded in
    *Execution notes* and the doc lives in `in_review/`, not `completed/`, until it does merge.
 
@@ -369,7 +369,7 @@ Then: fill in *Execution notes*, and either:
 
 ## Open-questions handling
 
-Sean (or whoever authors a session) resolves every question that's genuinely their call —
+The project lead (or whoever authors a session) resolves every question that's genuinely their call —
 naming, file layout, which existing helper to reuse, algorithm choice — and writes the answer
 into the session as a decision, not a question. What's left as an **Open Question** is only
 what requires information or authority the author doesn't have. Every open question gets a

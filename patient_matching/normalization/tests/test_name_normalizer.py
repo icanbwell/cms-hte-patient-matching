@@ -130,3 +130,26 @@ class TestNameNormalizer:
     def test_empty_names_list(self) -> None:
         assert self.normalizer.normalize_patient_names({}) == []
         assert self.normalizer.normalize_patient_names({"name": []}) == []
+
+    def test_null_subfields_do_not_raise(self) -> None:
+        """Real FHIR payloads can have a HumanName field present but explicitly
+        `null` rather than omitted or `[]` -- `dict.get(key, default)` does not
+        catch that case, only a missing key. Caught via a live run against
+        `bronze.fhir_lake.patient_4_0_0` (name.suffix was `null`)."""
+        patient = {
+            "name": [
+                {
+                    "family": None,
+                    "given": None,
+                    "suffix": None,
+                    "prefix": None,
+                    "text": None,
+                    "use": None,
+                }
+            ]
+        }
+        result = self.normalizer.normalize_patient_names(patient)
+        assert result == []
+
+    def test_null_name_list_does_not_raise(self) -> None:
+        assert self.normalizer.normalize_patient_names({"name": None}) == []

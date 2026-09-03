@@ -4,7 +4,7 @@ The tracker for agent-executable sessions in `patient-matching`. See `convention
 to run one. To begin, open a fresh agent conversation and say **"start the next session"** —
 run whatever **Suggested Next Session** names below.
 
-**Status of this set:** `APPROVED` (design reviewed and approved by Sean, 2026-07-28 — see
+**Status of this set:** `APPROVED` (design reviewed and approved by the project lead, 2026-07-28 — see
 `../superpowers/specs/2026-07-28-session-planning-playbook-design.md`).
 
 
@@ -90,9 +90,9 @@ _(none yet — see `rejected/README.md`)_
 ## Candidate future sessions (not yet authored)
 
 - **P(collision) evaluator: per-value (name-frequency-conditioned) collision probability.**
-  `NEEDS HUMAN DECISION — Sean/Imran`: a genuine methodology deviation from the published CMS
-  approach (which uses static per-field constants), needs Imran's sign-off as domain lead
-  before implementation. Propose it to him alongside sessions 5/6's results.
+  `NEEDS HUMAN DECISION`: a genuine methodology deviation from the published CMS
+  approach (which uses static per-field constants), needs the engineering lead's sign-off as domain lead
+  before implementation. Propose it alongside sessions 5/6's results.
 - **"Project US@" address format compliance.** Smaller gap in the otherwise-complete
   normalization layer; not blocked, just not yet scoped in detail.
 - **Automate the PHI guardrail** (a pre-commit check for hardcoded PHI-shaped literals in

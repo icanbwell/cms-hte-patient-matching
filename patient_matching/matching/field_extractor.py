@@ -103,41 +103,41 @@ class FieldExtractor:
     @staticmethod
     def _extract_names(patient: Dict[str, Any], fields: PatientFields) -> None:
         """Extract name components from all HumanName entries."""
-        for name_entry in patient.get("name", []):
+        for name_entry in patient.get("name") or []:
             # Family names
-            family = name_entry.get("family", "")
+            family = name_entry.get("family") or ""
             if family:
                 fields.last_names.add(family)
 
             # Given names — first given is the "first name"
-            given_list: List[str] = name_entry.get("given", [])
+            given_list: List[str] = name_entry.get("given") or []
             for g in given_list:
                 if g:
                     fields.first_names.add(g)
 
             # Nicknames (attached by normalization as _nicknames)
-            for nick in name_entry.get("_nicknames", []):
+            for nick in name_entry.get("_nicknames") or []:
                 if nick:
                     fields.first_names.add(nick)
 
             # Suffixes
-            for s in name_entry.get("suffix", []):
+            for s in name_entry.get("suffix") or []:
                 if s:
                     fields.suffixes.add(s)
 
     @staticmethod
     def _extract_birth_date(patient: Dict[str, Any], fields: PatientFields) -> None:
         """Extract date of birth."""
-        dob = patient.get("birthDate", "")
+        dob = patient.get("birthDate") or ""
         if dob:
             fields.dob.add(dob)
 
     @staticmethod
     def _extract_telecoms(patient: Dict[str, Any], fields: PatientFields) -> None:
         """Extract phone numbers and email addresses."""
-        for telecom in patient.get("telecom", []):
-            system = telecom.get("system", "")
-            value = telecom.get("value", "")
+        for telecom in patient.get("telecom") or []:
+            system = telecom.get("system") or ""
+            value = telecom.get("value") or ""
             if not value:
                 continue
 
@@ -149,22 +149,22 @@ class FieldExtractor:
     @staticmethod
     def _extract_addresses(patient: Dict[str, Any], fields: PatientFields) -> None:
         """Extract street lines from all addresses."""
-        for addr in patient.get("address", []):
-            for line in addr.get("line", []):
+        for addr in patient.get("address") or []:
+            for line in addr.get("line") or []:
                 if line:
                     fields.street_lines.add(line)
 
     @staticmethod
     def _extract_identifiers(patient: Dict[str, Any], fields: PatientFields) -> None:
         """Extract structured identifiers (SSN last 4, ITIN, MBI, etc.)."""
-        for ident in patient.get("identifier", []):
-            system = ident.get("system", "")
-            value = ident.get("value", "")
+        for ident in patient.get("identifier") or []:
+            system = ident.get("system") or ""
+            value = ident.get("value") or ""
             if not value:
                 continue
 
-            type_codings = ident.get("type", {}).get("coding", [])
-            codes = {c.get("code", "") for c in type_codings}
+            type_codings = (ident.get("type") or {}).get("coding") or []
+            codes = {c.get("code") or "" for c in type_codings}
 
             if system == _SSN_SYSTEM:
                 # Only last 4 digits
@@ -179,7 +179,7 @@ class FieldExtractor:
                 fields.mbi.add(value)
             elif _DL_CODE in codes:
                 # Legal ID: combine assigner namespace + value
-                assigner = ident.get("assigner", {}).get("display", "")
+                assigner = (ident.get("assigner") or {}).get("display") or ""
                 if assigner:
                     fields.legal_ids.add(f"{assigner}|{value}")
                 else:

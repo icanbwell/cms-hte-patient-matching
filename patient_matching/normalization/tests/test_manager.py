@@ -247,3 +247,14 @@ class TestNormalizationManager:
         nicks = result["name"][0].get("_nicknames", [])
         assert len(nicks) > 0
         assert "bob" in nicks or "rob" in nicks
+
+    def test_normalize_null_identifier_list_does_not_raise(self) -> None:
+        """`"identifier" in result` is true even when the value is `null` --
+        caught via a live run against `bronze.fhir_lake.patient_4_0_0`."""
+        patient = {
+            "resourceType": "Patient",
+            "name": [{"family": "Smith", "given": ["Robert"]}],
+            "identifier": None,
+        }
+        result = self.manager.normalize(patient)
+        assert "identifier" not in result

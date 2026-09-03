@@ -12,7 +12,7 @@ wiring its output into session 3's `LabeledPair` shape.
 
 Session 3's ONC baseline proves the engine's self-match integrity on public, synthetic data —
 necessary but not sufficient, since ONC's demographic distribution won't exactly match real
-WellSense/b.well traffic. `conventions.md`'s statistical-rigor gate names this "Tier 2":
+production traffic. `conventions.md`'s statistical-rigor gate names this "Tier 2":
 validating the engine's effect on real-population **collision rates** (how often distinct real
 people share field-value combinations) — a well-posed question even without match/non-match
 labels, unlike precision, which real unlabeled data structurally can't certify (see the
@@ -35,13 +35,13 @@ when justifying a P(collision) or Table 2 change, but don't depend on it to reac
 
 ## Upstream data/system dependencies
 
-Real FHIR Patient/Person match data in Databricks and/or MongoDB. **`NEEDS HUMAN DECISION —
-Sean`:** the exact catalog/schema/table names for the FHIR Patient/Person resources and their
+Real FHIR Patient/Person match data in Databricks and/or MongoDB. **`NEEDS HUMAN DECISION`:**
+the exact catalog/schema/table names for the FHIR Patient/Person resources and their
 existing match links are not known at authoring time (2026-07-28) — the handoff doc
-(`docs/handoff/README.md`) names `bronze.proa.metrics` and `bronze.wellsense.ws_eligibility_all`
-for WellSense-specific error analysis, but does not name a general FHIR Patient/Person store.
+(`docs/handoff/README.md`) names `bronze.proa.metrics` and a payer client eligibility table
+for client-specific error analysis, but does not name a general FHIR Patient/Person store.
 **Resolve this at session-start**, per `conventions.md`'s protocol step 4, before writing any
-query code — ask Sean for: (a) the catalog/schema/table holding normalized FHIR Patient
+query code — ask the project lead for: (a) the catalog/schema/table holding normalized FHIR Patient
 resources, (b) the catalog/schema/table (or Mongo collection) holding existing Person-Patient
 match links, and (c) whether both are reachable the same way
 `wellsense_member_matching_analysis.py` reaches `bronze.*` (Databricks `spark.sql`), or if the
@@ -57,7 +57,7 @@ data or a service other code depends on.
 ### In scope
 - A new Databricks notebook, `notebooks/fhir_match_data_source.py`, following
   `wellsense_member_matching_analysis.py`'s exact pattern: `dbutils.widgets` for
-  catalog/schema/table names (with sane defaults matching whatever Sean confirms at
+  catalog/schema/table names (with sane defaults matching whatever the project lead confirms at
   session-start), the same `_validate_sql_identifier`/`_sql_string_literal` safety helpers
   (copy them verbatim — they're small, tested-by-inspection, and duplicating two ~10-line
   functions is cheaper than introducing a shared-utility import between `notebooks/` and
@@ -87,7 +87,7 @@ data or a service other code depends on.
   quantity), never a precision/recall/FPR number derived from those links. If a future session
   is tempted to compute precision against this data, point them back to this note and to
   `conventions.md`'s Tier 3 language.
-- Any change to production Databricks jobs, dashboards, or alerts (Zane's monitoring work,
+- Any change to production Databricks jobs, dashboards, or alerts (the monitoring engineer's work,
   per the handoff doc, is separate and unaffected).
 - Fixing `InMemoryBackend`'s scaling behavior — if this session's sample is large enough to
   need real blocking for local processing, sample smaller rather than fixing the backend here;
@@ -95,7 +95,7 @@ data or a service other code depends on.
 
 ## Tasks
 
-1. **Resolve the `NEEDS HUMAN DECISION` above with Sean** before writing any code, per
+1. **Resolve the `NEEDS HUMAN DECISION` above with the project lead** before writing any code, per
    `conventions.md`'s protocol step 4. Record the answer here in *Execution notes* once
    resolved (not as a code comment — this decision belongs in the session doc's history, not
    buried in a notebook).
@@ -190,18 +190,18 @@ class TestSqlSafetyHelpers:
 
 ## Open questions
 
-- **`NEEDS HUMAN DECISION — Sean`** (already stated above under "Upstream data/system
+- **`NEEDS HUMAN DECISION`** (already stated above under "Upstream data/system
   dependencies"): the exact catalog/schema/table names for FHIR Patient resources and
   Person-Patient match links, and whether Mongo needs a different access pattern than
   Databricks `spark.sql`. Recommended default if genuinely stuck: start with whatever table
   the handoff doc's `enterprise-person-service` logs reference (per `docs/handoff/README.md`
   §2.4's data table), since that's the closest named real-data source already documented for
-  this project, and confirm with Sean before treating it as authoritative.
-  **RESOLVED 2026-08-06 (Zack):** see *Execution notes* below.
+  this project, and confirm with the project lead before treating it as authoritative.
+  **RESOLVED 2026-08-06:** see *Execution notes* below.
 
 ## Execution notes
 
-**2026-08-06 — `NEEDS HUMAN DECISION` resolved by Zack:**
+**2026-08-06 — `NEEDS HUMAN DECISION` resolved:**
 - FHIR Patient resources: `bronze.fhir_lake.patient_4_0_0` (standard FHIR R4 Patient shape —
   `name`, `birthDate`, `telecom`, `address`, `identifier`, `gender`, plus a platform-internal
   `_uuid` cross-reference field used by every `reference`-typed struct elsewhere in the same
@@ -216,7 +216,7 @@ class TestSqlSafetyHelpers:
   `notebooks/fhir_match_data_source.py` prints the joined-row count against the requested
   `sample_size` the first time it runs in Databricks specifically so this assumption is
   verified empirically rather than trusted blindly — a near-zero join rate would mean it's
-  wrong for this workspace and needs re-checking with Sean/Zack.
+  wrong for this workspace and needs re-checking with the project lead.
 
 **2026-08-06 — Session executed:**
 - `notebooks/fhir_match_data_source.py` implements the widget-configured join (Task 2),
@@ -258,10 +258,10 @@ class TestSqlSafetyHelpers:
   data source), so no new ONC `ComparisonReport` was generated; session 3's existing baseline
   is unaffected.
 - PR opened: [#22](https://github.com/icanbwell/patient-matching/pull/22), per "Every session
-  ends with a PR"; left **open** rather than merged immediately — merging is Zack's/Sean's
+  ends with a PR"; left **open** rather than merged immediately — merging is the project lead's
   call, not assumed here. Doc moved to `in_review/`, not `completed/`, until the PR merges.
 
-**2026-08-11 — EA review (Sean) addressed:**
+**2026-08-11 — EA review addressed:**
 - **Blocking (Rule 01 — untested wiring path):** added tests for `build_join_query` (asserts
   generated SQL, rejects unsafe identifiers) and for `agreement_rate` against an injected stub
   engine, rather than only the four previously-tested leaf helpers.
@@ -273,7 +273,7 @@ class TestSqlSafetyHelpers:
   `fhir_match_data_source.py` and `wellsense_member_matching_analysis.py`. Note this
   supersedes this session's original Task 2 guidance ("copy them verbatim... duplicating two
   ~10-line functions is cheaper than a shared import") — that was a reasonable call for the
-  first copy; Sean's review correctly called it out once it became the *second* copy. Also
+  first copy; the review correctly called it out once it became the *second* copy. Also
   dropped the never-called `_sql_string_literal` import from `fhir_match_data_source.py`'s own
   body (only its test used it, and that test now lives in `notebooks/test__sql_safety.py`
   alongside the shared module).
@@ -282,9 +282,9 @@ class TestSqlSafetyHelpers:
   `_MAX_NEGATIVE_SAMPLES`.
 - **Should-fix (Rule 13 — domain sign-off before merge):** not resolved by this fix pass —
   this is a human sign-off, not something code changes can satisfy. **Still needed before
-  merge:** Sean/Imran review of the actual statistical logic (collision-rate formula,
-  negative-sampling scheme, agreement-rate semantics), separate from the already-recorded
-  table-name decision above.
+  merge:** review of the actual statistical logic (collision-rate formula,
+  negative-sampling scheme, agreement-rate semantics) by the project lead or engineering lead,
+  separate from the already-recorded table-name decision above.
 - `uv run pytest notebooks/ .` and `uv run ruff check` on all touched files are green (22
   notebook tests, up from 15; 417 passed overall in this environment).
 
