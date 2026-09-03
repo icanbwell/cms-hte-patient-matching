@@ -84,7 +84,7 @@ produces become the reference point for every later rule-changing session's Tier
   - **True-non-match pairs**: a *sampled* set of cross pairs `(record_i, record_j)`, `i != j`
     — ONC guarantees every row is a distinct individual, so any two distinct rows are a
     genuine non-match, `is_true_match=False`. This is where the "blocking and local memory
-    constraints" problem Sean raised actually bites: full pairwise cross-reference of ~28,000
+    constraints" problem actually bites: full pairwise cross-reference of ~28,000
     ONC records is ~400 million pairs, intractable to generate or score. Sample instead — use
     `rule_eval.min_sample_size` to size the negative sample for a specific detectable FPR
     delta (Task 4 below), rather than exhaustively enumerating all non-match pairs. This is
@@ -537,7 +537,7 @@ guessed in advance:
   whatever the ONC `Null` shard's missing fields already cost it.
 - PR opened: https://github.com/icanbwell/patient-matching/pull/11, from
   `claude/session-3-onc-baseline` into `main`. Left open rather than auto-merged, since merging
-  is a shared/visible action; Sean reviewed and merged it himself (merged 2026-07-30T04:28:33Z,
+  is a shared/visible action; reviewed and merged (2026-07-30T04:28:33Z,
   commit `be1280e`). Moved from `in_review/` to `completed/` accordingly - see
   `docs/sessions/in_review/README.md` for why that's a separate step from opening the PR.
 - While this session was `in_review/`, its existence surfaced a real gap: session 4 (and,
@@ -545,5 +545,5 @@ guessed in advance:
   generally) had no way to distinguish "session 3's own work is finished" from "session 3's
   code is actually on `main`." Added `docs/sessions/in_review/` as a distinct lifecycle state
   to close that gap (`conventions.md` updated accordingly), and fed the same fix back into the
-  reusable `~/git/session-planning-playbook.md` template, since the identical bug exists there
+  reusable session-planning-playbook template, since the identical bug exists there
   for any project adopting this pattern.

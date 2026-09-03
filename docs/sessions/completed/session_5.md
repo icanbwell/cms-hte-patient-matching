@@ -15,7 +15,7 @@ literal floats, hand-typed against the CMS v3.2.2 spec — there's no code that 
 to be caught automatically, and there's no reusable evaluator for session 6 to score the 11
 new v3.3 combinations against. This session builds that evaluator directly from the CMS v3.3
 spec's own Table 3 and formula (`P(collision) ~= product of u_field` per field in a
-combination), matching Imran's own reference implementation (confirmed by fetching
+combination), matching the engineering lead's own reference implementation (confirmed by fetching
 `gist.github.com/imranq2/b5cc7a534a37dfa26922a83e69c686ee` on 2026-07-28: its `FIELD_U_PROBS`
 dict matches the spec's Table 3 exactly, and it implements the same joint-probability formula
 and 2e-12 threshold this session targets).
@@ -63,7 +63,7 @@ session's evaluator) rather than hand-typed, for every rule session 6 defines.
   Name + DOB + ZIP computes to 3e-12 under Table 3 (above the 2e-12 threshold) and must
   evaluate as **not approved**, regardless of the 3e-13 figure that appears in some prior,
   non-spec analyses.
-- Cross-checking this session's `FIELD_U_PROBS`/`p_collision` output against Imran's gist/Colab
+- Cross-checking this session's `FIELD_U_PROBS`/`p_collision` output against the engineering lead's reference gist/Colab
   directly, as a stretch-goal verification step (Task 4) — not required for this session's
   Definition of Done, since it's an external resource outside this repo's control and may not
   be reachable in every execution environment.
@@ -71,9 +71,9 @@ session's evaluator) rather than hand-typed, for every rule session 6 defines.
 ### Out of scope
 - Adding the 11 new v3.3 rules themselves (Table 2 expansion) — that's session 6, which
   depends on this session's evaluator.
-- The per-value (name-frequency-conditioned) collision-probability refinement Sean raised
+- The per-value (name-frequency-conditioned) collision-probability refinement raised
   separately — that's a genuine methodology deviation from the published CMS approach (which
-  uses static per-field constants, as implemented here) and needs Imran's explicit sign-off;
+  uses static per-field constants, as implemented here) and needs the engineering lead's explicit sign-off;
   see `index.md`'s "Candidate future sessions".
 - Any change to `MatchingEngine`'s fuzzy-matching mechanics (Damerau-Levenshtein, min length)
   — this session only computes probabilities, it doesn't change how a match is decided.
@@ -96,7 +96,7 @@ session's evaluator) rather than hand-typed, for every rule session 6 defines.
 
    Three fields the spec defines but which are "dismissed due to observed data quality
    issues and low selectivity" (Middle Name, Suffix, Year of Birth) are intentionally
-   excluded here, matching Imran's reference script's 16-field FIELD_U_PROBS (confirmed
+   excluded here, matching the engineering lead's reference script's 16-field FIELD_U_PROBS (confirmed
    2026-07-28 via gist.github.com/imranq2/b5cc7a534a37dfa26922a83e69c686ee) - no Table 2
    rule uses any of the three.
    """
@@ -202,7 +202,7 @@ session's evaluator) rather than hand-typed, for every rule session 6 defines.
    than a rounding difference, stop and investigate before proceeding (it means either the
    evaluator or the original hand-entered constant was wrong). One known, expected exception: rules 04 and 06's computed `p_collision_fuzzy` will come out to 1.5e-12, not the currently-hardcoded 2e-12 — this is not a bug to investigate. The old hardcoded value implicitly assumed a `first_name` fuzzy u-probability of 0.04 (a 2x multiplier over exact); the real v3.3 Table 3 states 0.03 (1.5x). Accept the new computed value (1.5e-12) as the correct v3.3-era figure for these two rules, replacing the stale v3.2.2-era constant — this is exactly the kind of drift this evaluator is meant to catch and correct. Rule 26 will also change: its currently-hardcoded `p_collision_exact=0.0` becomes `1e-15` once computed via `FIELD_U_PROBS["namespace_id"]` (see that entry's comment for why a small nonzero float is used instead of a literal 0.0 — it prevents this field from masking other fields' probabilities in a product). This is expected, not something to 'fix' back to 0.0.
 
-4. **(Stretch goal, not required for Definition of Done) Cross-check against Imran's
+4. **(Stretch goal, not required for Definition of Done) Cross-check against the engineering lead's
    reference script.** Fetch `https://gist.github.com/imranq2/b5cc7a534a37dfa26922a83e69c686ee`
    and compare its `FIELD_U_PROBS` values and any of its worked examples against this
    session's `collision.py`. If reachable and values differ, investigate and reconcile before
@@ -337,10 +337,10 @@ class TestExistingRulesMatchComputedValues:
   actively-commented draft spec. **`NEEDS HUMAN DECISION` only if** the live doc has changed
   by execution time and the new values meaningfully differ from what's transcribed above — in
   that case, update `collision.py` to match the live doc and treat the difference as a normal
-  code change, not something requiring Sean's sign-off (these are CMS's own published numbers,
+  code change, not something requiring project lead sign-off (these are CMS's own published numbers,
   not a judgment call this repo is making). If genuinely ambiguous (e.g. the spec's wording
-  changed in a way that's unclear how to encode), that's when to ask Sean.
-- Task 4 (cross-check against Imran's gist) is explicitly a stretch goal — if unreachable,
+  changed in a way that's unclear how to encode), that's when to escalate to the project lead.
+- Task 4 (cross-check against the engineering lead's reference gist) is explicitly a stretch goal — if unreachable,
   note it and move on; don't block the session on it.
 
 ## Execution notes
@@ -348,8 +348,8 @@ class TestExistingRulesMatchComputedValues:
 Executed 2026-07-31 on feature branch `claude/session-5-collision-evaluator`, cut from
 `main` at `cc3ee1f` (session 2's merge commit). Session 4 was considered first per
 `index.md`'s Suggested Next Session, but its `NEEDS HUMAN DECISION` (exact Databricks/Mongo
-table names) was still unresolved at session-start; Sean chose to defer it and run this
-session instead, since it has no such blocker.
+table names) was still unresolved at session-start; it was deferred and this
+session was run instead, since it has no such blocker.
 
 - **Fetched the live CMS v3.3 spec** (Google Doc, file ID
   `1ABHR6e4N-K9lEj1vc7DuzoAy8CuaAqwqAZSpJH9T4Yg`) before writing any code, per Task 1's
@@ -388,7 +388,8 @@ session instead, since it has no such blocker.
   multi-line `p_collision(...)` call sites on first `pre-commit` run; re-ran and it was clean
   on the second pass.
 - **Stretch goal (Task 4) completed, not just attempted**: fetched
-  `gist.github.com/imranq2/b5cc7a534a37dfa26922a83e69c686ee` — its `FIELD_U_PROBS` table
+  `gist.github.com/imranq2/b5cc7a534a37dfa26922a83e69c686ee` (the engineering lead's reference script) —
+  its `FIELD_U_PROBS` table
   matches this session's values exactly for every field, field-for-field. One cosmetic
   difference: the gist represents the namespace-bound-identifier field with a literal `0.0`
   where this session (deliberately, per Task 1's own comment) uses `1e-15` to avoid a
@@ -418,7 +419,7 @@ Validation:
 
 Decision: PR [#16](https://github.com/icanbwell/patient-matching/pull/16) opened from
 `claude/session-5-collision-evaluator` into `main`, left **open** rather than merged — per
-`conventions.md`'s Definition of Done, merging is Sean's call, not the executing agent's. Doc
+`conventions.md`'s Definition of Done, merging is the project lead's call, not the executing agent's. Doc
 moved to `in_review/` accordingly.
 
 **Bookkeeping close-out (2026-08-03):** PR #16 merged 2026-08-02. Doc moved from `in_review/`

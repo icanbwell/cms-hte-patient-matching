@@ -6,9 +6,9 @@ not "how do I run a session" (that's `conventions.md`'s job).
 
 ## 1. What this repo is for
 
-b.well's **current production patient-matching** (`helix.personmatching` +
-`person-matching-service`, used for WellSense signups) is a weighted-score algorithm: 26 rules,
-each scores 0-1, highest score wins, match if ≥0.955. It works today — WellSense match errors
+The platform's **current production patient-matching** (`helix.personmatching` +
+`person-matching-service`) is a weighted-score algorithm: 26 rules,
+each scores 0-1, highest score wins, match if ≥0.955. It works today — match errors with a payer client
 are down ~80% and the remainder is bad upstream data, not the algorithm.
 
 CMS has a **draft proposal (v3.3)** requiring a different approach: instead of scoring fields,
@@ -71,7 +71,7 @@ repos.
    like: 38 rules total in `table2_rules.py`, 3 new extractable fields, a `dob_fuzzy_match()`
    comparator, a `HouseholdIndividualRule` type with 14 household-rows + 3 individual-rows,
    rules 13-16 amended in place, full test suite green, session_6.md's checklist fully checked.
-3. Get Sean/Imran's decisions on the open items in parallel, not serialized after session 6.
+3. Get the project lead's and engineering lead's decisions on the open items in parallel, not serialized after session 6.
 4. Run session 8 once session 4 is `completed/` and the human decisions land. Done looks like:
    `evaluation/legacy_comparison.py` producing a disagreement-bucketed comparison report.
 5. Only after that: scope Phase 2 (production deployment) — currently nothing exists for this.
