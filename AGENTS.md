@@ -9,3 +9,5 @@ from `docs/sessions/index.md` — it's the authoritative process doc for how wor
 scoped, executed, and closed out.
 
 Log new findings in `docs/LEARNINGS.md` as you go, not at the end of a session.
+
+**Do not include personal names in any document, commit message, or PR** — this repo is public. Use roles instead ("the project lead", "the DS lead", "the engineering lead"). This applies to session docs, code comments, PR descriptions, and `LEARNINGS.md` entries.

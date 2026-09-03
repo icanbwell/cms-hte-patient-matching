@@ -223,14 +223,12 @@ Validation:
   apply, per `conventions.md`.
 
 Decision: PR opened from `claude/session-1-audit-fields` into `main`, left **open** rather than
-merged — per `conventions.md`'s Definition of Done, merging is Sean's call to make, not the
+merged — per `conventions.md`'s Definition of Done, merging is the project lead's call to make, not the
 executing agent's. Doc moved to `in_review/` accordingly.
 
-PR #13 reviewed (approved by Kenan Spruill, 2026-07-30) after a request posted to
-`#team-bailey-ai-internal`. Also self-reviewed via a 5-agent automated code-review pass — three
+PR #13 reviewed (approved 2026-07-30) after a code-review request. Also self-reviewed via a 5-agent automated code-review pass — three
 candidate issues surfaced (an eager `_PACKAGE_VERSION` module-global, `index.md` scope slightly
 exceeding session 1's own remit, a premature `Suggested Next Session` reset) but none cleared
-the confidence bar for a blocking comment; see PR #13's discussion for detail. Sean approved
-merging now that review landed. Merged into `main`; doc moved from `in_review/` to `completed/`
+the confidence bar for a blocking comment; see PR #13's discussion for detail. Merged into `main`; doc moved from `in_review/` to `completed/`
 in the same close-out (no separate bookkeeping PR needed, unlike session 3, since the merge and
 the doc move happened together).

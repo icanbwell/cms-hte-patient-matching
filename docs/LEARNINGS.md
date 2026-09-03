@@ -31,7 +31,7 @@ not just by reading its source — see `test_unparseable_street_line_falls_back_
 ## Library compliance: `usaddress-scourgify` and its transitive deps
 
 `usaddress-scourgify` (0.7.1), `usaddress` (0.5.16), and `probableparsing` (0.0.1) all resolve
-from `https://artifacts.bwell.com/artifactory/api/pypi/virtual-pypi/simple` — confirmed both in
+from the organization's JFrog Artifactory PyPI virtual repository — confirmed both in
 `uv.lock` and via a live `%pip install` in the prod Databricks workspace. No compliance gap;
 `pyproject.toml`'s `usaddress-scourgify>=0.6.0` already resolves to an approved version through
 the lockfile. (A local `.venv` may lag behind `uv.lock` — e.g. it had 0.6.0 installed instead of
