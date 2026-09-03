@@ -204,7 +204,7 @@ is trivial to make unique per candidate — check `_make_patient`'s actual signa
 None requiring a human decision. The interim "always treat 3+ as failing the stricter
 threshold" behavior (Task 2) is a deliberate, safe default chosen at authoring time — it can
 only cause under-return (a missed match), never a wrong-patient release, so it doesn't need
-Sean's sign-off to ship as an interim state ahead of session 5/6.
+project lead sign-off to ship as an interim state ahead of session 5/6.
 
 ## Execution notes
 
@@ -258,9 +258,9 @@ Validation:
 
 Decision: PR [#14](https://github.com/icanbwell/patient-matching/pull/14) opened from
 `claude/session-2-tiered-uniqueness` into `main`, left **open** rather than merged — per
-`conventions.md`'s Definition of Done, merging is Sean's call, not the executing agent's. Doc
+`conventions.md`'s Definition of Done, merging is the project lead's call, not the executing agent's. Doc
 moved to `in_review/` accordingly.
 
-PR #14 approved (kenanspruill) and clean (Gecko: no vulnerabilities found); merged into `main`
-by Sean 2026-07-31 (commit `cc3ee1f`). Moved from `in_review/` to `completed/` accordingly, via
+PR #14 approved and clean (Gecko: no vulnerabilities found); merged into `main`
+2026-07-31 (commit `cc3ee1f`). Moved from `in_review/` to `completed/` accordingly, via
 a separate bookkeeping PR (`claude/close-session-2-in-review`), same pattern as session 3.

@@ -23,8 +23,8 @@ except IOError:
 setup(
     name=package_name,
     version=version,
-    author="Imran Qureshi",
-    author_email="imran.qureshi@bwell.com",
+    author="icanbwell",
+    author_email="",
     description="CMS Patient Matching Implementation",
     long_description=long_description,
     long_description_content_type="text/markdown",

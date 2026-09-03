@@ -10,8 +10,8 @@ Exploratory and demo material for the CMS patient-matching algorithm work — no
   handful of patients using the in-memory backend, no external infrastructure required.
 - `rule_eval_demo.ipynb` — walkthrough of `evaluation/rule_eval.py`'s baseline-vs-candidate
   rule comparison (Bayesian credible intervals, ship/reject/needs-more-data verdict).
-- `wellsense_member_matching_analysis.py` — a one-off WellSense member-matching
-  investigation (Jira RA-4428): failure-log analysis, error-volume trend, and DOB/gender
+- `wellsense_member_matching_analysis.py` — a one-off payer client member-matching
+  investigation: failure-log analysis, error-volume trend, and DOB/gender
   raw-value reconciliation. Kept as a plain Python script, not a Databricks-notebook-source
   file — no `# MAGIC` / `# COMMAND ----------` cell markers.
 
@@ -19,7 +19,7 @@ Exploratory and demo material for the CMS patient-matching algorithm work — no
 
 This repo is a greenfield rebuild of the CMS person-matching algorithm; the notebooks above
 were used to validate it against the legacy `helix.personmatching` system during
-development. Per the 2026-08-12 Sean/Zack sync, the folder is being **kept intentionally**
+development. Per the 2026-08-12 sync, the folder is being **kept intentionally**
 for that experimental comparison — but the intent is to **deprecate and delete it** once the
 new algorithm's build-out goals are met (see `docs/sessions/`), so that the final, shipped
 version of this repo does not carry demo/analysis notebooks.

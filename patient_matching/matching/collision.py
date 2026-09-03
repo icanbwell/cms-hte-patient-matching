@@ -9,7 +9,7 @@ equivalence test in test_collision.py::test_existing_26_rules_reproduce_publishe
 
 Three fields the spec defines but which are "dismissed due to observed data quality
 issues and low selectivity" (Middle Name, Suffix, Year of Birth) are intentionally
-excluded here, matching Imran's reference script's 16-field FIELD_U_PROBS - no Table 2
+excluded here, matching the CMS reference implementation's 16-field FIELD_U_PROBS - no Table 2
 rule uses any of the three.
 """
 

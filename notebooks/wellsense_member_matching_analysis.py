@@ -1,9 +1,8 @@
 # ruff: noqa: F821, E501
 # mypy: ignore-errors
-"""WellSense Member Matching — Data Exploration & Open-Issue Investigation.
+"""Payer Client Member Matching — Data Exploration & Open-Issue Investigation.
 
-Author: Data Science (Zack Malone). Context: WellSense account-creation / member-match
-triage, July 2026.
+Context: payer client account-creation / member-match triage, July 2026.
 
 Several stakeholders have asked to see the actual data behind the member-matching
 discussion, and there has been understandable confusion about which dataset is which.
@@ -22,8 +21,8 @@ a plain-English note.
 The single most important thing to understand: these are THREE different datasets.
 
   Layer A -- Failure logs
-    Source: `enterprise-person-service` prod logs (msg="Matching Failure insight",
-    PAY-1789/2038). Grain: 1 row per unique person (deduped, latest mismatch).
+    Source: enterprise-person-service prod logs (msg="Matching Failure insight").
+    Grain: 1 row per unique person (deduped, latest mismatch).
     Contains: the match score and per-field outcomes (matched / partial / not-matched).
     Does NOT contain: the actual field values (no names/DOBs).
     Used for: "How far below the bar? Which field blocked it?" (the JSON file).
@@ -37,8 +36,8 @@ The single most important thing to understand: these are THREE different dataset
 
   Layer C -- Review / raw values
     Source: Sigma Custom SQL over bronze.proa.metrics (+
-    bronze.wellsense.ws_eligibility_all). Grain: 1 row per match run.
-    Contains: actual values side-by-side (dob_bwell vs dob_ehr, gender_bwell vs
+    payer client eligibility table). Grain: 1 row per match run.
+    Contains: actual values side-by-side (dob_platform vs dob_ehr, gender_platform vs
     gender_ehr, names, postal, address). Does NOT contain: complete coverage (only
     failed/reviewed runs are surfaced).
     Used for: "Is the difference a typo, a format issue, or genuinely different
@@ -59,9 +58,9 @@ Glossary:
     0.9548 / 0.955 = 99.98%. It is NOT confidence. Don't read the "95-100%" bucket
     as "95% sure".
   field outcome -- per-field result: matched, partial match, or not matched.
-  BAI-188 (shipped as PAY-1940, ~June 4 2026) -- the scoring improvement that added
-    DOB near-miss tolerance, nickname/initial handling, and the "ignore missing
-    fields" rule. The mid-June error drop coincides with this.
+  The mid-June scoring improvement added DOB near-miss tolerance, nickname/initial
+    handling, and the "ignore missing fields" rule. The mid-June error drop coincides
+    with this improvement.
 
 Configuration: set the path to the JSON export and (optionally) the warehouse
 catalog/schema below. Everything downstream reads from here. The script degrades
@@ -89,11 +88,11 @@ except ImportError:  # pragma: no cover - only hit when Databricks doesn't have 
 
 # --- Widgets (Databricks). Falls back to defaults when run outside Databricks. ---
 try:
-    dbutils.widgets.text("json_path", "/dbfs/FileStore/wellsense/wellsense-member-matching-demographics-2026-06-11_to_2026-07-11.json", "Path to failure-log JSON")
-    dbutils.widgets.text("ws_catalog", "bronze", "WellSense source catalog")
-    dbutils.widgets.text("ws_schema", "wellsense", "WellSense source schema")
+    dbutils.widgets.text("json_path", "/dbfs/FileStore/member-matching-demographics.json", "Path to failure-log JSON")
+    dbutils.widgets.text("ws_catalog", "bronze", "Payer client source catalog")
+    dbutils.widgets.text("ws_schema", "payer_client", "Payer client source schema")
     dbutils.widgets.text("proa_table", "bronze.proa.metrics", "PROA run-metrics table (Layers B & C source)")
-    dbutils.widgets.text("ws_client", "wellsense", "Client id for WellSense (this is clientId, NOT slug)")
+    dbutils.widgets.text("ws_client", "payer_client", "Client id (this is clientId, NOT slug)")
     dbutils.widgets.text("client_col", "", "Raw column holding the client id (blank = auto-detect)")
     JSON_PATH = dbutils.widgets.get("json_path")
     WS_CATALOG = _validate_sql_identifier(dbutils.widgets.get("ws_catalog"))
@@ -106,9 +105,9 @@ try:
     IN_DATABRICKS = True
 except Exception:
     # Local fallback — point at the file sitting next to this notebook.
-    JSON_PATH = os.environ.get("WS_JSON_PATH", "wellsense-member-matching-demographics-2026-06-11_to_2026-07-11.json")
-    WS_CATALOG, WS_SCHEMA = "bronze", "wellsense"
-    PROA_TABLE, WS_CLIENT, CLIENT_COL = "bronze.proa.metrics", "wellsense", ""
+    JSON_PATH = os.environ.get("WS_JSON_PATH", "member-matching-demographics.json")
+    WS_CATALOG, WS_SCHEMA = "bronze", "payer_client"
+    PROA_TABLE, WS_CLIENT, CLIENT_COL = "bronze.proa.metrics", "payer_client", ""
     IN_DATABRICKS = False
 
 # display() exists in Databricks; provide a no-frills fallback for local runs.
@@ -123,13 +122,13 @@ except NameError:
             print(x)
 
 print(f"IN_DATABRICKS={IN_DATABRICKS}\nJSON_PATH={JSON_PATH}")
-print(f"Source (WellSense feed) = {WS_CATALOG}.{WS_SCHEMA}.ws_eligibility_all")
+print(f"Source (payer client eligibility feed) = {WS_CATALOG}.{WS_SCHEMA}.ws_eligibility_all")
 print(f"Source (match runs)     = {PROA_TABLE}   client = {WS_CLIENT!r}  (client_col={'auto' if not CLIENT_COL else CLIENT_COL})")
 
-# Resolve which raw column identifies the WellSense client (slug varies; client id does not)
-# In the dashboard, clientId='wellsense' is stable while `slug` is the EHR connection (e.g. middleton_family_medicine)
-# and varies per run — so we must filter on the CLIENT, not the slug. `bronze.proa.metrics` has no literal
-# `client_id` column (the workbook's Custom SQL derives it), so we auto-detect which raw column carries 'wellsense'.
+# Resolve which raw column identifies the payer client (slug varies; client id does not)
+# In the dashboard, clientId is stable while `slug` is the EHR connection and varies per run
+# — so we must filter on the CLIENT, not the slug. `bronze.proa.metrics` has no literal
+# `client_id` column (the workbook's Custom SQL derives it), so we auto-detect which raw column carries the client id.
 CANDIDATE_CLIENT_COLS = ["scope", "url", "flow_run_name", "metrics_flow_run_name",
                          "token", "source_system_type", "connection_type", "slug"]
 
@@ -157,7 +156,7 @@ if IN_DATABRICKS:
         print(f"Auto-detected client column: {CLIENT_COL!r} ({_hits} '{WS_CLIENT}' rows in last 30d)"
               if CLIENT_COL else
               f"Could not auto-detect a column containing '{WS_CLIENT}'. Set the 'client_col' widget manually. "
-              f"Candidates tried: {CANDIDATE_CLIENT_COLS}")
+              f"Candidates tried: {CANDIDATE_CLIENT_COLS}")  # noqa: E501
     if CLIENT_COL:
         _validate_sql_identifier(CLIENT_COL)
         CLIENT_PREDICATE = f"LOWER(`{CLIENT_COL}`) LIKE {_sql_string_literal(f'%{WS_CLIENT.lower()}%')}"
@@ -165,7 +164,7 @@ if IN_DATABRICKS:
         CLIENT_PREDICATE = "TRUE"
 else:
     CLIENT_PREDICATE = f"LOWER(`<client_col>`) LIKE {_sql_string_literal(f'%{WS_CLIENT.lower()}%')}"  # resolved at runtime in Databricks
-print("WellSense client predicate:", CLIENT_PREDICATE)
+print("Payer client predicate:", CLIENT_PREDICATE)
 
 # LAYER A — The failure logs (the JSON file)
 #
@@ -381,7 +380,7 @@ if USE_LIVE and IN_DATABRICKS:
         SELECT DATE(run_date_time) AS day, COUNT(*) AS errors
         FROM {PROA_TABLE}
         WHERE {_err_pred}                           -- error definition (see ERROR_MODE)
-          AND {CLIENT_PREDICATE}                    -- WellSense client (auto-resolved above)
+          AND {CLIENT_PREDICATE}                    -- payer client (auto-resolved above)
           AND run_date_time >= DATEADD(day, -60, CURRENT_DATE())
         GROUP BY DATE(run_date_time)
         ORDER BY day
@@ -434,7 +433,7 @@ fig, ax = plt.subplots(figsize=(13, 5))
 ax.plot(daily.index, daily.values, marker="o", ms=3, lw=1, color="#455a64", label="errors/day")
 ax.plot(daily.index, daily.rolling(7).mean(), lw=3, color="#1565c0", label="7-day average")
 ax.axvspan(pd.Timestamp("2026-06-11"), today, color="seagreen", alpha=0.08, label="post-fix regime (flat, low)")
-ax.axvline(pd.Timestamp("2026-06-04"), color="darkorange", ls="--", lw=1.5, label="BAI-188 / PAY-1940 ship (~Jun 4)")
+ax.axvline(pd.Timestamp("2026-06-04"), color="darkorange", ls="--", lw=1.5, label="Scoring improvement ship (~Jun 4)")
 ax.set(title="Layer B · Daily match errors — an ~80% step-down in mid-June, holding steady since",
        xlabel="", ylabel="match errors per day")
 ax.xaxis.set_major_formatter(mdates.DateFormatter("%b %d"))
@@ -486,25 +485,24 @@ print("\nTakeaway: quote whichever number matches the question — 'people affec
       "'error events' (Layer B) for system load — but never present the two totals as a discrepancy. The gap IS\n"
       "the retry behaviour, and it is expected.")
 
-# LAYER C — Raw value reconciliation  (the OPEN ISSUE · Jira RA-4428)
+# LAYER C — Raw value reconciliation  (open issue)
 #
 # **Plain English:** Layers A and B tell us *that* a field disagreed and *how often* — but not *why*. The only way to
 # know whether a DOB mismatch is **our bug** (e.g. a date-format problem) or **upstream data** (genuinely different /
-# missing birthday) is to look at the **actual values side-by-side**. That is exactly what stakeholders mean by
-# *"look at the real data,"* and it is tracked as **RA-4428**.
+# missing birthday) is to look at the **actual values side-by-side**.
 #
 # Where the raw values live (confirmed by tracing the Sigma workbook, incl. what turned out NOT to work):
-# - The `dob_bwell`/`dob_ehr`, **`gender_bwell`/`gender_ehr`**, name/postal pairs + `total_score` are produced by the
+# - The `dob_platform`/`dob_ehr`, **`gender_platform`/`gender_ehr`**, name/postal pairs + `total_score` are produced by the
 #   workbook's **Custom SQL** element ("Input Query"). They are **not** flat columns and **not** a nested struct on
 #   `bronze.proa.metrics` — that table only carries run-level fields (`matched`, `run_id`, `client_person_id`, `slug`,
 #   `scope`, …), which is why a `DESCRIBE`/explode approach fails. The pairs come from a source the Custom SQL joins.
 # - **Easiest reliable path:** don't re-derive it — reuse what Sigma already computed. Either **export** the
 #   *Member Match Fail Review* / *Matching Error Table* element to **CSV** and read it, or **paste the Custom SQL**
 #   text into the cell below. The next cell supports both via `RECON_SOURCE`.
-# - **`bronze.wellsense.ws_eligibility_all`** — the WellSense **source** feed, useful to independently confirm the
+# - The payer client eligibility table — useful to independently confirm the
 #   "ehr"/source side (`date_of_birth`, `gender_code`, `zipcode`). Join key: `member_id`.
 #
-# > **Gender is captured** in the Custom SQL (`gender_bwell`/`gender_ehr`); only the curated *review* subset omits it —
+# > **Gender is captured** in the Custom SQL (`gender_platform`/`gender_ehr`); only the curated *review* subset omits it —
 # > so surfacing gender for triage is a Sigma view tweak, not a data-collection gap.
 #
 # What we already learned from a sample of the review table (2026-07-15)
@@ -514,7 +512,7 @@ print("\nTakeaway: quote whichever number matches the question — 'people affec
 
 # A reusable DOB classifier — mirrors what the algorithm auto-recovers vs. not
 def classify_dob_pair(a, b):
-    """Classify a (bwell, ehr) DOB pair. Mirrors helix.personmatching's graduated DOB logic so analysts can
+    """Classify a (platform, ehr) DOB pair. Mirrors the platform's graduated DOB logic so analysts can
     see which cases the algorithm ALREADY recovers vs. which are genuinely out of reach.
 
     Returns one of:
@@ -575,8 +573,8 @@ for a, b, expected in _examples:
     flag = "OK " if got == expected else "!! "
     print(f"  {flag}{a or '∅':<12} vs {b or '∅':<12} -> {got:22s} (expected {expected})")
 
-# Load the bwell-vs-ehr demographic pairs (the reconciliation input)
-# IMPORTANT: the dob_bwell/dob_ehr/gender_* pairs are NOT flat columns in bronze.proa.metrics. They are built by
+# Load the platform-vs-ehr demographic pairs (the reconciliation input)
+# IMPORTANT: the dob_platform/dob_ehr/gender_* pairs are NOT flat columns in bronze.proa.metrics. They are built by
 # the Sigma workbook's *Custom SQL* element ("Input Query") from a source that isn't exposed as a plain table, so
 # we do NOT try to re-derive them here. Pick whichever RECON_SOURCE is easiest for you:
 #
@@ -585,18 +583,22 @@ for a, b, expected in _examples:
 #   "custom_sql" — in Sigma, open the "Input Query" element's Custom SQL (Element menu → "Open in SQL" / Edit), copy
 #                 the query text, and paste it into CUSTOM_SQL below. It already resolves the pairs correctly.
 #
-# Expected columns after loading (rename to these): dob_bwell, dob_ehr, gender_bwell, gender_ehr, total_score,
-# client_person_id, run_id  (+ optionally postal_code_bwell/ehr, names).
+# Expected columns after loading (rename to these): dob_platform, dob_ehr, gender_platform, gender_ehr, total_score,
+# client_person_id, run_id  (+ optionally postal_code_platform/ehr, names).
 RECON_SOURCE = "csv"
-RECON_CSV_PATH = "/dbfs/FileStore/wellsense/member_match_fail_review.csv"   # <- set this if using "csv"
+RECON_CSV_PATH = "/dbfs/FileStore/member_match_fail_review.csv"   # <- set this if using "csv"
 CUSTOM_SQL = ""  # <- paste the workbook's Custom SQL here if using "custom_sql"
 
-# Standardise whatever the export calls the columns (Sigma exports use the display labels, e.g. "Dob Bwell").
+# Standardise whatever the export calls the columns (Sigma exports use the display labels, e.g. "Dob Platform").
 COLUMN_ALIASES = {
-    "Dob Bwell": "dob_bwell", "Dob Ehr": "dob_ehr", "dob bwell": "dob_bwell", "dob ehr": "dob_ehr",
-    "Gender Bwell": "gender_bwell", "Gender Ehr": "gender_ehr",
+    "Dob Platform": "dob_platform", "Dob Ehr": "dob_ehr", "dob platform": "dob_platform", "dob ehr": "dob_ehr",
+    # Legacy Sigma label aliases kept for backward compatibility with older exports
+    "Dob Bwell": "dob_platform", "dob bwell": "dob_platform",
+    "Gender Platform": "gender_platform", "Gender Ehr": "gender_ehr",
+    "Gender Bwell": "gender_platform",
     "Total Score": "total_score", "Client Person Id": "client_person_id", "Run Id": "run_id",
-    "Postal Code Bwell": "postal_code_bwell", "Postal Code Ehr": "postal_code_ehr",
+    "Postal Code Platform": "postal_code_platform", "Postal Code Ehr": "postal_code_ehr",
+    "Postal Code Bwell": "postal_code_platform",
 }
 
 recon = pd.DataFrame()
@@ -618,14 +620,13 @@ else:
     print("Set RECON_SOURCE to 'csv' (with RECON_CSV_PATH) or 'custom_sql' (with CUSTOM_SQL) to populate `recon`.")
 
 if len(recon):
-    keep = [c for c in ["run_id", "client_person_id", "total_score", "dob_bwell", "dob_ehr",
-                        "gender_bwell", "gender_ehr", "postal_code_bwell", "postal_code_ehr"] if c in recon.columns]
+    keep = [c for c in ["run_id", "client_person_id", "total_score", "dob_platform", "dob_ehr",
+                        "gender_platform", "gender_ehr", "postal_code_platform", "postal_code_ehr"] if c in recon.columns]
     display(recon[keep].head(20) if keep else recon.head(20))
 
-# Pull the WellSense SOURCE demographics for the failed members (Layer C, source side)
-# member_id in the JSON looks like 'wellsense-B0090511500'; the source table stores the bare id.
+# Pull the payer client SOURCE demographics for the failed members (Layer C, source side)
 member_ids = (
-    persons["memberIdentifier"].dropna().str.replace("^wellsense-", "", regex=True).unique().tolist()
+    persons["memberIdentifier"].dropna().str.replace(r"^[^-]+-", "", regex=True).unique().tolist()
 )
 print(f"Failed member_ids to look up in the source feed: {len(member_ids)}")
 
@@ -654,24 +655,24 @@ else:
 # C1 · Reconcile: join the failure list to the source feed and classify each DOB / gender difference
 # This is the payoff cell. It produces the bucket counts that settle "our bug vs. upstream data".
 #
-# > **Note on the user-entered ("bwell") side:** the cleanest source of the value the member *typed* is the
-# > *Member Match Fail Review* table's `Dob Bwell` / name columns (join on `Client Person Id` / `Run Id`). If that
+# > **Note on the user-entered ("platform") side:** the cleanest source of the value the member *typed* is the
+# > *Member Match Fail Review* table's `Dob Platform` / name columns (join on `Client Person Id` / `Run Id`). If that
 # > table is materialised to the warehouse, join it here; otherwise export it from Sigma and read it as a second
-# > DataFrame. The classifier above works on any (bwell, ehr) pair regardless of where the two values come from.
+# > DataFrame. The classifier above works on any (platform, ehr) pair regardless of where the two values come from.
 
-# DOB reconciliation buckets (fill in the bwell-side values to run end-to-end)
-# `recon` is produced directly from bronze.proa.metrics in the "Pull the bwell-vs-ehr demographic pairs" cell
-# above (columns: dob_bwell, dob_ehr, gender_bwell, gender_ehr, total_score, client_person_id, …).
+# DOB reconciliation buckets (fill in the platform-side values to run end-to-end)
+# `recon` is produced directly from bronze.proa.metrics in the "Pull the platform-vs-ehr demographic pairs" cell
+# above (columns: dob_platform, dob_ehr, gender_platform, gender_ehr, total_score, client_person_id, …).
 #
-# OPTIONAL cross-check: verify the "ehr"/source side independently against the WellSense feed (`src_pdf`) by
+# OPTIONAL cross-check: verify the "ehr"/source side independently against the payer client eligibility feed (`src_pdf`) by
 # joining on member_id — useful to catch cases where the value the pipeline compared differs from the raw feed:
-#   xcheck = (persons.assign(member_id=persons["memberIdentifier"].str.replace("^wellsense-","",regex=True))
+#   xcheck = (persons.assign(member_id=persons["memberIdentifier"].str.replace("^payer_client-","",regex=True))
 #                    .merge(src_pdf.rename(columns={"date_of_birth":"dob_source","gender_code":"gender_source"}),
 #                           on="member_id", how="left"))
 
 def run_dob_reconciliation(recon: pd.DataFrame):
     r = recon.copy()
-    r["dob_bucket"] = r.apply(lambda row: classify_dob_pair(row.get("dob_bwell"), row.get("dob_ehr")), axis=1)
+    r["dob_bucket"] = r.apply(lambda row: classify_dob_pair(row.get("dob_platform"), row.get("dob_ehr")), axis=1)
     counts = r["dob_bucket"].value_counts()
 
     ours = ["format_artifact", "unparseable"]           # fixable in our code
@@ -694,7 +695,7 @@ def run_dob_reconciliation(recon: pd.DataFrame):
 if isinstance(recon, pd.DataFrame) and len(recon):
     recon = run_dob_reconciliation(recon)
 else:
-    print("`recon` is empty — populate it from the 'Pull the bwell-vs-ehr demographic pairs' cell above, then re-run.")
+    print("`recon` is empty — populate it from the 'Pull the platform-vs-ehr demographic pairs' cell above, then re-run.")
 
 # Gender normalization check — the one clear code gap
 def normalize_gender(g):
@@ -709,10 +710,10 @@ def normalize_gender(g):
 
 def gender_reconcile(recon: pd.DataFrame):
     r = recon.copy()
-    r["g_bwell"] = r["gender_bwell"].map(normalize_gender)
+    r["g_platform"] = r["gender_platform"].map(normalize_gender)
     r["g_ehr"] = r["gender_ehr"].map(normalize_gender)
     def bucket(row):
-        a, b = row["g_bwell"], row["g_ehr"]
+        a, b = row["g_platform"], row["g_ehr"]
         if not a or not b:
             return "missing_one_side"
         if a == b:
@@ -730,7 +731,7 @@ print("Gender helpers ready. normalize_gender('M') ->", normalize_gender("M"),
       "| normalize_gender('Female') ->", normalize_gender("Female"))
 
 # Run it now if we pulled the gender pairs.
-if isinstance(recon, pd.DataFrame) and len(recon) and {"gender_bwell", "gender_ehr"}.issubset(recon.columns):
+if isinstance(recon, pd.DataFrame) and len(recon) and {"gender_platform", "gender_ehr"}.issubset(recon.columns):
     recon = gender_reconcile(recon)
 else:
     print("(Populate `recon` with gender_bwell/gender_ehr to see the gender buckets.)")
@@ -748,9 +749,9 @@ else:
 # 6. Add a **gender pair** to the review table and run `gender_reconcile` — the `M/F ↔ male/female` normalisation is the one clear, low-risk **code** fix.
 #
 # **Ownership (so the pieces are clear):**
-# - *Data Science*: Layers A/B analysis (done) + the two bounded fixes (gender normalisation, confirm DOB parsing) + running the RA-4428 classification once the joined data lands.
-# - *Reporting*: the RA-4428 join (Zendesk ticket + eligibility source).
-# - *Eng / CX / WellSense*: the six product/CX causes and the WellSense Case Head / file-quality conversation.
+# - *Data Science*: Layers A/B analysis (done) + the two bounded fixes (gender normalisation, confirm DOB parsing) + running the DOB classification once the joined data lands.
+# - *Reporting*: the raw-value join (ticket system + eligibility source).
+# - *Engineering / Client Success*: the product/CX causes and the eligibility file-quality conversation.
 #
 # **The expectation to keep setting:** matching compares two independently-authored records, so some pairs will always
 # genuinely disagree. A small, stable manual-review queue is the designed safety margin — the alternative (loosening the

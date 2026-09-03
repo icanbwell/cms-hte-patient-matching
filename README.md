@@ -459,8 +459,4 @@ patient_matching/
 
 Apache License 2.0
 
-## Author
-
-Imran Qureshi — [imran.qureshi@bwell.com](mailto:imran.qureshi@bwell.com)
-
 **Repository:** [https://github.com/icanbwell/patient-matching-reference-implementation](https://github.com/icanbwell/patient-matching-reference-implementation)

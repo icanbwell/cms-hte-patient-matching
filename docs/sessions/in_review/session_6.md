@@ -15,7 +15,7 @@ note" below.
 ## Re-scope note (2026-08-12)
 
 This doc was originally authored 2026-07-28 against CMS Proposal **v3.3.0 alone** — the
-"37 rules" framing that used to open this section. Per the 2026-08-12 Sean/Zack sync and a
+"37 rules" framing that used to open this section. Per the 2026-08-12 sync and a
 read of all six v3.3.x addenda now in `docs/`, that scope was incomplete: **v3.3.1, v3.3.3,
 v3.3.4, and v3.3.6 all materially change Table 2's structure**, not just its rule count.
 **v3.3.2 and v3.3.5 do not** — they're compliance/audit/testing-methodology changes (§VI/§VII)
@@ -45,14 +45,14 @@ Session 5 — every new/reclassified rule's `p_collision_exact`/`_fuzzy` is comp
 
 None currently authored. Two explicit candidates fall out of this session's analysis (not
 authored yet, both need a human decision first — see "Out of scope"):
-- Rules 39/40 (guardian-verified minor / newborn-via-maternal-linkage), once Imran resolves
+- Rules 39/40 (guardian-verified minor / newborn-via-maternal-linkage), once the engineering lead resolves
   Rule 39's flagged math problem and someone confirms whether a per-encounter birth identifier
   is available.
-- Institutional-address registry/postal-validation integration (v3.3.6), once Sean/Imran weigh
+- Institutional-address registry/postal-validation integration (v3.3.6), once the project lead and engineering lead weigh
   the cost/privacy tradeoff v3.3.4's own footnote raises about calling an address-verification
   service on every patient address.
 
-The (not-yet-authored) per-value P(collision) refinement, if Imran signs off on it, would apply
+The (not-yet-authored) per-value P(collision) refinement, if the engineering lead signs off on it, would apply
 to this session's full rule set once it exists.
 
 ## Upstream data/system dependencies
@@ -227,7 +227,7 @@ downstream dependency of this session's own deliverable).
   per-encounter unique identifier — a shared *facility* ID does not qualify and the rule
   "does not clear" without one. This repo's `FieldExtractor` only ever sees a `Patient` dict
   (no birth-encounter/Coverage resource wiring); whether a real per-encounter ID is even
-  obtainable from upstream FHIR data is unconfirmed. **`NEEDS HUMAN DECISION — Sean/Imran`**:
+  obtainable from upstream FHIR data is unconfirmed. **`NEEDS HUMAN DECISION`**:
   (a) how Rule 39's independence problem should be resolved before it's implementable, and
   (b) whether a per-encounter birth identifier is actually available to this system. Until
   both are answered, these are a candidate future session, not this one.
@@ -237,7 +237,7 @@ downstream dependency of this session's own deliverable).
   those external data sources is new integration work this repo has no existing pattern for,
   and v3.3.4's own footnote raises a real cost/privacy concern about calling an
   address-verification service on every patient address (caching addresses for repeat lookups
-  is itself an added attack surface). **`NEEDS HUMAN DECISION — Sean/Imran`**: whether/how to
+  is itself an added attack surface). **`NEEDS HUMAN DECISION`**: whether/how to
   build this integration, and whether the cost/privacy tradeoff is acceptable. Until resolved,
   any Household-tier row that includes Street Line (H-03, H-06, H-09, H-14, and rule 37's
   household leg) should be implemented at the code level per this doc's tables, but treated as
@@ -250,7 +250,7 @@ downstream dependency of this session's own deliverable).
   content. Out of scope for this session; relevant instead to whoever owns compliance
   reporting or session 8's legacy-comparison/accuracy-validation work.
 - The per-value (name-frequency-conditioned) collision-probability refinement — separate,
-  not-yet-authored candidate session needing Imran's sign-off.
+  not-yet-authored candidate session needing the engineering lead's sign-off.
 - Gender as a matching field — v3.3 drops it entirely; this repo's Table 2 rules never
   referenced gender in the first place (confirm by grep before assuming there's cleanup work
   here — `grep -rn gender patient_matching/matching/` and check whether any hits are
@@ -376,7 +376,7 @@ downstream dependency of this session's own deliverable).
    c. **Amend, don't just add.** Remove rules 13, 14, 15, 16 from `_V322_RULES` (Task 3's
       rename) and construct them instead as Category 2 rules per (b). This is the one place
       in this session that changes already-merged rule behavior, not just adds new rules —
-      call this out clearly in the session's PR description so Sean/reviewers know it's
+      call this out clearly in the session's PR description so reviewers know it's
       intentional, not scope creep.
 
    d. **Two-step evaluation path.** File: `patient_matching/matching/matching_engine.py`. Add
@@ -468,13 +468,13 @@ New test files needed:
 
 ## Open questions
 
-- **`NEEDS HUMAN DECISION — Sean/Imran`**: Rule 39's independence/math problem (Street Line
+- **`NEEDS HUMAN DECISION`**: Rule 39's independence/math problem (Street Line
   correlated with the relationship term) — how should it be fixed before the rule is
   implementable? (See "Out of scope.")
-- **`NEEDS HUMAN DECISION — Sean/Imran`**: is a genuinely per-encounter, namespace-bound birth
+- **`NEEDS HUMAN DECISION`**: is a genuinely per-encounter, namespace-bound birth
   identifier available anywhere in this system's real data, for Rule 40? If not, Rule 40 has
   no path to adoption as specified.
-- **`NEEDS HUMAN DECISION — Sean/Imran`**: whether/how to build v3.3.6's institutional-address
+- **`NEEDS HUMAN DECISION`**: whether/how to build v3.3.6's institutional-address
   registry/postal-validation integration, given the cost/privacy tradeoff v3.3.4's own footnote
   raises (calling an address-verification service on every patient address; caching addresses
   as an added attack surface). Until decided, Street-Line-based Household rows are implemented
@@ -484,7 +484,7 @@ New test files needed:
   this is a legitimate implementation detail the executing agent resolves by reading
   `patient_matching/fhir_client/`/`patient_matching/ial2_extraction/`'s actual identifier
   shapes, not a `NEEDS HUMAN DECISION`.
-- **Resolved, no longer open**: the original doc's `NEEDS HUMAN DECISION — Sean/Imran` on
+- **Resolved, no longer open**: the original doc's `NEEDS HUMAN DECISION` on
   whether to enable a household-risk rule cluster by default. Superseded by v3.3.1's
   structural fix — see the callout in Task 4. Listed here only so it isn't mistaken for a
   still-open item from the original version of this doc.
