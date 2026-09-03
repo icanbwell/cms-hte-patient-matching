@@ -105,6 +105,37 @@ class TestAddressNormalizer:
         assert self.normalizer.normalize_patient_addresses({}) == []
         assert self.normalizer.normalize_patient_addresses({"address": []}) == []
 
+    def test_null_line_does_not_raise(self) -> None:
+        """`addr.get("line", [])` returns `None`, not `[]`, when `line` is
+        present but explicitly `null` -- caught via a live run against
+        `bronze.fhir_lake.patient_4_0_0` (raised `TypeError` on `len(None)`)."""
+        patient = {
+            "address": [
+                {
+                    "line": None,
+                    "city": "New York",
+                    "state": "NY",
+                    "postalCode": "10001",
+                }
+            ]
+        }
+        result = self.normalizer.normalize_patient_addresses(patient)
+        assert result[0]["city"] == "new york"
+        assert "line" not in result[0]
+
+    def test_null_address_list_does_not_raise(self) -> None:
+        assert self.normalizer.normalize_patient_addresses({"address": None}) == []
+
+    def test_unparseable_street_line_falls_back_instead_of_raising(self) -> None:
+        """scourgify raises `UnParseableAddressError` (a subclass of the
+        already-caught `AddressNormalizationError`) on a line it can't break
+        into components -- verify the fallback path, not just that it's
+        theoretically caught."""
+        patient = {"address": [{"line": ["Main St"], "city": "Anytown"}]}
+        result = self.normalizer.normalize_patient_addresses(patient)
+        assert result[0]["city"] == "anytown"
+        assert result[0]["line"] == ["main st"]
+
     def test_city_state_normalized(self) -> None:
         patient = {
             "address": [

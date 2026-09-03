@@ -109,12 +109,15 @@ class PatientNormalizer:
             result.pop("address", None)
 
         # Normalize identifiers — suppress placeholder SSNs
-        if "identifier" in result:
-            normalized_ids = self._normalize_identifiers(result["identifier"])
-            if normalized_ids:
-                result["identifier"] = normalized_ids
-            else:
-                result.pop("identifier", None)
+        normalized_ids = (
+            self._normalize_identifiers(result["identifier"])
+            if result.get("identifier")
+            else []
+        )
+        if normalized_ids:
+            result["identifier"] = normalized_ids
+        else:
+            result.pop("identifier", None)
 
         return result
 
