@@ -43,16 +43,13 @@ from typing import Any, Dict, List
 
 import pytest
 
-from patient_matching.matching.backend import FieldCriterion, MatchingBackend
 from patient_matching.matching.field_extractor import FieldExtractor
 from patient_matching.matching.matching_engine import MatchingEngine
 from patient_matching.normalization.manager import NormalizationManager
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-SIBLING_TEST_SET_REPO = REPO_ROOT.parent / "cms-hte-patient-matching-test-set"
-ONC_PAIRS_PATH = (
-    SIBLING_TEST_SET_REPO / "evaluation" / "cases" / "sample_labeled_pairs.jsonl"
-)
+from ._onc_test_set import ONC_CASES_DIR, NullBackend, missing_sibling_data_reason
+
+ONC_PAIRS_PATH = ONC_CASES_DIR / "sample_labeled_pairs.jsonl"
 
 # Regression guards (see module docstring for the measured values these
 # leave headroom around). Update deliberately - with a note of why - if a
@@ -61,31 +58,18 @@ RECALL_FLOOR = 0.95
 FPR_CEILING = 0.01
 
 
-class _NullBackend(MatchingBackend):
-    """No-op backend - evaluate_pair() never calls it, but the constructor
-    requires one."""
-
-    def search(self, criteria: List[FieldCriterion]) -> List[Dict[str, Any]]:
-        return []
-
-
 def _load_pairs(path: Path) -> List[Dict[str, Any]]:
     with path.open() as f:
         return [json.loads(line) for line in f]
 
 
 @pytest.mark.skipif(
-    not ONC_PAIRS_PATH.exists(),
-    reason=(
-        f"ONC-derived labeled pairs not found at {ONC_PAIRS_PATH}. Clone "
-        "icanbwell/cms-hte-patient-matching-test-set as a sibling of this repo "
-        "to run this test (see .claude/skills/test-matching-rule/SKILL.md)."
-    ),
+    not ONC_PAIRS_PATH.exists(), reason=missing_sibling_data_reason(ONC_PAIRS_PATH)
 )
 def test_onc_labeled_pairs_recall_and_fpr() -> None:
     normalizer = NormalizationManager()
     extractor = FieldExtractor()
-    engine = MatchingEngine(backend=_NullBackend())
+    engine = MatchingEngine(backend=NullBackend())
 
     pairs = _load_pairs(ONC_PAIRS_PATH)
     assert pairs, f"{ONC_PAIRS_PATH} is empty"

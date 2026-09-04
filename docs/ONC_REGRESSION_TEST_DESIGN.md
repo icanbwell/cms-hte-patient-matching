@@ -6,11 +6,17 @@
 
 ## Summary
 
-`tests/test_onc_regression.py` runs every labeled pair from the sibling
-`cms-hte-patient-matching-test-set` repo's ONC-derived dataset through this engine's real
-normalize → extract → `evaluate_pair` pipeline, and asserts recall ≥ 0.95 and FPR ≤ 0.01 as
-regression guards. It's written, passing (measured: recall 0.9710, FPR 0.0069, 0 extraction
-errors on 6,290 pairs), and clean under ruff/mypy. It does **not** yet run in CI — see
+Two tests now run the sibling `cms-hte-patient-matching-test-set` repo's ONC-derived data through
+this engine's real normalize → extract → `evaluate_pair` pipeline:
+
+- `tests/test_onc_regression.py` (pairs tier) — asserts recall ≥ 0.95 and FPR ≤ 0.01.
+- `tests/test_onc_population_regression.py` (population tier) — asserts precision ≥ 0.99,
+  recall ≥ 0.95, FPR ≤ 0.001, and F1 ≥ 0.97.
+
+Both are written, passing, and clean under ruff/mypy. Measured live: pairs tier — recall 0.9710,
+FPR 0.0069, 0 extraction errors on 6,290 pairs; population tier — precision 0.9990, recall 0.9710,
+FPR 0.0001, accuracy 0.9978, F1 0.9848, 0 extraction errors on 80,000 query-candidate evaluations
+(2,000 queries × ~40-candidate pools, 8,016 unique candidates). Neither runs in CI yet — see
 Limitations. No practitioner/NPPES-style test was built; see "Alternatives Considered" for why
 that's not a gap.
 
@@ -36,7 +42,7 @@ nothing connects them.
 
 ## Design
 
-### Data source
+### Data source (pairs tier)
 
 `../cms-hte-patient-matching-test-set/evaluation/cases/sample_labeled_pairs.jsonl` — 6,290
 labeled `(source, target, expected_match, rationale)` records, each an ONC 2017 Patient Matching
@@ -58,8 +64,10 @@ over two `PatientFields` objects (all 30 Category 1 rules + all 8 Category 2 hou
 rules), no backend search involved — exactly the shape the engine's own docstring says it was
 factored out for.
 
-The test constructs `MatchingEngine` with a no-op `_NullBackend` (its `search()` is never called
-by `evaluate_pair`, but the constructor requires a backend instance).
+The test constructs `MatchingEngine` with a no-op `NullBackend` (its `search()` is never called
+by `evaluate_pair`, but the constructor requires a backend instance) — shared with the population
+tier via `tests/_onc_test_set.py`, along with the sibling-repo path constants and the skip-reason
+helper, so both tests stay in sync rather than duplicating this bookkeeping.
 
 ### What's asserted, and why only that
 
@@ -107,6 +115,38 @@ These thresholds are **regression guards with headroom**, not a re-derivation of
 repo's checked-in `evaluation/baselines/v3_2_2_onc_baseline.txt` (26 rules, ~2,000,936 pairs from
 a much larger, uncommitted generated set) — that file isn't a valid direct comparison point for a
 30-rule engine evaluated on the smaller, committed 6,290-pair file.
+
+### Population tier (`tests/test_onc_population_regression.py`)
+
+The pairs tier above deliberately can't validate precision/F1/accuracy (see previous section).
+The sibling repo's second tier — `population_queries.jsonl` (2,000 query patients) +
+`population_candidates.jsonl` (8,016 unique candidates, shared across queries' pools) — is built
+to be naturally representative instead: each query's pool (~40 candidates) mixes its real
+duplicate cluster into mostly-random distractors, rather than curating rare cases. That
+representativeness is exactly what makes precision/F1/accuracy valid to compute here, per the
+sibling repo's `evaluation/cases/README.md` "Option B."
+
+Same pipeline as the pairs tier, with one efficiency difference: each of the 8,016 candidates is
+normalized/extracted **once** (candidates are shared across many queries' pools) rather than
+once per query-candidate pair, then every `(query, candidate_id)` in every pool is flattened into
+one confusion matrix — 80,000 evaluations total, ~10-20s locally.
+
+This roughly mirrors what `helix.personmatching`'s `tests/cms_dataset/test_cms_performance.py`
+does for the legacy engine (a query patient matched against the rest of a population), but uses
+the sibling repo's pre-built pools — which include real mined/constructed non-matches — rather
+than self-matching a masked patient against an otherwise-unmasked baseline bundle. It does not
+replicate that file's masking-scenario sweep (drop phone/email/gender) or its persisted
+per-scenario JSON metrics report; this test evaluates the one dataset the sibling repo ships and
+reports its breakdown in the assertion message on failure, matching this repo's existing test
+style rather than helix's file-based tracking.
+
+| Metric | Measured | Threshold | Headroom |
+|---|---|---|---|
+| Precision | 0.9990 (tp=5826, fp=6) | ≥ 0.99 | matches the pairs-tier tp/fn since true matches are counted the same way; fp differs (6 vs. 2) because the population tier's much larger candidate pool surfaces more near-miss distractors |
+| Recall | 0.9710 | ≥ 0.95 | same as pairs tier |
+| FPR | 0.0001 (fp=6, tn=73,994) | ≤ 0.001 | 10x headroom; naturally tiny here because tn dominates the pool, but still a tight absolute ceiling — same false-positive-is-critical reasoning as the pairs tier |
+| F1 | 0.9848 | ≥ 0.97 | ~1.5 points below measured |
+| Accuracy | 0.9978 | not asserted | reported in the failure-message summary only; dominated by the huge tn count so less sensitive to a real regression than the other four metrics |
 
 ### Skip behavior
 
@@ -162,17 +202,16 @@ size — not a valid comparison basis. This test establishes its own thresholds 
 ## Limitations / Non-Goals
 
 - **Does not run in CI today.** `.github/workflows/build_and_test.yml` only checks out this repo;
-  the sibling `cms-hte-patient-matching-test-set` repo is never present, so the test always skips
-  in CI as currently configured. It only runs when a developer has both repos cloned locally.
-- **Precision/F1/accuracy are not measured.** Would require wiring up the sibling repo's
-  population-query tier (`population_queries.jsonl`/`population_candidates.jsonl`) instead —
-  not done here.
+  the sibling `cms-hte-patient-matching-test-set` repo is never present, so both tests always
+  skip in CI as currently configured. **Decided (2026-09-04): leave local-only for now** — don't
+  bundle the cross-repo CI dependency decision into this change; revisit deliberately later (see
+  Open Questions).
 - **No practitioner/provider coverage** — see Alternatives Considered. Out of scope for this repo.
 
 ## Open Questions
 
 | # | Question | Needed From | Impact on Proposal |
 |---|---|---|---|
-| 1 | Should CI check out the sibling repo so this test actually gates PRs, instead of perpetually skipping? (Second `actions/checkout`? Submodule? Something else?) This is a cross-repo test-only dependency — the same category of question `docs/PROJECT_MAP.md` §4 already flags (there, for an eval-only dependency on `helix.personmatching`) and reserves for the project lead. | Project lead | If no: test remains local-only/advisory. If yes: needs a CI workflow change + a decision on checkout mechanism. |
-| 2 | Should this test also cover the population-query tier for precision/F1/accuracy, or is recall/FPR-only sufficient for now? | Project lead | If yes: separate follow-up test + likely a separate design note (candidate pool scoring is a different shape than pairwise evaluation). |
-| 3 | Are 0.95 recall / 0.01 FPR the right thresholds, or should they track closer to the currently-measured 0.9710/0.0069 for tighter regression sensitivity? | Project lead | Tighter thresholds catch smaller regressions but risk more false alarms on noise-level fluctuations from legitimate rule tuning. |
+| 1 | ~~Should CI check out the sibling repo so this test actually gates PRs?~~ **Resolved 2026-09-04: leave local-only for now.** Don't bundle this cross-repo CI dependency decision into this change — revisit separately, the same way `docs/PROJECT_MAP.md` §4 reserves the analogous `helix.personmatching` eval-dependency question for the project lead. | — | Both tests remain local-only/advisory; zero automated protection until this is revisited. |
+| 2 | ~~Should this also cover the population-query tier for precision/F1/accuracy?~~ **Resolved 2026-09-04: yes** — `tests/test_onc_population_regression.py` added, following `helix.personmatching`'s precedent of having a second, broader test tier alongside the pairs-style test. | — | Done — see "Population tier" above. |
+| 3 | Are the current thresholds (pairs: 0.95 recall / 0.01 FPR; population: 0.99 precision / 0.95 recall / 0.001 FPR / 0.97 F1) right, or should they track closer to the measured values for tighter regression sensitivity? | Project lead | Tighter thresholds catch smaller regressions but risk more false alarms on noise-level fluctuations from legitimate rule tuning. |
