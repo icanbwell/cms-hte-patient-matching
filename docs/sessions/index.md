@@ -44,6 +44,7 @@ run whatever **Suggested Next Session** names below.
 | # | Session | Thread | Depends on | Size | Status | One-line summary |
 |---|---------|--------|-----------|------|--------|-------------------|
 | 8 | [session_8](https://github.com/icanbwell/cms-hte-patient-matching-test-set/blob/main/docs/sessions/pending/session_8.md) (moved) | Evaluation & Statistical Rigor | 3, 4, 9 (hard, all satisfied); 6 (soft, quality-of-result only) | L | pending — hard code dependencies satisfied (session 4: PR #22 merged, live run 2026-08-18 via PR #36; session 9: PR #27 merged); blocked on 3 `NEEDS HUMAN DECISION` items — see the moved session_8.md | Tier 3: legacy comparison harness, precision/recall-as-agreement, disagreement buckets, per-pair explanations |
+| 13 | [session_13](pending/session_13.md) | Phase 2: production candidate-retrieval scaling | None | S | pending — design captured; blocked on 2 `NEEDS HUMAN DECISION` items (package name, PyPI org ownership) before a feature branch can start | Publish `patient_matching` to PyPI (Trusted Publishing workflow already exists in-repo; fixes needed: missing `[build-system]` in `pyproject.toml`, stale `setup.py`, a stray `patientmatching/` dir, and undocumented-but-missing Makefile publish targets) |
 
 Session 3 merged into `main` (PR [#11](https://github.com/icanbwell/patient-matching/pull/11),
 2026-07-30) and session 5 merged into `main` (PR [#16](https://github.com/icanbwell/patient-matching/pull/16),
