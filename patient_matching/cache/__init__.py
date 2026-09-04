@@ -11,6 +11,7 @@ Manages the lifecycle of the patient matching cache:
 from .cache_backend import CacheBackend, CachedPatient
 from .duckdb_cache import DuckDBCache
 from .matching_adapter import CacheMatchingBackend
+from .mongo_atlas_cache import MongoAtlasCache
 from .cache_manager import CacheManager, CacheManagerConfig
 
 __all__ = [
@@ -20,4 +21,5 @@ __all__ = [
     "CacheMatchingBackend",
     "CachedPatient",
     "DuckDBCache",
+    "MongoAtlasCache",
 ]

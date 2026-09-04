@@ -24,6 +24,15 @@ production. It has **no code path into `helix.personmatching`/`person-matching-s
 Connecting it to production ("Phase 2") is a separate, currently unscoped effort in those other
 repos.
 
+**2026-09-04 update:** Phase 2 is no longer *entirely* unscoped. A new sibling repo,
+`cms-hte-patient-matching-service`, is being built to wrap this package's
+`PatientMatcherService`/`MatchingEngine` as a production HTTP microservice. Imran decided this
+repo's charter now extends to the production-backend infrastructure work that sibling service's
+design surfaces (see `docs/sessions/pending/session_12.md`: a `MongoAtlasCache` `CacheBackend`,
+motivated by that service's scaling/shared-state needs rather than by the CMS spec itself).
+This repo's own matching-algorithm work (Table 2/3, ONC validation) is unaffected — this is an
+addition to scope, not a redirection of it.
+
 ## 2. Data — what exists and where
 
 | Dataset | Where | Used for |
