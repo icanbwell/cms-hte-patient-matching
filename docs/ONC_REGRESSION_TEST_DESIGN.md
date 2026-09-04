@@ -6,19 +6,22 @@
 
 ## Summary
 
-Two tests now run the sibling `cms-hte-patient-matching-test-set` repo's ONC-derived data through
-this engine's real normalize → extract → `evaluate_pair` pipeline:
+Two tests run ONC-derived data through this engine's real normalize → extract → `evaluate_pair`
+pipeline:
 
 - `tests/test_onc_regression.py` (pairs tier) — asserts recall ≥ 0.95 and FPR ≤ 0.01.
 - `tests/test_onc_population_regression.py` (population tier) — asserts precision ≥ 0.99,
   recall ≥ 0.95, FPR ≤ 0.001, and F1 ≥ 0.97.
 
+The data itself is **vendored into this repo** at `tests/fixtures/onc/` (copied from the sibling
+`cms-hte-patient-matching-test-set` repo — see "Vendoring decision" below) — this repo is
+standalone and does not require a second repo checked out to run these tests, including in CI.
+
 Both are written, passing, and clean under ruff/mypy. Measured live: pairs tier — recall 0.9710,
 FPR 0.0069, 0 extraction errors on 6,290 pairs; population tier — precision 0.9990, recall 0.9710,
 FPR 0.0001, accuracy 0.9978, F1 0.9848, 0 extraction errors on 80,000 query-candidate evaluations
-(2,000 queries × ~40-candidate pools, 8,016 unique candidates). Neither runs in CI yet — see
-Limitations. No practitioner/NPPES-style test was built; see "Alternatives Considered" for why
-that's not a gap.
+(2,000 queries × ~40-candidate pools, 8,016 unique candidates). No practitioner/NPPES-style test
+was built; see "Alternatives Considered" for why that's not a gap.
 
 ## Problem
 
@@ -42,19 +45,37 @@ nothing connects them.
 
 ## Design
 
+### Vendoring decision (2026-09-04)
+
+**This repo now vendors a copy of the ONC-derived test data at `tests/fixtures/onc/`** — copied
+from `cms-hte-patient-matching-test-set`'s `evaluation/cases/{sample_labeled_pairs,
+population_queries,population_candidates}.jsonl` (provenance, source commit, and refresh
+instructions in `tests/fixtures/onc/README.md`). This reverses the original design in this doc,
+which read the data live from a sibling repo checkout.
+
+**Why:** explicit direction that this repo should be standalone for testing — a second repo
+should not need to be cloned alongside this one (or checked out in CI) for its test suite to run
+and gate PRs. Vendoring solves the CI-visibility gap flagged in this doc's Limitations/Open
+Questions without any CI workflow change: the data is just here now.
+
+**Tradeoff accepted:** this copy will not update automatically if the sibling repo regenerates its
+dataset. `tests/fixtures/onc/README.md` documents the refresh procedure and records the source
+commit hash so drift is at least detectable, not silent-forever — but keeping it current is now a
+manual, deliberate act rather than always-current-by-construction. This was the reason the earlier
+design didn't vendor in the first place (see the original Problem/Design rationale below, which
+still explains why the *generation* code and the raw ~1M-row ONC CSVs stay in the sibling repo —
+only the three already-generated output files are duplicated here, not the mutation/mining
+pipeline that produces them).
+
 ### Data source (pairs tier)
 
-`../cms-hte-patient-matching-test-set/evaluation/cases/sample_labeled_pairs.jsonl` — 6,290
-labeled `(source, target, expected_match, rationale)` records, each an ONC 2017 Patient Matching
-Algorithm Challenge record (public, synthetic, non-PHI) or a same-record mutation/mined
-hard-negative of one. Categories: `fuzzy_variant` (single-edit typo/nickname/transposition
-variants), `normalization_edge_case` (diacritic/punctuation folding), `hard_negative` (mined
-coincidental ZIP+DOB collisions between distinct real people), `special_population` (mined
-multi-generational households + constructed institutional-address collisions).
-
-This repo's own `.claude/skills/test-matching-rule/SKILL.md` already assumes this sibling repo is
-cloned alongside `cms-hte-patient-matching` — the test follows that same convention rather than
-inventing a new one.
+`tests/fixtures/onc/sample_labeled_pairs.jsonl` — 6,290 labeled `(source, target, expected_match,
+rationale)` records, each an ONC 2017 Patient Matching Algorithm Challenge record (public,
+synthetic, non-PHI) or a same-record mutation/mined hard-negative of one. Categories:
+`fuzzy_variant` (single-edit typo/nickname/transposition variants), `normalization_edge_case`
+(diacritic/punctuation folding), `hard_negative` (mined coincidental ZIP+DOB collisions between
+distinct real people), `special_population` (mined multi-generational households + constructed
+institutional-address collisions).
 
 ### Pipeline
 
@@ -66,7 +87,7 @@ factored out for.
 
 The test constructs `MatchingEngine` with a no-op `NullBackend` (its `search()` is never called
 by `evaluate_pair`, but the constructor requires a backend instance) — shared with the population
-tier via `tests/_onc_test_set.py`, along with the sibling-repo path constants and the skip-reason
+tier via `tests/_onc_test_set.py`, along with the fixture path constants and the skip-reason
 helper, so both tests stay in sync rather than duplicating this bookkeeping.
 
 ### What's asserted, and why only that
@@ -119,12 +140,13 @@ a much larger, uncommitted generated set) — that file isn't a valid direct com
 ### Population tier (`tests/test_onc_population_regression.py`)
 
 The pairs tier above deliberately can't validate precision/F1/accuracy (see previous section).
-The sibling repo's second tier — `population_queries.jsonl` (2,000 query patients) +
-`population_candidates.jsonl` (8,016 unique candidates, shared across queries' pools) — is built
-to be naturally representative instead: each query's pool (~40 candidates) mixes its real
-duplicate cluster into mostly-random distractors, rather than curating rare cases. That
-representativeness is exactly what makes precision/F1/accuracy valid to compute here, per the
-sibling repo's `evaluation/cases/README.md` "Option B."
+The second, vendored tier — `tests/fixtures/onc/population_queries.jsonl` (2,000 query patients) +
+`tests/fixtures/onc/population_candidates.jsonl` (8,016 unique candidates, shared across queries'
+pools) — is built to be naturally representative instead: each query's pool (~40 candidates)
+mixes its real duplicate cluster into mostly-random distractors, rather than curating rare cases.
+That representativeness is exactly what makes precision/F1/accuracy valid to compute here, per
+the sibling repo's `evaluation/cases/README.md` "Option B" (the generation methodology, still
+documented only in that repo — not duplicated here, see "Vendoring decision" above).
 
 Same pipeline as the pairs tier, with one efficiency difference: each of the 8,016 candidates is
 normalized/extracted **once** (candidates are shared across many queries' pools) rather than
@@ -133,12 +155,12 @@ one confusion matrix — 80,000 evaluations total, ~10-20s locally.
 
 This roughly mirrors what `helix.personmatching`'s `tests/cms_dataset/test_cms_performance.py`
 does for the legacy engine (a query patient matched against the rest of a population), but uses
-the sibling repo's pre-built pools — which include real mined/constructed non-matches — rather
-than self-matching a masked patient against an otherwise-unmasked baseline bundle. It does not
+the vendored pre-built pools — which include real mined/constructed non-matches — rather than
+self-matching a masked patient against an otherwise-unmasked baseline bundle. It does not
 replicate that file's masking-scenario sweep (drop phone/email/gender) or its persisted
-per-scenario JSON metrics report; this test evaluates the one dataset the sibling repo ships and
-reports its breakdown in the assertion message on failure, matching this repo's existing test
-style rather than helix's file-based tracking.
+per-scenario JSON metrics report; this test evaluates the one vendored dataset and reports its
+breakdown in the assertion message on failure, matching this repo's existing test style rather
+than helix's file-based tracking.
 
 | Metric | Measured | Threshold | Headroom |
 |---|---|---|---|
@@ -151,9 +173,10 @@ style rather than helix's file-based tracking.
 ### Skip behavior
 
 `@pytest.mark.skipif(not ONC_PAIRS_PATH.exists(), ...)` — skips with an actionable reason
-(clone-the-sibling-repo instructions) rather than failing when the sibling repo isn't present.
-This matches how `test-matching-rule` already treats that dependency, but means the test provides
-**zero protection in an environment where the sibling repo isn't checked out** — see Limitations.
+(pointing at `tests/fixtures/onc/README.md`) rather than failing outright. Now that the data is
+vendored and committed, this should never actually trigger in a normal checkout — it's
+defense-in-depth for a corrupted/partial clone, not the expected path it was when the data lived
+in a sibling repo that might not be cloned.
 
 ## Alternatives Considered
 
@@ -201,17 +224,20 @@ size — not a valid comparison basis. This test establishes its own thresholds 
 
 ## Limitations / Non-Goals
 
-- **Does not run in CI today.** `.github/workflows/build_and_test.yml` only checks out this repo;
-  the sibling `cms-hte-patient-matching-test-set` repo is never present, so both tests always
-  skip in CI as currently configured. **Decided (2026-09-04): leave local-only for now** — don't
-  bundle the cross-repo CI dependency decision into this change; revisit deliberately later (see
-  Open Questions).
+- **Data can silently drift from the sibling repo's canonical copy.** Vendoring trades "always
+  current" for "standalone" — see "Vendoring decision" above and `tests/fixtures/onc/README.md`
+  for the refresh procedure. Nothing automated detects drift; it's a manual, deliberate act.
 - **No practitioner/provider coverage** — see Alternatives Considered. Out of scope for this repo.
+
+Superseded by the vendoring decision above: this section previously noted that both tests skipped
+in CI because `.github/workflows/build_and_test.yml` doesn't check out the sibling repo. That's no
+longer true — the data is vendored locally, so both tests run as real gates in CI with no workflow
+change needed. See Open Questions #1 for how that open question was resolved, then superseded.
 
 ## Open Questions
 
 | # | Question | Needed From | Impact on Proposal |
 |---|---|---|---|
-| 1 | ~~Should CI check out the sibling repo so this test actually gates PRs?~~ **Resolved 2026-09-04: leave local-only for now.** Don't bundle this cross-repo CI dependency decision into this change — revisit separately, the same way `docs/PROJECT_MAP.md` §4 reserves the analogous `helix.personmatching` eval-dependency question for the project lead. | — | Both tests remain local-only/advisory; zero automated protection until this is revisited. |
+| 1 | ~~Should CI check out the sibling repo so this test actually gates PRs?~~ **Resolved 2026-09-04: leave local-only for now** — then **superseded same day: vendor the data into this repo instead** (see "Vendoring decision"), making the original question moot. No CI checkout of a second repo is needed; both tests now run as real gates on every PR. | — | Both tests are real CI gates, not local-only/advisory. |
 | 2 | ~~Should this also cover the population-query tier for precision/F1/accuracy?~~ **Resolved 2026-09-04: yes** — `tests/test_onc_population_regression.py` added, following `helix.personmatching`'s precedent of having a second, broader test tier alongside the pairs-style test. | — | Done — see "Population tier" above. |
 | 3 | ~~Should thresholds track closer to measured values for tighter regression sensitivity?~~ **Resolved 2026-09-04: keep current headroom** — follow `helix.personmatching`'s own precedent, which is deliberately lenient on aggregate pass rate (`test_cms_dataset.py`/`test_cms_performance.py` assert things like `n_fail / total < 1.0`, essentially "not everything failed") and reserves zero-tolerance for one specific dangerous condition (`failed_records_with_higher_probabilities == 0` — a wrong match scoring higher than the correct one). This repo's thresholds are already well past that bar in rigor (real floor/ceiling numbers with headroom, not near-no-op checks, plus a zero-tolerance extraction-error gate of our own) without going all the way to exact-value pinning, which was already rejected above for a different reason (forces edits on every legitimate improvement). | — | Thresholds unchanged: pairs recall ≥ 0.95 / FPR ≤ 0.01; population precision ≥ 0.99 / recall ≥ 0.95 / FPR ≤ 0.001 / F1 ≥ 0.97. |

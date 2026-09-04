@@ -3,24 +3,25 @@
 Companion to `test_onc_regression.py`, which only asserts recall/FPR because
 its data source (the per-provision pairs tier) deliberately over-samples
 rare/high-risk categories and so isn't representative. This test uses the
-sibling `cms-hte-patient-matching-test-set` repo's *population-query* tier
-instead: one query patient against a realistic ~40-candidate pool (a real
-duplicate cluster mixed into mostly-random distractors), which is naturally
-representative - see that repo's `evaluation/cases/README.md`, "Option B:
+*population-query* tier instead: one query patient against a realistic
+~40-candidate pool (a real duplicate cluster mixed into mostly-random
+distractors), which is naturally representative - see
+`cms-hte-patient-matching-test-set`'s `evaluation/cases/README.md`, "Option B:
 computing precision/FDR/F1/accuracy over the population tier." That's what
 makes precision/F1/accuracy valid to assert here, unlike in the pairs test.
 
 Mirrors what `helix.personmatching`'s `tests/cms_dataset/test_cms_performance.py`
 does for the legacy scoring engine (matching a masked query against the rest
-of the population), but uses the sibling repo's pre-built candidate pools
-(with real mined/constructed non-matches) rather than self-matching an
-unmasked baseline.
+of the population), but uses that repo's pre-built candidate pools (with real
+mined/constructed non-matches) rather than self-matching an unmasked baseline.
 
-Skips (does not fail) if the sibling repo isn't cloned alongside this one -
-same convention as `test_onc_regression.py` and `.claude/skills/test-matching-rule/SKILL.md`.
+Data is vendored into `tests/fixtures/onc/` (see that directory's README.md
+for provenance and how to refresh it) rather than read live from the
+`cms-hte-patient-matching-test-set` repo, so this test runs standalone - no
+second repo needs to be checked out alongside this one, including in CI.
 
 Every (query, candidate) pair in every pool is flattened into one confusion
-matrix, per the sibling repo's Option B. Measured on the current dataset
+matrix, per that repo's Option B. Measured on the current dataset
 (2,000 queries, 8,016 unique candidates, 80,000 query-candidate evaluations)
 with the current rule set (30 Category 1 rules + 8 household rules):
 precision=0.9990, recall=0.9710, FPR=0.0001, accuracy=0.9978, F1=0.9848, 0
@@ -40,7 +41,7 @@ from patient_matching.matching.field_extractor import FieldExtractor, PatientFie
 from patient_matching.matching.matching_engine import MatchingEngine
 from patient_matching.normalization.manager import NormalizationManager
 
-from ._onc_test_set import ONC_CASES_DIR, NullBackend, missing_sibling_data_reason
+from ._onc_test_set import ONC_CASES_DIR, NullBackend, missing_fixture_data_reason
 
 POPULATION_QUERIES_PATH = ONC_CASES_DIR / "population_queries.jsonl"
 POPULATION_CANDIDATES_PATH = ONC_CASES_DIR / "population_candidates.jsonl"
@@ -61,7 +62,7 @@ def _load_jsonl(path: Path) -> List[Dict[str, Any]]:
 
 @pytest.mark.skipif(
     not (POPULATION_QUERIES_PATH.exists() and POPULATION_CANDIDATES_PATH.exists()),
-    reason=missing_sibling_data_reason(POPULATION_QUERIES_PATH),
+    reason=missing_fixture_data_reason(POPULATION_QUERIES_PATH),
 )
 def test_onc_population_precision_recall_fpr_f1() -> None:
     normalizer = NormalizationManager()

@@ -5,14 +5,13 @@ does for the legacy scoring engine: run every labeled pair from a real,
 publicly-sourced dataset through the engine and check recall/false-positive
 rate haven't regressed.
 
-Data source: the ONC 2017 Patient Matching Algorithm Challenge dataset
-(public, synthetic, non-PHI), as mutated/mined into labeled pairs by the
-sibling `cms-hte-patient-matching-test-set` repo - see that repo's
-`evaluation/cases/README.md` for exactly how each case was generated. This
-repo's `.claude/skills/test-matching-rule/SKILL.md` already assumes that repo
-is cloned alongside this one; this test makes the same assumption and skips
-(does not fail) if it isn't present, since CI for *this* repo does not
-currently check out the sibling repo.
+Data source: the ONC 2017 Patient Matching Algorithm Challenge dataset (public,
+synthetic, non-PHI), as mutated/mined into labeled pairs by the
+`cms-hte-patient-matching-test-set` repo - see `tests/fixtures/onc/README.md`
+for exactly which files were vendored, from where, and how to refresh them.
+The data is vendored (copied) into `tests/fixtures/onc/` rather than read live
+from that repo, so this test runs standalone - no second repo needs to be
+checked out alongside this one, including in CI.
 
 Only recall and FPR are asserted here, not precision - `sample_labeled_pairs.jsonl`
 deliberately over-samples rare/high-risk categories (twins, institutional
@@ -47,7 +46,7 @@ from patient_matching.matching.field_extractor import FieldExtractor
 from patient_matching.matching.matching_engine import MatchingEngine
 from patient_matching.normalization.manager import NormalizationManager
 
-from ._onc_test_set import ONC_CASES_DIR, NullBackend, missing_sibling_data_reason
+from ._onc_test_set import ONC_CASES_DIR, NullBackend, missing_fixture_data_reason
 
 ONC_PAIRS_PATH = ONC_CASES_DIR / "sample_labeled_pairs.jsonl"
 
@@ -64,7 +63,7 @@ def _load_pairs(path: Path) -> List[Dict[str, Any]]:
 
 
 @pytest.mark.skipif(
-    not ONC_PAIRS_PATH.exists(), reason=missing_sibling_data_reason(ONC_PAIRS_PATH)
+    not ONC_PAIRS_PATH.exists(), reason=missing_fixture_data_reason(ONC_PAIRS_PATH)
 )
 def test_onc_labeled_pairs_recall_and_fpr() -> None:
     normalizer = NormalizationManager()
