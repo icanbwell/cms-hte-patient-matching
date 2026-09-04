@@ -20,8 +20,14 @@ standalone and does not require a second repo checked out to run these tests, in
 Both are written, passing, and clean under ruff/mypy. Measured live: pairs tier — recall 0.9710,
 FPR 0.0069, 0 extraction errors on 6,290 pairs; population tier — precision 0.9990, recall 0.9710,
 FPR 0.0001, accuracy 0.9978, F1 0.9848, 0 extraction errors on 80,000 query-candidate evaluations
-(2,000 queries × ~40-candidate pools, 8,016 unique candidates). No practitioner/NPPES-style test
-was built; see "Alternatives Considered" for why that's not a gap.
+(2,000 queries × ~40-candidate pools, 8,016 unique candidates).
+
+No practitioner/NPPES *compliance* test was built — see "Alternatives Considered" for why that's
+not a gap. A narrower, valid NPPES-based test was added instead:
+`tests/test_nppes_no_cross_provider_match.py`, checking that the one approved rule that *can*
+evaluate against NPPES-shaped data (Rule 33) never falsely matches two distinct real providers —
+data vendored at `tests/fixtures/nppes/`. See the "Update (2026-09-04)" note under "Alternatives
+Considered" for the full rationale.
 
 ## Problem
 
@@ -203,8 +209,20 @@ patients." Investigation showed this doesn't hold, for two independent reasons:
 This repo also has zero practitioner/provider code today — it's patient-only per `README.md` and
 the `patient_matching/` package layout, consistent with `docs/PROJECT_MAP.md` §1's statement that
 this repo has "no code path into `helix.personmatching`/`person-matching-service` today."
-Practitioner/provider matching is already owned by those two repos. **No practitioner test was
-built, and none should be, in this repo.**
+Practitioner/provider matching is already owned by those two repos. **No practitioner
+*compliance* test was built, and none should be, in this repo** — that conclusion still holds.
+
+**Update (2026-09-04): a narrower, valid NPPES-based test was added anyway** —
+`tests/test_nppes_no_cross_provider_match.py`, data vendored at `tests/fixtures/nppes/` (copied
+from `helix.personmatching`'s own NPPES sample, provenance in that directory's README). It is
+**not** a reversal of the conclusion above: it doesn't claim this engine matches practitioners.
+Exactly one approved Table 2 rule can evaluate at all against NPPES-shaped data — Rule 33, `First
+Name* + Last Name* + Phone Number + ZIP Code`, the only approved rule requiring none of
+DOB/SSN/MBI/email — and real group practices commonly share one practice phone+ZIP across
+multiple distinct providers (130 such (phone, ZIP) collisions found in the vendored sample, 307
+distinct-NPI pairs evaluated). The test checks that rule 33 never declares two genuinely distinct
+real providers a match under that realistic coincidence. It passes today (0 false positives). See
+that test's own module docstring for the full rationale — not duplicated here.
 
 ### Exact tp/fp/tn/fn pinning instead of floor/ceiling — rejected
 

@@ -41,7 +41,8 @@ from patient_matching.matching.field_extractor import FieldExtractor, PatientFie
 from patient_matching.matching.matching_engine import MatchingEngine
 from patient_matching.normalization.manager import NormalizationManager
 
-from ._onc_test_set import ONC_CASES_DIR, NullBackend, missing_fixture_data_reason
+from ._null_backend import NullBackend
+from ._onc_test_set import ONC_CASES_DIR, missing_fixture_data_reason
 
 POPULATION_QUERIES_PATH = ONC_CASES_DIR / "population_queries.jsonl"
 POPULATION_CANDIDATES_PATH = ONC_CASES_DIR / "population_candidates.jsonl"

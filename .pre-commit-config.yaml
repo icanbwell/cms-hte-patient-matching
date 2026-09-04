@@ -1,4 +1,4 @@
-exclude: (^.idea/|^docsrc|^docs|^notebooks/|^tests/fixtures/onc/)
+exclude: (^.idea/|^docsrc|^docs|^notebooks/|^tests/fixtures/)
 
 repos:
   # Pre-commit hooks for basic checks
