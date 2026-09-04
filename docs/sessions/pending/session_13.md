@@ -1,12 +1,13 @@
 # Session 13 — Publish `cms-hte-patient-matching` to PyPI
 
 **Status:** pending — design capture only, not yet scoped/sized for execution. Package name is
-now decided (see Open Question 1); one `NEEDS HUMAN DECISION` item remains (PyPI org ownership)
-and blocks starting a feature branch.
+decided (see Open Question 1). One `NEEDS HUMAN DECISION`/action item remains (minting a PyPI
+API token — see Open Question 2, now well-evidenced as Imran's own action, not an external
+unknown) and blocks starting a feature branch.
 **Thread:** `Phase 2: production candidate-retrieval scaling` (same thread as session 12 —
 distribution packaging for the sibling `cms-hte-patient-matching-service` to consume).
-**Estimated size:** S — the packaging fixes are small and mechanical; most of the "work" is a
-one-time manual PyPI account/Trusted-Publisher setup step outside this repo.
+**Estimated size:** S — the packaging fixes are small and mechanical; the remaining blocker is a
+5-minute manual step (mint a PyPI API token) rather than an organizational unknown.
 
 > Read `../conventions.md` first.
 
@@ -42,32 +43,57 @@ public PyPI, not a git reference).
   in front of public PyPI, per `~/git/bwell-repo-wiki/concepts/dependency-supply-chain.md`'s
   Root.io hardening migration). This is unrelated to this session and needs no change.
 - **What this session is about**: publishing *this package* outward, to public pypi.org, under
-  icanbwell's account — the same thing `helix.personmatching`, `fhir-schema-py`, and
-  `language-model-common` already do. Internal consumers (like `cms-hte-patient-matching-service`)
+  icanbwell's account — the same thing `helix.fhir.client.sdk`, `helix.personmatching`,
+  `fhir-schema-py`, and `language-model-common` already do. Internal consumers (like
+  `cms-hte-patient-matching-service`)
   will then pull it back in through the same JFrog `virtual-pypi` mirror, automatically, with no
   special config on their end — exactly how `person-matching-service` already consumes
   `helix.personmatching`.
 
 ## Current state — what's already here, and what's broken
 
-Verified directly against this repo and four sibling icanbwell repos
-(`helix.personmatching`, `fhir-schema-py`, `language-model-common`, `device-codex`) before
-proposing anything:
+Verified directly against this repo and five sibling icanbwell repos (`helix.fhir.client.sdk`,
+`helix.personmatching`, `fhir-schema-py`, `language-model-common`, `device-codex`) before
+proposing anything.
 
-1. **`.github/workflows/python-publish.yml` already exists and is already correct** — it's a
-   verbatim match for `fhir-schema-py`'s and (functionally) `language-model-common`'s workflow:
-   OIDC Trusted Publishing (`permissions: id-token: write`, `environment: pypi`,
-   `pypa/gh-action-pypi-publish`), triggered on `release: [created]`. `gh api
-   repos/icanbwell/cms-hte-patient-matching/environments` confirms a `pypi` GitHub Environment
-   already exists on this repo (created 2026-09-03) with **zero secrets** — correct for OIDC,
-   which needs no long-lived token. This exact mechanism is proven live: `language-model-common`'s
-   last 5 releases via this same workflow all succeeded in ~30s each.
-   - **What's still missing and can't be done from this repo alone**: nothing has registered
-     `cms-hte-patient-matching` (the decided name — see Open Question 1) as a **Trusted
-     Publisher** on pypi.org itself. That's a one-time manual step on pypi.org
-     ("Publishing" → "Add a pending publisher"), done by whoever administers icanbwell's PyPI
-     account. Until that's done, the first release will fail authorization even though the
-     workflow file is already correct.
+**Which sibling pattern to follow — resolved by looking at `helix.fhir.client.sdk` specifically
+(Imran's direction):** two different publishing mechanisms exist across these repos, and
+`helix.fhir.client.sdk` is the tie-breaker, not just one data point among equals:
+
+- **`helix.fhir.client.sdk`** — a **public** repo, the highest-velocity package by far (releases
+  land almost daily: `5.0.10` → `5.0.13` across 2026-08-31 → 2026-09-04 alone; the `python-publish.yml`
+  workflow itself dates to 2021-03-29). Mechanism: plain **API-token twine upload** — `runs-on:
+  ubuntu-latest`, no OIDC, no GitHub Environment, `TWINE_USERNAME: __token__` /
+  `TWINE_PASSWORD: ${{ secrets.PYPI }}`, `python setup.py sdist bdist_wheel && twine upload
+  dist/*`. `helix.personmatching` (this repo's closest sibling — same author, same
+  matching-library-for-a-thin-service architecture) uses the identical mechanism, just on a
+  self-hosted `runs-on: main` runner. Both repos' `python-publish.yml` were authored by
+  `imranq2 <imranq2@hotmail.com>` (confirmed via `git log --follow --diff-filter=A`) — i.e.,
+  **Imran's own PyPI-linked identity**, not a shared EA/DevOps account. This is the dominant,
+  longest-proven, most-actively-exercised mechanism in the org for exactly this kind of
+  library-behind-a-service package.
+- **`fhir-schema-py` / `language-model-common`** — OIDC **Trusted Publishing**
+  (`permissions: id-token: write`, `environment: pypi`, `pypa/gh-action-pypi-publish`). Also
+  real and working (`language-model-common`'s last 5 releases all succeeded in ~30s each), but
+  lower-velocity, more recently introduced, and requires an extra one-time step this repo can't
+  do internally: registering the project as a Trusted Publisher on pypi.org itself.
+- **This repo's existing `.github/workflows/python-publish.yml`** was already scaffolded to the
+  *second* (OIDC) pattern — `gh api repos/icanbwell/cms-hte-patient-matching/environments`
+  confirms a `pypi` GitHub Environment already exists here (created 2026-09-03) with zero
+  secrets, consistent with OIDC. **Recommendation, per Imran's steer toward
+  `helix.fhir.client.sdk`'s pattern: rewrite this workflow to the token-based twine mechanism**
+  instead of pursuing Trusted-Publisher registration. Concretely: drop `permissions: id-token:
+  write` and the `pypa/gh-action-pypi-publish` step; add `pip install twine` + `twine upload
+  dist/*` with `TWINE_USERNAME: __token__` / `TWINE_PASSWORD: ${{ secrets.PYPI }}`. Keep
+  `environment: pypi` on the job (unlike either token-based sibling) and put the `PYPI` secret
+  *in* that environment rather than at repo level — the environment already exists here for
+  free and gives this repo an approval gate the SDK/`helix.personmatching` don't bother with,
+  at no extra setup cost.
+  - **What's still needed and can't be done from this repo alone**: someone with access to the
+    icanbwell PyPI identity mints an API token (scoped to the `cms-hte-patient-matching` project
+    once it exists, or account-wide for the first upload) and adds it as the `PYPI` secret in
+    this repo's `pypi` environment. Strong evidence (the git-blame finding above) says that
+    person is **Imran** — see Open Question 2.
 2. **`pyproject.toml` has no `[build-system]` table.** `helix.personmatching` and
    `fhir-schema-py` both declare `[build-system] requires = ["setuptools>=70.3.0", "wheel"]`,
    `build-backend = "setuptools.build_meta"`. Without it, `python -m build` falls back to the
@@ -141,9 +167,10 @@ into that service; it only makes the dependency possible.
 
 ## Upstream data/system dependencies
 
-- **A PyPI account/org that owns the icanbwell namespace on pypi.org**, with permission to add a
-  Trusted Publisher for this project. Whoever set this up for `language-model-common` and
-  `fhir-schema-py` already has the access this session needs — see Open Question 2.
+- **A PyPI API token from the icanbwell identity** that already owns `helix.fhir.client.sdk` and
+  `helix.personmatching` on pypi.org, pasted into this repo's `pypi` GitHub Environment as the
+  `PYPI` secret. See Open Question 2 — strong evidence this is Imran's own action, not a
+  separate person/team to track down.
 - No FHIR server, no patient data, no new runtime dependency.
 
 ## Downstream data/system dependencies
@@ -157,7 +184,10 @@ None. This does not touch any deployed system.
 - Add `[build-system]`, `[tool.setuptools.packages.find]` (excluding `tests*`), and
   `[tool.setuptools.package-data]` to `pyproject.toml`, matching `helix.personmatching`'s pattern.
 - Delete `setup.py` (superseded once `pyproject.toml` is self-sufficient — matches
-  `helix.personmatching`/`fhir-schema-py`, neither of which ships one).
+  `helix.personmatching`/`fhir-schema-py`, neither of which ships one; `helix.fhir.client.sdk`
+  keeps a trivial `from setuptools import setup; setup()` shim only because its CI still calls
+  `python setup.py sdist bdist_wheel` directly — not needed here since this repo's
+  `python-publish.yml` already uses `python -m build`, which needs no `setup.py` at all).
 - Remove `setup.cfg`'s now-dead-duplicate `[mypy]`/`[tool:pytest]` sections; resolve whether
   `[flake8]` is still live before touching it.
 - Resolve and remove (or intentionally document) the stray `patientmatching/` directory —
@@ -165,8 +195,14 @@ None. This does not touch any deployed system.
 - Fix the stale GitHub URL in `pyproject.toml`'s project metadata (add a `[project.urls]` table
   pointing at `icanbwell/cms-hte-patient-matching`, since `setup.py` — the only place that URL
   currently lives — is being deleted).
+- Rewrite `.github/workflows/python-publish.yml` from OIDC Trusted Publishing to token-based
+  twine, matching `helix.fhir.client.sdk`/`helix.personmatching` (see "Current state" above):
+  drop `id-token: write` and `pypa/gh-action-pypi-publish`; add `pip install twine` + `twine
+  upload dist/*` with `TWINE_USERNAME: __token__` / `TWINE_PASSWORD: ${{ secrets.PYPI }}`; keep
+  `environment: pypi` on the job so the secret lives scoped to that environment.
 - Add the `testpackage`/`package` Makefile targets (twine, token-based) that `README.md`/
-  `CONTRIBUTING.md` already document but that don't exist yet.
+  `CONTRIBUTING.md` already document but that don't exist yet — same mechanism as the CI change
+  above, so local and CI publishing match.
 - Do a TestPyPI dry run (`make testpackage`) to verify the built wheel installs cleanly and
   declares the right dependencies, before trusting the real release path.
 - Cut the first real release once the above is verified, exercising `python-publish.yml`
@@ -175,8 +211,8 @@ None. This does not touch any deployed system.
 
 ### Out of scope
 
-- Registering the PyPI Trusted Publisher itself — manual, one-time, on pypi.org, not a repo
-  change (Open Question 2 names who does it).
+- Minting the PyPI API token itself and adding it as a GitHub secret — Imran's action (Open
+  Question 2), not a repo code change.
 - Any change to `build_and_test.yml` or this repo's own JFrog-backed dependency resolution.
 - Any change to `docs/handoff/README.md` (frozen historical snapshot — see Open Question 3).
 - Migrating any sibling repo's publishing mechanism.
@@ -185,21 +221,24 @@ None. This does not touch any deployed system.
 
 ## Tasks
 
-1. Resolve Open Question 2 below (PyPI org ownership) — blocking.
+1. Confirm Open Question 2 below (Imran mints the PyPI token) — blocking.
 2. `pyproject.toml`: rename `[project] name` to `cms-hte-patient-matching`; add `[build-system]`,
    `[tool.setuptools.packages.find]`, `[tool.setuptools.package-data]`, `[project.urls]`.
 3. Delete `setup.py`; trim `setup.cfg` to only what's still live.
 4. Resolve the `patientmatching/` stray directory (Open Question 5).
-5. `Makefile`: add `testpackage`/`package` targets.
-6. `make build` locally; inspect the built wheel's `METADATA` to confirm dependencies and
+5. Rewrite `.github/workflows/python-publish.yml` to token-based twine (matching
+   `helix.fhir.client.sdk`), keeping `environment: pypi`.
+6. `Makefile`: add `testpackage`/`package` targets (same token-based twine mechanism).
+7. `make build` locally; inspect the built wheel's `METADATA` to confirm dependencies and
    `python_requires` match `pyproject.toml` (catches the `install_requires=[]` class of bug
    before any upload).
-7. `make testpackage`; `pip install` the TestPyPI result into a scratch venv; confirm
+8. `make testpackage`; `pip install` the TestPyPI result into a scratch venv; confirm
    `import patient_matching` works and pulls the declared deps.
-8. Whoever owns the icanbwell PyPI org (Open Question 2) registers the Trusted Publisher for the
-   name `cms-hte-patient-matching`, pointing at this repo/workflow/environment.
-9. Cut a GitHub Release (tag `v0.1.0` or as decided) to exercise `python-publish.yml` for real.
-10. Update `README.md`'s Installation section with the real `pip install <name>` command.
+9. Imran mints a PyPI API token from the icanbwell identity and adds it as the `PYPI` secret in
+   this repo's `pypi` GitHub Environment.
+10. Cut a GitHub Release (tag `v0.1.0` or as decided) to exercise `python-publish.yml` for real.
+11. Update `README.md`'s Installation section with the real `pip install cms-hte-patient-matching`
+    command.
 
 ## Unit tests required
 
@@ -213,8 +252,8 @@ TestPyPI install dry run (task 7), not a pytest addition.
 - [ ] `make testpackage` succeeds; the resulting TestPyPI package `pip install`s cleanly in a
       scratch venv and `import patient_matching` succeeds.
 - [ ] No second top-level package (`patientmatching`) ships in the built wheel.
-- [ ] `python-publish.yml` succeeds end-to-end on a real GitHub Release, after the Trusted
-      Publisher is registered.
+- [ ] `python-publish.yml` succeeds end-to-end on a real GitHub Release, after the `PYPI` token
+      secret is in place.
 - [ ] `make tests` and `make run-pre-commit` still pass (packaging changes shouldn't touch
       matching behavior, but confirm regardless).
 
@@ -229,9 +268,15 @@ TestPyPI install dry run (task 7), not a pytest addition.
    distribution names and importable package names don't have to match, and changing the
    `patient_matching/` directory/import path is out of scope here since it would break every
    existing internal import in this repo).
-2. **`NEEDS HUMAN DECISION` (Imran or EA) — who administers the icanbwell PyPI org account** that
-   already owns `language-model-common` and `fhir-schema-py`, and can add this project as a
-   Trusted Publisher. This session can't proceed past task 8 without that person.
+2. **`NEEDS HUMAN ACTION` (very likely Imran) — mint the PyPI API token.** `git log
+   --follow --diff-filter=A` on both `helix.fhir.client.sdk/.github/workflows/python-publish.yml`
+   (2021-03-29) and `helix.personmatching/.github/workflows/python-publish.yml` (2022-12-10)
+   shows the same author, `imranq2 <imranq2@hotmail.com>` — strong evidence Imran personally
+   holds the icanbwell PyPI identity these sibling packages publish under, rather than a
+   separate EA/DevOps-owned account. Not fully closed only because git-blame is circumstantial
+   (someone could have added the workflow file without being the account holder) — worth a
+   one-line confirmation from Imran before task 9, but this is no longer treated as an unknown
+   third party to track down.
 3. **Not blocking, but flagging**: should `docs/handoff/README.md` §2's repo-list line be updated
    now that "PyPI" is becoming true for the CMS engine too, or is that doc a frozen historical
    snapshot (Zack Malone's 2026-07-20 handoff) not meant to be edited? Default: leave it
