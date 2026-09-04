@@ -1,6 +1,6 @@
 # Design: ONC-Dataset Regression Test for the Table 2 Matching Engine
 
-**Status:** Implemented, pending review | **Date:** 2026-09-04 | **Author:** Imran Qureshi (with Claude) | **Reviewer:** project lead
+**Status:** Implemented, all open questions resolved | **Date:** 2026-09-04 | **Author:** Imran Qureshi (with Claude) | **Reviewer:** project lead
 
 ---
 
@@ -214,4 +214,4 @@ size — not a valid comparison basis. This test establishes its own thresholds 
 |---|---|---|---|
 | 1 | ~~Should CI check out the sibling repo so this test actually gates PRs?~~ **Resolved 2026-09-04: leave local-only for now.** Don't bundle this cross-repo CI dependency decision into this change — revisit separately, the same way `docs/PROJECT_MAP.md` §4 reserves the analogous `helix.personmatching` eval-dependency question for the project lead. | — | Both tests remain local-only/advisory; zero automated protection until this is revisited. |
 | 2 | ~~Should this also cover the population-query tier for precision/F1/accuracy?~~ **Resolved 2026-09-04: yes** — `tests/test_onc_population_regression.py` added, following `helix.personmatching`'s precedent of having a second, broader test tier alongside the pairs-style test. | — | Done — see "Population tier" above. |
-| 3 | Are the current thresholds (pairs: 0.95 recall / 0.01 FPR; population: 0.99 precision / 0.95 recall / 0.001 FPR / 0.97 F1) right, or should they track closer to the measured values for tighter regression sensitivity? | Project lead | Tighter thresholds catch smaller regressions but risk more false alarms on noise-level fluctuations from legitimate rule tuning. |
+| 3 | ~~Should thresholds track closer to measured values for tighter regression sensitivity?~~ **Resolved 2026-09-04: keep current headroom** — follow `helix.personmatching`'s own precedent, which is deliberately lenient on aggregate pass rate (`test_cms_dataset.py`/`test_cms_performance.py` assert things like `n_fail / total < 1.0`, essentially "not everything failed") and reserves zero-tolerance for one specific dangerous condition (`failed_records_with_higher_probabilities == 0` — a wrong match scoring higher than the correct one). This repo's thresholds are already well past that bar in rigor (real floor/ceiling numbers with headroom, not near-no-op checks, plus a zero-tolerance extraction-error gate of our own) without going all the way to exact-value pinning, which was already rejected above for a different reason (forces edits on every legitimate improvement). | — | Thresholds unchanged: pairs recall ≥ 0.95 / FPR ≤ 0.01; population precision ≥ 0.99 / recall ≥ 0.95 / FPR ≤ 0.001 / F1 ≥ 0.97. |
