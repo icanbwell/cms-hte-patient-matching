@@ -1,8 +1,8 @@
-# Session 13 — Publish `patient_matching` to PyPI
+# Session 13 — Publish `cms-hte-patient-matching` to PyPI
 
-**Status:** pending — design capture only, not yet scoped/sized for execution. Two
-`NEEDS HUMAN DECISION` items below (package name, PyPI org ownership) block starting a feature
-branch.
+**Status:** pending — design capture only, not yet scoped/sized for execution. Package name is
+now decided (see Open Question 1); one `NEEDS HUMAN DECISION` item remains (PyPI org ownership)
+and blocks starting a feature branch.
 **Thread:** `Phase 2: production candidate-retrieval scaling` (same thread as session 12 —
 distribution packaging for the sibling `cms-hte-patient-matching-service` to consume).
 **Estimated size:** S — the packaging fixes are small and mechanical; most of the "work" is a
@@ -63,7 +63,7 @@ proposing anything:
    which needs no long-lived token. This exact mechanism is proven live: `language-model-common`'s
    last 5 releases via this same workflow all succeeded in ~30s each.
    - **What's still missing and can't be done from this repo alone**: nothing has registered
-     `patient_matching` (or whatever name is chosen — see Open Questions) as a **Trusted
+     `cms-hte-patient-matching` (the decided name — see Open Question 1) as a **Trusted
      Publisher** on pypi.org itself. That's a one-time manual step on pypi.org
      ("Publishing" → "Add a pending publisher"), done by whoever administers icanbwell's PyPI
      account. Until that's done, the first release will fail authorization even though the
@@ -185,9 +185,9 @@ None. This does not touch any deployed system.
 
 ## Tasks
 
-1. Resolve Open Questions 1 and 2 below (package name, PyPI org ownership) — blocking.
-2. `pyproject.toml`: add `[build-system]`, `[tool.setuptools.packages.find]`,
-   `[tool.setuptools.package-data]`, `[project.urls]`.
+1. Resolve Open Question 2 below (PyPI org ownership) — blocking.
+2. `pyproject.toml`: rename `[project] name` to `cms-hte-patient-matching`; add `[build-system]`,
+   `[tool.setuptools.packages.find]`, `[tool.setuptools.package-data]`, `[project.urls]`.
 3. Delete `setup.py`; trim `setup.cfg` to only what's still live.
 4. Resolve the `patientmatching/` stray directory (Open Question 5).
 5. `Makefile`: add `testpackage`/`package` targets.
@@ -197,7 +197,7 @@ None. This does not touch any deployed system.
 7. `make testpackage`; `pip install` the TestPyPI result into a scratch venv; confirm
    `import patient_matching` works and pulls the declared deps.
 8. Whoever owns the icanbwell PyPI org (Open Question 2) registers the Trusted Publisher for the
-   chosen name (Open Question 1), pointing at this repo/workflow/environment.
+   name `cms-hte-patient-matching`, pointing at this repo/workflow/environment.
 9. Cut a GitHub Release (tag `v0.1.0` or as decided) to exercise `python-publish.yml` for real.
 10. Update `README.md`'s Installation section with the real `pip install <name>` command.
 
@@ -220,13 +220,15 @@ TestPyPI install dry run (task 7), not a pytest addition.
 
 ## Open questions
 
-1. **`NEEDS HUMAN DECISION` (Imran) — package name.** Recommend `cms-hte-patient-matching`
-   (matches the repo name 1:1, avoids the generic-name squatting risk, and avoids confusion with
-   the pre-existing, separate `icanbwell/patient-matching-reference-implementation` repo that
-   `pyproject.toml`'s current name (`patient_matching`) and `setup.py`'s stale URL both
-   accidentally point toward). Alternative: keep `patient_matching` as-is — available on PyPI
-   today (checked), but generic and a one-way door once claimed (PyPI project names can't be
-   renamed after the fact).
+1. **Decided (Imran, 2026-09-04): package name is `cms-hte-patient-matching`.** Matches the repo
+   name 1:1, avoids the generic-name squatting risk, and avoids confusion with the pre-existing,
+   separate `icanbwell/patient-matching-reference-implementation` repo that `pyproject.toml`'s
+   current name (`patient_matching`) and `setup.py`'s stale URL both accidentally point toward.
+   Task 2 below now includes renaming `pyproject.toml`'s `[project] name` from `patient_matching`
+   to `cms-hte-patient-matching` (the importable module stays `patient_matching` — PyPI
+   distribution names and importable package names don't have to match, and changing the
+   `patient_matching/` directory/import path is out of scope here since it would break every
+   existing internal import in this repo).
 2. **`NEEDS HUMAN DECISION` (Imran or EA) — who administers the icanbwell PyPI org account** that
    already owns `language-model-common` and `fhir-schema-py`, and can add this project as a
    Trusted Publisher. This session can't proceed past task 8 without that person.
