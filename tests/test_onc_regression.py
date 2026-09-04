@@ -13,13 +13,15 @@ The data is vendored (copied) into `tests/fixtures/onc/` rather than read live
 from that repo, so this test runs standalone - no second repo needs to be
 checked out alongside this one, including in CI.
 
-Only recall and FPR are asserted here, not precision - `sample_labeled_pairs.jsonl`
+Only recall and FPR are **gated** here - precision is computed and included in
+the summary for visibility (not asserted) since `sample_labeled_pairs.jsonl`
 deliberately over-samples rare/high-risk categories (twins, institutional
 addresses) for statistical power, so it isn't a representative sample and a
 precision number computed over it has no real-world interpretation (see the
 sibling repo's `evaluation/cases/README.md`, "Frequency and real-world
-representativeness"). Computing precision/F1/accuracy would require the
-population-query tier instead.
+representativeness"). Use the population tier's precision (gated, valid)
+for anything that needs a real number - measured here: precision=0.9997,
+purely for reference, not a claim about real-world precision.
 
 The floor/ceiling below are regression guards, not a re-derivation of the
 sibling repo's own `evaluation/baselines/v3_2_2_onc_baseline.txt` - that
@@ -121,6 +123,11 @@ def test_onc_labeled_pairs_recall_and_fpr() -> None:
 
     recall = tp / (tp + fn) if (tp + fn) else float("nan")
     fpr = fp / (fp + tn) if (fp + tn) else float("nan")
+    # Reported for visibility only, not gated - see module docstring: this
+    # tier over-samples rare/high-risk categories, so precision has no
+    # real-world interpretation here. Use the population tier's precision
+    # instead for anything that needs a real number.
+    precision = tp / (tp + fp) if (tp + fp) else float("nan")
 
     breakdown = "\n".join(
         f"  {cat}: tp={c['tp']} fp={c['fp']} tn={c['tn']} fn={c['fn']}"
@@ -128,7 +135,8 @@ def test_onc_labeled_pairs_recall_and_fpr() -> None:
     )
     summary = (
         f"n={len(pairs)} tp={tp} fp={fp} tn={tn} fn={fn} "
-        f"recall={recall:.4f} fpr={fpr:.4f}\nBy rationale category:\n{breakdown}"
+        f"recall={recall:.4f} fpr={fpr:.4f} precision(not representative, see docstring)={precision:.4f}"
+        f"\nBy rationale category:\n{breakdown}"
     )
 
     assert recall >= RECALL_FLOOR, f"Recall regressed below {RECALL_FLOOR}.\n{summary}"

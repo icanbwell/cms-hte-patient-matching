@@ -56,7 +56,11 @@ matching bug to conflate into recall by counting it as a false negative.
 
 Measured on this vendored sample: recall 1.0000 (17,299/17,299 true-match
 cases across all four categories, 0 false negatives), FPR 0.0000 (0/307
-distinct-provider pairs).
+distinct-provider pairs). Precision (tp / (tp + fp) = 1.0000) is also computed
+and included in the summary for visibility, not gated - it combines two
+separately-sourced samples (the true-match cases and the mined
+distinct-provider collisions), so like the ONC pairs tier's precision, it
+isn't a real-world base rate.
 """
 
 from __future__ import annotations
@@ -309,6 +313,16 @@ def test_nppes_matching_recall_and_fpr() -> None:
         if negative_pairs_evaluated
         else float("nan")
     )
+    # Reported for visibility only, not gated: tp comes from the true-match
+    # sample (exact duplicates/name variants) and fp from a separately-mined
+    # true-non-match sample (distinct-provider collisions) - combining them
+    # into one precision figure has the same "not a real base rate" caveat as
+    # the ONC pairs tier's precision (see docs/ONC_REGRESSION_TEST_DESIGN.md).
+    precision = (
+        tp / (tp + len(false_positives))
+        if (tp + len(false_positives))
+        else float("nan")
+    )
 
     breakdown = "\n".join(
         f"  {cat}: tp={c['tp']} fn={c['fn']}"
@@ -318,7 +332,8 @@ def test_nppes_matching_recall_and_fpr() -> None:
         f"n_providers={len(provider_fields)} tp={tp} fn={fn} recall={recall:.4f} "
         f"not_applicable={not_applicable}\nBy category:\n{breakdown}\n"
         f"blocks_with_multiple_providers={blocks_with_collisions} "
-        f"negative_pairs_evaluated={negative_pairs_evaluated} fpr={fpr:.4f}"
+        f"negative_pairs_evaluated={negative_pairs_evaluated} fpr={fpr:.4f} "
+        f"precision(not representative, see docstring)={precision:.4f}"
     )
 
     assert recall >= RECALL_FLOOR, f"Recall regressed below {RECALL_FLOOR}.\n{summary}"
