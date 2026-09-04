@@ -312,13 +312,23 @@ worth revisiting, is exactly the kind of question session 8's planned disagreeme
 legacy-comparison report is for - this comparison is a smaller, single-dataset instance of that
 same question, not a replacement for it.
 
-**Not committed to either repo.** This comparison required importing `helix.personmatching` from a
-local checkout and its own dependencies - an eval-only cross-repo dependency `docs/PROJECT_MAP.md`
-§4 already flags as an open decision reserved for the project lead (there, in the context of
-session 8). Running it once to answer a direct question is different from adding it as permanent,
-CI-running code in this repo; the latter is still that same undecided question. If it's wanted as
-a standing comparison (e.g. `evaluation/legacy_comparison.py`, matching session 8's planned name),
-that's a separate, explicit decision to make - not bundled into this PR.
+**Update (2026-09-04): committed as `evaluation/legacy_comparison.py`**, at explicit request, so
+this comparison is re-runnable (e.g. after a rule change, or once the ONC fixtures get refreshed)
+rather than rebuilt from scratch each time. It still isn't run by pytest or CI, and its extra
+dependencies (`fhir.resources`, `fhir-core`, `nominally`, `python-crfsuite`) are deliberately not
+added to this repo's `pyproject.toml` - documented as a separate manual `pip install` in the
+script's own docstring instead, matching the sibling test-set repo's own `evaluation/rule_eval.py`
+precedent ("intentionally not a dependency of the shippable patient_matching package"). It still
+requires `helix.personmatching` cloned as a sibling repo to actually run - that's the same
+eval-only cross-repo dependency `docs/PROJECT_MAP.md` §4 flags as a decision reserved for the
+project lead (there, in the context of session 8); committing the *script* doesn't make that
+dependency a default or a CI requirement, since nothing invokes it automatically. Usage:
+
+```bash
+PYTHONPATH=. python evaluation/legacy_comparison.py            # both tiers
+PYTHONPATH=. python evaluation/legacy_comparison.py --tier pairs
+PYTHONPATH=. python evaluation/legacy_comparison.py --helix-repo /path/to/helix.personmatching
+```
 
 ## Limitations / Non-Goals
 
