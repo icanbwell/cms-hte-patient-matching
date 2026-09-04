@@ -116,6 +116,18 @@ _(none yet — see `rejected/README.md`)_
   `evaluate_pair()` calls on precomputed pairs and never calls `InMemoryBackend.search()`;
   matters once actual `match()`/`match_batch()` calls need to scale against a large corpus
   (e.g. session 4 or eventual production-shaped batch runs).
+- **MongoDB Atlas Search-backed `CacheBackend`** ([full draft: `pending/session_12.md`]
+  (pending/session_12.md) — written up, like session_7, despite this heading, because the
+  design discussion (prompted by the sibling `cms-hte-patient-matching-service` repo's own
+  design work, 2026-09-04) is worth capturing now rather than losing it, but it is **not** in
+  `Up Next` and not startable without a human decision first). Same underlying concern as the
+  indexed-blocking-key item above (`DuckDBCache`'s fuzzy search is an O(n) Python loop), but
+  proposes a bigger step — an external, shared Mongo store instead of an in-process index —
+  motivated entirely from outside this repo's charter (`docs/PROJECT_MAP.md` says "no
+  production traffic, no deploy target"). **`NEEDS HUMAN DECISION — Sean/Imran`**: whether this
+  repo's scope now extends to production-backend work at all; see session_12.md's Open
+  Questions for the full list (also: package-level `CacheBackend` vs. service-level prefetch,
+  and what candidate-pool size makes its benchmark task meaningful).
 
 ## Dependency graph (at a glance)
 
