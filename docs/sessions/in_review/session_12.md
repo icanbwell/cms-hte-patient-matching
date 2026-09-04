@@ -362,9 +362,10 @@ this repo's actual (JFrog-gated) Dockerfile. **A maintainer with JFrog/VPN acces
 `make tests` once for real before merge**, to confirm the actual `dev` image builds and the
 same mechanism holds there.
 
-**Left open, not merged.** This PR is left open for Imran's/Sean's review rather than
-self-merged, per `conventions.md`'s allowance for that (a new external dependency + a
-docker-compose infra change + the unverified `make tests` gate above all argue for a human
-looking at this before it lands) — moving this doc to `in_review/`, not `completed/`, and
-recording that here as required. PR #44 (still open, unmerged, docs-only) should be closed as
-superseded once this PR merges, since its content now lives here.
+**Left open, not merged.** PR [#45](https://github.com/icanbwell/cms-hte-patient-matching/pull/45)
+is left open for Imran's/Sean's review rather than self-merged, per `conventions.md`'s
+allowance for that (a new external dependency + a docker-compose infra change + the unverified
+`make tests` gate above all argue for a human looking at this before it lands) — moving this
+doc to `in_review/`, not `completed/`, and recording that here as required. PR #44 (still open,
+unmerged, docs-only) should be closed as superseded once #45 merges, since its content now
+lives here.
