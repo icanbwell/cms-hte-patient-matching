@@ -23,11 +23,11 @@ FPR 0.0001, accuracy 0.9978, F1 0.9848, 0 extraction errors on 80,000 query-cand
 (2,000 queries × ~40-candidate pools, 8,016 unique candidates).
 
 No practitioner/NPPES *compliance* test was built — see "Alternatives Considered" for why that's
-not a gap. A narrower, valid NPPES-based test was added instead:
-`tests/test_nppes_no_cross_provider_match.py`, checking that the one approved rule that *can*
-evaluate against NPPES-shaped data (Rule 33) never falsely matches two distinct real providers —
-data vendored at `tests/fixtures/nppes/`. See the "Update (2026-09-04)" note under "Alternatives
-Considered" for the full rationale.
+not a gap. A narrower, valid NPPES-based test was added instead: `tests/test_nppes_matching.py`,
+checking both directions of the one approved rule that *can* evaluate against NPPES-shaped data
+(Rule 33) — recall 1.0000 on exact-duplicate/single-edit true-match cases, FPR 0.0000 on 307
+real distinct-provider collisions — data vendored at `tests/fixtures/nppes/`. See the "Update
+(2026-09-04)" note under "Alternatives Considered" for the full rationale.
 
 ## Problem
 
@@ -213,16 +213,27 @@ Practitioner/provider matching is already owned by those two repos. **No practit
 *compliance* test was built, and none should be, in this repo** — that conclusion still holds.
 
 **Update (2026-09-04): a narrower, valid NPPES-based test was added anyway** —
-`tests/test_nppes_no_cross_provider_match.py`, data vendored at `tests/fixtures/nppes/` (copied
-from `helix.personmatching`'s own NPPES sample, provenance in that directory's README). It is
-**not** a reversal of the conclusion above: it doesn't claim this engine matches practitioners.
+`tests/test_nppes_matching.py`, data vendored at `tests/fixtures/nppes/` (copied from
+`helix.personmatching`'s own NPPES sample, provenance in that directory's README). It is **not** a
+reversal of the conclusion above: it doesn't claim this engine matches practitioners in general.
 Exactly one approved Table 2 rule can evaluate at all against NPPES-shaped data — Rule 33, `First
 Name* + Last Name* + Phone Number + ZIP Code`, the only approved rule requiring none of
-DOB/SSN/MBI/email — and real group practices commonly share one practice phone+ZIP across
-multiple distinct providers (130 such (phone, ZIP) collisions found in the vendored sample, 307
-distinct-NPI pairs evaluated). The test checks that rule 33 never declares two genuinely distinct
-real providers a match under that realistic coincidence. It passes today (0 false positives). See
-that test's own module docstring for the full rationale — not duplicated here.
+DOB/SSN/MBI/email — and the test checks that rule both directions, the same way the ONC pairs test
+checks recall and FPR for patients:
+
+- **Recall:** exact duplicates and single-edit (Damerau-Levenshtein ≤1) typo variants of a
+  provider's name should all still match (phone/ZIP held fixed) — measured **1.0000** (17,299/
+  17,299 true-match cases, 0 false negatives), gated at ≥ 0.99. 27 of 4,943 providers are excluded
+  from this measurement (tracked, not hidden) because their practice phone didn't survive
+  normalization at all (a placeholder like `000-000-0000`, or a non-US/APO number) — rule 33 can't
+  evaluate without phone present, even against an identical copy of itself.
+- **FPR:** real group practices commonly share one practice phone+ZIP across multiple distinct
+  providers (130 such (phone, ZIP) collisions found in the vendored sample, 307 distinct-NPI pairs
+  evaluated, several sharing a last name too — likely colleagues or family). Measured **0.0000**
+  (0/307), gated at an exact zero — a cross-provider false positive is a wrong-person record link,
+  not a rate to tolerate any of.
+
+See that test's own module docstring for the full rationale — not duplicated here.
 
 ### Exact tp/fp/tn/fn pinning instead of floor/ceiling — rejected
 
