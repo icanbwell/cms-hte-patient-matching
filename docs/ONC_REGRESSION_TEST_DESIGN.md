@@ -251,6 +251,48 @@ thresholds let genuine improvements pass silently while still catching regressio
 generated set, not the 6,290-pair file this test reads. Different rule count, different sample
 size — not a valid comparison basis. This test establishes its own thresholds instead (see above).
 
+## Comparison to `helix.personmatching`'s own test suite (2026-09-04)
+
+`helix.personmatching` (the legacy weighted-score engine, threshold 0.955) has its own ONC and
+NPPES integration tests (`tests/cms_dataset/test_cms_dataset.py`,
+`tests/cms_dataset/test_cms_performance.py`, `tests/nppes_dataset/test_nppes_dataset.py`) — run
+here (`uv run pytest ... -m integration`) to compare against this repo's numbers above. **Read the
+methodology differences before comparing the numbers directly — they answer related but distinct
+questions, not the same benchmark:**
+
+| | This repo's ONC/NPPES tests | helix's ONC/NPPES tests |
+|---|---|---|
+| Sample | 6,290 curated pairs (ONC) / 80,000 query-candidate evals (ONC) / 4,943 providers (NPPES) | 200 unmodified self-match records per test (both ONC files hardcode `limit=200`; NPPES uses one 200-ish-row state file) |
+| True-match construction | Synthetic fuzzy-variant mutations (typos, transpositions, nicknames) + real mined hard negatives | None — matches each unmodified record against an identical copy of itself in the same small bundle; the only "difficulty" is other similar real records in that 200-row pool |
+| Decision procedure | Deterministic rule combinations (Table 2), binary per-pair | Weighted score across many rules, top-scoring candidate wins, threshold 0.955 |
+| Result shape | Full confusion matrix (tp/fp/tn/fn) | passed / wrong / not-matched buckets (one outcome per record, not per pair) |
+
+To get comparable recall/precision numbers from helix's pass/wrong/not-matched buckets, this
+derivation is applied (not helix's own framework — helix's tests don't report precision/recall
+natively): `passed` → tp; `not_matched` → fn (missed its own correct match); `wrong` → counted as
+**both** fn (missed the correct match) and fp (wrongly matched a different record) since a
+top-1-wins scoring system's single wrong answer is simultaneously both misses. `recall = passed /
+total`, `precision = passed / (passed + wrong)`.
+
+| Test | Engine | Sample | Recall | Precision | FPR |
+|---|---|---|---|---|---|
+| ONC pairs (this repo) | Table 2 (30+8 rules) | 6,290 curated pairs | 0.9710 | 0.9997 (not representative) | 0.0069 |
+| ONC population (this repo) | Table 2 (30+8 rules) | 80,000 query-candidate evals | 0.9710 | 0.9990 | 0.0001 |
+| `test_cms_dataset.py` (helix) | Legacy weighted score | 200 self-match records, unmasked | 0.9950 (199/200) | 0.9950 | not computed — no distinct-record negative sample |
+| `test_cms_performance.py` (helix) | Legacy weighted score | Same 200, gender masked to `unknown` | 0.9950 (199/200) | 0.9950 | not computed — same reason |
+| NPPES (this repo) | Table 2, Rule 33 only | 4,943 providers, 17,299 true-match cases + 307 distinct-provider pairs | 1.0000 | 1.0000 (not representative) | 0.0000 |
+| `test_nppes_dataset.py` (helix) | Legacy weighted score | 200 self-match NC providers | 1.0000 (200/200) | 1.0000 | not computed — same reason |
+
+**Read before drawing conclusions:** helix's FPR is "not computed," not zero — its self-match
+design has no distinct-record true-non-match sample at all (nothing plays the role this repo's
+mined hard negatives / distinct-provider collisions do), so there's no basis to compute one from
+its existing test output. Both engines look strong on their own terms here, but at very different
+scales and against differently-constructed samples — this is a directional sanity signal (neither
+engine falls over on real/near-real data), not a head-to-head benchmark. A real cutover-decision
+benchmark (session 8 in `docs/PROJECT_MAP.md`) would need both engines run against the *same*
+sample with the *same* confusion-matrix definition, which this comparison deliberately doesn't
+attempt.
+
 ## Limitations / Non-Goals
 
 - **Data can silently drift from the sibling repo's canonical copy.** Vendoring trades "always
