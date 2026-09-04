@@ -251,47 +251,74 @@ thresholds let genuine improvements pass silently while still catching regressio
 generated set, not the 6,290-pair file this test reads. Different rule count, different sample
 size — not a valid comparison basis. This test establishes its own thresholds instead (see above).
 
-## Comparison to `helix.personmatching`'s own test suite (2026-09-04)
+## Comparison to `helix.personmatching` (2026-09-04)
 
-`helix.personmatching` (the legacy weighted-score engine, threshold 0.955) has its own ONC and
-NPPES integration tests (`tests/cms_dataset/test_cms_dataset.py`,
-`tests/cms_dataset/test_cms_performance.py`, `tests/nppes_dataset/test_nppes_dataset.py`) — run
-here (`uv run pytest ... -m integration`) to compare against this repo's numbers above. **Read the
-methodology differences before comparing the numbers directly — they answer related but distinct
-questions, not the same benchmark:**
+### First pass: each engine's own test suite (superseded by the apples-to-apples comparison below)
 
-| | This repo's ONC/NPPES tests | helix's ONC/NPPES tests |
+`helix.personmatching`'s own ONC/NPPES integration tests (`tests/cms_dataset/test_cms_dataset.py`,
+`test_cms_performance.py`, `tests/nppes_dataset/test_nppes_dataset.py`) self-match 200 unmodified
+records against an identical copy of themselves in a small bundle - no synthetic fuzzy variants,
+no distinct-record negative sample, and they report pass/wrong/not-matched buckets rather than a
+confusion matrix. Comparing those numbers directly against this repo's own tests (different
+sample, different sample size, different result shape) isn't a real benchmark - it was a
+directional-only first pass. Superseded by the same-data comparison below, which is the one to
+cite.
+
+### Apples-to-apples: both engines scored on the identical ONC-derived sample
+
+To get a real comparison, `helix.personmatching`'s `Matcher.match_resources(source=, target=)`
+was run pairwise over the **exact same vendored files** this repo's own ONC tests read
+(`tests/fixtures/onc/sample_labeled_pairs.jsonl` and `population_{queries,candidates}.jsonl`) -
+same 6,290 pairs, same 80,000 query-candidate evaluations, same ground truth, same confusion-matrix
+definition (tp/fp/tn/fn from `expected_match`/`expected_match_ids`). Only the algorithm differs.
+This was run as a one-off analysis script (not committed to either repo - see "Not committed"
+below), from a `helix.personmatching` checkout with its own dependencies installed. Each FHIR
+`Patient` dict was parsed via `fhir.resources.R4B.patient.Patient.model_validate()`, falling back to
+validating a copy with empty-string fields stripped (FHIR's `string` type requires >=1
+non-whitespace character; a handful of ONC-derived records have an empty city/state/given value) -
+523/12,580 patients needed that fallback on the pairs tier; zero raised after that.
+
+| Metric | This repo (Table 2, 30+8 rules) | `helix.personmatching` (legacy weighted score, threshold 0.955) |
 |---|---|---|
-| Sample | 6,290 curated pairs (ONC) / 80,000 query-candidate evals (ONC) / 4,943 providers (NPPES) | 200 unmodified self-match records per test (both ONC files hardcode `limit=200`; NPPES uses one 200-ish-row state file) |
-| True-match construction | Synthetic fuzzy-variant mutations (typos, transpositions, nicknames) + real mined hard negatives | None — matches each unmodified record against an identical copy of itself in the same small bundle; the only "difficulty" is other similar real records in that 200-row pool |
-| Decision procedure | Deterministic rule combinations (Table 2), binary per-pair | Weighted score across many rules, top-scoring candidate wins, threshold 0.955 |
-| Result shape | Full confusion matrix (tp/fp/tn/fn) | passed / wrong / not-matched buckets (one outcome per record, not per pair) |
+| **Pairs tier** (6,290 pairs) | | |
+| Recall | 0.9710 (tp=5,826, fn=174) | **1.0000** (tp=6,000, fn=0) |
+| Precision | 0.9997 (not representative - see above) | 1.0000 (not representative, same reason) |
+| FPR | 0.0069 (fp=2, tn=288) | **0.0000** (fp=0, tn=290) |
+| **Population tier** (80,000 query-candidate evals) | | |
+| Recall | 0.9710 | **1.0000** |
+| Precision | 0.9990 | 0.9993 |
+| FPR | 0.0001 (fp=6, tn=73,994) | 0.0001 (fp=4, tn=73,996) |
+| F1 | 0.9848 | **0.9997** |
+| Accuracy | 0.9978 | 1.0000 |
 
-To get comparable recall/precision numbers from helix's pass/wrong/not-matched buckets, this
-derivation is applied (not helix's own framework — helix's tests don't report precision/recall
-natively): `passed` → tp; `not_matched` → fn (missed its own correct match); `wrong` → counted as
-**both** fn (missed the correct match) and fp (wrongly matched a different record) since a
-top-1-wins scoring system's single wrong answer is simultaneously both misses. `recall = passed /
-total`, `precision = passed / (passed + wrong)`.
+**Read plainly: on this exact same data, `helix.personmatching`'s legacy engine has meaningfully
+higher recall than this repo's Table 2 engine, at comparably excellent precision/FPR (both engines'
+FPR round to 0.0001 on the population tier; both are ~0 on the pairs tier).** This repo's 174
+pairs-tier false negatives are concentrated in the `fuzzy_variant` category (152/174 - single-edit
+typo/nickname/transposition mutations; recall 0.9240 within that category alone, vs. 0.9945 on
+`normalization_edge_case`). The likely mechanism: a weighted sum across many independent fields is
+naturally tolerant of one field degrading a little (SSN/DOB/phone/address all still contribute
+full credit even when a name has a typo), while a Table 2 rule requires a *specific combination* of
+fields to match within a narrow, capped fuzzy allowance (`max_fuzzy_fields`, Damerau-Levenshtein
+<=1) - if a mutation happens to land outside every approved combination's exact tolerance, no rule
+fires, full stop, regardless of how many *other* fields still agree.
 
-| Test | Engine | Sample | Recall | Precision | FPR |
-|---|---|---|---|---|---|
-| ONC pairs (this repo) | Table 2 (30+8 rules) | 6,290 curated pairs | 0.9710 | 0.9997 (not representative) | 0.0069 |
-| ONC population (this repo) | Table 2 (30+8 rules) | 80,000 query-candidate evals | 0.9710 | 0.9990 | 0.0001 |
-| `test_cms_dataset.py` (helix) | Legacy weighted score | 200 self-match records, unmasked | 0.9950 (199/200) | 0.9950 | not computed — no distinct-record negative sample |
-| `test_cms_performance.py` (helix) | Legacy weighted score | Same 200, gender masked to `unknown` | 0.9950 (199/200) | 0.9950 | not computed — same reason |
-| NPPES (this repo) | Table 2, Rule 33 only | 4,943 providers, 17,299 true-match cases + 307 distinct-provider pairs | 1.0000 | 1.0000 (not representative) | 0.0000 |
-| `test_nppes_dataset.py` (helix) | Legacy weighted score | 200 self-match NC providers | 1.0000 (200/200) | 1.0000 | not computed — same reason |
+**This is the expected shape of the tradeoff this whole repo exists to evaluate, not a defect to
+fix reflexively** (`docs/PROJECT_MAP.md` §1: Table 2's entire premise is trading some recall for
+combinations with a *computed, auditable* collision probability, ≤1-in-500-billion per approved
+rule - a guarantee a weighted black-box score doesn't provide in the same form). Whether that
+tradeoff is acceptable, and whether specific missed `fuzzy_variant` cases point at a rule/tolerance
+worth revisiting, is exactly the kind of question session 8's planned disagreement-bucketed
+legacy-comparison report is for - this comparison is a smaller, single-dataset instance of that
+same question, not a replacement for it.
 
-**Read before drawing conclusions:** helix's FPR is "not computed," not zero — its self-match
-design has no distinct-record true-non-match sample at all (nothing plays the role this repo's
-mined hard negatives / distinct-provider collisions do), so there's no basis to compute one from
-its existing test output. Both engines look strong on their own terms here, but at very different
-scales and against differently-constructed samples — this is a directional sanity signal (neither
-engine falls over on real/near-real data), not a head-to-head benchmark. A real cutover-decision
-benchmark (session 8 in `docs/PROJECT_MAP.md`) would need both engines run against the *same*
-sample with the *same* confusion-matrix definition, which this comparison deliberately doesn't
-attempt.
+**Not committed to either repo.** This comparison required importing `helix.personmatching` from a
+local checkout and its own dependencies - an eval-only cross-repo dependency `docs/PROJECT_MAP.md`
+§4 already flags as an open decision reserved for the project lead (there, in the context of
+session 8). Running it once to answer a direct question is different from adding it as permanent,
+CI-running code in this repo; the latter is still that same undecided question. If it's wanted as
+a standing comparison (e.g. `evaluation/legacy_comparison.py`, matching session 8's planned name),
+that's a separate, explicit decision to make - not bundled into this PR.
 
 ## Limitations / Non-Goals
 
