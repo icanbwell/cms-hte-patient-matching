@@ -66,4 +66,4 @@ setup-pre-commit: ## Install the pre-commit git hook (uv-managed, no Docker)
 
 .PHONY:run-pre-commit
 run-pre-commit: ## Run all pre-commit hooks over all files (no install needed)
-	uv run pre-commit run --all-files
+	uv run --frozen --no-sync pre-commit run --all-files
