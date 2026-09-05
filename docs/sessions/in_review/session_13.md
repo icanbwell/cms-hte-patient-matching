@@ -1,9 +1,10 @@
 # Session 13 — Publish `cms-hte-patient-matching` to PyPI
 
-**Status:** pending — design captured, both blocking decisions resolved (package name and
-publishing mechanism decided; the pypi.org pending publisher is registered — see Open Questions
-1 and 2). Ready to size and execute as a real feature branch; no remaining blocker outside this
-repo.
+**Status:** in_review — executed 2026-09-04 on this same branch/PR (`session-13/pypi-publishing-design`,
+PR #46) as the design capture, since both blocking decisions resolved within the same
+conversation. All code tasks done and verified locally; the one remaining task (cutting a real
+GitHub Release to exercise `python-publish.yml` end-to-end) holds for Imran's explicit
+go-ahead — see Execution notes.
 **Thread:** `Phase 2: production candidate-retrieval scaling` (same thread as session 12 —
 distribution packaging for the sibling `cms-hte-patient-matching-service` to consume).
 **Estimated size:** S — the packaging fixes are small and mechanical; this repo's
@@ -214,23 +215,34 @@ None. This does not touch any deployed system.
 ## Tasks
 
 1. ~~Register the pypi.org pending Trusted Publisher~~ — **done** (Imran, see Open Question 2).
-2. `pyproject.toml`: rename `[project] name` to `cms-hte-patient-matching`; add `[build-system]`,
-   `[tool.setuptools.packages.find]`, `[tool.setuptools.package-data]`, `[project.urls]`.
-3. Delete `setup.py`; trim `setup.cfg` to only what's still live.
-4. Resolve the `patientmatching/` stray directory (Open Question 5).
-5. `Makefile`: add `testpackage`/`package` targets (token-based twine, local dry-run use only —
-   see Scope).
-6. `make build` locally; inspect the built wheel's `METADATA` to confirm dependencies and
-   `python_requires` match `pyproject.toml` (catches the `install_requires=[]` class of bug
-   before any upload).
-7. `make testpackage`; `pip install` the TestPyPI result into a scratch venv; confirm
-   `import patient_matching` works and pulls the declared deps.
+2. ~~`pyproject.toml`: rename `[project] name`...~~ — **done** (`9c6396d`/`810e621`). Also fixed
+   a second latent bug found while doing this: a static `version = "0.1.0"` alongside
+   `[tool.setuptools.dynamic] version` silently overrode the `VERSION`-file mechanism CI relies
+   on (the field was never listed in `dynamic`, so the static value always won) — switched to
+   `dynamic = ["version"]`.
+3. ~~Delete `setup.py`; trim `setup.cfg`~~ — **done**. All of `setup.cfg` turned out dead
+   (`[flake8]` included — confirmed nothing invokes flake8 anywhere), so the whole file was
+   removed, not just trimmed.
+4. ~~Resolve the `patientmatching/` stray directory~~ — **done**: deleted (Imran confirmed).
+5. ~~`Makefile`: add `testpackage`/`package` targets~~ — **done**, plus a `dist` target
+   (sibling repos call this `build`, but this repo's `build` already means "build the dev
+   Docker image" — named it `dist` instead to avoid the collision).
+6. ~~`make build` locally; inspect METADATA~~ — **done** (as `make dist`/`uv build
+   --no-build-isolation`, since the JFrog-gated build-dependency resolution isn't reachable
+   from this sandbox — see Execution notes). `METADATA` now lists every declared dependency;
+   previously would have been empty via the stale `setup.py` path.
+7. ~~`make testpackage`; scratch-venv install~~ — **partially done**: no TestPyPI token
+   available in this sandbox, so substituted `twine check` (passed) plus installing the actual
+   built wheel into a scratch venv and importing it (passed, no `tests`/`patientmatching`
+   leaked in) — same artifact, without the network upload step.
 8. ~~Register the Trusted Publisher~~ — merged into task 1 above; done.
-9. Cut a GitHub Release (tag `v0.1.0` or as decided) to exercise `python-publish.yml` for real —
-   this is the actual first end-to-end test of the OIDC path, since Trusted Publishing can't be
-   dry-run locally.
-10. Update `README.md`'s Installation section with the real
-    `pip install cms-hte-patient-matching` command.
+9. **Not done — holds for explicit go-ahead.** Cutting a real GitHub Release publishes a real,
+   public package under Imran's PyPI identity; not done automatically as part of this session's
+   code changes.
+10. ~~Update `README.md`'s Installation section~~ — **done**, plus the same stale
+    `patient-matching-reference-implementation` URL/name fixed in `CONTRIBUTING.md` and two more
+    spots in `README.md` this task didn't originally call out (a `git clone` instruction and the
+    License section's repository link).
 
 ## Unit tests required
 
@@ -239,15 +251,16 @@ TestPyPI install dry run (task 7), not a pytest addition.
 
 ## Validation
 
-- [ ] `make build` produces a wheel whose `METADATA` lists all of `pyproject.toml`'s declared
+- [x] `make dist` produces a wheel whose `METADATA` lists all of `pyproject.toml`'s declared
       dependencies (not empty).
-- [ ] `make testpackage` succeeds; the resulting TestPyPI package `pip install`s cleanly in a
-      scratch venv and `import patient_matching` succeeds.
-- [ ] No second top-level package (`patientmatching`) ships in the built wheel.
-- [ ] `python-publish.yml` succeeds end-to-end on a real GitHub Release, after the Trusted
-      Publisher is registered.
-- [ ] `make tests` and `make run-pre-commit` still pass (packaging changes shouldn't touch
-      matching behavior, but confirm regardless).
+- [x] Built wheel `pip install`s cleanly in a scratch venv and `import patient_matching`
+      succeeds (`twine check` also passes; the TestPyPI upload itself wasn't run — no token in
+      this sandbox).
+- [x] No second top-level package (`patientmatching`) ships in the built wheel.
+- [ ] `python-publish.yml` succeeds end-to-end on a real GitHub Release — not yet done, holds
+      for explicit go-ahead (see task 9).
+- [x] `make tests` (`uv run --no-sync pytest .`, 457 passed) and `make run-pre-commit` (`uv run
+      --no-sync pre-commit run --all-files`, all hooks passed) both pass.
 
 ## Open questions
 
@@ -274,10 +287,39 @@ TestPyPI install dry run (task 7), not a pytest addition.
    (i.e., does `cms-hte-patient-matching-service`'s design actually need `pip install` today), or
    is this purely preparatory ahead of that service's own build-out? Doesn't change the design,
    only the urgency.
-5. **`NEEDS HUMAN DECISION` (whoever knows its origin) — the stray `patientmatching/` directory.**
-   Delete it (looks like dead scaffold residue — matches no import anywhere found), or is it
-   intentionally reserved for something not yet wired in? Default recommendation: delete.
+5. **Resolved (Imran, 2026-09-04): delete the stray `patientmatching/` directory.** Confirmed
+   the default recommendation; deleted as part of execution.
 
 ## Execution notes
 
-_(fill in when this session is actually executed — not done as part of this design capture)_
+Executed 2026-09-04, same conversation as the design capture, on the same branch/PR
+(`session-13/pypi-publishing-design`, PR #46) rather than a separate feature branch — both
+`NEEDS HUMAN DECISION` items resolved quickly enough that splitting into a second PR wasn't
+worth the overhead. Two commits: `9c6396d` (deletions: `setup.py`, `setup.cfg`,
+`patientmatching/`) and `810e621` (the actual `pyproject.toml`/`Makefile`/`README.md`/
+`CONTRIBUTING.md` edits — split into a second commit because a `git add` pathspec error
+silently aborted before staging them for the first commit; caught by reviewing `git status`
+before pushing).
+
+Verification ran outside Docker: `make tests`/`make run-pre-commit` need the JFrog-gated
+Docker build (`artifacts.bwell.com`'s Alpine mirror), which returned `403`/`Permission denied`
+in this sandbox — the same wall session 12's Execution notes already flagged. Substituted
+`uv run --no-sync pytest .` (457 passed) and `uv run --no-sync pre-commit run --all-files`
+(all hooks passed) against the already-synced local `.venv`. Similarly, `uv build` needs the
+JFrog index to resolve `[build-system].requires`, which 403'd/401'd in this sandbox even with
+`JFROG_READ_TOKEN`/`JFROG_TOKEN` env vars present — used `uv build --no-build-isolation`
+instead, which builds against the already-installed `setuptools`/`wheel` in `.venv`. The real
+CI workflow (`build_and_test.yml`, `python-publish.yml`) runs with real JFrog credentials as
+GitHub secrets, so this sandbox limitation doesn't apply there.
+
+Found and restored, mid-session, two files (`​.github/copilot-instructions.md`, `Pipfile`)
+that appeared staged as deleted in the working tree without any command from this session
+having touched them — unrelated to session 13's scope, so restored to `HEAD` rather than
+committed. Cause unconfirmed (possibly carried over from uncommitted state on the
+`session-12/mongo-atlas-cache` branch when this branch was cut, possibly a concurrent process
+in the same working directory) — flagging in case it recurs elsewhere.
+
+**Remaining before this can move to `completed/`**: task 9 (cut a real GitHub Release to
+exercise `python-publish.yml` end-to-end) — deliberately not done automatically, since it
+publishes a real public package under Imran's PyPI identity. Needs Imran's explicit go-ahead
+and a version/tag decision.
