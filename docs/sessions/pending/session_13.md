@@ -1,14 +1,14 @@
 # Session 13 — Publish `cms-hte-patient-matching` to PyPI
 
-**Status:** pending — design capture only, not yet scoped/sized for execution. Package name
-(`cms-hte-patient-matching`) and publishing mechanism (OIDC Trusted Publishing, not token-based
-twine) are both decided. One `NEEDS HUMAN ACTION` item remains — registering the Trusted
-Publisher on pypi.org (Open Question 2) — and blocks starting a feature branch.
+**Status:** pending — design captured, both blocking decisions resolved (package name and
+publishing mechanism decided; the pypi.org pending publisher is registered — see Open Questions
+1 and 2). Ready to size and execute as a real feature branch; no remaining blocker outside this
+repo.
 **Thread:** `Phase 2: production candidate-retrieval scaling` (same thread as session 12 —
 distribution packaging for the sibling `cms-hte-patient-matching-service` to consume).
 **Estimated size:** S — the packaging fixes are small and mechanical; this repo's
-`python-publish.yml` already implements the chosen mechanism, so the remaining blocker is a
-one-time manual pypi.org step, not a code change.
+`python-publish.yml` already implements the chosen mechanism, and the pypi.org side is now set
+up too.
 
 > Read `../conventions.md` first.
 
@@ -157,10 +157,11 @@ into that service; it only makes the dependency possible.
 
 ## Upstream data/system dependencies
 
-- **A `cms-hte-patient-matching` Trusted Publisher registered on pypi.org**, naming this repo,
-  `python-publish.yml`, and the `pypi` environment. Requires access to the icanbwell PyPI
-  identity that already owns `helix.fhir.client.sdk`/`helix.personmatching`/`fhir-schema-py` —
-  see Open Question 2 for who does it.
+- **A `cms-hte-patient-matching` pending Trusted Publisher on pypi.org**, naming this repo,
+  `python-publish.yml`, and the `pypi` environment. **Done** — Imran created it in the same
+  PyPI account/namespace ("imranq" space) that already owns `fhirschemapy`
+  (`fhir-schema-py`'s published package), confirming this follows that exact precedent. See
+  Open Question 2.
 - No FHIR server, no patient data, no new runtime dependency.
 
 ## Downstream data/system dependencies
@@ -212,7 +213,7 @@ None. This does not touch any deployed system.
 
 ## Tasks
 
-1. Resolve Open Question 2 below (who registers the Trusted Publisher) — blocking.
+1. ~~Register the pypi.org pending Trusted Publisher~~ — **done** (Imran, see Open Question 2).
 2. `pyproject.toml`: rename `[project] name` to `cms-hte-patient-matching`; add `[build-system]`,
    `[tool.setuptools.packages.find]`, `[tool.setuptools.package-data]`, `[project.urls]`.
 3. Delete `setup.py`; trim `setup.cfg` to only what's still live.
@@ -224,8 +225,7 @@ None. This does not touch any deployed system.
    before any upload).
 7. `make testpackage`; `pip install` the TestPyPI result into a scratch venv; confirm
    `import patient_matching` works and pulls the declared deps.
-8. Whoever owns the icanbwell PyPI identity (Open Question 2) registers the Trusted Publisher
-   for `cms-hte-patient-matching`, pointing at this repo/`python-publish.yml`/`pypi` environment.
+8. ~~Register the Trusted Publisher~~ — merged into task 1 above; done.
 9. Cut a GitHub Release (tag `v0.1.0` or as decided) to exercise `python-publish.yml` for real —
    this is the actual first end-to-end test of the OIDC path, since Trusted Publishing can't be
    dry-run locally.
@@ -260,17 +260,12 @@ TestPyPI install dry run (task 7), not a pytest addition.
    distribution names and importable package names don't have to match, and changing the
    `patient_matching/` directory/import path is out of scope here since it would break every
    existing internal import in this repo).
-2. **`NEEDS HUMAN ACTION` (very likely Imran) — register the Trusted Publisher on pypi.org.**
-   `git log --follow --diff-filter=A` on both
-   `helix.fhir.client.sdk/.github/workflows/python-publish.yml` (2021-03-29) and
-   `helix.personmatching/.github/workflows/python-publish.yml` (2022-12-10) shows the same
-   author, `imranq2 <imranq2@hotmail.com>` — strong evidence Imran personally holds the
-   icanbwell PyPI identity these sibling packages publish under, rather than a separate
-   EA/DevOps-owned account (those two repos use token-based twine, not Trusted Publishing, but
-   the identity that would add a Trusted Publisher for a *new* project is the same one). Not
-   fully closed only because git-blame is circumstantial (someone could have added the workflow
-   file without being the account holder) — worth a one-line confirmation from Imran before
-   task 8, but this is no longer treated as an unknown third party to track down.
+2. **Resolved (Imran, 2026-09-04): the pypi.org pending Trusted Publisher is registered.**
+   Confirms the git-blame-based prediction directly above this entry's prior text: Imran created
+   it in his own PyPI account/namespace ("imranq" space) — the same one that already owns
+   `fhirschemapy` (`fhir-schema-py`'s published package) — matching that exact precedent rather
+   than a separate EA/DevOps-owned account. No remaining action needed before this session can
+   move to execution.
 3. **Not blocking, but flagging**: should `docs/handoff/README.md` §2's repo-list line be updated
    now that "PyPI" is becoming true for the CMS engine too, or is that doc a frozen historical
    snapshot (Zack Malone's 2026-07-20 handoff) not meant to be edited? Default: leave it
