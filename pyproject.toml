@@ -1,8 +1,22 @@
+[build-system]
+requires = ["setuptools>=75.8.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
-name = "patient_matching"
-version = "0.1.0"
+name = "cms-hte-patient-matching"
+dynamic = ["version"]
 description = "CMS Patient Matching implementation with deterministic matching rules"
 readme = "README.md"
+license = { text = "Apache-2.0" }
+authors = [
+    { name = "icanbwell" }
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
 requires-python = ">=3.12"
 dependencies = [
     "pyjwt>=2.8.0",
@@ -21,6 +35,10 @@ dependencies = [
     "duckdb>=1.2.0",
     "apscheduler>=3.10.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/icanbwell/cms-hte-patient-matching"
+Repository = "https://github.com/icanbwell/cms-hte-patient-matching"
 
 [project.optional-dependencies]
 fhir = ["httpx", "fhirschemapy"]
@@ -61,6 +79,13 @@ dev = [
 
 [tool.setuptools.dynamic]
 version = { file = "VERSION" }
+
+[tool.setuptools.packages.find]
+include = ["patient_matching*"]
+exclude = ["patient_matching.*.tests", "patient_matching.*.tests.*"]
+
+[tool.setuptools.package-data]
+patient_matching = ["py.typed"]
 
 [[tool.uv.index]]
 name = "jfrog"
