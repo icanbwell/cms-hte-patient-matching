@@ -133,7 +133,7 @@ COPY ./patient_matching ${PROJECT_DIR}/patient_matching
 # Copy installed Python packages from the previous stage
 COPY --from=python_packages /opt/venv /opt/venv
 
-# Copy Pipfile.lock to a temporary directory so it can be retrieved if needed
+# Copy uv.lock to a temporary directory so it can be retrieved if needed
 COPY --from=python_packages /tmp/uv.lock /tmp/uv.lock
 
 # Expose port 5000 for the application
