@@ -65,7 +65,7 @@ jobs:
         run: mkdir -p ${{ github.workspace }}/reports
 
       - name: tests
-        run: uv run pytest . --tb=auto --junitxml=${{ github.workspace }}/reports/test-results.xml
+        run: uv run --frozen --no-sync pytest . --tb=auto --junitxml=${{ github.workspace }}/reports/test-results.xml
 
       - name: Upload pytest test results
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

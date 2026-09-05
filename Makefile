@@ -66,7 +66,7 @@ setup-pre-commit: ## Install the pre-commit git hook (uv-managed, no Docker)
 
 .PHONY:run-pre-commit
 run-pre-commit: ## Run all pre-commit hooks over all files (no install needed)
-	uv run pre-commit run --all-files
+	uv run --frozen --no-sync pre-commit run --all-files
 
 .PHONY:dist
 dist: ## Build the sdist + wheel into dist/ (named to avoid colliding with `build`, which builds the dev Docker image)
@@ -75,8 +75,8 @@ dist: ## Build the sdist + wheel into dist/ (named to avoid colliding with `buil
 
 .PHONY:testpackage
 testpackage: dist ## Upload the built distribution to TestPyPI (token in TWINE_PASSWORD)
-	uv run twine upload -u __token__ --repository testpypi dist/*
+	uv run --frozen --no-sync twine upload -u __token__ --repository testpypi dist/*
 
 .PHONY:package
 package: dist ## Upload the built distribution to PyPI (token in TWINE_PASSWORD)
-	uv run twine upload -u __token__ --repository pypi dist/*
+	uv run --frozen --no-sync twine upload -u __token__ --repository pypi dist/*
