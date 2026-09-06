@@ -27,6 +27,19 @@ directly undercutting the feature's own motivation (a shared cache so multiple r
 duplicate load, when in practice each replica could still only serve one slow request at a
 time).
 
+**2026-09-06, same day, addendum.** Imran then asked directly: "are all the calls to this
+package now async?" — answer at that point was no. A repo-wide sweep for `httpx.`/`requests.`/
+`urlopen`/`socket.`/`urllib` found two more real network-I/O surfaces this first pass hadn't
+touched: `FhirClient` (synchronous `httpx.Client`, used by `CacheManager`'s ETL loop) and
+`TokenVerifier`/`IAL2Extractor` (`PyJWKClient`'s blocking JWKS fetch, used by
+`PatientMatcherService.match_from_token()` — i.e. the `/match/ial2` endpoint has the exact same
+class of bug `/Patient/$match` had). Explicit instruction: **"All calls should be async in this
+project unless async does not help them."** Converted both into this same PR/branch — see the
+second "What changed" block below. Everything else in the package (`NormalizationManager`,
+`FieldExtractor`/`FieldComparator`, `IAL2Claims`/`IAL2ToFhirConverter`,
+`MatchingEngine.evaluate_pair()`) is pure in-memory computation with no I/O, confirmed by the
+same repo-wide grep — correctly left synchronous, since async wouldn't help there.
+
 ## Design decisions (both made directly by Imran, no other options explored)
 
 1. **Uniform async `CacheBackend` interface**, not a split sync/async interface. `DuckDBCache`
@@ -88,7 +101,40 @@ of precomputed pairs), so it stays fully synchronous.
 - **`README.md`** — Quick Start and the "Choosing a Cache Backend" examples updated to show
   `asyncio.run(...)`/`await` usage; noted the uniform-async-interface rationale.
 
-## Execution notes — three real bugs the async conversion surfaced
+### Second pass: `FhirClient` and `TokenVerifier`/`IAL2Extractor`
+
+- **`patient_matching/fhir_client/auth.py`** — `ClientCredentialsAuth.get_access_token()`/
+  `_request_token()` → `async def`, take `httpx.AsyncClient` instead of `httpx.Client`.
+  `invalidate()` untouched (no I/O).
+- **`patient_matching/fhir_client/client.py`** — `fetch_all_patients()` is now an **async
+  generator** (`async def ... -> AsyncGenerator[...]`, `async with httpx.AsyncClient(...)`,
+  `yield` unchanged); `fetch_patient()`, `_authenticated_get()` → `async def`;
+  `_create_http_client()` now returns `httpx.AsyncClient`. A genuine async conversion (httpx has
+  native async support), not thread-offloaded.
+- **`patient_matching/ial2_extraction/token_verifier.py`** — `verify()` and the
+  `from_oidc_discovery()` classmethod → `async def`, both via `asyncio.to_thread()`. PyJWT's
+  `PyJWKClient` (and the plain `urlopen()` in `from_oidc_discovery`) have no async API at all, so
+  this is a deliberate thread-offload rather than a native async rewrite — it still moves the
+  blocking JWKS/discovery HTTP call off the event loop, which is what "async where it helps"
+  means for a dependency with no async alternative. The original blocking body of `verify()` is
+  now a private `_verify_sync()` helper that `verify()` awaits via `to_thread`.
+- **`patient_matching/ial2_extraction/ial2_extractor.py`** — `extract()`/`extract_claims()` →
+  `async def`, await `self._verifier.verify(token)`. `IAL2Claims.from_token_claims()` and
+  `IAL2ToFhirConverter.convert()` untouched — pure data mapping, no I/O.
+- **`patient_matching/api/service.py`** — `match_from_token()` now awaits
+  `self._ial2_extractor.extract(token)`.
+- **`patient_matching/cache/cache_manager.py`** — `_refresh_internal()`'s fetch loop is now
+  `async for patient_dict in self._fhir_client.fetch_all_patients(...)`.
+- **Tests** — `fhir_client/tests/test_auth.py` and `test_client.py`: mocks switched from
+  `MagicMock()` to `MagicMock(spec=httpx.AsyncClient)` (so `.post`/`.get` auto-become
+  `AsyncMock`, since the spec class's methods are now coroutine functions — no need to
+  hand-configure each one) and `__enter__`/`__exit__` → `__aenter__`/`__aexit__`.
+  `ial2_extraction/tests/test_ial2_extractor.py`: same spec-based approach for the mocked
+  `TokenVerifier`. `cache/tests/test_cache_manager.py`: `mock_fhir_client.fetch_all_patients`
+  needed a small `_async_iter()` helper (a plain list isn't async-iterable) since
+  `CacheManager` now does `async for` over it.
+
+## Execution notes — real bugs the async conversion surfaced
 
 **Methodology:** wrote all the source changes first, then ran `mypy --strict` across the whole
 package and let its "Coroutine[...] has no attribute X — maybe you forgot await?" errors point
@@ -96,6 +142,11 @@ at every one of the ~500 call sites needing an `await`, rather than manually aud
 file by hand. This caught a real source bug immediately (`DuckDBCache._fuzzy_search`'s recursive
 call into `search_by_field`) that a manual line-by-line pass could easily have missed. Full
 `mypy` sweep across `patient_matching/` + `tests/` came back clean before running the suite.
+Second-pass gotcha: my own ad-hoc `uv run mypy patient_matching tests` invocations weren't
+passing `--strict`, unlike the pre-commit hook's actual invocation (`args: [--strict,
+--python-version=3.12, --show-error-codes]`) — a bare `list` type-arg violation slipped through
+my own checks and was only caught when I ran `pre-commit run` for real. Re-ran `mypy --strict`
+directly against every file changed on this branch afterward to close that gap; all 29 clean.
 
 1. **pymongo's `aggregate()`/`list_search_indexes()` are coroutines themselves** (must `await`
    to get the cursor), unlike `find()` (returns an async-iterable cursor directly, no await on
@@ -119,13 +170,25 @@ call into `search_by_field`) that a manual line-by-line pass could easily have m
    (`cache.clear()`) silently ran on a different loop than it was created on and failed, which
    surfaced as test data leaking between tests (counts off by exactly the previous test's rows)
    rather than an obvious error at first.
+4. **An unspec'd `MagicMock()` doesn't auto-detect a spec class's async methods.**
+   `test_service.py`'s mocked `IAL2Extractor` was a plain `MagicMock()`, so
+   `mock_extractor.extract.return_value = {...}` configured a *sync* mock — awaiting it raised
+   `TypeError: object dict can't be used in 'await' expression`. `MagicMock(spec=MagicMock)`
+   only auto-creates `AsyncMock` for methods when given a `spec=<the real class>` to introspect;
+   without it, every attribute is a generic `MagicMock` regardless of what the real method looks
+   like. Fixed by passing `spec=IAL2Extractor`. This is the same pattern already used correctly
+   elsewhere (`test_ial2_extractor.py`'s `MagicMock(spec=TokenVerifier)`,
+   `test_client.py`/`test_auth.py`'s `MagicMock(spec=httpx.AsyncClient)`) — worth defaulting to
+   `spec=` on any mock standing in for a class with async methods, rather than a bare
+   `MagicMock()`, so a sync/async mismatch fails at mock-creation intent rather than at
+   await-time.
 
-**Full verification, twice** (once via `uv run pytest` on host, once via `make tests` — the
-actual Docker-Compose-wrapped gate, per PR #45's own established practice this session
-inherited): **478 tests pass**, including the full `MongoAtlasCache` suite and the
-docker-outside-of-docker network self-attach mechanism, inside the real `dev` image built from
-the actual `Dockerfile`. `ruff check`/`ruff format --check`/`mypy --strict`/`bandit` all clean on
-every changed file.
+**Full verification, twice per pass** (once via `uv run pytest` on host, once via `make tests` —
+the actual Docker-Compose-wrapped gate, per PR #45's own established practice this session
+inherited): **478 tests pass** on both passes, including the full `MongoAtlasCache` suite and
+the docker-outside-of-docker network self-attach mechanism, inside the real `dev` image built
+from the actual `Dockerfile`. `ruff check`/`ruff format --check`/`mypy --strict`/`bandit` all
+clean on every changed file (29 files across both passes).
 
 ## Left open, not self-merged
 

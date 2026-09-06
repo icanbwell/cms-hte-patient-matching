@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, Generator, Optional
+from typing import Any, AsyncGenerator, Dict, Optional
 
 import httpx
 from fhirschemapy.R4B.patient import Patient
@@ -64,7 +64,7 @@ class FhirClient:
             auth=auth,
         )
         client = FhirClient(config)
-        for patient in client.fetch_all_patients():
+        async for patient in client.fetch_all_patients():
             print(patient["id"])
     """
 
@@ -72,11 +72,11 @@ class FhirClient:
         self._config = config
         self._base_url = config.base_url.rstrip("/")
 
-    def fetch_all_patients(
+    async def fetch_all_patients(
         self,
         *,
         search_params: Optional[Dict[str, str]] = None,
-    ) -> Generator[Dict[str, Any], None, None]:
+    ) -> AsyncGenerator[Dict[str, Any], None]:
         """Fetch all Patient resources from the FHIR server.
 
         Paginates through all available pages using FHIR Bundle
@@ -96,7 +96,7 @@ class FhirClient:
         url: Optional[str] = f"{self._base_url}/Patient"
         page_count = 0
 
-        with self._create_http_client() as client:
+        async with self._create_http_client() as client:
             while url:
                 page_count += 1
                 if self._config.max_pages > 0 and page_count > self._config.max_pages:
@@ -107,7 +107,7 @@ class FhirClient:
                     break
 
                 logger.debug("Fetching page %d from %s", page_count, url)
-                response = self._authenticated_get(
+                response = await self._authenticated_get(
                     client, url, params=params if page_count == 1 else None
                 )
                 response.raise_for_status()
@@ -128,7 +128,7 @@ class FhirClient:
 
         logger.info("Fetched %d pages total", page_count)
 
-    def fetch_patient(self, patient_id: str) -> Optional[Dict[str, Any]]:
+    async def fetch_patient(self, patient_id: str) -> Optional[Dict[str, Any]]:
         """Fetch a single Patient resource by ID.
 
         Validates the response through fhirschemapy before returning.
@@ -140,8 +140,8 @@ class FhirClient:
             The Patient resource dict, or None if not found.
         """
         url = f"{self._base_url}/Patient/{patient_id}"
-        with self._create_http_client() as client:
-            response = self._authenticated_get(client, url)
+        async with self._create_http_client() as client:
+            response = await self._authenticated_get(client, url)
             if response.status_code == 404:
                 return None
             response.raise_for_status()
@@ -152,7 +152,7 @@ class FhirClient:
             )
             return result
 
-    def _create_http_client(self) -> httpx.Client:
+    def _create_http_client(self) -> httpx.AsyncClient:
         """Create an HTTP client with configured defaults."""
         headers = {
             "Accept": "application/fhir+json",
@@ -160,15 +160,15 @@ class FhirClient:
         }
         headers.update(self._config.extra_headers)
 
-        return httpx.Client(
+        return httpx.AsyncClient(
             timeout=self._config.timeout,
             verify=self._config.verify_ssl,
             headers=headers,
         )
 
-    def _authenticated_get(
+    async def _authenticated_get(
         self,
-        client: httpx.Client,
+        client: httpx.AsyncClient,
         url: str,
         *,
         params: Optional[Dict[str, str]] = None,
@@ -176,10 +176,10 @@ class FhirClient:
         """Perform a GET request with OAuth authentication if configured."""
         headers: Dict[str, str] = {}
         if self._config.auth:
-            token = self._config.auth.get_access_token(client)
+            token = await self._config.auth.get_access_token(client)
             headers["Authorization"] = f"Bearer {token}"
 
-        return client.get(url, params=params, headers=headers)
+        return await client.get(url, params=params, headers=headers)
 
 
 def _get_next_link(bundle_dict: Dict[str, Any]) -> Optional[str]:

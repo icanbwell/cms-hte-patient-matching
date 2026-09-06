@@ -62,11 +62,11 @@ class ClientCredentialsAuth:
         self._extra_params = extra_params or {}
         self._token: Optional[TokenResponse] = None
 
-    def get_access_token(self, client: httpx.Client) -> str:
+    async def get_access_token(self, client: httpx.AsyncClient) -> str:
         """Get a valid access token, refreshing if necessary.
 
         Args:
-            client: An httpx.Client to use for the token request.
+            client: An httpx.AsyncClient to use for the token request.
 
         Returns:
             A valid Bearer access token string.
@@ -75,10 +75,10 @@ class ClientCredentialsAuth:
             httpx.HTTPStatusError: If the token request fails.
         """
         if self._token is None or self._token.is_expired:
-            self._token = self._request_token(client)
+            self._token = await self._request_token(client)
         return self._token.access_token
 
-    def _request_token(self, client: httpx.Client) -> TokenResponse:
+    async def _request_token(self, client: httpx.AsyncClient) -> TokenResponse:
         """Request a new access token from the token endpoint."""
         data: Dict[str, str] = {
             "grant_type": "client_credentials",
@@ -90,7 +90,7 @@ class ClientCredentialsAuth:
         data.update(self._extra_params)
 
         logger.debug("Requesting OAuth2 token from %s", self._token_url)
-        response = client.post(self._token_url, data=data)
+        response = await client.post(self._token_url, data=data)
         response.raise_for_status()
 
         body = response.json()

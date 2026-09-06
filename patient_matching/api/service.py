@@ -136,7 +136,7 @@ class PatientMatcherService:
         logger.info("Matching from IAL2 token")
 
         # Step 1: Verify token and extract FHIR Patient
-        fhir_patient = self._ial2_extractor.extract(token)
+        fhir_patient = await self._ial2_extractor.extract(token)
 
         # Step 2: Normalize
         normalized = self._normalizer.normalize(fhir_patient)

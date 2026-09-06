@@ -31,7 +31,7 @@ class IAL2Extractor:
             audience="my-client-id",
         )
         extractor = IAL2Extractor(verifier=verifier)
-        patient = extractor.extract(token_string)
+        patient = await extractor.extract(token_string)
         # patient is a FHIR R4 Patient resource dict
     """
 
@@ -44,7 +44,7 @@ class IAL2Extractor:
         self._verifier = verifier
         self._converter = converter or IAL2ToFhirConverter()
 
-    def extract(self, token: str) -> Dict[str, Any]:
+    async def extract(self, token: str) -> Dict[str, Any]:
         """Verify an IAL2 token and return a FHIR Patient resource.
 
         Args:
@@ -58,7 +58,7 @@ class IAL2Extractor:
                 are invalid.
         """
         logger.debug("Verifying IAL2 token")
-        raw_claims = self._verifier.verify(token)
+        raw_claims = await self._verifier.verify(token)
 
         logger.debug("Extracting claims from verified token")
         claims = IAL2Claims.from_token_claims(raw_claims)
@@ -68,7 +68,7 @@ class IAL2Extractor:
 
         return patient
 
-    def extract_claims(self, token: str) -> IAL2Claims:
+    async def extract_claims(self, token: str) -> IAL2Claims:
         """Verify an IAL2 token and return the normalized claims.
 
         Useful when you need the structured claims without FHIR conversion.
@@ -83,5 +83,5 @@ class IAL2Extractor:
             TokenVerificationError: If the token signature or claims
                 are invalid.
         """
-        raw_claims = self._verifier.verify(token)
+        raw_claims = await self._verifier.verify(token)
         return IAL2Claims.from_token_claims(raw_claims)

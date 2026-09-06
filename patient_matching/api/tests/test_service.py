@@ -11,6 +11,7 @@ from patient_matching.api.service import (
 )
 from patient_matching.cache.cache_backend import CachedPatient
 from patient_matching.cache.duckdb_cache import DuckDBCache
+from patient_matching.ial2_extraction.ial2_extractor import IAL2Extractor
 from patient_matching.matching.match_result import MatchOutcome, MatchResult
 
 
@@ -109,7 +110,7 @@ class TestPatientMatcherService:
     async def test_match_from_token_with_extractor(self, cache: DuckDBCache) -> None:
         await _populate_cache(cache, [_make_cached("p1")])
 
-        mock_extractor = MagicMock()
+        mock_extractor = MagicMock(spec=IAL2Extractor)
         mock_extractor.extract.return_value = {
             "resourceType": "Patient",
             "name": [{"family": "smith", "given": ["john"]}],

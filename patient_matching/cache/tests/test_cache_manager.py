@@ -1,12 +1,18 @@
 """Tests for the CacheManager pipeline."""
 
-from typing import Any, AsyncIterator, Dict
+from typing import Any, AsyncIterator, Dict, List
 
 import pytest
 from unittest.mock import MagicMock
 
 from patient_matching.cache.cache_manager import CacheManager, CacheManagerConfig
 from patient_matching.cache.duckdb_cache import DuckDBCache
+
+
+async def _async_iter(items: List[Dict[str, Any]]) -> AsyncIterator[Dict[str, Any]]:
+    """Turn a plain list into the async-generator shape fetch_all_patients() returns."""
+    for item in items:
+        yield item
 
 
 def _make_fhir_patient(
@@ -33,7 +39,7 @@ class TestCacheManager:
     async def test_build_cache(self, cache: DuckDBCache) -> None:
         patients = [_make_fhir_patient("p1"), _make_fhir_patient("p2")]
         mock_fhir_client = MagicMock()
-        mock_fhir_client.fetch_all_patients.return_value = iter(patients)
+        mock_fhir_client.fetch_all_patients.return_value = _async_iter(patients)
 
         manager = CacheManager(
             fhir_client=mock_fhir_client,
@@ -51,7 +57,7 @@ class TestCacheManager:
             {"resourceType": "Patient", "name": [{"family": "smith"}]},
         ]
         mock_fhir_client = MagicMock()
-        mock_fhir_client.fetch_all_patients.return_value = iter(patients)
+        mock_fhir_client.fetch_all_patients.return_value = _async_iter(patients)
 
         manager = CacheManager(
             fhir_client=mock_fhir_client,
@@ -79,7 +85,7 @@ class TestCacheManager:
 
         patients = [_make_fhir_patient("new")]
         mock_fhir_client = MagicMock()
-        mock_fhir_client.fetch_all_patients.return_value = iter(patients)
+        mock_fhir_client.fetch_all_patients.return_value = _async_iter(patients)
 
         manager = CacheManager(
             fhir_client=mock_fhir_client,
@@ -105,7 +111,7 @@ class TestCacheManager:
 
         patients = [_make_fhir_patient("new")]
         mock_fhir_client = MagicMock()
-        mock_fhir_client.fetch_all_patients.return_value = iter(patients)
+        mock_fhir_client.fetch_all_patients.return_value = _async_iter(patients)
 
         manager = CacheManager(
             fhir_client=mock_fhir_client,
@@ -120,7 +126,7 @@ class TestCacheManager:
     async def test_batch_processing(self, cache: DuckDBCache) -> None:
         patients = [_make_fhir_patient(f"p{i}") for i in range(10)]
         mock_fhir_client = MagicMock()
-        mock_fhir_client.fetch_all_patients.return_value = iter(patients)
+        mock_fhir_client.fetch_all_patients.return_value = _async_iter(patients)
 
         config = CacheManagerConfig(batch_size=3)
         manager = CacheManager(
@@ -135,7 +141,7 @@ class TestCacheManager:
 
     async def test_patient_count_property(self, cache: DuckDBCache) -> None:
         mock_fhir_client = MagicMock()
-        mock_fhir_client.fetch_all_patients.return_value = iter(
+        mock_fhir_client.fetch_all_patients.return_value = _async_iter(
             [
                 _make_fhir_patient("p1"),
             ]

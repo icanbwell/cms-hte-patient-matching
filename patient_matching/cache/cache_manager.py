@@ -109,13 +109,7 @@ class CacheManager:
             return await self._refresh_internal()
 
     async def _refresh_internal(self) -> Dict[str, int]:
-        """Internal refresh logic shared by build and refresh.
-
-        Note: fetch_all_patients() itself is still a synchronous generator
-        (the FHIR client's own HTTP calls aren't async) -- only the cache
-        writes below are awaited. Converting the FHIR client is a separate,
-        larger change; out of scope here.
-        """
+        """Internal refresh logic shared by build and refresh."""
         stats = {
             "patients_fetched": 0,
             "patients_cached": 0,
@@ -124,7 +118,7 @@ class CacheManager:
 
         batch: List[CachedPatient] = []
 
-        for patient_dict in self._fhir_client.fetch_all_patients(
+        async for patient_dict in self._fhir_client.fetch_all_patients(
             search_params=self._config.search_params,
         ):
             stats["patients_fetched"] += 1

@@ -2,7 +2,7 @@
 
 import json
 from typing import Any, Dict, List, Union
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 
 from patient_matching.fhir_client.client import FhirClient, FhirClientConfig
@@ -56,10 +56,11 @@ def _mock_response(data_dict: Dict[str, Any], status_code: int = 200) -> MagicMo
 def _setup_mock_http(
     client: FhirClient, responses: Union[MagicMock, List[MagicMock]]
 ) -> MagicMock:
-    """Set up a mock HTTP client that returns the given responses."""
+    """Set up a mock async HTTP client that returns the given responses."""
     mock_http_client = MagicMock()
-    mock_http_client.__enter__ = MagicMock(return_value=mock_http_client)
-    mock_http_client.__exit__ = MagicMock(return_value=False)
+    mock_http_client.__aenter__ = AsyncMock(return_value=mock_http_client)
+    mock_http_client.__aexit__ = AsyncMock(return_value=False)
+    mock_http_client.get = AsyncMock()
     if isinstance(responses, list):
         mock_http_client.get.side_effect = responses
     else:
@@ -68,7 +69,7 @@ def _setup_mock_http(
 
 
 class TestFhirClient:
-    def test_fetch_all_patients_single_page(self) -> None:
+    async def test_fetch_all_patients_single_page(self) -> None:
         patients = [_make_patient("p1"), _make_patient("p2")]
         bundle = _make_bundle(patients)
 
@@ -78,13 +79,13 @@ class TestFhirClient:
         mock_http_client = _setup_mock_http(client, _mock_response(bundle))
 
         with patch.object(client, "_create_http_client", return_value=mock_http_client):
-            result = list(client.fetch_all_patients())
+            result = [p async for p in client.fetch_all_patients()]
 
         assert len(result) == 2
         assert result[0]["id"] == "p1"
         assert result[1]["id"] == "p2"
 
-    def test_fetch_all_patients_pagination(self) -> None:
+    async def test_fetch_all_patients_pagination(self) -> None:
         page1 = _make_bundle(
             [_make_patient("p1")],
             next_url="https://fhir.example.com/R4/Patient?_page=2",
@@ -99,13 +100,13 @@ class TestFhirClient:
         )
 
         with patch.object(client, "_create_http_client", return_value=mock_http_client):
-            result = list(client.fetch_all_patients())
+            result = [p async for p in client.fetch_all_patients()]
 
         assert len(result) == 2
         assert result[0]["id"] == "p1"
         assert result[1]["id"] == "p2"
 
-    def test_fetch_all_patients_max_pages(self) -> None:
+    async def test_fetch_all_patients_max_pages(self) -> None:
         page = _make_bundle(
             [_make_patient("p1")],
             next_url="https://fhir.example.com/R4/Patient?_page=2",
@@ -120,12 +121,12 @@ class TestFhirClient:
         mock_http_client = _setup_mock_http(client, _mock_response(page))
 
         with patch.object(client, "_create_http_client", return_value=mock_http_client):
-            result = list(client.fetch_all_patients())
+            result = [p async for p in client.fetch_all_patients()]
 
         # Should stop after 1 page even though there's a next link
         assert len(result) == 1
 
-    def test_fetch_patient_by_id(self) -> None:
+    async def test_fetch_patient_by_id(self) -> None:
         patient = _make_patient("p-123")
 
         config = FhirClientConfig(base_url="https://fhir.example.com/R4")
@@ -134,29 +135,29 @@ class TestFhirClient:
         mock_http_client = _setup_mock_http(client, _mock_response(patient))
 
         with patch.object(client, "_create_http_client", return_value=mock_http_client):
-            result = client.fetch_patient("p-123")
+            result = await client.fetch_patient("p-123")
 
         assert result is not None
         assert result["id"] == "p-123"
 
-    def test_fetch_patient_not_found(self) -> None:
+    async def test_fetch_patient_not_found(self) -> None:
         config = FhirClientConfig(base_url="https://fhir.example.com/R4")
         client = FhirClient(config)
 
         mock_http_client = _setup_mock_http(client, _mock_response({}, status_code=404))
 
         with patch.object(client, "_create_http_client", return_value=mock_http_client):
-            result = client.fetch_patient("nonexistent")
+            result = await client.fetch_patient("nonexistent")
 
         assert result is None
 
-    def test_auth_header_included(self) -> None:
+    async def test_auth_header_included(self) -> None:
         mock_auth = MagicMock()
         config = FhirClientConfig(
             base_url="https://fhir.example.com/R4",
             auth=mock_auth,
         )
-        mock_auth.get_access_token.return_value = "bearer-token-xyz"
+        mock_auth.get_access_token = AsyncMock(return_value="bearer-token-xyz")
 
         client = FhirClient(config)
         bundle = _make_bundle([_make_patient("p1")])
@@ -164,14 +165,14 @@ class TestFhirClient:
         mock_http_client = _setup_mock_http(client, _mock_response(bundle))
 
         with patch.object(client, "_create_http_client", return_value=mock_http_client):
-            list(client.fetch_all_patients())
+            [p async for p in client.fetch_all_patients()]
 
         # Verify auth header was set
         call_args = mock_http_client.get.call_args
         headers = call_args.kwargs.get("headers", {})
         assert headers["Authorization"] == "Bearer bearer-token-xyz"
 
-    def test_empty_bundle(self) -> None:
+    async def test_empty_bundle(self) -> None:
         bundle = {"resourceType": "Bundle", "type": "searchset", "total": 0}
 
         config = FhirClientConfig(base_url="https://fhir.example.com/R4")
@@ -180,6 +181,6 @@ class TestFhirClient:
         mock_http_client = _setup_mock_http(client, _mock_response(bundle))
 
         with patch.object(client, "_create_http_client", return_value=mock_http_client):
-            result = list(client.fetch_all_patients())
+            result = [p async for p in client.fetch_all_patients()]
 
         assert len(result) == 0
