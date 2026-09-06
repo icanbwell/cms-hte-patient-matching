@@ -77,8 +77,16 @@ def docker_network() -> Generator[Network]:
     If pytest itself is running inside a container (see ``self_container_id``),
     attaches that container to the network too, so it can reach sibling test
     containers (e.g. mongodb) by network alias.
+
+    Skips (rather than erroring) if no Docker daemon is reachable -- e.g. a
+    contributor's machine without Colima/Docker Desktop running.
     """
-    client = docker.from_env()
+    try:
+        client = docker.from_env()
+        client.ping()
+    except Exception as exc:
+        pytest.skip(f"Docker is not available, skipping container tests: {exc}")
+
     network = _get_or_create_network(client)
     own_id = self_container_id()
     if own_id is not None:

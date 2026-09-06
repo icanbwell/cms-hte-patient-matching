@@ -6,6 +6,7 @@ testcontainer (see ``tests/containers/mongodb.py``), skipped automatically
 if Docker isn't available.
 """
 
+import sys
 import time
 from collections.abc import Iterator
 from typing import List
@@ -118,6 +119,18 @@ def _make_cached_patient(
     )
 
 
+class TestMongoAtlasCacheImportGuard:
+    def test_missing_pymongo_raises_helpful_import_error(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """No real Mongo/Docker needed: the ImportError is raised before any
+        connection attempt, from the ``from pymongo import ...`` in __init__.
+        """
+        monkeypatch.setitem(sys.modules, "pymongo", None)
+        with pytest.raises(ImportError, match=r"pip install patient_matching\[mongo\]"):
+            MongoAtlasCache()
+
+
 class TestMongoAtlasCacheUpsert:
     def test_upsert_single(self, cache: MongoAtlasCache) -> None:
         patient = _make_cached_patient()
@@ -197,6 +210,24 @@ class TestMongoAtlasCacheSearch:
         cache.upsert_patients([p1, p2, p3])
         results = cache.search_by_field("last_name", "smith")
         assert len(results) == 2
+
+    def test_multivalued_field_searchable_by_each_value(
+        self, cache: MongoAtlasCache
+    ) -> None:
+        """A patient with >1 value for a field (e.g. two phone numbers) is
+        findable by any one of them, and get_patient() returns the full set.
+        """
+        patient = _make_cached_patient("p1")
+        patient.phones = {"+12125551234", "+13105559876"}
+        cache.upsert_patients([patient])
+
+        for phone in patient.phones:
+            results = cache.search_by_field("phone", phone)
+            assert {p.patient_id for p in results} == {"p1"}
+
+        stored = cache.get_patient("p1")
+        assert stored is not None
+        assert stored.phones == patient.phones
 
 
 class TestMongoAtlasCacheGet:
