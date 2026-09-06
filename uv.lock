@@ -1052,7 +1052,7 @@ wheels = [
 ]
 
 [[package]]
-name = "patient-matching"
+name = "cms-hte-patient-matching"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

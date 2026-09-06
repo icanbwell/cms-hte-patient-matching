@@ -49,14 +49,14 @@ The CMS Patient Matching Proposal defines a standardized approach to matching pa
 ## Installation
 
 ```bash
-pip install patient_matching
+pip install cms-hte-patient-matching
 ```
 
 Or install from source:
 
 ```bash
-git clone https://github.com/icanbwell/patient-matching-reference-implementation.git
-cd patient-matching-reference-implementation/patient_matching
+git clone https://github.com/icanbwell/cms-hte-patient-matching.git
+cd cms-hte-patient-matching
 pip install -e .
 ```
 
@@ -66,19 +66,19 @@ The core package has minimal dependencies. Install extras for specific features:
 
 ```bash
 # FHIR client with OAuth
-pip install patient_matching[fhir]    # httpx, fhirschemapy
+pip install cms-hte-patient-matching[fhir]    # httpx, fhirschemapy
 
 # DuckDB patient cache
-pip install patient_matching[cache]   # duckdb, rapidfuzz
+pip install cms-hte-patient-matching[cache]   # duckdb, rapidfuzz
 
 # FastAPI HTTP API
-pip install patient_matching[api]     # fastapi, uvicorn
+pip install cms-hte-patient-matching[api]     # fastapi, uvicorn
 
 # Scheduled cache refresh
-pip install patient_matching[scheduler]  # apscheduler
+pip install cms-hte-patient-matching[scheduler]  # apscheduler
 
 # All features
-pip install patient_matching[all]
+pip install cms-hte-patient-matching[all]
 ```
 
 ## Quick Start
@@ -390,10 +390,16 @@ Pre-commit hooks include:
 ### Building
 
 ```bash
-make build         # Build distribution packages
-make testpackage   # Upload to TestPyPI
-make package       # Upload to PyPI
+make dist          # Build distribution packages into dist/ (named `dist`, not `build`,
+                    # since `make build` already means "build the dev Docker image")
+make testpackage   # Upload to TestPyPI (token in TWINE_PASSWORD)
+make package       # Upload to PyPI (token in TWINE_PASSWORD)
 ```
+
+Real releases publish via GitHub Actions using [PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/)
+(`.github/workflows/python-publish.yml`, triggered on a GitHub Release) rather than `make package` —
+Trusted Publishing only authenticates from within that CI run, so `make package`/`make testpackage`
+are for local TestPyPI dry runs only.
 
 ### Project Structure
 
@@ -459,4 +465,4 @@ patient_matching/
 
 Apache License 2.0
 
-**Repository:** [https://github.com/icanbwell/patient-matching-reference-implementation](https://github.com/icanbwell/patient-matching-reference-implementation)
+**Repository:** [https://github.com/icanbwell/cms-hte-patient-matching](https://github.com/icanbwell/cms-hte-patient-matching)
