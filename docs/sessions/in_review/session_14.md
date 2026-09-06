@@ -1,10 +1,10 @@
 # Session 14 — Async cache/matching pipeline (avoid blocking the event loop)
 
-**Status:** in_review — executed 2026-09-06 on branch `session-14/async-cache-backend`
-(PR link filled in below once opened), **stacked on PR #45 (session 12,
-`session-12/mongo-atlas-cache`)**. Cannot merge until PR #45 merges first — the branch point is
-`session-12/mongo-atlas-cache`, not `main`, because this session needs `MongoAtlasCache` to
-already exist to have anything to fix.
+**Status:** in_review — executed 2026-09-06 on branch `session-14/async-cache-backend`, PR
+[#48](https://github.com/icanbwell/cms-hte-patient-matching/pull/48), **stacked on PR #45
+(session 12, `session-12/mongo-atlas-cache`)**. Cannot merge until PR #45 merges first — the
+branch point is `session-12/mongo-atlas-cache`, not `main`, because this session needs
+`MongoAtlasCache` to already exist to have anything to fix.
 **Thread:** `Phase 2: production candidate-retrieval scaling` (same thread as sessions 12/13).
 **Estimated size:** M — mechanical but wide: touches the cache interface, both cache
 implementations, the matching engine/manager, the service layer, the FastAPI handlers, and
