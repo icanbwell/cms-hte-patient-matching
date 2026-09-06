@@ -1,0 +1,16 @@
+{
+  "name": "patient_field_search_index",
+  "definition": {
+    "mappings": {
+      "dynamic": false,
+      "fields": {
+        "field_name": {
+          "type": "token"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

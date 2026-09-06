@@ -11,6 +11,10 @@ services:
         - jfrog_read_token
     volumes:
       - ./:/usr/src/patient_matching
+      # Docker-outside-of-docker: lets MongoAtlasCache's testcontainer tests
+      # (session_12) spin up mongodb-atlas-local as a sibling container via
+      # the host's own Docker daemon, since `dev` has no daemon of its own.
+      - /var/run/docker.sock:/var/run/docker.sock
     container_name: patient_matching_dev
     working_dir: /usr/src/patient_matching
     env_file:

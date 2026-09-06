@@ -50,7 +50,7 @@ help: ## Show this help.
 
 .PHONY:tests
 tests: ## Runs all the tests
-	docker compose run --rm --name patient_matching_service_tests dev pytest tests
+	docker compose run --rm --name patient_matching_service_tests dev pytest .
 
 .PHONY:shell
 shell: ## Brings up the bash shell in dev docker

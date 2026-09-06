@@ -10,7 +10,7 @@ The CMS Patient Matching Proposal defines a standardized approach to matching pa
 - **IAL2 token extraction** — verify JWT tokens from Credential Service Providers (CSPs) and convert to FHIR Patient resources
 - **Demographic normalization** — text normalization, nickname expansion, E.164 phone formatting, USPS address standardization, placeholder detection
 - **FHIR R4 integration** — fetch patients from FHIR servers with OAuth2, paginate through Bundles
-- **Patient cache** — DuckDB-backed cache with field-level indexing and Damerau-Levenshtein fuzzy search
+- **Patient cache** — pluggable backend (in-process DuckDB, or MongoDB Atlas Search for shared/multi-replica deployments) with field-level indexing and fuzzy search
 - **HTTP API** — FastAPI application with FHIR `$match` endpoint
 - **Confidence scoring** — based on P(collision) values from Table 2 rules
 
@@ -37,7 +37,7 @@ The CMS Patient Matching Proposal defines a standardized approach to matching pa
                                                       │
                                              ┌────────▼────────┐
                                              │  Cache Backend   │
-                                             │  (DuckDB)        │
+                                             │ (DuckDB or Mongo)│
                                              └────────┬────────┘
                                                       │
                                              ┌────────▼────────┐
@@ -68,8 +68,11 @@ The core package has minimal dependencies. Install extras for specific features:
 # FHIR client with OAuth
 pip install cms-hte-patient-matching[fhir]    # httpx, fhirschemapy
 
-# DuckDB patient cache
+# DuckDB patient cache (single process/replica)
 pip install cms-hte-patient-matching[cache]   # duckdb, rapidfuzz
+
+# MongoDB Atlas Search patient cache (shared cache across replicas)
+pip install cms-hte-patient-matching[mongo]   # pymongo
 
 # FastAPI HTTP API
 pip install cms-hte-patient-matching[api]     # fastapi, uvicorn
@@ -123,6 +126,58 @@ print(result.outcome)           # MatchOutcome.MATCH
 print(result.matched_rule_id)   # e.g., "rule_02"
 print(result.match_type)        # "exact" or "fuzzy"
 ```
+
+### Choosing a Cache Backend
+
+Both backends implement the same `CacheBackend` interface (`upsert_patients`,
+`search_by_field`, `get_patient`, `count`, `clear`), so `CacheMatchingBackend`
+and `CacheManager` work identically regardless of which one you pick.
+
+| | `DuckDBCache` | `MongoAtlasCache` |
+|---|---|---|
+| Install extra | `[cache]` (`duckdb`, `rapidfuzz`) | `[mongo]` (`pymongo`) |
+| Storage | In-process, one cache per replica | Shared MongoDB database, one cache for all replicas |
+| Fuzzy search | In-process Damerau-Levenshtein (`rapidfuzz`) | Network round-trip per call via Atlas `$search` |
+| When to use it | Default choice — a single process/replica, or where per-request latency matters more than cache consistency across replicas | Multiple service replicas (e.g. behind a Kubernetes HPA) that need to share one candidate store instead of duplicating the upstream FHIR load N times |
+| Index setup required | None — `CREATE INDEX IF NOT EXISTS` runs automatically in `DuckDBCache.__init__` | Two regular indexes are created automatically (`(field_name, value)` and `patient_id`); the **Atlas Search index is not** — see below |
+
+**Use `DuckDBCache`** (no extra setup):
+
+```python
+from patient_matching.cache import DuckDBCache
+
+cache = DuckDBCache()  # in-memory; pass database="/path/to/file.duckdb" to persist
+```
+
+**Use `MongoAtlasCache`** (requires a MongoDB Atlas cluster, or the
+`mongodb-atlas-local` Docker image for local dev/testing):
+
+```python
+import os
+
+from patient_matching.cache.mongo_atlas_cache import MongoAtlasCache
+
+cache = MongoAtlasCache(
+    connection_string=os.environ["MONGO_ATLAS_URI"],  # e.g. mongodb+srv://<host>/...
+    database="patient_cache",
+)
+```
+
+`MongoAtlasCache` additionally needs an **Atlas Search index** on the
+`field_values` collection before fuzzy search will return results (exact
+search works without it). This is a cluster-admin action, not something the
+application creates for you:
+
+- Definition: `patient_matching/cache/mongo_atlas_index.json` (loadable via
+  `mongo_atlas_cache.search_index_definition()`).
+- Create it once per environment via the Atlas UI ("Search" tab on the
+  cluster), the Atlas Admin API, or `pymongo`'s
+  `collection.create_search_index(SearchIndexModel(...))` using that same
+  definition.
+- Until the index exists (or while it's still building), fuzzy search
+  degrades gracefully to an empty result — matching stays correct for the
+  exact-match path, but silently misses fuzzy candidates, so confirm the
+  index is `queryable` before relying on fuzzy matches in a new environment.
 
 ### Use the Service Layer (Simplest API)
 
@@ -300,10 +355,13 @@ Demographic normalization per CMS proposal sections A-D.
 
 ### `patient_matching.cache`
 
-Patient cache with field-level indexing for efficient blocking.
+Patient cache with field-level indexing for efficient blocking. See
+[Choosing a Cache Backend](#choosing-a-cache-backend) above for how to pick
+between the two implementations.
 
-- **`DuckDBCache`** — in-memory DuckDB with two-table schema (`patients` + `field_values`)
-- **`CacheMatchingBackend`** — adapts cache to the `MatchingBackend` interface
+- **`DuckDBCache`** — in-memory (or on-disk) DuckDB with two-table schema (`patients` + `field_values`); one cache per process/replica
+- **`MongoAtlasCache`** — MongoDB + Atlas Search-backed cache with the same two-collection schema, shared across replicas
+- **`CacheMatchingBackend`** — adapts either cache to the `MatchingBackend` interface
 - **`CacheManager`** — ETL pipeline: fetch from FHIR server -> normalize -> extract fields -> store
 
 ### `patient_matching.fhir_client`

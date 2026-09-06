@@ -43,6 +43,7 @@ Repository = "https://github.com/icanbwell/cms-hte-patient-matching"
 [project.optional-dependencies]
 fhir = ["httpx", "fhirschemapy"]
 cache = ["duckdb", "rapidfuzz"]
+mongo = ["pymongo>=4.7"]
 api = ["fastapi", "uvicorn"]
 scheduler = ["apscheduler"]
 all = [
@@ -50,6 +51,7 @@ all = [
     "fhirschemapy",
     "duckdb",
     "rapidfuzz",
+    "pymongo>=4.7",
     "fastapi",
     "uvicorn",
     "apscheduler",
@@ -75,6 +77,9 @@ dev = [
     # bundling an unrelated tooling upgrade into this PR's scope.
     "ruff==0.15.20",
     "pytest-cov>=6.1.1",
+    # For MongoAtlasCache's testcontainer tests (mongodb-atlas-local) -- session_12.
+    "testcontainers>=4.9.0",
+    "docker>=7.1.0",
 ]
 
 [tool.setuptools.dynamic]
@@ -154,4 +159,8 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = ["pymongo.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["testcontainers.*", "docker.*"]
 ignore_missing_imports = true
