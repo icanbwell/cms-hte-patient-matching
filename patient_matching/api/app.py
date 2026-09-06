@@ -76,7 +76,7 @@ def create_app(
             )
 
         # Match
-        result = service.match_patient(patient_dict)
+        result = await service.match_patient(patient_dict)
 
         # Build FHIR Bundle response
         bundle = _build_match_bundle(result)
@@ -119,7 +119,7 @@ def create_app(
             raise HTTPException(status_code=400, detail="Token is required.")
 
         try:
-            result = service.match_from_token(token)
+            result = await service.match_from_token(token)
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc))
         except Exception as exc:

@@ -15,5 +15,5 @@ class NullBackend(MatchingBackend):
     """No-op backend - `MatchingEngine.evaluate_pair()` never calls it, but the
     engine's constructor requires a backend instance."""
 
-    def search(self, criteria: List[FieldCriterion]) -> List[Dict[str, Any]]:
+    async def search(self, criteria: List[FieldCriterion]) -> List[Dict[str, Any]]:
         return []

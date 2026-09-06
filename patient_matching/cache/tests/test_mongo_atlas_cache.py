@@ -6,13 +6,15 @@ testcontainer (see ``tests/containers/mongodb.py``), skipped automatically
 if Docker isn't available.
 """
 
+import asyncio
 import sys
 import time
-from collections.abc import Iterator
+from collections.abc import AsyncIterator
 from typing import List
 from unittest.mock import patch
 
 import pytest
+import pytest_asyncio
 from pymongo.errors import OperationFailure
 from pymongo.operations import SearchIndexModel
 
@@ -31,7 +33,7 @@ _INDEX_READY_TIMEOUT_SECONDS = 60
 _INDEXING_LAG_TIMEOUT_SECONDS = 15
 
 
-def _search_fuzzy_eventually(
+async def _search_fuzzy_eventually(
     cache: "MongoAtlasCache", field_name: str, value: str
 ) -> List[CachedPatient]:
     """Poll fuzzy search until it sees freshly-upserted data.
@@ -45,19 +47,27 @@ def _search_fuzzy_eventually(
     deadline = time.monotonic() + _INDEXING_LAG_TIMEOUT_SECONDS
     results: List[CachedPatient] = []
     while time.monotonic() < deadline:
-        results = cache.search_by_field(field_name, value, fuzzy=True)
+        results = await cache.search_by_field(field_name, value, fuzzy=True)
         if results:
             return results
-        time.sleep(0.5)
+        await asyncio.sleep(0.5)
     return results
 
 
-def _ensure_search_index(cache: MongoAtlasCache) -> None:
-    """Create (if missing) and wait for the Atlas Search index to be queryable."""
+async def _ensure_search_index(cache: MongoAtlasCache) -> None:
+    """Create (if missing) and wait for the Atlas Search index to be queryable.
+
+    Atlas Search index creation requires the collection to already exist
+    (unlike a regular index, which auto-creates it) -- cache._ensure_indexes()
+    creates the collection as a side effect of creating the two regular
+    indexes, so it must run first.
+    """
+    await cache._ensure_indexes()
     definition = search_index_definition()
-    existing = list(cache._field_values.list_search_indexes(SEARCH_INDEX_NAME))
+    existing_cursor = await cache._field_values.list_search_indexes(SEARCH_INDEX_NAME)
+    existing = [idx async for idx in existing_cursor]
     if not existing:
-        cache._field_values.create_search_index(
+        await cache._field_values.create_search_index(
             SearchIndexModel(
                 definition=definition["definition"], name=SEARCH_INDEX_NAME
             )
@@ -65,30 +75,37 @@ def _ensure_search_index(cache: MongoAtlasCache) -> None:
 
     deadline = time.monotonic() + _INDEX_READY_TIMEOUT_SECONDS
     while time.monotonic() < deadline:
-        indexes = list(cache._field_values.list_search_indexes(SEARCH_INDEX_NAME))
+        indexes_cursor = await cache._field_values.list_search_indexes(
+            SEARCH_INDEX_NAME
+        )
+        indexes = [idx async for idx in indexes_cursor]
         if indexes and indexes[0].get("queryable"):
             return
-        time.sleep(1)
+        await asyncio.sleep(1)
     raise TimeoutError(
         f"Atlas Search index {SEARCH_INDEX_NAME!r} not queryable after "
         f"{_INDEX_READY_TIMEOUT_SECONDS}s"
     )
 
 
-@pytest.fixture(scope="session")
-def _atlas_cache_session(mongodb: MongoDBService) -> Iterator[MongoAtlasCache]:
+@pytest_asyncio.fixture(scope="session", loop_scope="session")
+async def _atlas_cache_session(
+    mongodb: MongoDBService,
+) -> AsyncIterator[MongoAtlasCache]:
     cache = MongoAtlasCache(
         connection_string=mongodb.connection_string, database="test_patient_cache"
     )
-    _ensure_search_index(cache)
+    await _ensure_search_index(cache)
     yield cache
-    cache.close()
+    await cache.close()
 
 
-@pytest.fixture
-def cache(_atlas_cache_session: MongoAtlasCache) -> Iterator[MongoAtlasCache]:
+@pytest_asyncio.fixture(loop_scope="session")
+async def cache(
+    _atlas_cache_session: MongoAtlasCache,
+) -> AsyncIterator[MongoAtlasCache]:
     yield _atlas_cache_session
-    _atlas_cache_session.clear()
+    await _atlas_cache_session.clear()
 
 
 def _make_cached_patient(
@@ -131,87 +148,98 @@ class TestMongoAtlasCacheImportGuard:
             MongoAtlasCache()
 
 
+# AsyncMongoClient is bound to the event loop it's created on, and
+# _atlas_cache_session shares one across a whole test session (to avoid
+# paying the ~60s Atlas Search index setup per test) -- so every test
+# using it must run on that same session-scoped loop, not pytest-asyncio's
+# per-test default.
+@pytest.mark.asyncio(loop_scope="session")
 class TestMongoAtlasCacheUpsert:
-    def test_upsert_single(self, cache: MongoAtlasCache) -> None:
+    async def test_upsert_single(self, cache: MongoAtlasCache) -> None:
         patient = _make_cached_patient()
-        count = cache.upsert_patients([patient])
+        count = await cache.upsert_patients([patient])
         assert count == 1
-        assert cache.count() == 1
+        assert await cache.count() == 1
 
-    def test_upsert_multiple(self, cache: MongoAtlasCache) -> None:
+    async def test_upsert_multiple(self, cache: MongoAtlasCache) -> None:
         p1 = _make_cached_patient("p1")
         p2 = _make_cached_patient("p2", first="jane", last="doe")
-        count = cache.upsert_patients([p1, p2])
+        count = await cache.upsert_patients([p1, p2])
         assert count == 2
-        assert cache.count() == 2
+        assert await cache.count() == 2
 
-    def test_upsert_is_idempotent(self, cache: MongoAtlasCache) -> None:
+    async def test_upsert_is_idempotent(self, cache: MongoAtlasCache) -> None:
         """Upserting the same patient twice doesn't duplicate field_values."""
         p1 = _make_cached_patient("p1", first="john")
-        cache.upsert_patients([p1])
-        cache.upsert_patients([p1])
+        await cache.upsert_patients([p1])
+        await cache.upsert_patients([p1])
 
-        assert cache.count() == 1
-        result = cache.get_patient("p1")
+        assert await cache.count() == 1
+        result = await cache.get_patient("p1")
         assert result is not None
         assert result.first_names == {"john"}
 
-    def test_upsert_replaces_existing(self, cache: MongoAtlasCache) -> None:
+    async def test_upsert_replaces_existing(self, cache: MongoAtlasCache) -> None:
         p1 = _make_cached_patient("p1", first="john")
-        cache.upsert_patients([p1])
+        await cache.upsert_patients([p1])
 
         p1_updated = _make_cached_patient("p1", first="jonathan")
-        cache.upsert_patients([p1_updated])
+        await cache.upsert_patients([p1_updated])
 
-        assert cache.count() == 1
-        result = cache.get_patient("p1")
+        assert await cache.count() == 1
+        result = await cache.get_patient("p1")
         assert result is not None
         assert "jonathan" in result.first_names
 
-    def test_upsert_empty_list(self, cache: MongoAtlasCache) -> None:
-        count = cache.upsert_patients([])
+    async def test_upsert_empty_list(self, cache: MongoAtlasCache) -> None:
+        count = await cache.upsert_patients([])
         assert count == 0
 
 
+@pytest.mark.asyncio(loop_scope="session")
 class TestMongoAtlasCacheSearch:
-    def test_search_exact_first_name(self, cache: MongoAtlasCache) -> None:
-        cache.upsert_patients([_make_cached_patient()])
-        results = cache.search_by_field("first_name", "john")
+    async def test_search_exact_first_name(self, cache: MongoAtlasCache) -> None:
+        await cache.upsert_patients([_make_cached_patient()])
+        results = await cache.search_by_field("first_name", "john")
         assert len(results) == 1
         assert results[0].patient_id == "patient-1"
 
-    def test_search_no_match(self, cache: MongoAtlasCache) -> None:
-        cache.upsert_patients([_make_cached_patient()])
-        results = cache.search_by_field("first_name", "alice")
+    async def test_search_no_match(self, cache: MongoAtlasCache) -> None:
+        await cache.upsert_patients([_make_cached_patient()])
+        results = await cache.search_by_field("first_name", "alice")
         assert len(results) == 0
 
-    def test_search_fuzzy_match(self, cache: MongoAtlasCache) -> None:
-        cache.upsert_patients([_make_cached_patient(last="smith")])
+    async def test_search_fuzzy_match(self, cache: MongoAtlasCache) -> None:
+        await cache.upsert_patients([_make_cached_patient(last="smith")])
         # "smtih" is edit distance 1 from "smith"
-        results = _search_fuzzy_eventually(cache, "last_name", "smtih")
+        results = await _search_fuzzy_eventually(cache, "last_name", "smtih")
         assert len(results) == 1
 
-    def test_search_fuzzy_excludes_non_match(self, cache: MongoAtlasCache) -> None:
-        cache.upsert_patients([_make_cached_patient(last="smith")])
-        cache.upsert_patients([_make_cached_patient("p2", last="jones")])
-        results = _search_fuzzy_eventually(cache, "last_name", "smtih")
+    async def test_search_fuzzy_excludes_non_match(
+        self, cache: MongoAtlasCache
+    ) -> None:
+        await cache.upsert_patients([_make_cached_patient(last="smith")])
+        await cache.upsert_patients([_make_cached_patient("p2", last="jones")])
+        results = await _search_fuzzy_eventually(cache, "last_name", "smtih")
         ids = {p.patient_id for p in results}
         assert ids == {"patient-1"}
 
-    def test_search_fuzzy_rejects_short_strings(self, cache: MongoAtlasCache) -> None:
-        cache.upsert_patients([_make_cached_patient(first="jon")])
-        results = cache.search_by_field("first_name", "jon", fuzzy=True)
+    async def test_search_fuzzy_rejects_short_strings(
+        self, cache: MongoAtlasCache
+    ) -> None:
+        await cache.upsert_patients([_make_cached_patient(first="jon")])
+        results = await cache.search_by_field("first_name", "jon", fuzzy=True)
         assert len(results) == 1  # exact fallback for <5 chars
 
-    def test_search_multiple_patients(self, cache: MongoAtlasCache) -> None:
+    async def test_search_multiple_patients(self, cache: MongoAtlasCache) -> None:
         p1 = _make_cached_patient("p1", last="smith")
         p2 = _make_cached_patient("p2", last="smith")
         p3 = _make_cached_patient("p3", last="jones")
-        cache.upsert_patients([p1, p2, p3])
-        results = cache.search_by_field("last_name", "smith")
+        await cache.upsert_patients([p1, p2, p3])
+        results = await cache.search_by_field("last_name", "smith")
         assert len(results) == 2
 
-    def test_multivalued_field_searchable_by_each_value(
+    async def test_multivalued_field_searchable_by_each_value(
         self, cache: MongoAtlasCache
     ) -> None:
         """A patient with >1 value for a field (e.g. two phone numbers) is
@@ -219,43 +247,46 @@ class TestMongoAtlasCacheSearch:
         """
         patient = _make_cached_patient("p1")
         patient.phones = {"+12125551234", "+13105559876"}
-        cache.upsert_patients([patient])
+        await cache.upsert_patients([patient])
 
         for phone in patient.phones:
-            results = cache.search_by_field("phone", phone)
+            results = await cache.search_by_field("phone", phone)
             assert {p.patient_id for p in results} == {"p1"}
 
-        stored = cache.get_patient("p1")
+        stored = await cache.get_patient("p1")
         assert stored is not None
         assert stored.phones == patient.phones
 
 
+@pytest.mark.asyncio(loop_scope="session")
 class TestMongoAtlasCacheGet:
-    def test_get_existing(self, cache: MongoAtlasCache) -> None:
-        cache.upsert_patients([_make_cached_patient("p1")])
-        result = cache.get_patient("p1")
+    async def test_get_existing(self, cache: MongoAtlasCache) -> None:
+        await cache.upsert_patients([_make_cached_patient("p1")])
+        result = await cache.get_patient("p1")
         assert result is not None
         assert result.patient_id == "p1"
         assert "john" in result.first_names
 
-    def test_get_nonexistent(self, cache: MongoAtlasCache) -> None:
-        result = cache.get_patient("nonexistent")
+    async def test_get_nonexistent(self, cache: MongoAtlasCache) -> None:
+        result = await cache.get_patient("nonexistent")
         assert result is None
 
 
+@pytest.mark.asyncio(loop_scope="session")
 class TestMongoAtlasCacheLifecycle:
-    def test_clear(self, cache: MongoAtlasCache) -> None:
-        cache.upsert_patients([_make_cached_patient()])
-        assert cache.count() == 1
-        cache.clear()
-        assert cache.count() == 0
+    async def test_clear(self, cache: MongoAtlasCache) -> None:
+        await cache.upsert_patients([_make_cached_patient()])
+        assert await cache.count() == 1
+        await cache.clear()
+        assert await cache.count() == 0
 
-    def test_count_empty(self, cache: MongoAtlasCache) -> None:
-        assert cache.count() == 0
+    async def test_count_empty(self, cache: MongoAtlasCache) -> None:
+        assert await cache.count() == 0
 
 
+@pytest.mark.asyncio(loop_scope="session")
 class TestMongoAtlasCacheGracefulDegradation:
-    def test_fuzzy_search_without_index_returns_empty(
+    async def test_fuzzy_search_without_index_returns_empty(
         self, mongodb: MongoDBService
     ) -> None:
         """No Atlas Search index created yet -> [], not a raise.
@@ -271,14 +302,14 @@ class TestMongoAtlasCacheGracefulDegradation:
             database="test_patient_cache_no_index",
         )
         try:
-            cache.upsert_patients([_make_cached_patient(last="smith")])
-            results = cache.search_by_field("last_name", "smtih", fuzzy=True)
+            await cache.upsert_patients([_make_cached_patient(last="smith")])
+            results = await cache.search_by_field("last_name", "smtih", fuzzy=True)
             assert results == []
         finally:
-            cache.clear()
-            cache.close()
+            await cache.clear()
+            await cache.close()
 
-    def test_fuzzy_search_atlas_error_returns_empty_and_logs(
+    async def test_fuzzy_search_atlas_error_returns_empty_and_logs(
         self, cache: MongoAtlasCache, caplog: pytest.LogCaptureFixture
     ) -> None:
         """A genuine Atlas $search failure -> [] + logged error, not a raise.
@@ -289,22 +320,25 @@ class TestMongoAtlasCacheGracefulDegradation:
         mocked here for a fast, deterministic unit test of the except path
         itself).
         """
-        cache.upsert_patients([_make_cached_patient(last="smith")])
+        await cache.upsert_patients([_make_cached_patient(last="smith")])
         with patch.object(
             cache._field_values, "aggregate", side_effect=OperationFailure("boom")
         ):
-            results = cache.search_by_field("last_name", "smtih", fuzzy=True)
+            results = await cache.search_by_field("last_name", "smtih", fuzzy=True)
         assert results == []
         assert any(
             "Atlas $search failed" in record.message for record in caplog.records
         )
 
 
+@pytest.mark.asyncio(loop_scope="session")
 class TestMongoAtlasCacheEquivalence:
     """Proves MongoAtlasCache is a drop-in for DuckDBCache (conventions.md's
     "a behavior-preserving change... carries an equivalence test" rule)."""
 
-    def test_same_match_outcome_as_duckdb_cache(self, cache: MongoAtlasCache) -> None:
+    async def test_same_match_outcome_as_duckdb_cache(
+        self, cache: MongoAtlasCache
+    ) -> None:
         duckdb_cache = DuckDBCache(database=":memory:")
         try:
             fixture_patients = [
@@ -314,10 +348,10 @@ class TestMongoAtlasCacheEquivalence:
                     "p3", first="john", last="smyth", ssn_last4="6789"
                 ),
             ]
-            cache.upsert_patients(fixture_patients)
-            duckdb_cache.upsert_patients(fixture_patients)
+            await cache.upsert_patients(fixture_patients)
+            await duckdb_cache.upsert_patients(fixture_patients)
             # Let Atlas Search's async indexing catch up before asserting.
-            _search_fuzzy_eventually(cache, "last_name", "smtih")
+            await _search_fuzzy_eventually(cache, "last_name", "smtih")
 
             criteria = [
                 FieldCriterion("first_name", "john", MatchType.EXACT),
@@ -327,9 +361,9 @@ class TestMongoAtlasCacheEquivalence:
             mongo_backend = CacheMatchingBackend(cache)
             duckdb_backend = CacheMatchingBackend(duckdb_cache)
 
-            mongo_ids = {c["id"] for c in mongo_backend.search(criteria)}
-            duckdb_ids = {c["id"] for c in duckdb_backend.search(criteria)}
+            mongo_ids = {c["id"] for c in await mongo_backend.search(criteria)}
+            duckdb_ids = {c["id"] for c in await duckdb_backend.search(criteria)}
 
             assert mongo_ids == duckdb_ids == {"p1"}
         finally:
-            duckdb_cache.close()
+            await duckdb_cache.close()

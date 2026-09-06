@@ -36,8 +36,8 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from .cache_backend import CacheBackend, CachedPatient
 
 if TYPE_CHECKING:
-    from pymongo import MongoClient
-    from pymongo.collection import Collection
+    from pymongo import AsyncMongoClient
+    from pymongo.asynchronous.collection import AsyncCollection
 
 logger = logging.getLogger(__name__)
 
@@ -100,24 +100,39 @@ class MongoAtlasCache(CacheBackend):
         database: str = "patient_cache",
     ) -> None:
         try:
-            from pymongo import MongoClient as _MongoClient
+            from pymongo import AsyncMongoClient as _AsyncMongoClient
         except ImportError as exc:
             raise ImportError(
                 "pymongo is required for MongoAtlasCache. "
                 "Install it with: pip install patient_matching[mongo]"
             ) from exc
 
-        self._client: "MongoClient[Dict[str, Any]]" = _MongoClient(connection_string)
+        # Constructing AsyncMongoClient doesn't connect or do any I/O (pymongo
+        # connects lazily on first operation), so this stays a plain sync
+        # __init__. The two regular indexes below DO require a round-trip,
+        # though, so they can't be created here -- _ensure_indexes() creates
+        # them once, lazily, on first use of any other method instead.
+        self._client: "AsyncMongoClient[Dict[str, Any]]" = _AsyncMongoClient(
+            connection_string
+        )
         self._db = self._client[database]
-        self._patients: "Collection[Dict[str, Any]]" = self._db["patients"]
-        self._field_values: "Collection[Dict[str, Any]]" = self._db["field_values"]
-        self._field_values.create_index([("field_name", 1), ("value", 1)])
-        self._field_values.create_index("patient_id")
+        self._patients: "AsyncCollection[Dict[str, Any]]" = self._db["patients"]
+        self._field_values: "AsyncCollection[Dict[str, Any]]" = self._db["field_values"]
+        self._indexes_ensured = False
 
-    def upsert_patients(self, patients: List[CachedPatient]) -> int:
+    async def _ensure_indexes(self) -> None:
+        """Create the two regular indexes once, lazily, on first use."""
+        if self._indexes_ensured:
+            return
+        await self._field_values.create_index([("field_name", 1), ("value", 1)])
+        await self._field_values.create_index("patient_id")
+        self._indexes_ensured = True
+
+    async def upsert_patients(self, patients: List[CachedPatient]) -> int:
         """Insert or update normalized patient records in bulk."""
         if not patients:
             return 0
+        await self._ensure_indexes()
 
         from pymongo import ReplaceOne
 
@@ -129,10 +144,10 @@ class MongoAtlasCache(CacheBackend):
             )
             for p in patients
         ]
-        self._patients.bulk_write(patient_ops)
+        await self._patients.bulk_write(patient_ops)
 
         patient_ids = [p.patient_id for p in patients]
-        self._field_values.delete_many({"patient_id": {"$in": patient_ids}})
+        await self._field_values.delete_many({"patient_id": {"$in": patient_ids}})
 
         rows = []
         for p in patients:
@@ -148,12 +163,12 @@ class MongoAtlasCache(CacheBackend):
                             }
                         )
         if rows:
-            self._field_values.insert_many(rows)
+            await self._field_values.insert_many(rows)
 
         logger.info("Upserted %d patients into MongoAtlasCache", len(patients))
         return len(patients)
 
-    def search_by_field(
+    async def search_by_field(
         self,
         field_name: str,
         value: str,
@@ -161,19 +176,24 @@ class MongoAtlasCache(CacheBackend):
         fuzzy: bool = False,
     ) -> List[CachedPatient]:
         """Search cached patients by a single field value."""
+        await self._ensure_indexes()
         if fuzzy and len(value) >= _MIN_FUZZY_LENGTH:
-            return self._fuzzy_search(field_name, value)
+            return await self._fuzzy_search(field_name, value)
 
         patient_ids = {
             doc["patient_id"]
-            for doc in self._field_values.find(
+            async for doc in self._field_values.find(
                 {"field_name": field_name, "value": value},
                 {"patient_id": 1},
             )
         }
-        return [p for pid in patient_ids if (p := self.get_patient(pid)) is not None]
+        return [
+            p for pid in patient_ids if (p := await self.get_patient(pid)) is not None
+        ]
 
-    def _fuzzy_search(self, field_name: str, query_value: str) -> List[CachedPatient]:
+    async def _fuzzy_search(
+        self, field_name: str, query_value: str
+    ) -> List[CachedPatient]:
         """Fuzzy search via Atlas ``$search`` (DL-equivalent edit distance <= 1).
 
         Falls back to an empty result (logging the error) if the Atlas
@@ -206,9 +226,8 @@ class MongoAtlasCache(CacheBackend):
             {"$project": {"patient_id": 1}},
         ]
         try:
-            patient_ids = {
-                doc["patient_id"] for doc in self._field_values.aggregate(pipeline)
-            }
+            cursor = await self._field_values.aggregate(pipeline)
+            patient_ids = {doc["patient_id"] async for doc in cursor}
         except Exception as exc:
             logger.error(
                 "Atlas $search failed for field_name=%r (index=%r missing or "
@@ -219,11 +238,13 @@ class MongoAtlasCache(CacheBackend):
             )
             return []
 
-        return [p for pid in patient_ids if (p := self.get_patient(pid)) is not None]
+        return [
+            p for pid in patient_ids if (p := await self.get_patient(pid)) is not None
+        ]
 
-    def get_patient(self, patient_id: str) -> Optional[CachedPatient]:
+    async def get_patient(self, patient_id: str) -> Optional[CachedPatient]:
         """Retrieve a single cached patient by ID."""
-        doc = self._patients.find_one({"_id": patient_id})
+        doc = await self._patients.find_one({"_id": patient_id})
         if doc is None:
             return None
 
@@ -231,26 +252,26 @@ class MongoAtlasCache(CacheBackend):
             patient_id=patient_id,
             fhir_resource=doc["fhir_resource"],
         )
-        for row in self._field_values.find({"patient_id": patient_id}):
+        async for row in self._field_values.find({"patient_id": patient_id}):
             attr = next(
                 a for a, fn in _ATTR_TO_FIELD_NAME.items() if fn == row["field_name"]
             )
             getattr(patient, attr).add(row["value"])
         return patient
 
-    def count(self) -> int:
+    async def count(self) -> int:
         """Return the total number of cached patients."""
-        return self._patients.count_documents({})
+        return await self._patients.count_documents({})
 
-    def clear(self) -> None:
+    async def clear(self) -> None:
         """Remove all cached patients."""
-        self._field_values.delete_many({})
-        self._patients.delete_many({})
+        await self._field_values.delete_many({})
+        await self._patients.delete_many({})
         logger.info("Cleared MongoAtlasCache")
 
-    def close(self) -> None:
+    async def close(self) -> None:
         """Close the MongoDB connection."""
-        self._client.close()
+        await self._client.close()
 
 
 def search_index_definition() -> Dict[str, Any]:

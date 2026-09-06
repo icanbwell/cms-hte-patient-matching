@@ -33,7 +33,7 @@ class MatchingManager:
     Example::
 
         manager = MatchingManager(backend=my_backend)
-        result = manager.match(normalized_patient)
+        result = await manager.match(normalized_patient)
         if result.outcome == MatchOutcome.MATCH:
             print(result.matched_patients)
     """
@@ -56,7 +56,7 @@ class MatchingManager:
             rules=self._rules,
         )
 
-    def match(self, query_patient: Dict[str, Any]) -> MatchResult:
+    async def match(self, query_patient: Dict[str, Any]) -> MatchResult:
         """Match a normalized FHIR Patient against the backend.
 
         Args:
@@ -65,9 +65,11 @@ class MatchingManager:
         Returns:
             A MatchResult with outcome, matched patients, and audit data.
         """
-        return self._engine.match(query_patient)
+        return await self._engine.match(query_patient)
 
-    def match_batch(self, query_patients: List[Dict[str, Any]]) -> List[MatchResult]:
+    async def match_batch(
+        self, query_patients: List[Dict[str, Any]]
+    ) -> List[MatchResult]:
         """Match a list of normalized FHIR Patients against the backend.
 
         Args:
@@ -76,7 +78,7 @@ class MatchingManager:
         Returns:
             A list of MatchResults in the same order.
         """
-        return [self._engine.match(p) for p in query_patients]
+        return [await self._engine.match(p) for p in query_patients]
 
     @property
     def rule_count(self) -> int:

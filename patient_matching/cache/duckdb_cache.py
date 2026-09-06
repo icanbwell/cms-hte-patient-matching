@@ -79,7 +79,7 @@ class DuckDBCache(CacheBackend):
             ON field_values (patient_id)
         """)
 
-    def upsert_patients(self, patients: List[CachedPatient]) -> int:
+    async def upsert_patients(self, patients: List[CachedPatient]) -> int:
         """Insert or update normalized patient records in bulk."""
         if not patients:
             return 0
@@ -136,7 +136,7 @@ class DuckDBCache(CacheBackend):
                 rows,
             )
 
-    def search_by_field(
+    async def search_by_field(
         self,
         field_name: str,
         value: str,
@@ -145,7 +145,7 @@ class DuckDBCache(CacheBackend):
     ) -> List[CachedPatient]:
         """Search cached patients by a single field value."""
         if fuzzy:
-            return self._fuzzy_search(field_name, value)
+            return await self._fuzzy_search(field_name, value)
 
         result = self._conn.execute(
             """
@@ -159,14 +159,16 @@ class DuckDBCache(CacheBackend):
 
         return [self._row_to_cached_patient(r) for r in result]
 
-    def _fuzzy_search(self, field_name: str, query_value: str) -> List[CachedPatient]:
+    async def _fuzzy_search(
+        self, field_name: str, query_value: str
+    ) -> List[CachedPatient]:
         """Fuzzy search using Damerau-Levenshtein distance <= 1.
 
         For values shorter than 5 characters, falls back to exact match
         per CMS rule E.3.
         """
         if len(query_value) < _MIN_FUZZY_LENGTH:
-            return self.search_by_field(field_name, query_value, fuzzy=False)
+            return await self.search_by_field(field_name, query_value, fuzzy=False)
 
         # Fetch all distinct values for this field, then filter in Python
         # using rapidfuzz (DuckDB's built-in DL may not match rapidfuzz's
@@ -196,7 +198,7 @@ class DuckDBCache(CacheBackend):
 
         return results
 
-    def get_patient(self, patient_id: str) -> Optional[CachedPatient]:
+    async def get_patient(self, patient_id: str) -> Optional[CachedPatient]:
         """Retrieve a single cached patient by ID."""
         result = self._conn.execute(
             "SELECT patient_id, fhir_resource FROM patients WHERE patient_id = ?",
@@ -206,18 +208,18 @@ class DuckDBCache(CacheBackend):
             return None
         return self._row_to_cached_patient(result)
 
-    def count(self) -> int:
+    async def count(self) -> int:
         """Return the total number of cached patients."""
         result = self._conn.execute("SELECT COUNT(*) FROM patients").fetchone()
         return result[0] if result else 0
 
-    def clear(self) -> None:
+    async def clear(self) -> None:
         """Remove all cached patients."""
         self._conn.execute("DELETE FROM field_values")
         self._conn.execute("DELETE FROM patients")
         logger.info("Cleared DuckDB cache")
 
-    def close(self) -> None:
+    async def close(self) -> None:
         """Close the DuckDB connection."""
         self._conn.close()
 

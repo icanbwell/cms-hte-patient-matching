@@ -7,8 +7,8 @@ patient matching cache.
 
 from __future__ import annotations
 
+import asyncio
 import logging
-import threading
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
@@ -59,7 +59,7 @@ class CacheManager:
             normalizer=NormalizationManager(),
             cache=DuckDBCache(),
         )
-        stats = manager.build_cache()
+        stats = await manager.build_cache()
         print(f"Cached {stats['patients_cached']} patients")
     """
 
@@ -77,9 +77,9 @@ class CacheManager:
         self._config = config or CacheManagerConfig()
         self._extractor = FieldExtractor()
         self._scheduler: Optional[Any] = None
-        self._lock = threading.Lock()
+        self._lock = asyncio.Lock()
 
-    def build_cache(self) -> Dict[str, int]:
+    async def build_cache(self) -> Dict[str, int]:
         """Build the patient cache from scratch.
 
         Fetches all patients from the FHIR server, normalizes them,
@@ -89,12 +89,12 @@ class CacheManager:
             Stats dict with keys: patients_fetched, patients_cached,
             patients_skipped.
         """
-        with self._lock:
+        async with self._lock:
             logger.info("Starting cache build...")
-            self._cache.clear()
-            return self._refresh_internal()
+            await self._cache.clear()
+            return await self._refresh_internal()
 
-    def refresh_cache(self) -> Dict[str, int]:
+    async def refresh_cache(self) -> Dict[str, int]:
         """Incrementally refresh the cache.
 
         Fetches patients from the FHIR server and upserts them
@@ -104,12 +104,18 @@ class CacheManager:
             Stats dict with keys: patients_fetched, patients_cached,
             patients_skipped.
         """
-        with self._lock:
+        async with self._lock:
             logger.info("Starting cache refresh...")
-            return self._refresh_internal()
+            return await self._refresh_internal()
 
-    def _refresh_internal(self) -> Dict[str, int]:
-        """Internal refresh logic shared by build and refresh."""
+    async def _refresh_internal(self) -> Dict[str, int]:
+        """Internal refresh logic shared by build and refresh.
+
+        Note: fetch_all_patients() itself is still a synchronous generator
+        (the FHIR client's own HTTP calls aren't async) -- only the cache
+        writes below are awaited. Converting the FHIR client is a separate,
+        larger change; out of scope here.
+        """
         stats = {
             "patients_fetched": 0,
             "patients_cached": 0,
@@ -139,13 +145,13 @@ class CacheManager:
 
             # Flush batch
             if len(batch) >= self._config.batch_size:
-                count = self._cache.upsert_patients(batch)
+                count = await self._cache.upsert_patients(batch)
                 stats["patients_cached"] += count
                 batch = []
 
         # Flush remaining
         if batch:
-            count = self._cache.upsert_patients(batch)
+            count = await self._cache.upsert_patients(batch)
             stats["patients_cached"] += count
 
         logger.info(
@@ -214,15 +220,21 @@ class CacheManager:
 
         Uses APScheduler to run ``refresh_cache()`` at the configured
         interval. Does nothing if ``refresh_interval_minutes`` is 0.
+
+        ``refresh_cache`` is now a coroutine function, so this needs
+        ``AsyncIOScheduler`` (which can schedule and await coroutine jobs
+        directly) instead of ``BackgroundScheduler`` (which runs jobs in a
+        plain thread and can't await one). Must be called from within a
+        running event loop -- e.g. a FastAPI startup hook.
         """
         interval = self._config.refresh_interval_minutes
         if interval <= 0:
             logger.info("Scheduled refresh disabled (interval=0)")
             return
 
-        from apscheduler.schedulers.background import BackgroundScheduler
+        from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-        self._scheduler = BackgroundScheduler()
+        self._scheduler = AsyncIOScheduler()
         self._scheduler.add_job(
             self.refresh_cache,
             "interval",
@@ -245,7 +257,6 @@ class CacheManager:
         """The underlying cache backend."""
         return self._cache
 
-    @property
-    def patient_count(self) -> int:
+    async def patient_count(self) -> int:
         """Number of patients currently in the cache."""
-        return self._cache.count()
+        return await self._cache.count()

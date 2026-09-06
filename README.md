@@ -89,43 +89,57 @@ pip install cms-hte-patient-matching[all]
 ### Match a FHIR Patient Against a Cache
 
 ```python
+import asyncio
+
 from patient_matching.cache import DuckDBCache, CacheMatchingBackend, CacheManager
 from patient_matching.fhir_client import FhirClient, FhirClientConfig
 from patient_matching.matching import MatchingEngine
 from patient_matching.normalization import NormalizationManager
 
-# 1. Set up the patient cache
-cache = DuckDBCache()  # in-memory DuckDB
 
-# 2. Connect to a FHIR server and build the cache
-fhir_client = FhirClient(FhirClientConfig(base_url="https://fhir.example.com/r4"))
-normalizer = NormalizationManager()
-cache_manager = CacheManager(
-    fhir_client=fhir_client,
-    cache=cache,
-    normalizer=normalizer,
-)
-cache_manager.build_cache()
+async def main() -> None:
+    # 1. Set up the patient cache
+    cache = DuckDBCache()  # in-memory DuckDB
 
-# 3. Set up the matching engine
-backend = CacheMatchingBackend(cache)
-engine = MatchingEngine(backend=backend)
+    # 2. Connect to a FHIR server and build the cache
+    fhir_client = FhirClient(FhirClientConfig(base_url="https://fhir.example.com/r4"))
+    normalizer = NormalizationManager()
+    cache_manager = CacheManager(
+        fhir_client=fhir_client,
+        cache=cache,
+        normalizer=normalizer,
+    )
+    await cache_manager.build_cache()
 
-# 4. Match a patient
-query_patient = {
-    "resourceType": "Patient",
-    "name": [{"family": "Smith", "given": ["John"]}],
-    "birthDate": "1990-01-15",
-    "telecom": [{"system": "phone", "value": "+12125551234"}],
-}
+    # 3. Set up the matching engine
+    backend = CacheMatchingBackend(cache)
+    engine = MatchingEngine(backend=backend)
 
-normalized = normalizer.normalize(query_patient)
-result = engine.match(normalized)
+    # 4. Match a patient
+    query_patient = {
+        "resourceType": "Patient",
+        "name": [{"family": "Smith", "given": ["John"]}],
+        "birthDate": "1990-01-15",
+        "telecom": [{"system": "phone", "value": "+12125551234"}],
+    }
 
-print(result.outcome)           # MatchOutcome.MATCH
-print(result.matched_rule_id)   # e.g., "rule_02"
-print(result.match_type)        # "exact" or "fuzzy"
+    normalized = normalizer.normalize(query_patient)
+    result = await engine.match(normalized)
+
+    print(result.outcome)           # MatchOutcome.MATCH
+    print(result.matched_rule_id)   # e.g., "rule_02"
+    print(result.match_type)        # "exact" or "fuzzy"
+
+
+asyncio.run(main())
 ```
+
+All `CacheBackend`/`MatchingBackend`/`MatchingEngine`/`CacheManager`/
+`PatientMatcherService` methods are `async def` (including `DuckDBCache`'s,
+even though it has no real I/O to yield on) so that a network-backed
+backend like `MongoAtlasCache` never blocks the event loop for the
+duration of a round-trip -- see
+[Choosing a Cache Backend](#choosing-a-cache-backend) below.
 
 ### Choosing a Cache Backend
 
@@ -189,7 +203,7 @@ service = PatientMatcherService(
     normalizer=normalizer,
 )
 
-response = service.match_patient(query_patient)
+response = await service.match_patient(query_patient)
 
 print(response.outcome)           # "match", "no_match", or "ambiguous"
 print(response.confidence_score)  # 0.0 - 1.0
@@ -214,7 +228,7 @@ service = PatientMatcherService(
 )
 
 # Full pipeline: verify JWT → extract demographics → normalize → match
-response = service.match_from_token(jwt_token_string)
+response = await service.match_from_token(jwt_token_string)
 ```
 
 ### Run the HTTP API

@@ -128,14 +128,14 @@ class InMemoryBackend(MatchingBackend):
     def __init__(self, patients: List[Dict[str, Any]]):
         self._patients = patients
 
-    def search(self, criteria: List[FieldCriterion]) -> List[Dict[str, Any]]:
+    async def search(self, criteria: List[FieldCriterion]) -> List[Dict[str, Any]]:
         return list(self._patients)
 
 
 class EmptyBackend(MatchingBackend):
     """Backend that always returns no candidates."""
 
-    def search(self, criteria: List[FieldCriterion]) -> List[Dict[str, Any]]:
+    async def search(self, criteria: List[FieldCriterion]) -> List[Dict[str, Any]]:
         return []
 
 
@@ -143,36 +143,36 @@ class EmptyBackend(MatchingBackend):
 
 
 class TestMatchingEngineExactMatch:
-    def test_exact_match_single_candidate(self) -> None:
+    async def test_exact_match_single_candidate(self) -> None:
         candidate = _make_patient()
         query = _make_patient()
         engine = MatchingEngine(backend=InMemoryBackend([candidate]))
-        result = engine.match(query)
+        result = await engine.match(query)
         assert result.outcome == MatchOutcome.MATCH
         assert result.is_unique is True
         assert len(result.matched_patients) == 1
 
-    def test_no_match_different_names(self) -> None:
+    async def test_no_match_different_names(self) -> None:
         candidate = _make_patient(first="alice", last="jones")
         query = _make_patient(first="john", last="smith")
         engine = MatchingEngine(backend=InMemoryBackend([candidate]))
-        result = engine.match(query)
+        result = await engine.match(query)
         assert result.outcome == MatchOutcome.NO_MATCH
 
-    def test_no_candidates_from_backend(self) -> None:
+    async def test_no_candidates_from_backend(self) -> None:
         query = _make_patient()
         engine = MatchingEngine(backend=EmptyBackend())
-        result = engine.match(query)
+        result = await engine.match(query)
         assert result.outcome == MatchOutcome.NO_MATCH
 
 
 class TestMatchingEngineAmbiguous:
-    def test_escalate_two_candidates(self) -> None:
+    async def test_escalate_two_candidates(self) -> None:
         c1 = _make_patient()
         c2 = _make_patient(phone="+12125559999")
         query = _make_patient()
         engine = MatchingEngine(backend=InMemoryBackend([c1, c2]))
-        result = engine.match(query)
+        result = await engine.match(query)
         assert result.outcome == MatchOutcome.ESCALATE
         assert result.is_unique is False
         assert result.candidate_count == 2
@@ -190,7 +190,7 @@ class TestTieredUniquenessResponse:
             (5, MatchOutcome.AMBIGUOUS, False),
         ],
     )
-    def test_outcome_by_candidate_count(
+    async def test_outcome_by_candidate_count(
         self, n_candidates: int, expected_outcome: MatchOutcome, expected_unique: bool
     ) -> None:
         # Rule 08 (First Name + DOB + MBI, all exact) with a distinct MBI per
@@ -208,7 +208,7 @@ class TestTieredUniquenessResponse:
             first="john", dob="1990-01-15", mbi=candidates[0]["identifier"][-1]["value"]
         )
 
-        result = engine.match(query)
+        result = await engine.match(query)
 
         assert result.outcome == expected_outcome
         assert result.is_unique == expected_unique
@@ -216,16 +216,16 @@ class TestTieredUniquenessResponse:
 
 
 class TestMatchingEngineFuzzyMatch:
-    def test_fuzzy_match_last_name(self) -> None:
+    async def test_fuzzy_match_last_name(self) -> None:
         """Last name 'smtih' (transposition) should fuzzy-match 'smith'."""
         candidate = _make_patient(last="smtih")
         query = _make_patient(last="smith")
         engine = MatchingEngine(backend=InMemoryBackend([candidate]))
-        result = engine.match(query)
+        result = await engine.match(query)
         assert result.outcome == MatchOutcome.MATCH
         assert result.match_type == "fuzzy"
 
-    def test_fuzzy_match_short_string_rejected(self) -> None:
+    async def test_fuzzy_match_short_string_rejected(self) -> None:
         """Short first name 'jon' vs 'john' — should NOT fuzzy match."""
         candidate = _make_patient(first="jon", last="jones", dob="2000-01-01")
         query = _make_patient(first="john", last="jones", dob="2000-01-01")
@@ -234,7 +234,7 @@ class TestMatchingEngineFuzzyMatch:
         # Rule 04: First Name* + Last Name + DOB + SSN Last 4
         # first_name* is fuzzy eligible but 'jon'/'john' are < 5 chars.
         engine = MatchingEngine(backend=InMemoryBackend([candidate]))
-        result = engine.match(query)
+        result = await engine.match(query)
         # Should still match on rules that don't require first_name match
         # (e.g. rule 13: Last Name + Phone + SSN Last 4)
         # but first_name fuzzy should not work for short strings
@@ -247,33 +247,33 @@ class TestMatchingEngineFuzzyMatch:
 
 
 class TestMatchingEngineSuffixConflict:
-    def test_suffix_conflict_negates_match(self) -> None:
+    async def test_suffix_conflict_negates_match(self) -> None:
         """B.5: Different suffixes should negate the match."""
         candidate = _make_patient(suffix="jr")
         query = _make_patient(suffix="sr")
         engine = MatchingEngine(backend=InMemoryBackend([candidate]))
-        result = engine.match(query)
+        result = await engine.match(query)
         assert result.outcome == MatchOutcome.NO_MATCH
         negated = [ev for ev in result.rule_evaluations if ev.negated_by_suffix]
         assert len(negated) > 0
 
-    def test_same_suffix_no_conflict(self) -> None:
+    async def test_same_suffix_no_conflict(self) -> None:
         candidate = _make_patient(suffix="jr")
         query = _make_patient(suffix="jr")
         engine = MatchingEngine(backend=InMemoryBackend([candidate]))
-        result = engine.match(query)
+        result = await engine.match(query)
         assert result.outcome == MatchOutcome.MATCH
 
-    def test_no_suffix_no_conflict(self) -> None:
+    async def test_no_suffix_no_conflict(self) -> None:
         candidate = _make_patient()
         query = _make_patient(suffix="jr")
         engine = MatchingEngine(backend=InMemoryBackend([candidate]))
-        result = engine.match(query)
+        result = await engine.match(query)
         assert result.outcome == MatchOutcome.MATCH
 
 
 class TestMatchingEngineRuleSubset:
-    def test_custom_rule_subset(self) -> None:
+    async def test_custom_rule_subset(self) -> None:
         """Engine should respect a custom subset of rules."""
         single_rule = (_rule_by_id("26"),)  # Rule 26: namespace_id
         candidate = _make_patient(namespace_id="MRN001")
@@ -283,11 +283,11 @@ class TestMatchingEngineRuleSubset:
             rules=single_rule,
             household_individual_rules=(),
         )
-        result = engine.match(query)
+        result = await engine.match(query)
         assert result.outcome == MatchOutcome.MATCH
         assert result.matched_rule_id == "26"
 
-    def test_rule_skipped_when_query_missing_fields(self) -> None:
+    async def test_rule_skipped_when_query_missing_fields(self) -> None:
         """Rule should be skipped if query lacks required fields."""
         single_rule = (_rule_by_id("08"),)  # Rule 08: First Name + DOB + MBI
         query = _make_patient(mbi=None)  # No MBI
@@ -297,19 +297,19 @@ class TestMatchingEngineRuleSubset:
             rules=single_rule,
             household_individual_rules=(),
         )
-        result = engine.match(query)
+        result = await engine.match(query)
         assert result.outcome == MatchOutcome.NO_MATCH
 
 
 class TestMatchingEngineRuleEvaluations:
-    def test_evaluations_are_recorded(self) -> None:
+    async def test_evaluations_are_recorded(self) -> None:
         candidate = _make_patient()
         query = _make_patient()
         engine = MatchingEngine(backend=InMemoryBackend([candidate]))
-        result = engine.match(query)
+        result = await engine.match(query)
         assert len(result.rule_evaluations) > 0
 
-    def test_evaluation_field_outcomes(self) -> None:
+    async def test_evaluation_field_outcomes(self) -> None:
         """Rule 26 eval should have namespace_id as exact."""
         single_rule = (_rule_by_id("26"),)
         candidate = _make_patient(namespace_id="MRN001")
@@ -319,7 +319,7 @@ class TestMatchingEngineRuleEvaluations:
             rules=single_rule,
             household_individual_rules=(),
         )
-        result = engine.match(query)
+        result = await engine.match(query)
         evals = [e for e in result.rule_evaluations if e.rule_id == "26"]
         assert len(evals) == 1
         assert evals[0].field_outcomes.get("namespace_id") == "exact"
@@ -328,19 +328,19 @@ class TestMatchingEngineRuleEvaluations:
 class TestAuditFields:
     """RuleEvaluation.timestamp/.version are populated per CMS Section VII."""
 
-    def test_timestamp_is_iso8601_utc(self) -> None:
+    async def test_timestamp_is_iso8601_utc(self) -> None:
         candidate = _make_patient()
         engine = MatchingEngine(backend=InMemoryBackend([candidate]))
-        result = engine.match(_make_patient())
+        result = await engine.match(_make_patient())
         assert result.rule_evaluations, "expected at least one rule evaluation"
         for ev in result.rule_evaluations:
             parsed = datetime.fromisoformat(ev.timestamp)
             assert parsed.tzinfo is not None
 
-    def test_version_is_nonempty_string(self) -> None:
+    async def test_version_is_nonempty_string(self) -> None:
         candidate = _make_patient()
         engine = MatchingEngine(backend=InMemoryBackend([candidate]))
-        result = engine.match(_make_patient())
+        result = await engine.match(_make_patient())
         assert result.rule_evaluations
         for ev in result.rule_evaluations:
             assert isinstance(ev.version, str) and ev.version != ""
@@ -362,7 +362,7 @@ class TestHouseholdIndividualRules:
     match, masking what the rule under test actually did.
     """
 
-    def test_household_member_with_different_individual_fields_does_not_match(
+    async def test_household_member_with_different_individual_fields_does_not_match(
         self,
     ) -> None:
         """Rule 13: SSN Last 4 + Phone (household) + First Name/DOB
@@ -380,10 +380,10 @@ class TestHouseholdIndividualRules:
             rules=(),
             household_individual_rules=(rule_13,),
         )
-        result = engine.match(query)
+        result = await engine.match(query)
         assert result.outcome == MatchOutcome.NO_MATCH
 
-    def test_correct_household_member_resolves_among_several(self) -> None:
+    async def test_correct_household_member_resolves_among_several(self) -> None:
         """Household step can legitimately surface multiple candidates
         (household members sharing SSN+phone); individual step must narrow
         to only the one whose First Name/DOB also match."""
@@ -402,12 +402,12 @@ class TestHouseholdIndividualRules:
             rules=(),
             household_individual_rules=(rule_13,),
         )
-        result = engine.match(query)
+        result = await engine.match(query)
         assert result.outcome == MatchOutcome.MATCH
         assert result.matched_rule_id == "13"
         assert result.matched_patients == [the_person]
 
-    def test_no_household_match_declines(self) -> None:
+    async def test_no_household_match_declines(self) -> None:
         """Zero household-tier matches (different SSN last 4) -> no match,
         even though First Name/DOB (individual-tier) agree."""
         rule_13 = _category2_rule_by_id("13")
@@ -418,10 +418,10 @@ class TestHouseholdIndividualRules:
             rules=(),
             household_individual_rules=(rule_13,),
         )
-        result = engine.match(query)
+        result = await engine.match(query)
         assert result.outcome == MatchOutcome.NO_MATCH
 
-    def test_last_name_difference_does_not_block_amended_rules(self) -> None:
+    async def test_last_name_difference_does_not_block_amended_rules(self) -> None:
         """v3.3.1: Last Name is non-blocking corroboration for rules 13-16 -
         a household+individual match must succeed even when Last Name
         differs (the exact blended-family case these rules exist to fix)."""
@@ -437,11 +437,11 @@ class TestHouseholdIndividualRules:
             rules=(),
             household_individual_rules=(rule_13,),
         )
-        result = engine.match(query)
+        result = await engine.match(query)
         assert result.outcome == MatchOutcome.MATCH
         assert result.matched_rule_id == "13"
 
-    def test_rule_38_subscriber_id_household(self) -> None:
+    async def test_rule_38_subscriber_id_household(self) -> None:
         rule_38 = _category2_rule_by_id("38")
         candidate = _make_patient(
             first="john",
@@ -462,11 +462,11 @@ class TestHouseholdIndividualRules:
             rules=(),
             household_individual_rules=(rule_38,),
         )
-        result = engine.match(query)
+        result = await engine.match(query)
         assert result.outcome == MatchOutcome.MATCH
         assert result.matched_rule_id == "38"
 
-    def test_household_individual_rules_can_be_disabled(self) -> None:
+    async def test_household_individual_rules_can_be_disabled(self) -> None:
         candidate = _make_patient(ssn_last4="6789")
         query = _make_patient(ssn_last4="6789")
         engine = MatchingEngine(
@@ -474,10 +474,10 @@ class TestHouseholdIndividualRules:
             rules=(),  # flat rules also disabled so only rules=() is under test
             household_individual_rules=(),
         )
-        result = engine.match(query)
+        result = await engine.match(query)
         assert result.outcome == MatchOutcome.NO_MATCH
 
-    def test_rules_param_does_not_disable_category_2_default(self) -> None:
+    async def test_rules_param_does_not_disable_category_2_default(self) -> None:
         """Passing a restrictive `rules` subset must not silently also
         restrict household_individual_rules - they're independent per
         MatchingEngine's constructor contract."""
@@ -488,7 +488,7 @@ class TestHouseholdIndividualRules:
             backend=InMemoryBackend([candidate]),
             rules=(rule_08,),
         )
-        result = engine.match(query)
+        result = await engine.match(query)
         # rule_08 can't match (no MBI on either patient), but the default
         # CATEGORY_2_RULES should still resolve rule 13 (SSN+Phone
         # household, First Name/DOB individual - both share defaults).
@@ -517,7 +517,7 @@ class TestDobFuzzyDispatch:
             ],
         }
 
-    def test_dob_within_one_day_and_last_name_fuzzy_both_match_simultaneously(
+    async def test_dob_within_one_day_and_last_name_fuzzy_both_match_simultaneously(
         self,
     ) -> None:
         """DOB fuzzy-eligibility must not consume max_fuzzy_fields - both
@@ -535,7 +535,7 @@ class TestDobFuzzyDispatch:
             rules=(rule_28,),
             household_individual_rules=(),
         )
-        result = engine.match(query)
+        result = await engine.match(query)
         assert result.outcome == MatchOutcome.MATCH
         evaluation = next(
             e for e in result.rule_evaluations if e.rule_id == "28" and e.matched
@@ -543,7 +543,7 @@ class TestDobFuzzyDispatch:
         assert evaluation.field_outcomes["last_name"] == "fuzzy"
         assert evaluation.field_outcomes["dob"] == "fuzzy"
 
-    def test_dob_two_days_off_does_not_match(self) -> None:
+    async def test_dob_two_days_off_does_not_match(self) -> None:
         rule_28 = _rule_by_id("28")
         candidate = self._make_member_id_patient(
             first="john", last="smith", dob="1990-01-17", member_id="M1"
@@ -556,5 +556,5 @@ class TestDobFuzzyDispatch:
             rules=(rule_28,),
             household_individual_rules=(),
         )
-        result = engine.match(query)
+        result = await engine.match(query)
         assert result.outcome == MatchOutcome.NO_MATCH

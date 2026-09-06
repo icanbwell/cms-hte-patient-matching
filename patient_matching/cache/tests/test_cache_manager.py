@@ -1,6 +1,6 @@
 """Tests for the CacheManager pipeline."""
 
-from typing import Any, Dict, Iterator
+from typing import Any, AsyncIterator, Dict
 
 import pytest
 from unittest.mock import MagicMock
@@ -23,14 +23,14 @@ def _make_fhir_patient(
 
 
 @pytest.fixture
-def cache() -> Iterator[DuckDBCache]:
+async def cache() -> AsyncIterator[DuckDBCache]:
     c = DuckDBCache(database=":memory:")
     yield c
-    c.close()
+    await c.close()
 
 
 class TestCacheManager:
-    def test_build_cache(self, cache: DuckDBCache) -> None:
+    async def test_build_cache(self, cache: DuckDBCache) -> None:
         patients = [_make_fhir_patient("p1"), _make_fhir_patient("p2")]
         mock_fhir_client = MagicMock()
         mock_fhir_client.fetch_all_patients.return_value = iter(patients)
@@ -39,14 +39,14 @@ class TestCacheManager:
             fhir_client=mock_fhir_client,
             cache=cache,
         )
-        stats = manager.build_cache()
+        stats = await manager.build_cache()
 
         assert stats["patients_fetched"] == 2
         assert stats["patients_cached"] == 2
         assert stats["patients_skipped"] == 0
-        assert cache.count() == 2
+        assert await cache.count() == 2
 
-    def test_build_cache_skips_no_id(self, cache: DuckDBCache) -> None:
+    async def test_build_cache_skips_no_id(self, cache: DuckDBCache) -> None:
         patients = [
             {"resourceType": "Patient", "name": [{"family": "smith"}]},
         ]
@@ -57,16 +57,16 @@ class TestCacheManager:
             fhir_client=mock_fhir_client,
             cache=cache,
         )
-        stats = manager.build_cache()
+        stats = await manager.build_cache()
 
         assert stats["patients_fetched"] == 1
         assert stats["patients_skipped"] == 1
-        assert cache.count() == 0
+        assert await cache.count() == 0
 
-    def test_build_cache_clears_existing(self, cache: DuckDBCache) -> None:
+    async def test_build_cache_clears_existing(self, cache: DuckDBCache) -> None:
         from patient_matching.cache.cache_backend import CachedPatient
 
-        cache.upsert_patients(
+        await cache.upsert_patients(
             [
                 CachedPatient(
                     patient_id="old",
@@ -75,7 +75,7 @@ class TestCacheManager:
                 )
             ]
         )
-        assert cache.count() == 1
+        assert await cache.count() == 1
 
         patients = [_make_fhir_patient("new")]
         mock_fhir_client = MagicMock()
@@ -85,15 +85,15 @@ class TestCacheManager:
             fhir_client=mock_fhir_client,
             cache=cache,
         )
-        manager.build_cache()
-        assert cache.count() == 1
-        assert cache.get_patient("old") is None
-        assert cache.get_patient("new") is not None
+        await manager.build_cache()
+        assert await cache.count() == 1
+        assert await cache.get_patient("old") is None
+        assert await cache.get_patient("new") is not None
 
-    def test_refresh_cache_does_not_clear(self, cache: DuckDBCache) -> None:
+    async def test_refresh_cache_does_not_clear(self, cache: DuckDBCache) -> None:
         from patient_matching.cache.cache_backend import CachedPatient
 
-        cache.upsert_patients(
+        await cache.upsert_patients(
             [
                 CachedPatient(
                     patient_id="existing",
@@ -111,13 +111,13 @@ class TestCacheManager:
             fhir_client=mock_fhir_client,
             cache=cache,
         )
-        manager.refresh_cache()
+        await manager.refresh_cache()
 
-        assert cache.count() == 2
-        assert cache.get_patient("existing") is not None
-        assert cache.get_patient("new") is not None
+        assert await cache.count() == 2
+        assert await cache.get_patient("existing") is not None
+        assert await cache.get_patient("new") is not None
 
-    def test_batch_processing(self, cache: DuckDBCache) -> None:
+    async def test_batch_processing(self, cache: DuckDBCache) -> None:
         patients = [_make_fhir_patient(f"p{i}") for i in range(10)]
         mock_fhir_client = MagicMock()
         mock_fhir_client.fetch_all_patients.return_value = iter(patients)
@@ -128,12 +128,12 @@ class TestCacheManager:
             cache=cache,
             config=config,
         )
-        stats = manager.build_cache()
+        stats = await manager.build_cache()
 
         assert stats["patients_cached"] == 10
-        assert cache.count() == 10
+        assert await cache.count() == 10
 
-    def test_patient_count_property(self, cache: DuckDBCache) -> None:
+    async def test_patient_count_property(self, cache: DuckDBCache) -> None:
         mock_fhir_client = MagicMock()
         mock_fhir_client.fetch_all_patients.return_value = iter(
             [
@@ -145,6 +145,6 @@ class TestCacheManager:
             fhir_client=mock_fhir_client,
             cache=cache,
         )
-        assert manager.patient_count == 0
-        manager.build_cache()
-        assert manager.patient_count == 1
+        assert await manager.patient_count() == 0
+        await manager.build_cache()
+        assert await manager.patient_count() == 1

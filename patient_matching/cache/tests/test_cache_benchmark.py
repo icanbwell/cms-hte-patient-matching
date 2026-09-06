@@ -22,6 +22,7 @@ BENCHMARK_POOL_SIZE=1000000 (env var) for the actual decided-on size.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import statistics
@@ -112,18 +113,18 @@ _QUERY_PATIENT = {
 }
 
 
-def _load(cache: DuckDBCache | MongoAtlasCache, n: int) -> None:
+async def _load(cache: DuckDBCache | MongoAtlasCache, n: int) -> None:
     chunk: List[CachedPatient] = []
     for patient in _generate_patients(n):
         chunk.append(patient)
         if len(chunk) >= _UPSERT_CHUNK_SIZE:
-            cache.upsert_patients(chunk)
+            await cache.upsert_patients(chunk)
             chunk = []
     if chunk:
-        cache.upsert_patients(chunk)
+        await cache.upsert_patients(chunk)
 
 
-def _wait_for_indexing_to_settle(
+async def _wait_for_indexing_to_settle(
     cache: MongoAtlasCache, timeout_seconds: float = 30.0
 ) -> None:
     """Poll until the query patient's own cluster is fuzzy-searchable.
@@ -134,9 +135,9 @@ def _wait_for_indexing_to_settle(
     """
     deadline = time.perf_counter() + timeout_seconds
     while time.perf_counter() < deadline:
-        if cache.search_by_field("last_name", "smtih", fuzzy=True):
+        if await cache.search_by_field("last_name", "smtih", fuzzy=True):
             return
-        time.sleep(0.5)
+        await asyncio.sleep(0.5)
     logger.warning(
         "[benchmark] Atlas Search index did not settle within %.0fs; "
         "benchmark numbers may include indexing lag",
@@ -144,7 +145,7 @@ def _wait_for_indexing_to_settle(
     )
 
 
-def _run_match_counting_round_trips(
+async def _run_match_counting_round_trips(
     cache: DuckDBCache | MongoAtlasCache,
 ) -> tuple[int, List[float]]:
     """Run one MatchingEngine.match() call, counting search_by_field calls
@@ -152,16 +153,16 @@ def _run_match_counting_round_trips(
     latencies: List[float] = []
     original = cache.search_by_field
 
-    def _timed(*args: object, **kwargs: object) -> object:
+    async def _timed(*args: object, **kwargs: object) -> object:
         start = time.perf_counter()
-        result = original(*args, **kwargs)  # type: ignore[arg-type]
+        result = await original(*args, **kwargs)  # type: ignore[arg-type]
         latencies.append(time.perf_counter() - start)
         return result
 
     backend = CacheMatchingBackend(cache)
     engine = MatchingEngine(backend=backend)
     with patch.object(cache, "search_by_field", side_effect=_timed):
-        engine.match(_QUERY_PATIENT)
+        await engine.match(_QUERY_PATIENT)
     return len(latencies), latencies
 
 
@@ -180,7 +181,7 @@ def _report(label: str, round_trips: int, latencies: List[float]) -> None:
 
 
 class TestCacheBenchmark:
-    def test_mongo_atlas_vs_duckdb_round_trips_and_latency(
+    async def test_mongo_atlas_vs_duckdb_round_trips_and_latency(
         self, mongodb: MongoDBService
     ) -> None:
         n = _pool_size()
@@ -198,19 +199,21 @@ class TestCacheBenchmark:
             database="test_patient_cache_benchmark",
         )
         try:
-            _ensure_search_index(mongo_cache)
-            mongo_cache.clear()
+            await _ensure_search_index(mongo_cache)
+            await mongo_cache.clear()
 
             logger.info("[benchmark] loading %d candidates into DuckDBCache...", n)
-            _load(duckdb_cache, n)
+            await _load(duckdb_cache, n)
             logger.info("[benchmark] loading %d candidates into MongoAtlasCache...", n)
-            _load(mongo_cache, n)
-            _wait_for_indexing_to_settle(mongo_cache)
+            await _load(mongo_cache, n)
+            await _wait_for_indexing_to_settle(mongo_cache)
 
-            duckdb_trips, duckdb_latencies = _run_match_counting_round_trips(
+            duckdb_trips, duckdb_latencies = await _run_match_counting_round_trips(
                 duckdb_cache
             )
-            mongo_trips, mongo_latencies = _run_match_counting_round_trips(mongo_cache)
+            mongo_trips, mongo_latencies = await _run_match_counting_round_trips(
+                mongo_cache
+            )
 
             _report("DuckDBCache", duckdb_trips, duckdb_latencies)
             _report("MongoAtlasCache", mongo_trips, mongo_latencies)
@@ -229,6 +232,6 @@ class TestCacheBenchmark:
             assert duckdb_trips > 0
             assert mongo_trips > 0
         finally:
-            duckdb_cache.close()
-            mongo_cache.clear()
-            mongo_cache.close()
+            await duckdb_cache.close()
+            await mongo_cache.clear()
+            await mongo_cache.close()

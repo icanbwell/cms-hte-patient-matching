@@ -1,6 +1,6 @@
 """Tests for the CacheMatchingBackend adapter."""
 
-from typing import Iterator
+from typing import AsyncIterator
 
 import pytest
 
@@ -11,10 +11,10 @@ from patient_matching.matching.backend import FieldCriterion, MatchType
 
 
 @pytest.fixture
-def cache() -> Iterator[DuckDBCache]:
+async def cache() -> AsyncIterator[DuckDBCache]:
     c = DuckDBCache(database=":memory:")
     yield c
-    c.close()
+    await c.close()
 
 
 def _make_cached_patient(
@@ -35,11 +35,11 @@ def _make_cached_patient(
 
 
 class TestCacheMatchingBackend:
-    def test_search_exact_match(self, cache: DuckDBCache) -> None:
-        cache.upsert_patients([_make_cached_patient("p1")])
+    async def test_search_exact_match(self, cache: DuckDBCache) -> None:
+        await cache.upsert_patients([_make_cached_patient("p1")])
         adapter = CacheMatchingBackend(cache)
 
-        results = adapter.search(
+        results = await adapter.search(
             [
                 FieldCriterion(field_name="first_name", value="john"),
                 FieldCriterion(field_name="last_name", value="smith"),
@@ -48,23 +48,23 @@ class TestCacheMatchingBackend:
         assert len(results) == 1
         assert results[0]["id"] == "p1"
 
-    def test_search_no_match(self, cache: DuckDBCache) -> None:
-        cache.upsert_patients([_make_cached_patient("p1")])
+    async def test_search_no_match(self, cache: DuckDBCache) -> None:
+        await cache.upsert_patients([_make_cached_patient("p1")])
         adapter = CacheMatchingBackend(cache)
 
-        results = adapter.search(
+        results = await adapter.search(
             [
                 FieldCriterion(field_name="first_name", value="alice"),
             ]
         )
         assert len(results) == 0
 
-    def test_search_and_semantics(self, cache: DuckDBCache) -> None:
+    async def test_search_and_semantics(self, cache: DuckDBCache) -> None:
         """All criteria must match (AND semantics)."""
-        cache.upsert_patients([_make_cached_patient("p1")])
+        await cache.upsert_patients([_make_cached_patient("p1")])
         adapter = CacheMatchingBackend(cache)
 
-        results = adapter.search(
+        results = await adapter.search(
             [
                 FieldCriterion(field_name="first_name", value="john"),
                 FieldCriterion(field_name="last_name", value="jones"),  # wrong
@@ -72,11 +72,11 @@ class TestCacheMatchingBackend:
         )
         assert len(results) == 0
 
-    def test_search_fuzzy(self, cache: DuckDBCache) -> None:
-        cache.upsert_patients([_make_cached_patient("p1", last="smith")])
+    async def test_search_fuzzy(self, cache: DuckDBCache) -> None:
+        await cache.upsert_patients([_make_cached_patient("p1", last="smith")])
         adapter = CacheMatchingBackend(cache)
 
-        results = adapter.search(
+        results = await adapter.search(
             [
                 FieldCriterion(
                     field_name="last_name",
@@ -87,18 +87,18 @@ class TestCacheMatchingBackend:
         )
         assert len(results) == 1
 
-    def test_search_empty_criteria(self, cache: DuckDBCache) -> None:
-        cache.upsert_patients([_make_cached_patient("p1")])
+    async def test_search_empty_criteria(self, cache: DuckDBCache) -> None:
+        await cache.upsert_patients([_make_cached_patient("p1")])
         adapter = CacheMatchingBackend(cache)
 
-        results = adapter.search([])
+        results = await adapter.search([])
         assert len(results) == 0
 
-    def test_search_returns_fhir_resource(self, cache: DuckDBCache) -> None:
-        cache.upsert_patients([_make_cached_patient("p1")])
+    async def test_search_returns_fhir_resource(self, cache: DuckDBCache) -> None:
+        await cache.upsert_patients([_make_cached_patient("p1")])
         adapter = CacheMatchingBackend(cache)
 
-        results = adapter.search(
+        results = await adapter.search(
             [
                 FieldCriterion(field_name="dob", value="1990-01-15"),
             ]

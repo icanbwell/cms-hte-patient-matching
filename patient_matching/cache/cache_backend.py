@@ -58,10 +58,16 @@ class CacheBackend(ABC):
       - Bulk upsert of normalized patient records
       - Field-level search (exact and fuzzy) for candidate retrieval
       - Cache statistics and lifecycle management
+
+    All methods are async so that a network-backed implementation (e.g.
+    MongoAtlasCache) never blocks the event loop for the duration of a
+    round-trip. In-process implementations (e.g. DuckDBCache) still
+    implement this as async methods that simply don't await anything --
+    one uniform interface, no sync/async branching in callers.
     """
 
     @abstractmethod
-    def upsert_patients(self, patients: List[CachedPatient]) -> int:
+    async def upsert_patients(self, patients: List[CachedPatient]) -> int:
         """Insert or update normalized patient records.
 
         Args:
@@ -72,7 +78,7 @@ class CacheBackend(ABC):
         """
 
     @abstractmethod
-    def search_by_field(
+    async def search_by_field(
         self,
         field_name: str,
         value: str,
@@ -91,7 +97,7 @@ class CacheBackend(ABC):
         """
 
     @abstractmethod
-    def get_patient(self, patient_id: str) -> Optional[CachedPatient]:
+    async def get_patient(self, patient_id: str) -> Optional[CachedPatient]:
         """Retrieve a single cached patient by ID.
 
         Args:
@@ -102,13 +108,13 @@ class CacheBackend(ABC):
         """
 
     @abstractmethod
-    def count(self) -> int:
+    async def count(self) -> int:
         """Return the total number of cached patients."""
 
     @abstractmethod
-    def clear(self) -> None:
+    async def clear(self) -> None:
         """Remove all cached patients."""
 
     @abstractmethod
-    def close(self) -> None:
+    async def close(self) -> None:
         """Release resources held by the backend."""

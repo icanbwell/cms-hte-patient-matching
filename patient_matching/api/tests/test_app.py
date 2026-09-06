@@ -1,7 +1,7 @@
 """Tests for the FastAPI application endpoints."""
 
 import json
-from typing import Iterator
+from typing import AsyncIterator
 
 import pytest
 from fastapi.testclient import TestClient
@@ -40,14 +40,14 @@ def _make_cached(pid: str = "p1") -> CachedPatient:
 
 
 @pytest.fixture
-def test_client() -> Iterator[TestClient]:
+async def test_client() -> AsyncIterator[TestClient]:
     cache = DuckDBCache(database=":memory:")
-    cache.upsert_patients([_make_cached()])
+    await cache.upsert_patients([_make_cached()])
     service = PatientMatcherService(cache=cache)
     app = create_app(service=service)
     client = TestClient(app)
     yield client
-    cache.close()
+    await cache.close()
 
 
 class TestHealthEndpoint:
