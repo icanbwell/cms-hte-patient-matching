@@ -190,8 +190,10 @@ way around. No company-wide initiative doc exists to also update (see "Centraliz
 One behavior, one test body, many named cases — not the same test copy-pasted with one input
 changed. Use `pytest.mark.parametrize`.
 
-- Test runner / framework: `pytest`, via `docker compose run --rm dev pytest ...` (or
-  `make tests` for the full suite).
+- Test runner / framework: `pytest`, via `make tests` (`uv run pytest .`) for the full suite,
+  or `uv run pytest <path>` directly for a targeted subset. No Docker layer of its own — the
+  one exception is `MongoAtlasCache`'s testcontainer tests, which need a local Docker daemon
+  to spin up `mongodb-atlas-local` (skipped cleanly if none is reachable).
 - Parameterization mechanism: `pytest.mark.parametrize`. Existing tests use plain pytest
   classes (e.g. `patient_matching/matching/tests/test_table2_rules.py::TestApprovedRules`),
   not `unittest.TestCase` — this applies directly, no adapter needed.
@@ -233,10 +235,10 @@ them pass. Evidence before assertion.
 ### Exact commands for this project
 
 ```bash
-make devsetup                                                                              # one-time local setup
-make tests                                                                                 # full suite (pytest tests, in Docker)
-docker compose run --rm dev pytest patient_matching/matching/tests/test_table2_rules.py    # targeted example
-make run-pre-commit                                                                        # ruff check --fix, ruff format, mypy, bandit
+make devsetup                                                              # one-time local setup
+make tests                                                                 # full suite (uv run pytest .)
+uv run pytest patient_matching/matching/tests/test_table2_rules.py         # targeted example
+make run-pre-commit                                                        # ruff check --fix, ruff format, mypy, bandit
 ```
 
 ## Code exits scratch space as soon as it earns it
@@ -305,7 +307,7 @@ literals in `notebooks/`).
 
 Confirm the standard security tooling is active before any session's PR merges: Aikido
 scanning enabled on the GitHub repo, the existing bandit/detect-private-key/
-detect-aws-credentials pre-commit hooks staying active, no secrets in `docker.env`,
+detect-aws-credentials pre-commit hooks staying active, no secrets in `.env`,
 `.gitignore` covering local env files. Verified as part of the separate PR-review pass, not
 per-session.
 

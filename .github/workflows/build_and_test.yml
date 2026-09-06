@@ -38,11 +38,8 @@ jobs:
         with:
           version: "0.11.6"
 
-      # Runs directly on the runner rather than inside the Alpine-based Dockerfile:
-      # duckdb has no musllinux wheel, so installing it under Alpine means compiling
-      # DuckDB's C++ engine from source on every run (~40 minutes). ubuntu-latest is
-      # glibc, so this installs from a prebuilt wheel in seconds. The production
-      # Dockerfile is unaffected - it's only built at image-publish time, not per PR.
+      # This repo has no Dockerfile/Docker dev workflow (pure Python package, consumed by
+      # cms-hte-patient-matching-service) -- runs directly on the runner via uv.
       #
       # pyproject.toml's "jfrog" index is now the default (all packages resolve through
       # it), so this sync needs JFrog auth to succeed at all. Uses the real

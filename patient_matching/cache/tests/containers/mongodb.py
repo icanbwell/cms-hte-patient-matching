@@ -3,14 +3,11 @@
 Adapted from person-matching-service's tests/containers/mongodb.py (session_12
 Upstream data/system dependencies: the ``mongodb/mongodb-atlas-local:8.0.13``
 image bundles ``mongot``, so Atlas Search is testable without a real Atlas
-cluster). Atlas Local is a replica set; the external URL must use
+cluster). Atlas Local is a replica set; the connection URL must use
 directConnection=true because the set advertises an internal hostname
-unreachable from outside its own network.
-
-``connection_string`` picks external vs. internal URL automatically: see
-``network.self_container_id`` for why -- pytest running inside this repo's
-``dev`` container (docker-outside-of-docker) can't reach the sibling mongo
-container's host-mapped port, only its network alias.
+unreachable from outside its own network. pytest runs directly on the host
+(see session_14.md), so the host-mapped port is always reachable -- no
+internal/external URL branching needed.
 """
 
 import logging
@@ -23,30 +20,21 @@ from docker.models.networks import Network
 from testcontainers.core.container import DockerContainer
 from testcontainers.core.wait_strategies import ExecWaitStrategy
 
-from .network import self_container_id
-
 logger = logging.getLogger(__name__)
 
 _MONGO_IMAGE = "mongodb/mongodb-atlas-local:8.0.13"
 _MONGO_PORT = 27017
-_ALIAS = "mongo"
 _MONGO_USER = "root"
 _MONGO_PASS = "test123"  # pragma: allowlist secret
 
 
 @dataclass
 class MongoDBService:
-    external_url: str  # mongodb://<user>:<pass>@<host>:<port>/?directConnection=true
-    internal_url: str  # mongodb://mongo:27017 (container -> container)
+    connection_string: (
+        str  # mongodb://<user>:<pass>@<host>:<port>/?directConnection=true
+    )
     username: str = _MONGO_USER
     password: str = _MONGO_PASS
-
-    @property
-    def connection_string(self) -> str:
-        """The URL usable from wherever pytest itself is running."""
-        if self_container_id() is not None:
-            return self.internal_url
-        return self.external_url
 
 
 def _start_mongo(network: Network) -> tuple[DockerContainer, MongoDBService]:
@@ -67,23 +55,17 @@ def _start_mongo(network: Network) -> tuple[DockerContainer, MongoDBService]:
     mongo.with_exposed_ports(_MONGO_PORT)
     mongo.with_env("MONGODB_INITDB_ROOT_USERNAME", _MONGO_USER)
     mongo.with_env("MONGODB_INITDB_ROOT_PASSWORD", _MONGO_PASS)
-    mongo = mongo.with_network(network).with_network_aliases(_ALIAS).waiting_for(ready)
+    mongo = mongo.with_network(network).waiting_for(ready)
     mongo.start()
 
     host = mongo.get_container_host_ip()
     port = mongo.get_exposed_port(_MONGO_PORT)
-    external_url = (
+    connection_string = (
         f"mongodb://{_MONGO_USER}:{_MONGO_PASS}@{host}:{port}/?directConnection=true"
     )
-    internal_url = (
-        f"mongodb://{_MONGO_USER}:{_MONGO_PASS}@{_ALIAS}:{_MONGO_PORT}"
-        "/?directConnection=true"
-    )
 
-    svc = MongoDBService(external_url=external_url, internal_url=internal_url)
-    logger.info(
-        "MongoDB ready — external=%s internal=%s", svc.external_url, svc.internal_url
-    )
+    svc = MongoDBService(connection_string=connection_string)
+    logger.info("MongoDB ready — %s", svc.connection_string)
     return mongo, svc
 
 

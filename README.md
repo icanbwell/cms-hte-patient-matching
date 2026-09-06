@@ -11,19 +11,14 @@ The CMS Patient Matching Proposal defines a standardized approach to matching pa
 - **Demographic normalization** — text normalization, nickname expansion, E.164 phone formatting, USPS address standardization, placeholder detection
 - **FHIR R4 integration** — fetch patients from FHIR servers with OAuth2, paginate through Bundles
 - **Patient cache** — pluggable backend (in-process DuckDB, or MongoDB Atlas Search for shared/multi-replica deployments) with field-level indexing and fuzzy search
-- **HTTP API** — FastAPI application with FHIR `$match` endpoint
 - **Confidence scoring** — based on P(collision) values from Table 2 rules
+
+This is a pure Python library with no HTTP layer of its own — [`cms-hte-patient-matching-service`](https://github.com/icanbwell/cms-hte-patient-matching-service) wraps `PatientMatcherService`/`MatchingEngine` as a production HTTP microservice.
 
 ## Architecture
 
 ```
                           ┌─────────────────┐
-                          │   FastAPI API    │
-                          │  POST /$match   │
-                          │  POST /match/ial2│
-                          └────────┬────────┘
-                                   │
-                          ┌────────▼────────┐
                           │ PatientMatcher   │
                           │    Service       │
                           └──┬─────┬─────┬──┘
@@ -73,9 +68,6 @@ pip install cms-hte-patient-matching[cache]   # duckdb, rapidfuzz
 
 # MongoDB Atlas Search patient cache (shared cache across replicas)
 pip install cms-hte-patient-matching[mongo]   # pymongo
-
-# FastAPI HTTP API
-pip install cms-hte-patient-matching[api]     # fastapi, uvicorn
 
 # Scheduled cache refresh
 pip install cms-hte-patient-matching[scheduler]  # apscheduler
@@ -231,48 +223,7 @@ service = PatientMatcherService(
 response = await service.match_from_token(jwt_token_string)
 ```
 
-### Run the HTTP API
-
-```python
-from patient_matching.api import create_app
-
-app = create_app(service=service)
-
-# Run with uvicorn
-# uvicorn patient_matching.api:app --host 0.0.0.0 --port 8000
-```
-
-Or from the command line:
-
-```bash
-uvicorn patient_matching.api.app:app --host 0.0.0.0 --port 8000
-```
-
-**Endpoints:**
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/Patient/$match` | FHIR `$match` operation — accepts a `Parameters` resource containing a `Patient`, returns a `Bundle` |
-| `POST` | `/match/ial2` | Match from an IAL2 JWT token |
-| `GET`  | `/health` | Health check |
-
-#### FHIR $match Example
-
-```bash
-curl -X POST http://localhost:8000/Patient/\$match \
-  -H "Content-Type: application/fhir+json" \
-  -d '{
-    "resourceType": "Parameters",
-    "parameter": [{
-      "name": "resource",
-      "resource": {
-        "resourceType": "Patient",
-        "name": [{"family": "Smith", "given": ["John"]}],
-        "birthDate": "1990-01-15"
-      }
-    }]
-  }'
-```
+No HTTP layer ships in this package — [`cms-hte-patient-matching-service`](https://github.com/icanbwell/cms-hte-patient-matching-service) is the FastAPI microservice that wraps `PatientMatcherService` and exposes it over `/Patient/$match` and `/match/ial2`.
 
 ## Table 2 Matching Rules
 
@@ -396,10 +347,9 @@ IAL2 JWT token processing per CSP Payload Specification V7.1.
 
 ### `patient_matching.api`
 
-FastAPI HTTP API with FHIR-compliant endpoints.
+End-to-end orchestration, no HTTP layer of its own.
 
-- **`PatientMatcherService`** — end-to-end orchestrator with confidence scoring
-- **`create_app()`** — FastAPI application factory
+- **`PatientMatcherService`** — chains IAL2 extraction, normalization, and matching against a cache into a single async entry point, with confidence scoring
 
 ### `patient_matching.fuzzy`
 
@@ -414,8 +364,8 @@ Multi-backend fuzzy string search (DuckDB, PostgreSQL, MongoDB, Redis, Elasticse
 ### Prerequisites
 
 - Python 3.12+
-- Docker (for containerized development)
 - [uv](https://github.com/astral-sh/uv) (Python package manager)
+- Docker, running locally (only for `MongoAtlasCache`'s testcontainer tests — the rest of the suite needs nothing beyond `uv`)
 
 ### Setup
 
@@ -428,20 +378,16 @@ export JFROG_READ_TOKEN="<your-jfrog-token>"
 Add it to `~/.zshrc` or `~/.bashrc` to persist across sessions.
 
 ```bash
-make init          # Install dependencies and set up pre-commit hooks
-make up            # Start Docker dev stack
+make devsetup      # Install dependencies, set up pre-commit hooks, run tests
 ```
 
 ### Running Tests
 
 ```bash
-make tests         # Run tests in Docker container
-
-# Or locally:
-uv run pytest -v
+make tests         # uv run pytest .
 ```
 
-295 tests cover all modules including matching rules, normalization, caching, FHIR client, API endpoints, and fuzzy backends.
+478 tests cover all modules including matching rules, normalization, caching, FHIR client, IAL2 extraction, and fuzzy backends.
 
 ### Code Quality
 
@@ -462,8 +408,7 @@ Pre-commit hooks include:
 ### Building
 
 ```bash
-make dist          # Build distribution packages into dist/ (named `dist`, not `build`,
-                    # since `make build` already means "build the dev Docker image")
+make dist          # Build the sdist + wheel into dist/
 make testpackage   # Upload to TestPyPI (token in TWINE_PASSWORD)
 make package       # Upload to PyPI (token in TWINE_PASSWORD)
 ```
@@ -478,8 +423,7 @@ are for local TestPyPI dry runs only.
 ```
 patient_matching/
 ├── patient_matching/
-│   ├── api/                    # FastAPI HTTP endpoints
-│   │   ├── app.py              # Application factory + routes
+│   ├── api/                    # End-to-end orchestration (no HTTP layer)
 │   │   ├── service.py          # Orchestrator + confidence scoring
 │   │   └── tests/
 │   ├── cache/                  # Patient cache storage
@@ -529,8 +473,7 @@ patient_matching/
 ├── pyproject.toml
 ├── uv.lock
 ├── Makefile
-├── VERSION
-└── docker-compose.yml
+└── VERSION
 ```
 
 ## License

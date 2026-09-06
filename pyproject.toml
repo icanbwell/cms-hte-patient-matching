@@ -29,8 +29,6 @@ dependencies = [
     "nicknames>=1.0.0",
     "text-unidecode>=1.3",
     "fhirschemapy>=0.0.11",
-    "fastapi>=0.115.0",
-    "uvicorn>=0.34.0",
     "httpx>=0.28.0",
     "duckdb>=1.2.0",
     "apscheduler>=3.10.0",
@@ -44,7 +42,6 @@ Repository = "https://github.com/icanbwell/cms-hte-patient-matching"
 fhir = ["httpx", "fhirschemapy"]
 cache = ["duckdb", "rapidfuzz"]
 mongo = ["pymongo>=4.7"]
-api = ["fastapi", "uvicorn"]
 scheduler = ["apscheduler"]
 all = [
     "httpx",
@@ -52,8 +49,6 @@ all = [
     "duckdb",
     "rapidfuzz",
     "pymongo>=4.7",
-    "fastapi",
-    "uvicorn",
     "apscheduler",
 ]
 
