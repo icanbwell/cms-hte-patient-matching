@@ -159,3 +159,11 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = ["testcontainers.*", "docker.*"]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# fastapi isn't a project dependency (removed in session 15 -- this repo has no HTTP
+# layer of its own) -- patient_matching/fuzzy/examples/fastapi_integration.py is an
+# optional, install-it-yourself example for the unrelated fuzzy-search module, same as
+# the psycopg2/elasticsearch/redis overrides above for its other optional backends.
+module = ["fastapi.*"]
+ignore_missing_imports = true

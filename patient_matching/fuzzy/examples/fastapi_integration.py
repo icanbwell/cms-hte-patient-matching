@@ -71,7 +71,7 @@ try:
         similarity_score: float
         metadata: Optional[Dict[str, Any]] = None
 
-    @app.get("/search", response_model=List[SearchResponse])
+    @app.get("/search", response_model=List[SearchResponse])  # type: ignore[untyped-decorator]
     def search(
         q: str = Query(..., description="Search query"),
         field: str = Query("name", description="Field to search"),
@@ -96,7 +96,7 @@ try:
             for r in results
         ]
 
-    @app.get("/algorithms")
+    @app.get("/algorithms")  # type: ignore[untyped-decorator]
     def list_algorithms() -> Dict[str, bool]:
         return {
             algo.value: manager.supports_algorithm(algo) for algo in SimilarityAlgorithm
