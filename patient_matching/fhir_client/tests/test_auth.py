@@ -3,6 +3,8 @@
 import time
 from unittest.mock import MagicMock
 
+import httpx
+
 
 from patient_matching.fhir_client.auth import (
     ClientCredentialsAuth,
@@ -11,15 +13,15 @@ from patient_matching.fhir_client.auth import (
 
 
 class TestTokenResponse:
-    def test_is_expired_when_past(self) -> None:
+    async def test_is_expired_when_past(self) -> None:
         token = TokenResponse(access_token="tok", expires_at=time.time() - 60)
         assert token.is_expired is True
 
-    def test_is_not_expired_when_future(self) -> None:
+    async def test_is_not_expired_when_future(self) -> None:
         token = TokenResponse(access_token="tok", expires_at=time.time() + 300)
         assert token.is_expired is False
 
-    def test_is_expired_within_buffer(self) -> None:
+    async def test_is_expired_within_buffer(self) -> None:
         """Token expiring within 30s buffer should be considered expired."""
         token = TokenResponse(access_token="tok", expires_at=time.time() + 10)
         assert token.is_expired is True
@@ -34,9 +36,9 @@ class TestClientCredentialsAuth:
             scope="system/*.read",
         )
 
-    def test_get_access_token_requests_new(self) -> None:
+    async def test_get_access_token_requests_new(self) -> None:
         auth = self._make_auth()
-        mock_client = MagicMock()
+        mock_client = MagicMock(spec=httpx.AsyncClient)
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "access_token": "new-token-123",
@@ -45,13 +47,13 @@ class TestClientCredentialsAuth:
         }
         mock_client.post.return_value = mock_response
 
-        token = auth.get_access_token(mock_client)
+        token = await auth.get_access_token(mock_client)
         assert token == "new-token-123"
         mock_client.post.assert_called_once()
 
-    def test_get_access_token_caches(self) -> None:
+    async def test_get_access_token_caches(self) -> None:
         auth = self._make_auth()
-        mock_client = MagicMock()
+        mock_client = MagicMock(spec=httpx.AsyncClient)
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "access_token": "cached-token",
@@ -60,16 +62,16 @@ class TestClientCredentialsAuth:
         mock_client.post.return_value = mock_response
 
         # First call requests a token
-        token1 = auth.get_access_token(mock_client)
+        token1 = await auth.get_access_token(mock_client)
         # Second call should use cached token
-        token2 = auth.get_access_token(mock_client)
+        token2 = await auth.get_access_token(mock_client)
 
         assert token1 == token2 == "cached-token"
         assert mock_client.post.call_count == 1
 
-    def test_get_access_token_refreshes_expired(self) -> None:
+    async def test_get_access_token_refreshes_expired(self) -> None:
         auth = self._make_auth()
-        mock_client = MagicMock()
+        mock_client = MagicMock(spec=httpx.AsyncClient)
 
         # First response
         resp1 = MagicMock()
@@ -85,17 +87,17 @@ class TestClientCredentialsAuth:
         }
         mock_client.post.side_effect = [resp1, resp2]
 
-        token1 = auth.get_access_token(mock_client)
+        token1 = await auth.get_access_token(mock_client)
         assert token1 == "token-1"
 
         # Should refresh because token is expired
-        token2 = auth.get_access_token(mock_client)
+        token2 = await auth.get_access_token(mock_client)
         assert token2 == "token-2"
         assert mock_client.post.call_count == 2
 
-    def test_invalidate_forces_refresh(self) -> None:
+    async def test_invalidate_forces_refresh(self) -> None:
         auth = self._make_auth()
-        mock_client = MagicMock()
+        mock_client = MagicMock(spec=httpx.AsyncClient)
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "access_token": "token-a",
@@ -103,15 +105,15 @@ class TestClientCredentialsAuth:
         }
         mock_client.post.return_value = mock_response
 
-        auth.get_access_token(mock_client)
+        await auth.get_access_token(mock_client)
         auth.invalidate()
-        auth.get_access_token(mock_client)
+        await auth.get_access_token(mock_client)
 
         assert mock_client.post.call_count == 2
 
-    def test_post_includes_scope_and_grant_type(self) -> None:
+    async def test_post_includes_scope_and_grant_type(self) -> None:
         auth = self._make_auth()
-        mock_client = MagicMock()
+        mock_client = MagicMock(spec=httpx.AsyncClient)
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "access_token": "tok",
@@ -119,7 +121,7 @@ class TestClientCredentialsAuth:
         }
         mock_client.post.return_value = mock_response
 
-        auth.get_access_token(mock_client)
+        await auth.get_access_token(mock_client)
 
         call_args = mock_client.post.call_args
         data = call_args.kwargs.get("data") or call_args[1].get("data")
@@ -128,14 +130,14 @@ class TestClientCredentialsAuth:
         assert data["client_secret"] == "my-secret"
         assert data["scope"] == "system/*.read"
 
-    def test_extra_params_included(self) -> None:
+    async def test_extra_params_included(self) -> None:
         auth = ClientCredentialsAuth(
             token_url="https://auth.example.com/token",
             client_id="c",
             client_secret="s",
             extra_params={"resource": "https://fhir.example.com"},
         )
-        mock_client = MagicMock()
+        mock_client = MagicMock(spec=httpx.AsyncClient)
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "access_token": "tok",
@@ -143,7 +145,7 @@ class TestClientCredentialsAuth:
         }
         mock_client.post.return_value = mock_response
 
-        auth.get_access_token(mock_client)
+        await auth.get_access_token(mock_client)
 
         call_args = mock_client.post.call_args
         data = call_args.kwargs.get("data") or call_args[1].get("data")

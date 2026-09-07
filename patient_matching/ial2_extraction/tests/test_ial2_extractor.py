@@ -13,7 +13,7 @@ from patient_matching.ial2_extraction.token_verifier import (
 
 
 class TestIAL2ExtractorWithMockedVerifier:
-    def test_extract_returns_fhir_patient(self) -> None:
+    async def test_extract_returns_fhir_patient(self) -> None:
         mock_verifier = MagicMock(spec=TokenVerifier)
         mock_verifier.verify.return_value = {
             "iss": "https://idp.example.com",
@@ -35,7 +35,7 @@ class TestIAL2ExtractorWithMockedVerifier:
         }
 
         extractor = IAL2Extractor(verifier=mock_verifier)
-        patient = extractor.extract("fake-token")
+        patient = await extractor.extract("fake-token")
 
         assert patient["resourceType"] == "Patient"
         assert patient["birthDate"] == "1990-01-15"
@@ -45,7 +45,7 @@ class TestIAL2ExtractorWithMockedVerifier:
         assert patient["address"][0]["city"] == "Springfield"
         assert patient["identifier"][0]["value"] == "csp-uuid-001"
 
-    def test_extract_claims_returns_ial2_claims(self) -> None:
+    async def test_extract_claims_returns_ial2_claims(self) -> None:
         mock_verifier = MagicMock(spec=TokenVerifier)
         mock_verifier.verify.return_value = {
             "iss": "https://login.gov",
@@ -60,17 +60,17 @@ class TestIAL2ExtractorWithMockedVerifier:
         }
 
         extractor = IAL2Extractor(verifier=mock_verifier)
-        claims = extractor.extract_claims("fake-token")
+        claims = await extractor.extract_claims("fake-token")
 
         assert claims.name_first == "Alice"
         assert claims.name_last == "Smith"
         assert claims.birth_date == "1985-06-01"
 
-    def test_extract_propagates_verification_error(self) -> None:
+    async def test_extract_propagates_verification_error(self) -> None:
         mock_verifier = MagicMock(spec=TokenVerifier)
         mock_verifier.verify.side_effect = TokenVerificationError("Token expired")
 
         extractor = IAL2Extractor(verifier=mock_verifier)
 
         with pytest.raises(TokenVerificationError, match="Token expired"):
-            extractor.extract("bad-token")
+            await extractor.extract("bad-token")

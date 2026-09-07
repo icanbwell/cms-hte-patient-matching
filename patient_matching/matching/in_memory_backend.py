@@ -19,7 +19,7 @@ Example::
 
     backend = InMemoryBackend([normalized_patient_a, normalized_patient_b])
     manager = MatchingManager(backend=backend)
-    result = manager.match(normalized_query_patient)
+    result = await manager.match(normalized_query_patient)
 """
 
 from __future__ import annotations
@@ -73,7 +73,7 @@ class InMemoryBackend(MatchingBackend):
     def __len__(self) -> int:
         return len(self._patients)
 
-    def search(self, criteria: List[FieldCriterion]) -> List[Dict[str, Any]]:
+    async def search(self, criteria: List[FieldCriterion]) -> List[Dict[str, Any]]:
         """Return every stored patient that satisfies ALL criteria (AND).
 
         An empty criteria list returns no candidates (the engine only calls

@@ -29,8 +29,6 @@ dependencies = [
     "nicknames>=1.0.0",
     "text-unidecode>=1.3",
     "fhirschemapy>=0.0.11",
-    "fastapi>=0.115.0",
-    "uvicorn>=0.34.0",
     "httpx>=0.28.0",
     "duckdb>=1.2.0",
     "apscheduler>=3.10.0",
@@ -44,7 +42,6 @@ Repository = "https://github.com/icanbwell/cms-hte-patient-matching"
 fhir = ["httpx", "fhirschemapy"]
 cache = ["duckdb", "rapidfuzz"]
 mongo = ["pymongo>=4.7"]
-api = ["fastapi", "uvicorn"]
 scheduler = ["apscheduler"]
 all = [
     "httpx",
@@ -52,8 +49,6 @@ all = [
     "duckdb",
     "rapidfuzz",
     "pymongo>=4.7",
-    "fastapi",
-    "uvicorn",
     "apscheduler",
 ]
 
@@ -163,4 +158,12 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = ["testcontainers.*", "docker.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# fastapi isn't a project dependency (removed in session 15 -- this repo has no HTTP
+# layer of its own) -- patient_matching/fuzzy/examples/fastapi_integration.py is an
+# optional, install-it-yourself example for the unrelated fuzzy-search module, same as
+# the psycopg2/elasticsearch/redis overrides above for its other optional backends.
+module = ["fastapi.*"]
 ignore_missing_imports = true

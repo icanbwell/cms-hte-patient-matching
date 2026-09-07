@@ -1,6 +1,6 @@
 """Tests for the PatientMatcherService."""
 
-from typing import Iterator, List
+from typing import AsyncIterator, List
 
 import pytest
 from unittest.mock import MagicMock
@@ -11,11 +11,12 @@ from patient_matching.api.service import (
 )
 from patient_matching.cache.cache_backend import CachedPatient
 from patient_matching.cache.duckdb_cache import DuckDBCache
+from patient_matching.ial2_extraction.ial2_extractor import IAL2Extractor
 from patient_matching.matching.match_result import MatchOutcome, MatchResult
 
 
-def _populate_cache(cache: DuckDBCache, patients: List[CachedPatient]) -> None:
-    cache.upsert_patients(patients)
+async def _populate_cache(cache: DuckDBCache, patients: List[CachedPatient]) -> None:
+    await cache.upsert_patients(patients)
 
 
 def _make_cached(
@@ -58,15 +59,15 @@ def _make_cached(
 
 
 @pytest.fixture
-def cache() -> Iterator[DuckDBCache]:
+async def cache() -> AsyncIterator[DuckDBCache]:
     c = DuckDBCache(database=":memory:")
     yield c
-    c.close()
+    await c.close()
 
 
 class TestPatientMatcherService:
-    def test_match_patient_exact(self, cache: DuckDBCache) -> None:
-        _populate_cache(cache, [_make_cached("p1")])
+    async def test_match_patient_exact(self, cache: DuckDBCache) -> None:
+        await _populate_cache(cache, [_make_cached("p1")])
         service = PatientMatcherService(cache=cache)
 
         query = {
@@ -82,13 +83,13 @@ class TestPatientMatcherService:
                 {"system": "http://hl7.org/fhir/sid/us-ssn", "value": "xxx-xx-6789"},
             ],
         }
-        result = service.match_patient(query)
+        result = await service.match_patient(query)
         assert result.outcome == "match"
         assert "p1" in result.matched_patient_ids
         assert result.confidence_score > 0.99
 
-    def test_match_patient_no_match(self, cache: DuckDBCache) -> None:
-        _populate_cache(cache, [_make_cached("p1")])
+    async def test_match_patient_no_match(self, cache: DuckDBCache) -> None:
+        await _populate_cache(cache, [_make_cached("p1")])
         service = PatientMatcherService(cache=cache)
 
         query = {
@@ -97,19 +98,19 @@ class TestPatientMatcherService:
             "birthDate": "2000-12-25",
             "telecom": [{"system": "phone", "value": "+19995551111"}],
         }
-        result = service.match_patient(query)
+        result = await service.match_patient(query)
         assert result.outcome == "no_match"
         assert len(result.matched_patient_ids) == 0
 
-    def test_match_from_token_without_extractor(self, cache: DuckDBCache) -> None:
+    async def test_match_from_token_without_extractor(self, cache: DuckDBCache) -> None:
         service = PatientMatcherService(cache=cache)
         with pytest.raises(ValueError, match="IAL2 extractor not configured"):
-            service.match_from_token("some.jwt.token")
+            await service.match_from_token("some.jwt.token")
 
-    def test_match_from_token_with_extractor(self, cache: DuckDBCache) -> None:
-        _populate_cache(cache, [_make_cached("p1")])
+    async def test_match_from_token_with_extractor(self, cache: DuckDBCache) -> None:
+        await _populate_cache(cache, [_make_cached("p1")])
 
-        mock_extractor = MagicMock()
+        mock_extractor = MagicMock(spec=IAL2Extractor)
         mock_extractor.extract.return_value = {
             "resourceType": "Patient",
             "name": [{"family": "smith", "given": ["john"]}],
@@ -125,7 +126,7 @@ class TestPatientMatcherService:
         }
 
         service = PatientMatcherService(cache=cache, ial2_extractor=mock_extractor)
-        result = service.match_from_token("fake.jwt.token")
+        result = await service.match_from_token("fake.jwt.token")
         assert result.outcome == "match"
         mock_extractor.extract.assert_called_once_with("fake.jwt.token")
 

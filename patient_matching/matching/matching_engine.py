@@ -85,7 +85,7 @@ class MatchingEngine:
             else CATEGORY_2_RULES
         )
 
-    def match(self, query_patient: Dict[str, Any]) -> MatchResult:
+    async def match(self, query_patient: Dict[str, Any]) -> MatchResult:
         """Match a query patient against the backend.
 
         Iterates over all applicable Table 2 rules, retrieves candidates
@@ -108,7 +108,7 @@ class MatchingEngine:
 
             # Build criteria and search backend
             criteria = self._build_criteria_for_fields(query_fields, rule.fields)
-            candidates = self._backend.search(criteria)
+            candidates = await self._backend.search(criteria)
 
             # Evaluate each candidate against this rule
             rule_matches: List[Dict[str, Any]] = []
@@ -131,7 +131,7 @@ class MatchingEngine:
                 matched_patients_by_rule[rule.rule_id] = rule_matches
 
         for hh_rule in self._household_individual_rules:
-            hh_matches, hh_evaluations = self._evaluate_household_individual_rule(
+            hh_matches, hh_evaluations = await self._evaluate_household_individual_rule(
                 hh_rule, query_fields
             )
             all_evaluations.extend(hh_evaluations)
@@ -341,7 +341,7 @@ class MatchingEngine:
 
         return evaluation
 
-    def _evaluate_household_individual_rule(
+    async def _evaluate_household_individual_rule(
         self,
         rule: HouseholdIndividualRule,
         query_fields: PatientFields,
@@ -376,7 +376,7 @@ class MatchingEngine:
         household_criteria = self._build_criteria_for_fields(
             query_fields, household_fields
         )
-        household_candidates = self._backend.search(household_criteria)
+        household_candidates = await self._backend.search(household_criteria)
 
         household_matches: List[Dict[str, Any]] = []
         for candidate in household_candidates:

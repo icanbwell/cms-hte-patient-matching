@@ -1,8 +1,12 @@
 # Session 12 — MongoDB Atlas Search-Backed `CacheBackend`
 
-**Status:** in_review — executed 2026-09-04 on branch `session-12/mongo-atlas-cache`. All three
-`NEEDS HUMAN DECISION` items below were resolved directly by Imran before any code was written
-(see Execution notes).
+**Status:** completed — PR [#45](https://github.com/icanbwell/cms-hte-patient-matching/pull/45)
+merged 2026-09-06 (squash). Executed 2026-09-04 on branch `session-12/mongo-atlas-cache`. All
+three `NEEDS HUMAN DECISION` items below were resolved directly by Imran before any code was
+written (see Execution notes). Post-merge note: the squash merge broke git ancestry for this
+branch's two stacked children (sessions 14/15, PR #48) — resolved by merging `main` back into
+their branch and taking that branch's side on every conflict, since nothing else had landed on
+`main` in between. See session_14.md's "Left open" section.
 **Thread:** `Phase 2: production candidate-retrieval scaling` (new thread — adopted the working
 name below as the real name; see "Why this session is unusual" for context on why neither
 existing thread fits).

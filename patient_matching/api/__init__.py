@@ -1,16 +1,15 @@
-"""api: HTTP service exposing FHIR $match and IAL2 matching endpoints.
+"""api: end-to-end patient matching orchestration.
 
-Provides a FastAPI application that:
-  - Accepts FHIR $match requests (Parameters resource in, Bundle out)
-  - Accepts raw IAL2 JWT tokens and returns matched FHIR Patient IDs
-  - Manages the patient matching cache lifecycle
+Provides ``PatientMatcherService``, which chains IAL2 extraction,
+normalization, and matching against a cache into a single async entry
+point. No HTTP layer here -- that's the sibling
+``cms-hte-patient-matching-service`` repo's job; this package is only
+the library it consumes.
 """
 
-from .app import create_app
 from .service import PatientMatcherService, ServiceConfig
 
 __all__ = [
     "PatientMatcherService",
     "ServiceConfig",
-    "create_app",
 ]

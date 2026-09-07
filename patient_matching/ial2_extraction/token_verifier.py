@@ -6,6 +6,7 @@ and verifies the token signature, expiration, and audience.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from typing import Any, Dict, List, Optional
@@ -47,7 +48,7 @@ class TokenVerifier:
         self._algorithms = algorithms or ["RS256"]
         self._jwks_client = PyJWKClient(jwks_uri)
 
-    def verify(self, token: str) -> Dict[str, Any]:
+    async def verify(self, token: str) -> Dict[str, Any]:
         """Verify the token signature and standard claims.
 
         Args:
@@ -60,6 +61,12 @@ class TokenVerifier:
             TokenVerificationError: If the token is invalid, expired,
                 or fails audience/issuer checks.
         """
+        return await asyncio.to_thread(self._verify_sync, token)
+
+    def _verify_sync(self, token: str) -> Dict[str, Any]:
+        """Blocking body of verify() -- PyJWT/PyJWKClient have no async API,
+        so verify() offloads this to a thread instead of blocking the event
+        loop for the JWKS fetch (network I/O) this does internally."""
         try:
             signing_key = self._jwks_client.get_signing_key_from_jwt(token)
 
@@ -89,7 +96,7 @@ class TokenVerifier:
             raise TokenVerificationError(f"Token verification failed: {e}") from e
 
     @classmethod
-    def from_oidc_discovery(
+    async def from_oidc_discovery(
         cls,
         *,
         discovery_url: str,
@@ -111,9 +118,14 @@ class TokenVerifier:
         Raises:
             TokenVerificationError: If discovery metadata cannot be fetched.
         """
-        try:
+
+        def _fetch_metadata() -> Dict[str, Any]:
             with urlopen(discovery_url) as response:  # nosec B310
-                metadata = json.loads(response.read())
+                result: Dict[str, Any] = json.loads(response.read())
+                return result
+
+        try:
+            metadata = await asyncio.to_thread(_fetch_metadata)
             jwks_uri = metadata["jwks_uri"]
         except Exception as e:
             raise TokenVerificationError(

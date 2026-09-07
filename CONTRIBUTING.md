@@ -1,8 +1,7 @@
 # Contributing
 
 ## Development
-- `make init` to set up the local dev environment.
-- `make up` to start the Docker dev stack.
+- `make devsetup` to set up the local dev environment.
 - `make tests` to run the test suite.
 
 ## Quality Checks

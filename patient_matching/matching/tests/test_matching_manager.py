@@ -12,7 +12,7 @@ class InMemoryBackend(MatchingBackend):
     def __init__(self, patients: List[Dict[str, Any]]):
         self._patients = patients
 
-    def search(self, criteria: List[FieldCriterion]) -> List[Dict[str, Any]]:
+    async def search(self, criteria: List[FieldCriterion]) -> List[Dict[str, Any]]:
         return list(self._patients)
 
 
@@ -38,16 +38,16 @@ def _make_patient(**overrides: Any) -> Dict[str, Any]:
 
 
 class TestMatchingManager:
-    def test_match_returns_result(self) -> None:
+    async def test_match_returns_result(self) -> None:
         backend = InMemoryBackend([_make_patient()])
         manager = MatchingManager(backend=backend)
-        result = manager.match(_make_patient())
+        result = await manager.match(_make_patient())
         assert result.outcome == MatchOutcome.MATCH
 
-    def test_match_batch(self) -> None:
+    async def test_match_batch(self) -> None:
         backend = InMemoryBackend([_make_patient()])
         manager = MatchingManager(backend=backend)
-        results = manager.match_batch([_make_patient(), _make_patient()])
+        results = await manager.match_batch([_make_patient(), _make_patient()])
         assert len(results) == 2
         assert all(r.outcome == MatchOutcome.MATCH for r in results)
 
@@ -67,8 +67,8 @@ class TestMatchingManager:
         assert manager.rule_count == 5
         assert manager.rules == subset
 
-    def test_no_match_empty_backend(self) -> None:
+    async def test_no_match_empty_backend(self) -> None:
         backend = InMemoryBackend([])
         manager = MatchingManager(backend=backend)
-        result = manager.match(_make_patient())
+        result = await manager.match(_make_patient())
         assert result.outcome == MatchOutcome.NO_MATCH

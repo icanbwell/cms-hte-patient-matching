@@ -1,6 +1,6 @@
 """Tests for the DuckDB cache backend."""
 
-from typing import Iterator
+from typing import AsyncIterator
 
 import pytest
 
@@ -9,10 +9,10 @@ from patient_matching.cache.duckdb_cache import DuckDBCache
 
 
 @pytest.fixture
-def cache() -> Iterator[DuckDBCache]:
+async def cache() -> AsyncIterator[DuckDBCache]:
     c = DuckDBCache(database=":memory:")
     yield c
-    c.close()
+    await c.close()
 
 
 def _make_cached_patient(
@@ -44,100 +44,100 @@ def _make_cached_patient(
 
 
 class TestDuckDBCacheUpsert:
-    def test_upsert_single(self, cache: DuckDBCache) -> None:
+    async def test_upsert_single(self, cache: DuckDBCache) -> None:
         patient = _make_cached_patient()
-        count = cache.upsert_patients([patient])
+        count = await cache.upsert_patients([patient])
         assert count == 1
-        assert cache.count() == 1
+        assert await cache.count() == 1
 
-    def test_upsert_multiple(self, cache: DuckDBCache) -> None:
+    async def test_upsert_multiple(self, cache: DuckDBCache) -> None:
         p1 = _make_cached_patient("p1")
         p2 = _make_cached_patient("p2", first="jane", last="doe")
-        count = cache.upsert_patients([p1, p2])
+        count = await cache.upsert_patients([p1, p2])
         assert count == 2
-        assert cache.count() == 2
+        assert await cache.count() == 2
 
-    def test_upsert_replaces_existing(self, cache: DuckDBCache) -> None:
+    async def test_upsert_replaces_existing(self, cache: DuckDBCache) -> None:
         p1 = _make_cached_patient("p1", first="john")
-        cache.upsert_patients([p1])
+        await cache.upsert_patients([p1])
 
         p1_updated = _make_cached_patient("p1", first="jonathan")
-        cache.upsert_patients([p1_updated])
+        await cache.upsert_patients([p1_updated])
 
-        assert cache.count() == 1
-        result = cache.get_patient("p1")
+        assert await cache.count() == 1
+        result = await cache.get_patient("p1")
         assert result is not None
         assert "jonathan" in result.first_names
 
-    def test_upsert_empty_list(self, cache: DuckDBCache) -> None:
-        count = cache.upsert_patients([])
+    async def test_upsert_empty_list(self, cache: DuckDBCache) -> None:
+        count = await cache.upsert_patients([])
         assert count == 0
 
 
 class TestDuckDBCacheSearch:
-    def test_search_exact_first_name(self, cache: DuckDBCache) -> None:
-        cache.upsert_patients([_make_cached_patient()])
-        results = cache.search_by_field("first_name", "john")
+    async def test_search_exact_first_name(self, cache: DuckDBCache) -> None:
+        await cache.upsert_patients([_make_cached_patient()])
+        results = await cache.search_by_field("first_name", "john")
         assert len(results) == 1
         assert results[0].patient_id == "patient-1"
 
-    def test_search_exact_dob(self, cache: DuckDBCache) -> None:
-        cache.upsert_patients([_make_cached_patient()])
-        results = cache.search_by_field("dob", "1990-01-15")
+    async def test_search_exact_dob(self, cache: DuckDBCache) -> None:
+        await cache.upsert_patients([_make_cached_patient()])
+        results = await cache.search_by_field("dob", "1990-01-15")
         assert len(results) == 1
 
-    def test_search_no_match(self, cache: DuckDBCache) -> None:
-        cache.upsert_patients([_make_cached_patient()])
-        results = cache.search_by_field("first_name", "alice")
+    async def test_search_no_match(self, cache: DuckDBCache) -> None:
+        await cache.upsert_patients([_make_cached_patient()])
+        results = await cache.search_by_field("first_name", "alice")
         assert len(results) == 0
 
-    def test_search_fuzzy_match(self, cache: DuckDBCache) -> None:
-        cache.upsert_patients([_make_cached_patient(last="smith")])
+    async def test_search_fuzzy_match(self, cache: DuckDBCache) -> None:
+        await cache.upsert_patients([_make_cached_patient(last="smith")])
         # "smtih" is DL distance 1 from "smith"
-        results = cache.search_by_field("last_name", "smtih", fuzzy=True)
+        results = await cache.search_by_field("last_name", "smtih", fuzzy=True)
         assert len(results) == 1
 
-    def test_search_fuzzy_rejects_short_strings(self, cache: DuckDBCache) -> None:
-        cache.upsert_patients([_make_cached_patient(first="jon")])
+    async def test_search_fuzzy_rejects_short_strings(self, cache: DuckDBCache) -> None:
+        await cache.upsert_patients([_make_cached_patient(first="jon")])
         # "jon" is < 5 chars, fuzzy should fall back to exact
-        results = cache.search_by_field("first_name", "jon", fuzzy=True)
+        results = await cache.search_by_field("first_name", "jon", fuzzy=True)
         assert len(results) == 1  # exact match works
-        results = cache.search_by_field("first_name", "john", fuzzy=True)
+        results = await cache.search_by_field("first_name", "john", fuzzy=True)
         assert len(results) == 0  # "john" != "jon" exact, both < 5
 
-    def test_search_fuzzy_rejects_distance_2(self, cache: DuckDBCache) -> None:
-        cache.upsert_patients([_make_cached_patient(last="smith")])
-        results = cache.search_by_field("last_name", "snack", fuzzy=True)
+    async def test_search_fuzzy_rejects_distance_2(self, cache: DuckDBCache) -> None:
+        await cache.upsert_patients([_make_cached_patient(last="smith")])
+        results = await cache.search_by_field("last_name", "snack", fuzzy=True)
         assert len(results) == 0
 
-    def test_search_multiple_patients(self, cache: DuckDBCache) -> None:
+    async def test_search_multiple_patients(self, cache: DuckDBCache) -> None:
         p1 = _make_cached_patient("p1", last="smith")
         p2 = _make_cached_patient("p2", last="smith")
         p3 = _make_cached_patient("p3", last="jones")
-        cache.upsert_patients([p1, p2, p3])
-        results = cache.search_by_field("last_name", "smith")
+        await cache.upsert_patients([p1, p2, p3])
+        results = await cache.search_by_field("last_name", "smith")
         assert len(results) == 2
 
 
 class TestDuckDBCacheGet:
-    def test_get_existing(self, cache: DuckDBCache) -> None:
-        cache.upsert_patients([_make_cached_patient("p1")])
-        result = cache.get_patient("p1")
+    async def test_get_existing(self, cache: DuckDBCache) -> None:
+        await cache.upsert_patients([_make_cached_patient("p1")])
+        result = await cache.get_patient("p1")
         assert result is not None
         assert result.patient_id == "p1"
         assert "john" in result.first_names
 
-    def test_get_nonexistent(self, cache: DuckDBCache) -> None:
-        result = cache.get_patient("nonexistent")
+    async def test_get_nonexistent(self, cache: DuckDBCache) -> None:
+        result = await cache.get_patient("nonexistent")
         assert result is None
 
 
 class TestDuckDBCacheLifecycle:
-    def test_clear(self, cache: DuckDBCache) -> None:
-        cache.upsert_patients([_make_cached_patient()])
-        assert cache.count() == 1
-        cache.clear()
-        assert cache.count() == 0
+    async def test_clear(self, cache: DuckDBCache) -> None:
+        await cache.upsert_patients([_make_cached_patient()])
+        assert await cache.count() == 1
+        await cache.clear()
+        assert await cache.count() == 0
 
-    def test_count_empty(self, cache: DuckDBCache) -> None:
-        assert cache.count() == 0
+    async def test_count_empty(self, cache: DuckDBCache) -> None:
+        assert await cache.count() == 0

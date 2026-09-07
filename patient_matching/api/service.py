@@ -82,10 +82,10 @@ class PatientMatcherService:
             ial2_extractor=ial2_extractor,
         )
         # Match from IAL2 token
-        result = service.match_from_token(jwt_token)
+        result = await service.match_from_token(jwt_token)
 
         # Match from FHIR Patient
-        result = service.match_patient(normalized_patient)
+        result = await service.match_patient(normalized_patient)
     """
 
     def __init__(
@@ -111,7 +111,7 @@ class PatientMatcherService:
             rules=rules,
         )
 
-    def match_from_token(self, token: str) -> MatchResponse:
+    async def match_from_token(self, token: str) -> MatchResponse:
         """Match a patient from an IAL2 JWT token.
 
         Full pipeline: verify token → extract demographics →
@@ -136,15 +136,15 @@ class PatientMatcherService:
         logger.info("Matching from IAL2 token")
 
         # Step 1: Verify token and extract FHIR Patient
-        fhir_patient = self._ial2_extractor.extract(token)
+        fhir_patient = await self._ial2_extractor.extract(token)
 
         # Step 2: Normalize
         normalized = self._normalizer.normalize(fhir_patient)
 
         # Step 3: Match
-        return self._match_and_respond(normalized)
+        return await self._match_and_respond(normalized)
 
-    def match_patient(
+    async def match_patient(
         self, patient: Dict[str, Any], *, skip_normalization: bool = False
     ) -> MatchResponse:
         """Match a FHIR Patient resource against the cache.
@@ -162,11 +162,13 @@ class PatientMatcherService:
         else:
             normalized = self._normalizer.normalize(patient)
 
-        return self._match_and_respond(normalized)
+        return await self._match_and_respond(normalized)
 
-    def _match_and_respond(self, normalized_patient: Dict[str, Any]) -> MatchResponse:
+    async def _match_and_respond(
+        self, normalized_patient: Dict[str, Any]
+    ) -> MatchResponse:
         """Run matching engine and build response."""
-        result = self._engine.match(normalized_patient)
+        result = await self._engine.match(normalized_patient)
         return self._build_response(result)
 
     @staticmethod

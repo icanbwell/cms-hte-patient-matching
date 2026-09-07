@@ -30,7 +30,7 @@ class CacheMatchingBackend(MatchingBackend):
     def __init__(self, cache: CacheBackend) -> None:
         self._cache = cache
 
-    def search(self, criteria: List[FieldCriterion]) -> List[Dict[str, Any]]:
+    async def search(self, criteria: List[FieldCriterion]) -> List[Dict[str, Any]]:
         """Search for candidate patients matching the given criteria.
 
         Uses the criteria as blocking keys — fetches candidates from
@@ -49,7 +49,7 @@ class CacheMatchingBackend(MatchingBackend):
 
         for criterion in criteria:
             fuzzy = criterion.match_type == MatchType.FUZZY
-            matches = self._cache.search_by_field(
+            matches = await self._cache.search_by_field(
                 criterion.field_name,
                 criterion.value,
                 fuzzy=fuzzy,
