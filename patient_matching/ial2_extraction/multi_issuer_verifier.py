@@ -8,13 +8,18 @@ fetched.
 
 from __future__ import annotations
 
+import asyncio
+import ipaddress
 import os
-from typing import Any, Dict, List, Optional
+import socket
+from typing import Any, Dict, List, Optional, Union
 from urllib.parse import urlparse
 
 import jwt
 
 from .token_verifier import TokenVerificationError, TokenVerifier
+
+_IpAddress = Union[ipaddress.IPv4Address, ipaddress.IPv6Address]
 
 ALLOWED_JWKS_URLS_ENV_VAR = "IAL2_ALLOWED_JWKS_URLS"
 
@@ -72,9 +77,7 @@ class MultiIssuerTokenVerifier:
         allowed = [url.strip() for url in raw.split(",") if url.strip()]
         if not allowed:
             raise ValueError(f"{env_var} is not set or contains no JWKS URLs")
-        return cls(
-            audience=audience, allowed_jwks_uris=allowed, algorithms=algorithms
-        )
+        return cls(audience=audience, allowed_jwks_uris=allowed, algorithms=algorithms)
 
     async def verify(self, token: str) -> Dict[str, Any]:
         """Verify a token from any whitelisted issuer.
@@ -99,33 +102,6 @@ class MultiIssuerTokenVerifier:
         return await verifier.verify(token)
 
     @staticmethod
-    def _is_reserved_ip_address(host: str) -> bool:
-        """Check if host is a reserved or private IP address."""
-        import ipaddress
-        try:
-            ip = ipaddress.ip_address(host)
-            return ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_multicast
-        except ValueError:
-            return False
-
-    @staticmethod
-    def _validate_issuer_url(issuer: str) -> None:
-        """Validate issuer URL before OIDC discovery.
-        
-        Raises:
-            TokenVerificationError: If the URL is invalid or points to restricted addresses.
-        """
-        parsed = urlparse(issuer)
-        
-        if parsed.scheme not in ("https", "http"):
-            raise TokenVerificationError(f"Invalid scheme in issuer URL: {parsed.scheme}")
-        
-        if not parsed.netloc:
-            raise TokenVerificationError(f"Missing host in issuer URL: {issuer}")
-        
-        if MultiIssuerTokenVerifier._is_reserved_ip_address(parsed.hostname or ""):
-            raise TokenVerificationError(f"Issuer URL points to reserved IP address: {parsed.hostname}")
-
     def _peek_issuer(token: str) -> str:
         """Read the ``iss`` claim without verifying the signature.
 
@@ -146,13 +122,13 @@ class MultiIssuerTokenVerifier:
 
     async def _build_verifier_for_issuer(self, issuer: str) -> TokenVerifier:
         """Discover the issuer's JWKS URL and check it against the whitelist."""
+        await self._validate_issuer_url(issuer)
+
         verifier = await TokenVerifier.from_oidc_discovery(
             discovery_url=f"{issuer.rstrip('/')}/.well-known/openid-configuration",
             audience=self._audience,
             issuer=issuer,
             algorithms=self._algorithms,
-        if issuer:
-            MultiIssuerTokenVerifier._validate_issuer_url(issuer)
         )
         if verifier.jwks_uri not in self._allowed_jwks_uris:
             raise TokenVerificationError(
@@ -160,3 +136,56 @@ class MultiIssuerTokenVerifier:
                 f"'{verifier.jwks_uri}', which is not whitelisted"
             )
         return verifier
+
+    @staticmethod
+    async def _validate_issuer_url(issuer: str) -> None:
+        """Reject issuer URLs that could be used for SSRF before any
+        discovery or JWKS request is made.
+
+        The issuer claim is unverified at this point -- read via
+        _peek_issuer() before signature verification, purely to select a
+        JWKS URL. Without this check, an attacker could set 'iss' to an
+        internal service or cloud metadata endpoint and have this process
+        make a request to it during OIDC discovery.
+        """
+        parsed = urlparse(issuer)
+        if parsed.scheme != "https":
+            raise TokenVerificationError(f"Issuer URL must use https, got: {issuer!r}")
+
+        hostname = parsed.hostname
+        if not hostname:
+            raise TokenVerificationError(f"Issuer URL is missing a host: {issuer!r}")
+
+        for address in await MultiIssuerTokenVerifier._resolve_addresses(hostname):
+            if (
+                address.is_private
+                or address.is_loopback
+                or address.is_link_local
+                or address.is_multicast
+                or address.is_reserved
+                or address.is_unspecified
+            ):
+                raise TokenVerificationError(
+                    f"Issuer '{issuer}' resolves to a non-public address "
+                    f"({address}); rejected"
+                )
+
+    @staticmethod
+    async def _resolve_addresses(hostname: str) -> List[_IpAddress]:
+        """Resolve a hostname to the IP address(es) it points to.
+
+        Guards against DNS rebinding: a hostname that looks external in
+        text form can still resolve to an internal address.
+        """
+        try:
+            return [ipaddress.ip_address(hostname)]
+        except ValueError:
+            pass
+
+        try:
+            infos = await asyncio.to_thread(socket.getaddrinfo, hostname, None)
+        except socket.gaierror as e:
+            raise TokenVerificationError(
+                f"Could not resolve issuer host '{hostname}': {e}"
+            ) from e
+        return [ipaddress.ip_address(info[4][0]) for info in infos]
