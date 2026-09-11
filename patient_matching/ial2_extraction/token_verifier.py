@@ -48,6 +48,11 @@ class TokenVerifier:
         self._algorithms = algorithms or ["RS256"]
         self._jwks_client = PyJWKClient(jwks_uri)
 
+    @property
+    def jwks_uri(self) -> str:
+        """The JWKS endpoint this verifier fetches signing keys from."""
+        return self._jwks_uri
+
     async def verify(self, token: str) -> Dict[str, Any]:
         """Verify the token signature and standard claims.
 
