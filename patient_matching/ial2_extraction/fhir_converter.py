@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
+from fhirschemapy.R4B.patient import Patient
+
 from .claims_model import IAL2Address, IAL2Claims
 
 # Mapping from CSP sex_legal values to FHIR administrative gender codes
@@ -31,7 +33,12 @@ class IAL2ToFhirConverter:
             claims: The normalized IAL2 demographic claims.
 
         Returns:
-            A dictionary representing a FHIR R4 Patient resource.
+            A dictionary representing a FHIR R4 Patient resource, validated
+            through fhirschemapy.
+
+        Raises:
+            pydantic.ValidationError: If the built resource doesn't conform
+                to the FHIR R4 Patient schema.
         """
         patient: Dict[str, Any] = {
             "resourceType": "Patient",
@@ -66,7 +73,9 @@ class IAL2ToFhirConverter:
         if addresses:
             patient["address"] = addresses
 
-        return patient
+        validated = Patient.model_validate(patient)
+        result: Dict[str, Any] = validated.model_dump(exclude_none=True, by_alias=True)
+        return result
 
     @staticmethod
     def _build_identifiers(claims: IAL2Claims) -> List[Dict[str, Any]]:
@@ -90,34 +99,17 @@ class IAL2ToFhirConverter:
                 }
             )
 
-        if claims.ssn:
+        if claims.ssn_itin:
             identifiers.append(
                 {
                     "system": "http://hl7.org/fhir/sid/us-ssn",
-                    "value": claims.ssn,
+                    "value": claims.ssn_itin,
                     "type": {
                         "coding": [
                             {
                                 "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
                                 "code": "SS",
                                 "display": "Social Security number",
-                            }
-                        ]
-                    },
-                }
-            )
-
-        if claims.itin:
-            identifiers.append(
-                {
-                    "system": "urn:oid:2.16.840.1.113883.4.4",
-                    "value": claims.itin,
-                    "type": {
-                        "coding": [
-                            {
-                                "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
-                                "code": "TAX",
-                                "display": "Tax ID number",
                             }
                         ]
                     },

@@ -65,6 +65,7 @@ class IAL2Claims:
     jti: str = ""
     at_hash: Optional[str] = None
     auth_time: Optional[int] = None
+    identity_assurance_level: Optional[str] = None
 
     # Core person attributes
     name_first: str = ""
@@ -86,8 +87,8 @@ class IAL2Claims:
 
     # Legal identifiers
     uuid: Optional[str] = None
-    ssn: Optional[str] = None
-    itin: Optional[str] = None
+    ssn_itin: Optional[str] = None
+    ssn_itin_short: Optional[str] = None
     legal_id: Optional[IAL2LegalId] = None
     suffix: Optional[str] = None
 
@@ -121,6 +122,7 @@ class IAL2Claims:
             jti=claims.get("jti", ""),
             at_hash=claims.get("at_hash"),
             auth_time=claims.get("auth_time"),
+            identity_assurance_level=claims.get("identity_assurance_level"),
             # Core person
             name_first=claims.get("name_first") or claims.get("given_name", ""),
             name_middle=claims.get("name_middle") or claims.get("middle_name"),
@@ -139,8 +141,8 @@ class IAL2Claims:
             phone_number_historical=claims.get("phone_number_historical"),
             # Legal identifiers
             uuid=claims.get("UUID") or claims.get("uuid"),
-            ssn=claims.get("ssn"),
-            itin=claims.get("itin"),
+            ssn_itin=claims.get("ssn_itin"),
+            ssn_itin_short=claims.get("ssn_itin_short"),
             legal_id=legal_id,
         )
 

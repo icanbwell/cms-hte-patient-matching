@@ -7,20 +7,30 @@ entry point.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Protocol
 
 from .claims_model import IAL2Claims
 from .fhir_converter import IAL2ToFhirConverter
-from .token_verifier import TokenVerifier
 
 logger = logging.getLogger(__name__)
+
+
+class TokenVerifierProtocol(Protocol):
+    """Structural interface for anything IAL2Extractor can verify tokens with.
+
+    Both TokenVerifier (single issuer) and MultiIssuerTokenVerifier
+    (whitelisted issuers) satisfy this without inheritance.
+    """
+
+    async def verify(self, token: str) -> Dict[str, Any]: ...
 
 
 class IAL2Extractor:
     """Accepts an IAL2 JWT, verifies it, and returns a FHIR Patient resource.
 
     Args:
-        verifier: A configured TokenVerifier for signature validation.
+        verifier: A TokenVerifier (single issuer) or MultiIssuerTokenVerifier
+            (whitelisted issuers) for signature validation.
         converter: An IAL2ToFhirConverter instance. If None, a default
             converter is created.
 
@@ -38,7 +48,7 @@ class IAL2Extractor:
     def __init__(
         self,
         *,
-        verifier: TokenVerifier,
+        verifier: TokenVerifierProtocol,
         converter: Optional[IAL2ToFhirConverter] = None,
     ) -> None:
         self._verifier = verifier
