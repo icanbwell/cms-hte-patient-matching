@@ -122,13 +122,14 @@ class MultiIssuerTokenVerifier:
 
     async def _build_verifier_for_issuer(self, issuer: str) -> TokenVerifier:
         """Discover the issuer's JWKS URL and check it against the whitelist."""
-        await self._validate_issuer_url(issuer)
+        pinned_ip = await self._validate_issuer_url(issuer)
 
         verifier = await TokenVerifier.from_oidc_discovery(
             discovery_url=f"{issuer.rstrip('/')}/.well-known/openid-configuration",
             audience=self._audience,
             issuer=issuer,
             algorithms=self._algorithms,
+            pinned_ip=pinned_ip,
         )
         if verifier.jwks_uri not in self._allowed_jwks_uris:
             raise TokenVerificationError(
@@ -138,15 +139,19 @@ class MultiIssuerTokenVerifier:
         return verifier
 
     @staticmethod
-    async def _validate_issuer_url(issuer: str) -> None:
+    async def _validate_issuer_url(issuer: str) -> str:
         """Reject issuer URLs that could be used for SSRF before any
-        discovery or JWKS request is made.
+        discovery or JWKS request is made, and return the validated IP to
+        pin the actual discovery connection to.
 
         The issuer claim is unverified at this point -- read via
         _peek_issuer() before signature verification, purely to select a
         JWKS URL. Without this check, an attacker could set 'iss' to an
         internal service or cloud metadata endpoint and have this process
-        make a request to it during OIDC discovery.
+        make a request to it during OIDC discovery. Returning the validated
+        IP (rather than just validating and discarding it) lets the caller
+        pin the actual connection to it, closing the DNS-rebinding window
+        between this check and the request.
         """
         parsed = urlparse(issuer)
         if parsed.scheme != "https":
@@ -156,7 +161,8 @@ class MultiIssuerTokenVerifier:
         if not hostname:
             raise TokenVerificationError(f"Issuer URL is missing a host: {issuer!r}")
 
-        for address in await MultiIssuerTokenVerifier._resolve_addresses(hostname):
+        addresses = await MultiIssuerTokenVerifier._resolve_addresses(hostname)
+        for address in addresses:
             if (
                 address.is_private
                 or address.is_loopback
@@ -169,6 +175,7 @@ class MultiIssuerTokenVerifier:
                     f"Issuer '{issuer}' resolves to a non-public address "
                     f"({address}); rejected"
                 )
+        return str(addresses[0])
 
     @staticmethod
     async def _resolve_addresses(hostname: str) -> List[_IpAddress]:

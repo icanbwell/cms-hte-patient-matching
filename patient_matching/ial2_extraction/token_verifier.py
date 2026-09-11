@@ -7,9 +7,13 @@ and verifies the token signature, expiration, and audience.
 from __future__ import annotations
 
 import asyncio
+import http.client
 import json
 import logging
-from typing import Any, Dict, List, Optional
+import socket
+import ssl
+from typing import Any, Dict, List, Optional, Tuple
+from urllib.parse import urlparse
 from urllib.request import urlopen
 
 import jwt
@@ -20,6 +24,53 @@ logger = logging.getLogger(__name__)
 
 class TokenVerificationError(Exception):
     """Raised when an IAL2 token fails signature or claims verification."""
+
+
+class _PinnedHTTPSConnection(http.client.HTTPSConnection):
+    """An HTTPSConnection that dials a pre-resolved IP instead of
+    re-resolving its host via DNS, while still using that original host for
+    TLS SNI and certificate verification.
+
+    Used to close the DNS-rebinding TOCTOU window between validating a
+    hostname's resolved address and actually connecting to it: a plain
+    HTTPSConnection re-resolves the hostname at connect() time, so an
+    attacker controlling that hostname's DNS could serve a different
+    (internal) address than the one that was validated moments earlier.
+    """
+
+    # Declared here for mypy: real attributes set by HTTPSConnection.__init__
+    # (typeshed doesn't expose them, since they're conventionally private).
+    _context: ssl.SSLContext
+    source_address: Optional[Tuple[str, int]]
+
+    def __init__(self, host: str, pinned_ip: str, **kwargs: Any) -> None:
+        super().__init__(host, **kwargs)
+        self._pinned_ip = pinned_ip
+
+    def connect(self) -> None:
+        sock = socket.create_connection(
+            (self._pinned_ip, self.port), self.timeout, self.source_address
+        )
+        self.sock = self._context.wrap_socket(sock, server_hostname=self.host)
+
+
+def _fetch_json_pinned(
+    url: str, pinned_ip: str, *, timeout: float = 10.0
+) -> Dict[str, Any]:
+    """Fetch and parse JSON from `url`, connecting to `pinned_ip` rather
+    than letting the request re-resolve the URL's hostname via DNS."""
+    parsed = urlparse(url)
+    conn = _PinnedHTTPSConnection(
+        parsed.hostname or "", pinned_ip, port=parsed.port, timeout=timeout
+    )
+    try:
+        conn.request("GET", parsed.path or "/", headers={"Accept": "application/json"})
+        response = conn.getresponse()
+        body = response.read()
+    finally:
+        conn.close()
+    result: Dict[str, Any] = json.loads(body)
+    return result
 
 
 class TokenVerifier:
@@ -108,6 +159,7 @@ class TokenVerifier:
         audience: str,
         issuer: Optional[str] = None,
         algorithms: Optional[List[str]] = None,
+        pinned_ip: Optional[str] = None,
     ) -> TokenVerifier:
         """Create a verifier by fetching the JWKS URI from OIDC discovery.
 
@@ -116,6 +168,12 @@ class TokenVerifier:
             audience: Expected ``aud`` claim value.
             issuer: Expected ``iss`` claim value.
             algorithms: Allowed signing algorithms.
+            pinned_ip: If given, connect to this IP instead of letting the
+                discovery fetch resolve discovery_url's host via DNS. Used
+                by callers (e.g. MultiIssuerTokenVerifier) that have already
+                validated an untrusted host's resolved address and need the
+                actual connection pinned to it, closing the window between
+                that validation and the request.
 
         Returns:
             A configured TokenVerifier instance.
@@ -125,6 +183,8 @@ class TokenVerifier:
         """
 
         def _fetch_metadata() -> Dict[str, Any]:
+            if pinned_ip:
+                return _fetch_json_pinned(discovery_url, pinned_ip)
             with urlopen(discovery_url) as response:  # nosec B310
                 result: Dict[str, Any] = json.loads(response.read())
                 return result

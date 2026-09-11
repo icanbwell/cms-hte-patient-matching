@@ -58,11 +58,8 @@ class TestMultiIssuerTokenVerifier:
             "https://good.example.com/jwks.json", expected_claims
         )
 
-        with patch.object(
-            TokenVerifier,
-            "from_oidc_discovery",
-            AsyncMock(return_value=fake_verifier),
-        ):
+        discovery_mock = AsyncMock(return_value=fake_verifier)
+        with patch.object(TokenVerifier, "from_oidc_discovery", discovery_mock):
             verifier = MultiIssuerTokenVerifier(
                 audience="my-client-id",
                 allowed_jwks_uris=["https://good.example.com/jwks.json"],
@@ -70,6 +67,7 @@ class TestMultiIssuerTokenVerifier:
             claims = await verifier.verify(token)
 
         assert claims == expected_claims
+        assert discovery_mock.call_args.kwargs["pinned_ip"] == _PUBLIC_IP
 
     async def test_rejects_non_whitelisted_issuer(self, mock_public_dns: None) -> None:
         token = _make_token("https://untrusted.example.com")
