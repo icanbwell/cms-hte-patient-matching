@@ -74,9 +74,7 @@ class IAL2ToFhirConverter:
             patient["address"] = addresses
 
         validated = Patient.model_validate(patient)
-        result: Dict[str, Any] = validated.model_dump(
-            exclude_none=True, by_alias=True
-        )
+        result: Dict[str, Any] = validated.model_dump(exclude_none=True, by_alias=True)
         return result
 
     @staticmethod

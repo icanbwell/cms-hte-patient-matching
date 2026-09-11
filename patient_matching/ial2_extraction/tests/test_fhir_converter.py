@@ -218,7 +218,9 @@ class TestIAL2ToFhirConverter:
         patient = self.converter.convert(claims)
         assert "telecom" not in patient
 
-    def test_convert_validates_through_fhirschemapy(self, monkeypatch) -> None:
+    def test_convert_validates_through_fhirschemapy(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """convert() must route the built dict through fhirschemapy's Patient
         model before returning, so a schema-invalid resource never reaches
         callers silently."""
