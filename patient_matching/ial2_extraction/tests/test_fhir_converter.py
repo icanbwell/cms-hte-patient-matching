@@ -1,5 +1,8 @@
 """Tests for FHIR Patient resource conversion."""
 
+import pytest
+
+from patient_matching.ial2_extraction import fhir_converter as fhir_converter_module
 from patient_matching.ial2_extraction.claims_model import (
     IAL2Address,
     IAL2Claims,
@@ -153,7 +156,7 @@ class TestIAL2ToFhirConverter:
             name_last="Y",
             birth_date="2000-01-01",
             uuid="csp-uuid-001",
-            ssn="123-45-6789",
+            ssn_itin="123-45-6789",
         )
         patient = self.converter.convert(claims)
 
@@ -167,6 +170,18 @@ class TestIAL2ToFhirConverter:
         ssn_id = ids[1]
         assert ssn_id["system"] == "http://hl7.org/fhir/sid/us-ssn"
         assert ssn_id["value"] == "123-45-6789"
+        assert ssn_id["type"]["coding"][0]["code"] == "SS"
+
+    def test_ssn_itin_short_alone_produces_no_identifier(self) -> None:
+        claims = IAL2Claims(
+            name_first="X",
+            name_last="Y",
+            birth_date="2000-01-01",
+            ssn_itin_short="6789",
+        )
+        patient = self.converter.convert(claims)
+
+        assert "identifier" not in patient
 
     def test_identifier_legal_id(self) -> None:
         claims = IAL2Claims(
@@ -202,3 +217,38 @@ class TestIAL2ToFhirConverter:
         )
         patient = self.converter.convert(claims)
         assert "telecom" not in patient
+
+    def test_convert_validates_through_fhirschemapy(self, monkeypatch) -> None:
+        """convert() must route the built dict through fhirschemapy's Patient
+        model before returning, so a schema-invalid resource never reaches
+        callers silently."""
+
+        class RejectingPatient:
+            @staticmethod
+            def model_validate(data: object) -> None:
+                raise ValueError("rejected by fhirschemapy")
+
+        monkeypatch.setattr(fhir_converter_module, "Patient", RejectingPatient)
+
+        claims = IAL2Claims(name_first="X", name_last="Y", birth_date="2000-01-01")
+
+        with pytest.raises(ValueError, match="rejected by fhirschemapy"):
+            self.converter.convert(claims)
+
+    def test_convert_output_matches_fhirschemapy_dump(self) -> None:
+        """The returned dict is the fhirschemapy round-tripped form (e.g.
+        excludes unset fields, uses FHIR wire-format aliases), not the raw
+        hand-built dict."""
+        claims = IAL2Claims(
+            name_first="Jane",
+            name_last="Doe",
+            birth_date="1990-01-15",
+        )
+        patient = self.converter.convert(claims)
+
+        from fhirschemapy.R4B.patient import Patient
+
+        expected = Patient.model_validate(patient).model_dump(
+            exclude_none=True, by_alias=True
+        )
+        assert patient == expected

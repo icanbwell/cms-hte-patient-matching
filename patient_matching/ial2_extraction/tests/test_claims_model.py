@@ -137,7 +137,9 @@ class TestIAL2ClaimsFromTokenClaims:
             "suffix": "Jr",
             "email": "a@example.com",
             "phone_number": "+15551234567",
-            "ssn": "123-45-6789",
+            "ssn_itin": "123-45-6789",
+            "ssn_itin_short": "6789",
+            "identity_assurance_level": "ial2",
             "UUID": "csp-uuid-001",
             "name_historical": ["Alice Maiden"],
             "legal_id": {
@@ -152,7 +154,9 @@ class TestIAL2ClaimsFromTokenClaims:
         assert claims.suffix == "Jr"
         assert claims.email == "a@example.com"
         assert claims.phone_number == "+15551234567"
-        assert claims.ssn == "123-45-6789"
+        assert claims.ssn_itin == "123-45-6789"
+        assert claims.ssn_itin_short == "6789"
+        assert claims.identity_assurance_level == "ial2"
         assert claims.uuid == "csp-uuid-001"
         assert claims.name_historical == ["Alice Maiden"]
         assert claims.legal_id is not None
