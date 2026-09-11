@@ -122,6 +122,46 @@ class TestIAL2ClaimsFromTokenClaims:
         assert claims.address_historical[0].address_line1 == "789 Elm St"
         assert claims.address_historical[0].city == "Salem"
 
+    def test_multiple_historical_addresses(self) -> None:
+        raw = {
+            "iss": "",
+            "sub": "",
+            "aud": "",
+            "exp": 0,
+            "iat": 0,
+            "jti": "",
+            "name_first": "X",
+            "name_last": "Y",
+            "birth_date": "",
+            "address_historical": [
+                {"street_address": "789 Elm St", "locality": "Salem", "region": "OR"},
+                {"street_address": "12 Pine Ave", "locality": "Eugene", "region": "OR"},
+            ],
+        }
+        claims = IAL2Claims.from_token_claims(raw)
+
+        assert claims.address_historical is not None
+        assert len(claims.address_historical) == 2
+        assert claims.address_historical[0].city == "Salem"
+        assert claims.address_historical[1].city == "Eugene"
+
+    def test_phone_number_historical_extraction(self) -> None:
+        raw = {
+            "iss": "",
+            "sub": "",
+            "aud": "",
+            "exp": 0,
+            "iat": 0,
+            "jti": "",
+            "name_first": "X",
+            "name_last": "Y",
+            "birth_date": "",
+            "phone_number_historical": ["+15551110000", "+15552220000"],
+        }
+        claims = IAL2Claims.from_token_claims(raw)
+
+        assert claims.phone_number_historical == ["+15551110000", "+15552220000"]
+
     def test_optional_fields(self) -> None:
         raw = {
             "iss": "https://clear.me",

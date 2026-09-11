@@ -104,6 +104,21 @@ class TestIAL2ToFhirConverter:
         assert patient["telecom"][2]["system"] == "phone"
         assert patient["telecom"][2]["use"] == "old"
 
+    def test_multiple_historical_phones(self) -> None:
+        claims = IAL2Claims(
+            name_first="X",
+            name_last="Y",
+            birth_date="2000-01-01",
+            phone_number_historical=["+15551110000", "+15552220000"],
+        )
+        patient = self.converter.convert(claims)
+
+        assert len(patient["telecom"]) == 2
+        assert patient["telecom"][0]["value"] == "+15551110000"
+        assert patient["telecom"][0]["use"] == "old"
+        assert patient["telecom"][1]["value"] == "+15552220000"
+        assert patient["telecom"][1]["use"] == "old"
+
     def test_address(self) -> None:
         claims = IAL2Claims(
             name_first="X",
@@ -148,6 +163,24 @@ class TestIAL2ToFhirConverter:
         assert addr["use"] == "old"
         assert addr["line"] == ["456 Old Rd"]
         assert addr["city"] == "Portland"
+
+    def test_multiple_historical_addresses(self) -> None:
+        claims = IAL2Claims(
+            name_first="X",
+            name_last="Y",
+            birth_date="2000-01-01",
+            address_historical=[
+                IAL2Address(address_line1="456 Old Rd", city="Portland"),
+                IAL2Address(address_line1="12 Pine Ave", city="Eugene"),
+            ],
+        )
+        patient = self.converter.convert(claims)
+
+        assert len(patient["address"]) == 2
+        assert patient["address"][0]["city"] == "Portland"
+        assert patient["address"][0]["use"] == "old"
+        assert patient["address"][1]["city"] == "Eugene"
+        assert patient["address"][1]["use"] == "old"
 
     def test_identifiers_uuid_and_ssn(self) -> None:
         claims = IAL2Claims(
