@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import os
 from typing import Any, Dict, List, Optional
+from urllib.parse import urlparse
 
 import jwt
 
@@ -98,6 +99,33 @@ class MultiIssuerTokenVerifier:
         return await verifier.verify(token)
 
     @staticmethod
+    def _is_reserved_ip_address(host: str) -> bool:
+        """Check if host is a reserved or private IP address."""
+        import ipaddress
+        try:
+            ip = ipaddress.ip_address(host)
+            return ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_multicast
+        except ValueError:
+            return False
+
+    @staticmethod
+    def _validate_issuer_url(issuer: str) -> None:
+        """Validate issuer URL before OIDC discovery.
+        
+        Raises:
+            TokenVerificationError: If the URL is invalid or points to restricted addresses.
+        """
+        parsed = urlparse(issuer)
+        
+        if parsed.scheme not in ("https", "http"):
+            raise TokenVerificationError(f"Invalid scheme in issuer URL: {parsed.scheme}")
+        
+        if not parsed.netloc:
+            raise TokenVerificationError(f"Missing host in issuer URL: {issuer}")
+        
+        if MultiIssuerTokenVerifier._is_reserved_ip_address(parsed.hostname or ""):
+            raise TokenVerificationError(f"Issuer URL points to reserved IP address: {parsed.hostname}")
+
     def _peek_issuer(token: str) -> str:
         """Read the ``iss`` claim without verifying the signature.
 
@@ -123,6 +151,8 @@ class MultiIssuerTokenVerifier:
             audience=self._audience,
             issuer=issuer,
             algorithms=self._algorithms,
+        if issuer:
+            MultiIssuerTokenVerifier._validate_issuer_url(issuer)
         )
         if verifier.jwks_uri not in self._allowed_jwks_uris:
             raise TokenVerificationError(
