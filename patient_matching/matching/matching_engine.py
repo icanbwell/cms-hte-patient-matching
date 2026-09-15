@@ -61,6 +61,12 @@ def _read_package_version() -> str:
 
 _PACKAGE_VERSION = _read_package_version()
 
+# Sentinel distinguishing "the query carries no persistent-identifier
+# anchor" (defer to the next tiebreak) from "an anchor was present but
+# didn't resolve" (None - a disqualifying result in its own right). See
+# MatchingEngine._break_twin_tie_with_namespace_id.
+_NO_ANCHOR = object()
+
 
 class MatchingEngine:
     """Evaluates Table 2 matching rules against backend candidates.
@@ -156,15 +162,19 @@ class MatchingEngine:
             if rule_matches:
                 matched_patients_by_rule[rule.rule_id] = rule_matches
 
+        excluded_ids: Set[str] = set()
         for hh_rule in self._household_individual_rules:
             if self._query_has_all_fields(query_fields, hh_rule.household_row.fields):
                 any_rule_evaluable = True
-            hh_matches, hh_evaluations = await self._evaluate_household_individual_rule(
-                hh_rule, query_fields
-            )
+            (
+                hh_matches,
+                hh_evaluations,
+                hh_excluded,
+            ) = await self._evaluate_household_individual_rule(hh_rule, query_fields)
             all_evaluations.extend(hh_evaluations)
             if hh_matches:
                 matched_patients_by_rule[hh_rule.rule_id] = hh_matches
+            excluded_ids.update(self._patient_id(p) for p in hh_excluded)
 
         return self._build_result(
             matched_patients_by_rule,
@@ -172,6 +182,7 @@ class MatchingEngine:
             query_initiator=query_initiator,
             timestamp=timestamp,
             any_rule_evaluable=any_rule_evaluable,
+            excluded_ids=excluded_ids,
         )
 
     def evaluate_pair(
@@ -386,7 +397,7 @@ class MatchingEngine:
         self,
         rule: HouseholdIndividualRule,
         query_fields: PatientFields,
-    ) -> tuple[List[Dict[str, Any]], List[RuleEvaluation]]:
+    ) -> tuple[List[Dict[str, Any]], List[RuleEvaluation], List[Dict[str, Any]]]:
         """CMS v3.3.1 SS3-4 two-step resolution for one Category 2 rule.
 
         Step 1 narrows backend candidates to those verified against the
@@ -413,18 +424,24 @@ class MatchingEngine:
         share every household-tier field by definition, plus an exact DOB -
         First Name is the only field doing individuating work. When the
         household step surfaces multiple candidates sharing an identical
-        DOB, First Name comparison is forced exact (never fuzzy) rather
-        than using the individual row's normal fuzzy-eligibility, and a
-        2-candidate tie remaining after that is given one last-resort
-        middle-name tiebreak before falling through to the base document's
-        existing 1/2/3+ escalation. SS C.7's 4th refinement (anchoring to a
-        persistent identifier so a later query skips the tiebreak) needs no
-        new code here - see this method's own note further down for why.
+        DOB, First Name comparison is forced exact (never fuzzy) for those
+        specific candidates (not the whole household - see
+        `_shared_dob_values`), and a 2-candidate tie remaining after that is
+        given one last-resort middle-name tiebreak, preceded by a
+        persistent-identifier anchor check, before falling through to the
+        base document's existing 1/2/3+ escalation.
+
+        A tiebreak that positively resolves the tie is reported back to
+        match() as an exclusion (the third tuple element): the losing
+        candidate must not reappear in the final result merely because some
+        other, less specific rule also matched it - see match()'s use of
+        `excluded_ids` and this method's own note below for why that
+        couldn't be left to _build_result's ordinary union.
         """
         evaluations: List[RuleEvaluation] = []
         household_fields = rule.household_row.fields
         if not self._query_has_all_fields(query_fields, household_fields):
-            return [], evaluations
+            return [], evaluations, []
 
         household_criteria = self._build_criteria_for_fields(
             query_fields, household_fields
@@ -445,25 +462,35 @@ class MatchingEngine:
                 household_matches.append(candidate)
 
         if not household_matches:
-            return [], evaluations
+            return [], evaluations, []
 
         individual_fields = rule.individual_row.fields
         if not self._query_has_all_fields(query_fields, individual_fields):
-            return [], evaluations
+            return [], evaluations, []
 
-        # SS C.7(1): force exact First Name whenever >1 household-tier match
-        # shares an identical DOB - the normal one-edit fuzzy tolerance
-        # could otherwise conflate two genuinely different but similar
-        # names (e.g. "Jayden" and "Jaden") between twins/siblings.
-        if self._household_matches_share_a_dob(household_matches):
-            individual_fields = self._force_exact_first_name(individual_fields)
+        # SS C.7(1): force exact First Name for any candidate whose own DOB
+        # is shared with >=1 other household-tier match - the normal
+        # one-edit fuzzy tolerance could otherwise conflate two genuinely
+        # different but similar names (e.g. "Jayden" and "Jaden") between
+        # twins/siblings. Scoped per-candidate (not household-wide): a
+        # third household member whose DOB isn't part of any shared pair
+        # (e.g. a parent) must keep ordinary fuzzy First Name matching -
+        # forcing it for them too would regress the common non-twin case
+        # whenever a twin pair happens to share their household.
+        shared_dobs = self._shared_dob_values(household_matches)
+        forced_individual_fields = self._force_exact_first_name(individual_fields)
 
         resolved: List[Dict[str, Any]] = []
         for candidate in household_matches:
             cand_fields = self._extractor.extract(candidate)
+            fields_for_candidate = (
+                forced_individual_fields
+                if cand_fields.dob & shared_dobs
+                else individual_fields
+            )
             evaluation = self._verify_fields(
                 rule_id=rule.rule_id,
-                fields=individual_fields,
+                fields=fields_for_candidate,
                 max_fuzzy_fields=1,
                 query_fields=query_fields,
                 cand_fields=cand_fields,
@@ -490,39 +517,67 @@ class MatchingEngine:
         # SS C.7(4) before (3): anchoring to a persistent identifier
         # (MRN/EMPI/FHIR Patient.id, i.e. namespace_id) takes priority over
         # the middle-name heuristic when both are available, since it's a
-        # near-zero-collision signal rather than a last-resort one.
-        # **Correction, found empirically while testing, not assumed:**
-        # this cannot be "free" via cross-rule aggregation alone. A query
-        # carrying the resolved namespace_id also matching the standing
-        # namespace_id flat rule does NOT by itself suppress this method's
-        # own ambiguous 2-candidate result - _build_result's aggregation is
-        # a union across every contributing rule, not "the most specific
-        # rule wins," so the twin household/individual tie would still
-        # independently contribute both candidates regardless of what the
-        # namespace_id rule separately resolves. The anchor has to be
-        # applied here, at the point of tie resolution, not left to emerge
-        # from aggregation.
-        if len(resolved) == 2 and self._household_matches_share_a_dob(
-            household_matches
-        ):
-            narrowed = self._break_twin_tie_with_namespace_id(
+        # near-zero-collision signal rather than a last-resort one. If the
+        # query carries an anchor but it fails to uniquely resolve one of
+        # the tied candidates (matches zero or both), that's a disqualifying
+        # signal in its own right and must NOT fall through to the
+        # middle-name heuristic - _break_twin_tie_with_namespace_id
+        # distinguishes "no anchor supplied" (defer) from "anchor supplied,
+        # didn't resolve" (stop) via the _NO_ANCHOR sentinel.
+        excluded: List[Dict[str, Any]] = []
+        if len(resolved) == 2 and shared_dobs:
+            anchor_result = self._break_twin_tie_with_namespace_id(
                 query_fields, resolved
-            ) or self._break_twin_tie_with_middle_name(query_fields, resolved)
+            )
+            narrowed = (
+                self._break_twin_tie_with_middle_name(query_fields, resolved)
+                if anchor_result is _NO_ANCHOR
+                else anchor_result
+            )
             if narrowed is not None:
+                # **Correction, found empirically while testing, not
+                # assumed:** picking `narrowed` here is not by itself enough
+                # to make the twin resolve cleanly end-to-end.
+                # _build_result's cross-rule aggregation is a union of every
+                # contributing rule's matches, not "the most specific rule
+                # wins" - so if some other, less specific rule (e.g. a flat
+                # Category 1 rule matching on a shared alias) also matched
+                # the twin this tiebreak just rejected, that twin would
+                # still resurface in the final result and defeat the whole
+                # point of this method. The rejected candidate(s) must be
+                # reported up as an explicit exclusion so match() can strip
+                # them out of the union regardless of which other rule
+                # contributed them.
+                excluded = [c for c in resolved if c is not narrowed]
                 resolved = [narrowed]
 
-        return resolved, evaluations
+        return resolved, evaluations, excluded
 
-    def _household_matches_share_a_dob(self, candidates: List[Dict[str, Any]]) -> bool:
-        """True if 2+ candidates in this household-tier match set share an
-        identical DOB value - the twin/multiple-birth signal SS C.7 keys
-        off of. Compares candidates to each other, not to the query - the
-        individual-tier DOB check against the query happens separately."""
+    def _shared_dob_values(self, candidates: List[Dict[str, Any]]) -> Set[str]:
+        """DOB values shared by 2+ candidates in this household-tier match
+        set - the twin/multiple-birth signal SS C.7 keys off of. Compares
+        candidates to each other, not to the query - the individual-tier
+        DOB check against the query happens separately.
+
+        Returns the specific shared values (not just a bool) so callers can
+        scope exact-First-Name enforcement to only the candidates actually
+        involved in a shared DOB, rather than the whole household - a
+        household member whose own DOB isn't part of any shared pair (e.g.
+        a parent living with twins) must keep ordinary fuzzy matching."""
         dob_counts: Dict[str, int] = {}
         for candidate in candidates:
             for dob_value in self._extractor.extract(candidate).dob:
                 dob_counts[dob_value] = dob_counts.get(dob_value, 0) + 1
-        return any(count > 1 for count in dob_counts.values())
+        return {dob for dob, count in dob_counts.items() if count > 1}
+
+    @staticmethod
+    def _patient_id(patient: Dict[str, Any]) -> str:
+        """Identity key for cross-rule dedup/exclusion, matching
+        _build_result's own fallback: FHIR resource ID if present,
+        otherwise Python object identity (stable within one match() call,
+        since a given backend call returns the same object references each
+        time they're re-used across rules in this engine)."""
+        return patient.get("id", "") or str(id(patient))
 
     @staticmethod
     def _force_exact_first_name(
@@ -542,17 +597,29 @@ class MatchingEngine:
         self,
         query_fields: PatientFields,
         tied_candidates: List[Dict[str, Any]],
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Any:
         """SS C.7(4): if the query carries a namespace-bound persistent
         identifier (MRN/EMPI/FHIR Patient.id) recorded at a prior
         resolution, and it overlaps exactly one of the two tied candidates'
         own namespace_id, that candidate wins the tiebreak outright -
         skipping the name-based heuristics entirely, since this is a
-        near-zero-collision signal rather than a last-resort one. Returns
-        None (defer to the middle-name tiebreak) if the query has no
-        namespace_id, or if both/neither candidate's matches."""
+        near-zero-collision signal rather than a last-resort one.
+
+        Returns one of three distinct outcomes, since "no anchor" and "an
+        anchor that failed to resolve" must be handled differently by the
+        caller:
+          - `_NO_ANCHOR` if the query has no namespace_id at all - defer to
+            the middle-name tiebreak.
+          - `None` if the query has a namespace_id but it matches zero or
+            both tied candidates - this is itself a disqualifying signal
+            (the anchor actively failed to discriminate), so the caller
+            must NOT fall through to the middle-name heuristic in this
+            case.
+          - the resolved candidate if exactly one tied candidate's own
+            namespace_id overlaps the query's.
+        """
         if not query_fields.namespace_ids:
-            return None
+            return _NO_ANCHOR
 
         matches = [
             candidate
@@ -570,16 +637,26 @@ class MatchingEngine:
         """SS C.7(3): if the query has a middle name and it overlaps exactly
         one of the two tied candidates' own middle names, that candidate
         wins the tiebreak. Returns None (still ambiguous) if the query has
-        no middle name, or if both/neither candidate's middle name matches -
-        a non-discriminating middle name must not force a pick."""
+        no middle name, if any tied candidate has no recorded middle name
+        at all (absence of data must not be treated as discriminating - a
+        candidate whose middle name was simply never captured must not lose
+        the tiebreak on that missing data), or if both/neither candidate's
+        middle name matches - a non-discriminating middle name must not
+        force a pick."""
         if not query_fields.middle_names:
+            return None
+
+        candidate_middle_names = [
+            self._extractor.extract(candidate).middle_names
+            for candidate in tied_candidates
+        ]
+        if not all(candidate_middle_names):
             return None
 
         matches = [
             candidate
-            for candidate in tied_candidates
-            if query_fields.middle_names
-            & self._extractor.extract(candidate).middle_names
+            for candidate, middle_names in zip(tied_candidates, candidate_middle_names)
+            if query_fields.middle_names & middle_names
         ]
         return matches[0] if len(matches) == 1 else None
 
@@ -601,6 +678,7 @@ class MatchingEngine:
         query_initiator: Optional[str],
         timestamp: str,
         any_rule_evaluable: bool = True,
+        excluded_ids: Optional[Set[str]] = None,
     ) -> MatchResult:
         """Build final MatchResult applying uniqueness check.
 
@@ -613,6 +691,15 @@ class MatchingEngine:
         `rule_evaluations`, making them indistinguishable after the fact -
         MatchOutcome.INSUFFICIENT_FIELDS was defined for exactly this but
         never produced anywhere.
+
+        `excluded_ids` (CMS v3.4.0 SS C.7, session 19): identity keys
+        (MatchingEngine._patient_id) of candidates a household/individual
+        rule's twin tiebreak positively ruled out. Applied across the
+        *entire* union, not just that rule's own contribution - without
+        this, a twin correctly resolved by one rule's tiebreak could still
+        resurface here via a separate, less specific rule (e.g. a flat rule
+        matching on a shared name alias) that independently matched the
+        rejected twin, silently defeating the tiebreak.
         """
         if not matched_by_rule:
             return MatchResult(
@@ -624,6 +711,8 @@ class MatchingEngine:
                 timestamp=timestamp,
             )
 
+        excluded_ids = excluded_ids or set()
+
         # Collect all unique matched patients across rules
         all_matched: List[Dict[str, Any]] = []
         seen_ids: set[str] = set()
@@ -634,7 +723,9 @@ class MatchingEngine:
             for p in patients:
                 # Deduplicate by FHIR resource ID if available,
                 # falling back to Python object identity
-                pid = p.get("id", "") or str(id(p))
+                pid = MatchingEngine._patient_id(p)
+                if pid in excluded_ids:
+                    continue
                 if pid not in seen_ids:
                     seen_ids.add(pid)
                     all_matched.append(p)
@@ -647,7 +738,14 @@ class MatchingEngine:
                                 break
 
         # Uniqueness check: tiered per CMS v3.3 - 1 unique / 2 escalate / 3+ stricter threshold
-        if len(all_matched) == 1:
+        if not all_matched:
+            return MatchResult(
+                outcome=MatchOutcome.NO_MATCH,
+                rule_evaluations=evaluations,
+                query_initiator=query_initiator,
+                timestamp=timestamp,
+            )
+        elif len(all_matched) == 1:
             return MatchResult(
                 outcome=MatchOutcome.MATCH,
                 matched_patients=all_matched,

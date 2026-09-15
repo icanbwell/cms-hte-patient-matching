@@ -108,6 +108,28 @@ run whatever **Suggested Next Session** names below.
 > tightening that needs Imran's confirmation it was meant to include tolerating literal control
 > characters, not a silent code change. See session_18.md's "Post-review fixes" section.
 >
+> **2026-09-15 addendum (session 19, post-review fixes):** an adversarial review of PR #54
+> (run against a live worktree, not by inspection) found 3 real defects that survived the
+> session's own tests because every test used `rules=()`, disabling all Category 1 flat rules:
+> (1) the twin tiebreak was empirically inert under the production default rule set — a flat
+> rule matching on a shared name alias re-introduced the twin the tiebreak had just excluded,
+> since `_build_result`'s cross-rule union has no "more specific rule wins" concept; (2) the
+> exact-First-Name gate was household-wide instead of per-candidate, so a non-twin household
+> member (e.g. a parent) lost ordinary fuzzy First Name matching whenever the household also
+> contained a twin pair; (3) a candidate's *absent* middle name was treated as discriminating
+> evidence against them in the tiebreak, rather than as missing data. All three fixed in
+> `matching_engine.py`, each with a regression test confirmed (via `git stash`) to fail
+> pre-fix and pass post-fix — see session_19.md's "Post-review fixes" section for detail. Four
+> related but out-of-scope-for-a-bug-fix-pass gaps were found and documented, not fixed:
+> higher-order multiples (triplets+) still don't get an anchor-based tiebreak even when one
+> would resolve cleanly (safe direction, under-return only); §C.7(1)'s hardening only covers
+> Category 2 rules, leaving the flat Category 1 path exposed to the same fuzzy-name twin
+> collision it closed for Category 2; nickname aliasing can still let `_force_exact_first_name`
+> match on a nickname rather than a legal first name; and DOB-sharing detection is exact-string
+> only, missing twins whose recorded DOBs are one calendar day apart. **Candidate follow-up
+> session** once 16-19 land: close these four gaps, scoped as their own session rather than
+> folded into 19 (each is a spec-interpretation or data-model decision, not a mechanical fix).
+>
 > **Session 8 — Legacy comparison harness (Tier 3).** Session 6 (below) is now `in_review/`
 > (PR opened 2026-08-18) with its hard code dependency (session 5) satisfied. Session 8's
 > remaining blockers are 3 `NEEDS HUMAN DECISION` items (eval-only dependency on

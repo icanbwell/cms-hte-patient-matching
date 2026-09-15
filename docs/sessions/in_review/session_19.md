@@ -209,3 +209,86 @@ Validation:
 Decision: PR opened from `claude/session-19-v340-twin-handling` into `main`, left **open**
 rather than merged - merging is Imran's call, same as every prior session in this repo. Doc
 moved to `in_review/` and `index.md` updated accordingly, in the same PR.
+
+## Post-review fixes (adversarial review pass, 2026-09-15)
+
+An adversarial code review against this PR (run empirically, not by inspection - the reviewer
+built a worktree and executed reproduction scripts against the branch) found three defects in
+the original implementation, each confirmed by a failing test before the fix and passing after:
+
+1. **The twin tiebreak was inert under the production default rule set.** All 9 original tests
+   in `test_twin_handling.py` construct `MatchingEngine(rules=(), household_individual_rules=(_RULE_13,))`
+   - every Category 1 flat rule disabled. With `rules=APPROVED_RULES` (the real default), a flat
+   rule matching on a name alias the twins happen to share (e.g. rule 11: First Name EXACT + DOB
+   EXACT + Phone EXACT, which does set-intersection matching) independently re-matches BOTH
+   twins, and `_build_result`'s cross-rule union recreated the exact tie the household/individual
+   tiebreak had just resolved - producing `ESCALATE` where the tiebreak logic itself computed
+   `MATCH`. §C.7(3)/(4) were effectively dead code as shipped. **Fix:** the household/individual
+   evaluator now returns a third value - the specific candidate(s) a successful tiebreak
+   positively excluded - which `match()` threads into `_build_result` as `excluded_ids`, applied
+   across the *entire* cross-rule union rather than just that rule's own contribution. Regression
+   guard: `TestTiebreakSurvivesDefaultRuleSet` (new), which exercises the tiebreak with
+   `rules=APPROVED_RULES` active.
+
+2. **The exact-First-Name gate (§C.7(1)) was household-wide instead of per-candidate.** The
+   original `_household_matches_share_a_dob` returned a bool ("does *any* pair in this household
+   share a DOB"), and that bool gated exact-First-Name matching for *every* household-tier
+   candidate - so a non-twin household member (e.g. a parent) lost ordinary fuzzy First Name
+   matching whenever the household also happened to contain a twin pair. **Fix:**
+   `_shared_dob_values` now returns the specific DOB *values* shared by 2+ candidates, and only a
+   candidate whose own DOB is in that set gets the exact-match rewrite; other household members
+   keep normal fuzzy matching. Regression guard: `TestNonTwinHouseholdMemberUnaffected` (new).
+
+3. **A candidate's absent middle name was treated as discriminating evidence against them.** The
+   original `_break_twin_tie_with_middle_name` computed set-intersection against each candidate
+   independently, so a twin with no middle name on record simply never matched - making them
+   silently lose the tiebreak to a sibling who did have one recorded, even though "not recorded"
+   and "genuinely different" are not the same thing. **Fix:** the tiebreak now returns `None`
+   (still ambiguous) if any tied candidate has no recorded middle name at all, rather than letting
+   missing data disqualify them. Regression guard: `TestMissingMiddleNameIsNotDiscriminating`
+   (new).
+
+A related, lower-severity gap was fixed alongside (2)/(3): the namespace_id anchor
+(§C.7(4)) previously used `or` to fall through to the middle-name tiebreak whenever it returned
+`None`, which conflated "the query carries no anchor at all" (correctly should defer) with "the
+query carries an anchor that matched zero or both candidates" (a disqualifying result in its own
+right - falling through to a weaker heuristic here could pick the twin the anchor just
+contradicted). `_break_twin_tie_with_namespace_id` now distinguishes the two via a `_NO_ANCHOR`
+sentinel. Regression guard: `TestAnchorMatchingNeitherCandidateDisqualifies` (new).
+
+**Known limitations, not fixed in this pass** (flagged by the same review, judged out of scope
+for a bug-fix pass - each is a spec-interpretation or architecture decision, not a mechanical
+correction):
+- **Higher-order multiples (triplets+):** the tiebreak only engages for an exact 2-candidate tie
+  (`len(resolved) == 2`), so 3+ candidates sharing a DOB always fall through to `AMBIGUOUS`, even
+  when a persistent identifier would uniquely resolve one of them. Safe direction
+  (under-return, never mis-match); documented and pinned by `TestHigherOrderMultiples` (new)
+  rather than fixed, since extending the anchor check to `len(resolved) >= 2` while keeping the
+  middle-name heuristic 2-candidate-only is a product decision on how far to extend the anchor's
+  reach.
+- **§C.7(1)'s hardening is confined to Category 2** (household/individual rules); the flat
+  Category 1 rule path has no shared-DOB detection at all, so a flat rule combining fuzzy First
+  Name with fields twins share exactly (e.g. rule 01/24) is still exposed to the same
+  fuzzy-name-collision risk between twins that §C.7(1) was built to close for Category 2. Fixing
+  this would require computing shared-DOB detection once across the full candidate pool in
+  `match()` and threading it into the flat-rule evaluation path - a larger structural change
+  warranting its own session/task rather than a fix folded into this review pass.
+- **Nickname aliasing inside "exact" First Name:** `_force_exact_first_name` only changes a
+  field's *role*; the underlying comparison is still a set intersection against `first_names`,
+  which includes nicknames (pre-existing, unrelated to this session). A twin registered as
+  "Robert" with nickname "bob" and a sibling genuinely named "Bob" could still exact-match on the
+  nickname alias despite the exact-role rewrite. Separating "legal first name" from "nickname"
+  sets is a data-model change beyond this pass's scope.
+- **DOB-sharing detection is exact-string, not date-tolerant:** twins recorded with DOBs one
+  calendar day apart (a plausible EHR data-quality pattern for births near midnight) won't be
+  detected as sharing a DOB by `_shared_dob_values`, so none of §C.7's protections engage for
+  them. The individual row's own DOB field is EXACT (not fuzzy) for rule 13, so this doesn't
+  currently interact with DOB-fuzzy matching, but it remains an unaddressed edge case.
+
+Validation after fixes: `uv run pytest .` - 481 passed (up from 475), 0 regressions; 6 new tests
+in `test_twin_handling.py` (`TestTiebreakSurvivesDefaultRuleSet` x2,
+`TestNonTwinHouseholdMemberUnaffected`, `TestMissingMiddleNameIsNotDiscriminating`,
+`TestAnchorMatchingNeitherCandidateDisqualifies`, `TestHigherOrderMultiples`). `uv run
+pre-commit run` clean (ruff-format auto-reformatted the touched files once; verified clean on
+re-run). All 5 of the new tests targeting the 3 fixed defects were confirmed via `git stash` to
+fail against the pre-fix code and pass after - not vacuous assertions.

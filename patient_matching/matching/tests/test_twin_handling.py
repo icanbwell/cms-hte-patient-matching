@@ -11,6 +11,7 @@ from patient_matching.matching.backend import FieldCriterion, MatchingBackend
 from patient_matching.matching.household_rules import CATEGORY_2_RULES
 from patient_matching.matching.match_result import MatchOutcome
 from patient_matching.matching.matching_engine import MatchingEngine
+from patient_matching.matching.table2_rules import APPROVED_RULES
 
 _RULE_13 = next(r for r in CATEGORY_2_RULES if r.rule_id == "13")
 
@@ -59,6 +60,21 @@ def _rule13_engine(candidates: List[Dict[str, Any]]) -> MatchingEngine:
     return MatchingEngine(
         backend=_InMemoryBackend(candidates),
         rules=(),
+        household_individual_rules=(_RULE_13,),
+    )
+
+
+def _default_rules_engine(candidates: List[Dict[str, Any]]) -> MatchingEngine:
+    """Engine with the full production default Category 1 rule set active
+    alongside rule 13 - used to prove the twin tiebreak actually survives
+    contact with the rest of the engine's rules, not just an isolated
+    rule=() harness (see adversarial-review finding: the tiebreak was
+    empirically inert under the real default configuration because
+    `_build_result`'s cross-rule union re-introduced the twin an
+    independent flat rule also matched)."""
+    return MatchingEngine(
+        backend=_InMemoryBackend(candidates),
+        rules=APPROVED_RULES,
         household_individual_rules=(_RULE_13,),
     )
 
@@ -225,3 +241,166 @@ class TestPersistentIdentifierAnchor:
 
         assert result.outcome == MatchOutcome.MATCH
         assert result.matched_patients == [twin_b]
+
+
+class TestTiebreakSurvivesDefaultRuleSet:
+    """Regression guard for an adversarial-review finding: every test above
+    uses `rules=()`, which disables all 30 Category 1 flat rules. Under the
+    production default (`rules=APPROVED_RULES`), a flat rule matching on a
+    name alias the twins happen to share (e.g. rule 11: First Name + DOB +
+    Phone, exact-match via set intersection) independently re-matches BOTH
+    twins - and `_build_result`'s cross-rule union is not "most specific
+    rule wins," so without an explicit exclusion signal from the tiebreak,
+    the union silently recreates the tie rule 13 just resolved."""
+
+    async def test_middle_name_tiebreak_still_resolves_uniquely_with_flat_rules_active(
+        self,
+    ) -> None:
+        # Both twins share "james" as a given name (twin_b's is a second
+        # given name, so it lands in first_names per Core Principle 10),
+        # which is enough for flat rule 11 (First Name EXACT + DOB EXACT +
+        # Phone EXACT, exact-match = set intersection) to match BOTH twins
+        # independently of rule 13's household/individual resolution.
+        twin_a = _twin_patient(first="james", middle="michael", dob="2015-06-01")
+        twin_b = _twin_patient(first="edward", middle="james", dob="2015-06-01")
+        query = _twin_patient(first="james", middle="michael", dob="2015-06-01")
+        engine = _default_rules_engine([twin_a, twin_b])
+
+        result = await engine.match(query)
+
+        assert result.outcome == MatchOutcome.MATCH
+        assert result.matched_patients == [twin_a]
+        assert twin_b not in result.matched_patients
+
+    async def test_namespace_anchor_tiebreak_still_resolves_uniquely_with_flat_rules_active(
+        self,
+    ) -> None:
+        twin_a = _twin_patient(
+            first="james", dob="2015-06-01", namespace_id="urn:hospital:abc|MRN001"
+        )
+        twin_b = _twin_patient(
+            first="james", dob="2015-06-01", namespace_id="urn:hospital:abc|MRN002"
+        )
+        query = _twin_patient(
+            first="james", dob="2015-06-01", namespace_id="urn:hospital:abc|MRN001"
+        )
+        engine = _default_rules_engine([twin_a, twin_b])
+
+        result = await engine.match(query)
+
+        assert result.outcome == MatchOutcome.MATCH
+        assert result.matched_patients == [twin_a]
+        assert twin_b not in result.matched_patients
+
+
+class TestNonTwinHouseholdMemberUnaffected:
+    """Regression guard: the exact-First-Name gate must be scoped to the
+    specific candidates whose own DOB is shared with a sibling, not applied
+    to the whole household-tier match set. A parent living with twins must
+    keep ordinary fuzzy First Name matching."""
+
+    async def test_household_member_without_a_shared_dob_still_gets_fuzzy_first_name(
+        self,
+    ) -> None:
+        twin_a = _twin_patient(first="james", dob="2015-06-01")
+        twin_b = _twin_patient(first="john", dob="2015-06-01")
+        mom = _twin_patient(first="deborah", dob="1985-01-01")
+        # One-edit typo on the parent's first name - must still resolve via
+        # ordinary fuzzy matching despite the twins in the same household.
+        query = _twin_patient(first="debora", dob="1985-01-01")
+        engine = _rule13_engine([twin_a, twin_b, mom])
+
+        result = await engine.match(query)
+
+        assert result.outcome == MatchOutcome.MATCH
+        assert result.matched_patients == [mom]
+
+
+class TestMissingMiddleNameIsNotDiscriminating:
+    """Regression guard: absence of a recorded middle name must not be
+    treated as evidence against a candidate - only a genuine mismatch
+    between two present middle names may break the tie."""
+
+    async def test_twin_with_no_recorded_middle_name_does_not_lose_the_tiebreak(
+        self,
+    ) -> None:
+        twin_a = _twin_patient(first="james", middle="michael", dob="2015-06-01")
+        twin_b = _twin_patient(first="james", dob="2015-06-01")  # no middle name
+        query = _twin_patient(first="james", middle="michael", dob="2015-06-01")
+        engine = _rule13_engine([twin_a, twin_b])
+
+        result = await engine.match(query)
+
+        assert result.outcome == MatchOutcome.ESCALATE
+        assert len(result.matched_patients) == 2
+
+
+class TestAnchorMatchingNeitherCandidateDisqualifies:
+    """Regression guard: a namespace_id anchor present on the query but
+    matching neither tied candidate is itself a disqualifying signal - it
+    must not silently fall through to the middle-name heuristic, which
+    could otherwise pick the wrong twin based on a lower-confidence
+    signal the anchor already contradicted."""
+
+    async def test_anchor_matching_neither_twin_stays_escalated_despite_middle_name(
+        self,
+    ) -> None:
+        twin_a = _twin_patient(
+            first="james",
+            middle="michael",
+            dob="2015-06-01",
+            namespace_id="urn:hospital:abc|MRN001",
+        )
+        twin_b = _twin_patient(
+            first="james",
+            middle="edward",
+            dob="2015-06-01",
+            namespace_id="urn:hospital:abc|MRN002",
+        )
+        # Query's namespace_id matches neither twin; its middle name would
+        # (incorrectly) point at twin_a if the middle-name heuristic ran.
+        query = _twin_patient(
+            first="james",
+            middle="michael",
+            dob="2015-06-01",
+            namespace_id="urn:hospital:abc|MRN999",
+        )
+        engine = _rule13_engine([twin_a, twin_b])
+
+        result = await engine.match(query)
+
+        assert result.outcome == MatchOutcome.ESCALATE
+        assert len(result.matched_patients) == 2
+
+
+class TestHigherOrderMultiples:
+    """SS C.7 is scoped to "multiple births," not just twins. Documents
+    the current, intentionally conservative behavior for triplets+: the
+    tiebreak only engages for an exact 2-candidate tie, so 3+ candidates
+    sharing a DOB always fall through to the base document's AMBIGUOUS
+    escalation, even when a persistent identifier would have uniquely
+    resolved one of them. This is a known limitation (safe direction: it
+    can only under-return, never mis-match) rather than a defect fixed by
+    this session - flagged for follow-up, not solved here."""
+
+    async def test_triplets_with_a_uniquely_resolving_anchor_still_escalate(
+        self,
+    ) -> None:
+        triplet_a = _twin_patient(
+            first="james", dob="2015-06-01", namespace_id="urn:hospital:abc|MRN001"
+        )
+        triplet_b = _twin_patient(
+            first="james", dob="2015-06-01", namespace_id="urn:hospital:abc|MRN002"
+        )
+        triplet_c = _twin_patient(
+            first="james", dob="2015-06-01", namespace_id="urn:hospital:abc|MRN003"
+        )
+        query = _twin_patient(
+            first="james", dob="2015-06-01", namespace_id="urn:hospital:abc|MRN001"
+        )
+        engine = _rule13_engine([triplet_a, triplet_b, triplet_c])
+
+        result = await engine.match(query)
+
+        assert result.outcome == MatchOutcome.AMBIGUOUS
+        assert len(result.matched_patients) == 3
