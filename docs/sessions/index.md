@@ -55,9 +55,16 @@ run whatever **Suggested Next Session** names below.
 > by ~15 orders of magnitude. Rules now live as `C2-39`/`C2-40` in a new
 > `relationship_linkage_rules.py` module. Also caught and fixed a real bug pre-merge:
 > `service.py`'s confidence-scoring lookup only searched the original 8 Category 2 rules, so a
-> `C2-39`/`C2-40` match would have silently scored 0.0 confidence. **Session 18 is the new
-> Suggested Next Session** — it has one real `NEEDS HUMAN DECISION` (what "query initiator"
-> means for this repo) to resolve before coding.
+> `C2-39`/`C2-40` match would have silently scored 0.0 confidence.
+>
+> **2026-09-15 addendum (session 18 done):** session 18 executed same-day — PR
+> [#53](https://github.com/icanbwell/cms-hte-patient-matching/pull/53), left open, moved to
+> `in_review/`. Imran resolved the `NEEDS HUMAN DECISION` before coding: `query_initiator` is
+> an opaque, caller-supplied string, not derived from the IAL2 token. Found one more real gap
+> while doing the field-by-field mapping: `RuleEvaluation.timestamp` only exists per rule
+> evaluated, so a query matching zero rules (e.g. an empty patient) had no timestamp anywhere
+> on the result — fixed by adding a query-level `MatchResult.timestamp`, always populated.
+> **Session 19 is the new Suggested Next Session.**
 >
 > **2026-09-15 addendum (session 17, post-review fix):** an adversarial review of PR #52
 > found the relationship `type` claim (`"child-of"`/`"newborn-of"`) was never actually
@@ -74,6 +81,19 @@ run whatever **Suggested Next Session** names below.
 > review turned that into a demonstrated, tested case rather than a prose caveat - see
 > session_17.md's "Post-review fixes" section for the two remediation options (add a
 > discriminating field vs. gate on FHIR's multipleBirth flag) and their tradeoffs.
+> **2026-09-15 addendum (session 18, post-review fix):** an adversarial review of PR #53 found
+> `MatchingManager` (the other public entry point besides `MatchingEngine.match()`) had no way
+> to accept `query_initiator` at all, and that a query with too few fields for ANY rule to be
+> attempted was indistinguishable from a genuinely-evaluated no-match - both fixed, the latter
+> by finally producing `MatchOutcome.INSUFFICIENT_FIELDS`, which existed but was never
+> produced. Two more findings flagged for Imran rather than decided unilaterally: no audit
+> record is produced at all when a query raises (backend error, IAL2 failure, normalization
+> failure) - is that the intended behavior for SS VII, or should failed queries also produce a
+> record? And `query_initiator` is unvalidated, caller-supplied input written verbatim into an
+> audit field (verified: control characters pass through unmodified) - this doc's own
+> `query_initiator` decision from earlier the same day already says "not validated," so
+> tightening that needs Imran's confirmation it was meant to include tolerating literal control
+> characters, not a silent code change. See session_18.md's "Post-review fixes" section.
 >
 > **Session 8 — Legacy comparison harness (Tier 3).** Session 6 (below) is now `in_review/`
 > (PR opened 2026-08-18) with its hard code dependency (session 5) satisfied. Session 8's
@@ -106,7 +126,6 @@ run whatever **Suggested Next Session** names below.
 
 | # | Session | Thread | Depends on | Size | Status | One-line summary |
 |---|---------|--------|-----------|------|--------|-------------------|
-| 18 | [session_18](pending/session_18.md) | Line B: CMS v3.4.0 migration | 16 (soft, ID-reference ordering only) | M | pending — blocked on 1 `NEEDS HUMAN DECISION` (what "query initiator" means for this repo) | §VII audit record reconciliation: confirm 6 of 7 required fields already present, add query initiator as the 7th. Path B aggregate metrics explicitly out of scope. |
 | 19 | [session_19](pending/session_19.md) | Line B: CMS v3.4.0 migration | 17 (soft, avoid two sessions inventing different relationship-data FHIR conventions) | M | pending | §C.7 twin/multiple-birth handling (4 new operational rules, none exist yet) + §C.9 defensive relationship-data flagging (SHOULD-level, lower priority). |
 | 8 | [session_8](https://github.com/icanbwell/cms-hte-patient-matching-test-set/blob/main/docs/sessions/pending/session_8.md) (moved) | Evaluation & Statistical Rigor | 3, 4, 9 (hard, all satisfied); 6 (soft, quality-of-result only) | L | pending — hard code dependencies satisfied (session 4: PR #22 merged, live run 2026-08-18 via PR #36; session 9: PR #27 merged); blocked on 3 `NEEDS HUMAN DECISION` items — see the moved session_8.md | Tier 3: legacy comparison harness, precision/recall-as-agreement, disagreement buckets, per-pair explanations |
 
@@ -119,6 +138,7 @@ satisfied; session 6 itself moved to `in_review/` below on 2026-08-18.
 
 | # | Session | Thread | PR | One-line summary |
 |---|---------|--------|----|--------------------|
+| 18 | [session_18](in_review/session_18.md) | Line B: CMS v3.4.0 migration | [#53](https://github.com/icanbwell/cms-hte-patient-matching/pull/53) (open) | §VII audit record reconciliation: adds `query_initiator` (opaque, caller-supplied, per Imran's decision) and a query-level `timestamp` (found missing for zero-rule-evaluation queries) to `MatchResult`/`MatchResponse`. Path B aggregate metrics explicitly out of scope. |
 | 17 | [session_17](in_review/session_17.md) | Line B: CMS v3.4.0 migration | [#52](https://github.com/icanbwell/cms-hte-patient-matching/pull/52) (open) | Relationship Linkage field (Table 3) + Rules `C2-39`/`C2-40` (guardian-verified minor / newborn-via-maternal-linkage), built best-effort with the spec's own unresolved caveats documented. Corrected a math error before shipping (guardian identity is a u=1.0 gate, not a near-zero field) and fixed a real confidence-scoring bug in `service.py` (see doc's Execution notes). |
 | 16 | [session_16](in_review/session_16.md) | Line B: CMS v3.4.0 migration | [#51](https://github.com/icanbwell/cms-hte-patient-matching/pull/51) (open) | Renumbers Category 1 rules to v3.4.0's clean 01-30 sequence; extends DOB +/-1 day fuzzy to rules 01/02/03/10; prefixes Category 2's rule_ids with `C2-` after finding v3.4.0's renumbering collides with their legacy IDs (see doc's Execution notes). |
 | 6 | [session_6](in_review/session_6.md) | Line B: CMS v3.3 migration | [#39](https://github.com/icanbwell/patient-matching/pull/39) (open) | Table 2 v3.3.0 base + v3.3.1/v3.3.3/v3.3.4/v3.3.6 addenda: 3 new fields, DOB +/-1 day fuzzy, Household/Individual two-step architecture (rules 13-16 amended, 34/35/37/38 new), 30 flat + 8 two-step = 38 rules total. Rules 39/40 and v3.3.6 institutional-address integration explicitly deferred. |

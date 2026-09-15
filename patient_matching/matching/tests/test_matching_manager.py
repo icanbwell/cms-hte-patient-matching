@@ -72,3 +72,23 @@ class TestMatchingManager:
         manager = MatchingManager(backend=backend)
         result = await manager.match(_make_patient())
         assert result.outcome == MatchOutcome.NO_MATCH
+
+    async def test_match_echoes_query_initiator(self) -> None:
+        """Adversarial-review finding (session 18 post-review fix):
+        MatchingManager - the other public entry point besides
+        MatchingEngine.match() directly - had no way to supply
+        query_initiator at all, so every query routed through it produced
+        an audit record with query_initiator=None regardless of caller."""
+        backend = InMemoryBackend([_make_patient()])
+        manager = MatchingManager(backend=backend)
+        result = await manager.match(_make_patient(), query_initiator="svc-portal")
+        assert result.query_initiator == "svc-portal"
+        assert result.timestamp != ""
+
+    async def test_match_batch_echoes_query_initiator_to_every_result(self) -> None:
+        backend = InMemoryBackend([_make_patient()])
+        manager = MatchingManager(backend=backend)
+        results = await manager.match_batch(
+            [_make_patient(), _make_patient()], query_initiator="svc-portal"
+        )
+        assert all(r.query_initiator == "svc-portal" for r in results)

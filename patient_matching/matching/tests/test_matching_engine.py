@@ -288,7 +288,11 @@ class TestMatchingEngineRuleSubset:
         assert result.matched_rule_id == "22"
 
     async def test_rule_skipped_when_query_missing_fields(self) -> None:
-        """Rule should be skipped if query lacks required fields."""
+        """Rule should be skipped if query lacks required fields - and with
+        no other rule configured to fall back on, no Table 2 combination
+        was evaluable at all, so this is INSUFFICIENT_FIELDS (adversarial-
+        review finding, session 18 post-review fix), not the generic
+        NO_MATCH a genuinely-evaluated-but-not-found query gets."""
         single_rule = (_rule_by_id("08"),)  # Rule 08: First Name + DOB + MBI
         query = _make_patient(mbi=None)  # No MBI
         candidate = _make_patient(mbi="1EG4TE5MK73")
@@ -298,7 +302,7 @@ class TestMatchingEngineRuleSubset:
             household_individual_rules=(),
         )
         result = await engine.match(query)
-        assert result.outcome == MatchOutcome.NO_MATCH
+        assert result.outcome == MatchOutcome.INSUFFICIENT_FIELDS
 
 
 class TestMatchingEngineRuleEvaluations:
@@ -475,7 +479,10 @@ class TestHouseholdIndividualRules:
             household_individual_rules=(),
         )
         result = await engine.match(query)
-        assert result.outcome == MatchOutcome.NO_MATCH
+        # No rule configured at all (both categories disabled) -> no Table 2
+        # combination was ever evaluable, not a genuine no-candidate-found
+        # NO_MATCH (adversarial-review finding, session 18 post-review fix).
+        assert result.outcome == MatchOutcome.INSUFFICIENT_FIELDS
 
     async def test_rules_param_does_not_disable_category_2_default(self) -> None:
         """Passing a restrictive `rules` subset must not silently also

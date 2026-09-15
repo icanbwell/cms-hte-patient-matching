@@ -98,7 +98,12 @@ class MatchingEngine:
             else _ALL_CATEGORY_2_RULES
         )
 
-    async def match(self, query_patient: Dict[str, Any]) -> MatchResult:
+    async def match(
+        self,
+        query_patient: Dict[str, Any],
+        *,
+        query_initiator: Optional[str] = None,
+    ) -> MatchResult:
         """Match a query patient against the backend.
 
         Iterates over all applicable Table 2 rules, retrieves candidates
@@ -106,18 +111,25 @@ class MatchingEngine:
 
         Args:
             query_patient: A normalized FHIR R4 Patient resource dict.
+            query_initiator: SS VII audit field (session 18) - an opaque,
+                caller-supplied identifier for whoever/whatever issued this
+                query. Not validated or derived by this library - see
+                MatchResult.query_initiator's docstring for why.
 
         Returns:
             A MatchResult with outcome, matched patients, and audit data.
         """
+        timestamp = datetime.now(timezone.utc).isoformat()
         query_fields = self._extractor.extract(query_patient)
         all_evaluations: List[RuleEvaluation] = []
         matched_patients_by_rule: Dict[str, List[Dict[str, Any]]] = {}
+        any_rule_evaluable = False
 
         for rule in self._rules:
             # Check if the query has all required fields for this rule
             if not self._query_has_all_fields(query_fields, rule.fields):
                 continue
+            any_rule_evaluable = True
 
             # Build criteria and search backend
             criteria = self._build_criteria_for_fields(query_fields, rule.fields)
@@ -144,6 +156,8 @@ class MatchingEngine:
                 matched_patients_by_rule[rule.rule_id] = rule_matches
 
         for hh_rule in self._household_individual_rules:
+            if self._query_has_all_fields(query_fields, hh_rule.household_row.fields):
+                any_rule_evaluable = True
             hh_matches, hh_evaluations = await self._evaluate_household_individual_rule(
                 hh_rule, query_fields
             )
@@ -151,7 +165,13 @@ class MatchingEngine:
             if hh_matches:
                 matched_patients_by_rule[hh_rule.rule_id] = hh_matches
 
-        return self._build_result(matched_patients_by_rule, all_evaluations)
+        return self._build_result(
+            matched_patients_by_rule,
+            all_evaluations,
+            query_initiator=query_initiator,
+            timestamp=timestamp,
+            any_rule_evaluable=any_rule_evaluable,
+        )
 
     def evaluate_pair(
         self, query_fields: PatientFields, candidate_fields: PatientFields
@@ -454,12 +474,31 @@ class MatchingEngine:
     def _build_result(
         matched_by_rule: Dict[str, List[Dict[str, Any]]],
         evaluations: List[RuleEvaluation],
+        *,
+        query_initiator: Optional[str],
+        timestamp: str,
+        any_rule_evaluable: bool = True,
     ) -> MatchResult:
-        """Build final MatchResult applying uniqueness check."""
+        """Build final MatchResult applying uniqueness check.
+
+        `any_rule_evaluable=False` (adversarial-review finding, session 18
+        post-review fix) means the query patient didn't carry enough fields
+        for ANY Table 2 rule to even be attempted - a materially different
+        SS VII "final match determination" than a query that WAS evaluated
+        against real rules and genuinely found no candidate. Both cases
+        previously reported MatchOutcome.NO_MATCH with an empty
+        `rule_evaluations`, making them indistinguishable after the fact -
+        MatchOutcome.INSUFFICIENT_FIELDS was defined for exactly this but
+        never produced anywhere.
+        """
         if not matched_by_rule:
             return MatchResult(
-                outcome=MatchOutcome.NO_MATCH,
+                outcome=MatchOutcome.NO_MATCH
+                if any_rule_evaluable
+                else MatchOutcome.INSUFFICIENT_FIELDS,
                 rule_evaluations=evaluations,
+                query_initiator=query_initiator,
+                timestamp=timestamp,
             )
 
         # Collect all unique matched patients across rules
@@ -494,6 +533,8 @@ class MatchingEngine:
                 is_unique=True,
                 rule_evaluations=evaluations,
                 candidate_count=len(all_matched),
+                query_initiator=query_initiator,
+                timestamp=timestamp,
             )
         elif len(all_matched) == 2:
             return MatchResult(
@@ -504,6 +545,8 @@ class MatchingEngine:
                 is_unique=False,
                 rule_evaluations=evaluations,
                 candidate_count=len(all_matched),
+                query_initiator=query_initiator,
+                timestamp=timestamp,
             )
         else:
             # 3+ candidates: CMS v3.3 requires a stricter 1e-6 threshold here. This engine
@@ -521,4 +564,6 @@ class MatchingEngine:
                 is_unique=False,
                 rule_evaluations=evaluations,
                 candidate_count=len(all_matched),
+                query_initiator=query_initiator,
+                timestamp=timestamp,
             )
