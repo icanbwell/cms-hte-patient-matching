@@ -311,3 +311,77 @@ Decision: PR opened from `claude/session-16-v340-renumber-dob-fuzzy` into `main`
 **open** rather than merged — per conventions.md's Definition of Done, merging is the project
 lead's (Imran's) call. Doc moved to `in_review/` and `index.md` updated accordingly, in the
 same PR.
+
+## Post-review fixes (adversarial review pass, 2026-09-15)
+
+An adversarial code review of this PR (executed against a live worktree, not by inspection —
+reproductions run and verified) found a critical, high-confidence defect this session's own
+tests didn't catch:
+
+**DOB fuzzy blocking was routed through string edit distance, not calendar distance.**
+`matching_engine.py::_build_criteria_for_fields` emitted `MatchType.FUZZY` for any
+fuzzy-eligible field including DOB, and every backend interprets `MatchType.FUZZY` as
+Damerau-Levenshtein distance <= 1 on the raw string. A calendar day's difference has no
+reliable relationship to a date string's edit distance —
+`"2000-02-29"`→`"2000-03-01"` is 3 edits but 1 day apart, while `"2015-06-01"`→`"2015-06-02"`
+is 1 edit *and* 1 day apart only by coincidence. The engine's own local verification
+(`field_comparator.dob_fuzzy_match`) has always used correct calendar-day math; the bug was
+purely in what got *retrieved* from the backend before verification ran. Measured against the
+ONC fixture: 8 of 78 real ±1-day-apart pairs would have been silently dropped at month/year
+boundaries and plain digit rollovers (e.g. `...-09`→`...-10`) — invisible to this session's own
+`TestDobFuzzyExtendedToNewRules` because its one test date pair (`1990-01-15`↔`16`) happens to
+have edit distance equal to calendar distance, and invisible to the ONC/NPPES regression suites
+because both evaluate via `evaluate_pair()`, which bypasses backend blocking entirely. This
+extended DOB* to the three highest-volume rules in this session (01, 02, 03), so the blast
+radius went from negligible (pre-existing on rule 24 alone, gated behind a payer Member ID) to
+material.
+
+**Fix:** added `MatchType.DOB_TOLERANCE` (`backend.py`) — the engine now emits this instead of
+`MatchType.FUZZY` for DOB when fuzzy-eligible, and it's expanded into an exact lookup on
+`{value-1day, value, value+1day}` rather than a fuzzy-text search. This is an indexed equality
+lookup on every backend that matters in production (DuckDB's exact `search_by_field` path,
+Mongo Atlas's plain `find`) — as a side effect, this also fixes two related defects the same
+review found: Mongo Atlas's fuzzy `$search` tokenizes a date string into year/month/day and
+returns everyone sharing any one token (a candidate-set explosion on the hottest rules), and
+DuckDB's fuzzy path does a full-column scan instead of an indexed lookup. All three were the
+same root cause and the same fix.
+
+Added regression tests through `MatchingEngine.match()` with the real `InMemoryBackend` (not
+`test_matching_engine.py`'s local stub, which ignores criteria and returns every candidate
+unconditionally — exactly why the original bug was invisible there too) — 4 of the 5 new
+boundary tests confirmed via `git stash` to fail against the pre-fix code. Also added, per the
+same review's test-coverage findings: a Category 1 P(collision) approval-threshold test
+(Category 2 already had one; Category 1 didn't, and rules 01/10 were within ~2x of the 2e-12
+bar even before this), a full `rule_id` → field-composition lock (the prior tests only checked
+*set* membership, so a transposition during the manual renumbering could have silently
+corrupted the SS VII audit field for two rules undetected), and a test pinning DOB* to exactly
+`{01, 02, 03, 10, 24}` so a future copy-paste onto a near-identical rule (e.g. 30) doesn't
+silently widen the set.
+
+**Not fixed, flagged instead:** the reviewer raised whether rules 01 and 10's published
+`p_collision_fuzzy` figures still hold once DOB*'s tolerance is honestly priced in (Table 3
+publishes no separate fuzzy u-probability for "dob," so today's figures reflect only the other
+starred field going fuzzy — see `_verify_fields`'s docstring). Re-deriving what the "correct"
+figure should be is a spec-interpretation question, not a code bug — computed today's actual
+values directly rather than guessing: all five DOB*-eligible rules (01, 02, 03, 10, 24) measure
+well under the 2e-12 threshold as currently priced (locked in by the new approval-threshold
+test above). Flagging for Imran rather than silently re-deriving new probability math: if CMS's
+Table 3 omission of a DOB fuzzy u-value is intentional (DOB* is "free" and shouldn't multiply
+the figure), no further action is needed; if it's a gap, rules 01/10's margin is thin enough
+that a correction could matter.
+
+Also fixed, per the same review: README's Table 2 rule table was the pre-session-6 26-rule
+listing with wrong field compositions for several renumbered IDs (actively contradicting the
+code, not just stale prose) — regenerated from the current 30-rule set. The ONC/NPPES
+regression suites' recorded baseline figures were stale relative to this PR's own DOB* fix
+(recall 0.9710→0.9717, F1 0.9848→0.9851, measured directly with the fix applied, not
+estimated). Stale "Rule 33" references (pre-v3.4.0 numbering) in `test_nppes_matching.py`,
+`tests/fixtures/nppes/README.md`, and `ONC_REGRESSION_TEST_DESIGN.md` updated to "rule 29." A
+test docstring claiming Category 2's 13-16 were "unchanged by this renumbering" (contradicting
+the very next test, which asserts the `C2-` prefix fix) was corrected.
+
+Validation after fixes: `uv run pytest .` — 480 passed (up from 472), 0 regressions. `uv run
+pre-commit run` clean (ruff-format auto-reformatted the touched test files once; verified clean
+on re-run; the one remaining mypy failure, `mongo_atlas_cache.py:264`, was confirmed via `git
+stash` to pre-exist on this branch independent of this fix, and CI's `build_and_test` is
+currently green — not addressed here as out of scope for this fix).

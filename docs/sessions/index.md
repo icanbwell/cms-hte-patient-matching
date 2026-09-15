@@ -29,6 +29,18 @@ run whatever **Suggested Next Session** names below.
 > sessions 17-19 were scoped: v3.4.0's Category 1 renumbering collides with Category 2's
 > legacy `13-16/34/35/37/38` IDs; resolved via a `C2-` prefix (see session_16.md's Execution
 > notes) — sessions 17/19 should use the `C2-` form if they reference a Category 2 rule by ID.
+>
+> **2026-09-15 addendum (session 16, post-review fix):** an adversarial review of PR #51 found
+> DOB fuzzy blocking was routed through Damerau-Levenshtein string edit distance rather than
+> the engine's own calendar-day tolerance, silently dropping genuine +/-1-day matches at
+> month/year boundaries and digit rollovers on the three highest-volume rules this PR extends
+> DOB* to (01, 02, 03) - invisible to this session's own tests and to the ONC/NPPES regression
+> suites, which bypass backend blocking entirely. Fixed with a new `MatchType.DOB_TOLERANCE`
+> that expands to an exact `{value-1day, value, value+1day}` lookup on every backend, which
+> also fixed a related Mongo Atlas token-explosion issue and a DuckDB full-scan issue the same
+> review found. One open question flagged for Imran, not resolved unilaterally: whether rules
+> 01/10's published `p_collision_fuzzy` figures should account for DOB*'s tolerance now that
+> it's extended to high-volume rules - see session_16.md's "Post-review fixes" section.
 > **Session 17 is the new Suggested Next Session.**
 >
 > **Session 8 — Legacy comparison harness (Tier 3).** Session 6 (below) is now `in_review/`
