@@ -272,6 +272,31 @@ owns bare `13`-`16` post-renumbering. Replaced with
 this session found, and one that will trip immediately if a future session ever drops the
 `C2-` prefix.
 
+**Adversarial self-review caught two more real gaps, fixed in the same PR before requesting
+review:**
+1. The DOB fuzzy extension (rules 01/02/03/10) had no end-to-end test — only a static
+   `p_collision` numeric check and the pre-existing full-suite pass, neither of which would
+   catch a wiring mistake specific to one of the four rules. Added
+   `TestDobFuzzyExtendedToNewRules` (`test_matching_engine.py`), parametrized over all four
+   rules, asserting `MatchingEngine.match()` actually resolves a 1-day-off DOB pair and
+   rejects a 2-day-off pair for each.
+2. **Renumbering already-shipped `rule_id` values on a published package silently reinterprets
+   historical audit records** — a record with `rule_id="28"` written before this PR meant
+   "Last Name*+DOB*+Member ID"; the same string after this PR means "First Name+Last Name*+
+   DOB+Subscriber ID." `RuleEvaluation.version` is the only field that can disambiguate this,
+   and nothing said so. Documented directly in `match_result.py`'s module docstring: any audit
+   tooling must key on `(rule_id, version)` together across a version boundary, never
+   `rule_id` alone. No code change beyond the docstring — there's no way to make an already-
+   assigned ID space compliance-proof after the fact within this session's scope; this is the
+   right place to make the hazard explicit for whoever builds audit tooling next.
+
+Also fixed three smaller staleness issues the review turned up: `matching_engine.py`'s
+DOB-dispatch comment still said "rule 28" (now 24); `household_rules.py`'s opening paragraph
+still read as if bare `13-16` were live IDs, ahead of the `C2-` clarification later in the same
+docstring; and two `docs/sessions/pending/session_16.md` cross-references (in
+`household_rules.py` and `test_table2_rules.py`) went stale the moment this doc moved to
+`in_review/` earlier in this same session.
+
 Validation:
 - `uv run pytest .`: 470 passed, 0 regressions (21 pre-existing Docker-dependent tests
   deselected, unrelated to this session).

@@ -558,3 +558,62 @@ class TestDobFuzzyDispatch:
         )
         result = await engine.match(query)
         assert result.outcome == MatchOutcome.NO_MATCH
+
+
+class TestDobFuzzyExtendedToNewRules:
+    """v3.4.0 extends DOB +/-1 day fuzzy from rule 24 alone to rules 01, 02,
+    03, and 10 (session 16). End-to-end coverage via MatchingEngine.match()
+    that each rule's DOB dispatch actually works - the static
+    FieldComparator.dob_fuzzy_match unit tests and the p_collision figure
+    check (session_16.md's Execution notes) only prove the comparator and
+    the collision-probability math are correct, not that each rule is
+    actually wired to use it."""
+
+    _RULE_ANCHOR_FIELDS = [
+        ("01", {"street": "123 main st"}),  # First*+Last*+DOB*+Street Line*
+        ("02", {"phone": "+12125551234"}),  # First+Last*+DOB*+Phone
+        ("03", {"email": "john@gmail.com"}),  # First*+Last*+DOB*+Email
+        ("10", {"legal_id": "DL123456"}),  # Last*+DOB*+Legal ID (no First Name field)
+    ]
+
+    @pytest.mark.parametrize("rule_id,anchor_kwargs", _RULE_ANCHOR_FIELDS)
+    async def test_dob_one_day_off_matches(
+        self, rule_id: str, anchor_kwargs: Dict[str, Any]
+    ) -> None:
+        rule = _rule_by_id(rule_id)
+        candidate = _make_patient(
+            first="john", last="smith", dob="1990-01-15", **anchor_kwargs
+        )
+        query = _make_patient(
+            first="john", last="smith", dob="1990-01-16", **anchor_kwargs
+        )
+        engine = MatchingEngine(
+            backend=InMemoryBackend([candidate]),
+            rules=(rule,),
+            household_individual_rules=(),
+        )
+        result = await engine.match(query)
+        assert result.outcome == MatchOutcome.MATCH
+        evaluation = next(
+            e for e in result.rule_evaluations if e.rule_id == rule_id and e.matched
+        )
+        assert evaluation.field_outcomes["dob"] == "fuzzy"
+
+    @pytest.mark.parametrize("rule_id,anchor_kwargs", _RULE_ANCHOR_FIELDS)
+    async def test_dob_two_days_off_does_not_match(
+        self, rule_id: str, anchor_kwargs: Dict[str, Any]
+    ) -> None:
+        rule = _rule_by_id(rule_id)
+        candidate = _make_patient(
+            first="john", last="smith", dob="1990-01-17", **anchor_kwargs
+        )
+        query = _make_patient(
+            first="john", last="smith", dob="1990-01-15", **anchor_kwargs
+        )
+        engine = MatchingEngine(
+            backend=InMemoryBackend([candidate]),
+            rules=(rule,),
+            household_individual_rules=(),
+        )
+        result = await engine.match(query)
+        assert result.outcome == MatchOutcome.NO_MATCH

@@ -3,6 +3,14 @@
 Captures audit-required fields per Section VII of the CMS proposal:
 rule ID, match type (exact/fuzzy), uniqueness result, per-field
 comparison outcomes, evaluation timestamp, and software version.
+
+**`rule_id` is not a stable identifier across package versions.** CMS spec
+revisions can and do renumber Table 2 (e.g. session 16's v3.4.0 migration
+reassigned most Category 1 rule_ids to a different combination than they
+meant before). Any audit tooling comparing or aggregating records across a
+version boundary must key on `(rule_id, version)` together, never `rule_id`
+alone - the same `rule_id` string can mean a different field combination
+before and after a spec-driven renumbering.
 """
 
 from __future__ import annotations

@@ -5,27 +5,31 @@ frequently shared by an entire household, not unique to one person - a match on
 one of these Table 2-H combinations alone can only establish "same household,"
 not "same person." This module defines the Household-tier rows (Table 2-H) and
 Individual-tier rows (Table 2-I) v3.3.1 introduces, and pairs them into the 8
-Category 2 rules that need this two-step treatment: 13, 14, 15, 16 (amending
-already-shipped v3.2.2 flat rules that used these household-shared fields
-alone) and 34, 35, 37, 38 (new).
+Category 2 rules that need this two-step treatment - see the `rule_id` note
+below for their actual (prefixed) identifiers: legacy numbers 13, 14, 15, 16
+(amending already-shipped v3.2.2 flat rules that used these household-shared
+fields alone) and 34, 35, 37, 38 (new).
 
 Every row's p_collision is computed via collision.p_collision(), the same
 FIELD_U_PROBS table table2_rules.py's flat rules use - this is a sanity check
 against the source-doc figures transcribed in
 docs/sessions/completed/session_6.md, not a hardcoded literal.
 
-**rule_id values carry a `C2-` prefix (session 16, v3.4.0).** v3.4.0's Category 1
-table renumbers to a clean, gapless 01-30 sequence that happens to claim 13-16 for
-brand-new, unrelated flat rules (see table2_rules.py). v3.4.0's own Category 2
-material (SSA C.2-C.5) never actually assigns these rules a live ID of their own -
-it only describes them as Household-row + Individual-row pairings; "Rules 13, 14,
-15, 16, 34, 35, 37, and 38" appears once, in SS C.8's prose, as a backward-reference
-to the legacy v3.3.1 addendum numbering this module was originally built against,
-not a v3.4.0 ID assignment. Keeping the bare numbers here would silently collide
-with Category 1's new 13-16 in any audit record keyed on `rule_id` alone (the
-"Table 2 combination evaluated" SS VII field) - the `C2-` prefix preserves the
-historically-meaningful numbers while making that collision structurally
-impossible. Decided by Imran, 2026-09-15 (see docs/sessions/pending/session_16.md).
+**rule_id values carry a `C2-` prefix (session 16, v3.4.0) - this is the
+authoritative form; the legacy bare numbers above are historical context
+only, not live identifiers.** v3.4.0's Category 1 table renumbers to a clean,
+gapless 01-30 sequence that happens to claim 13-16 for brand-new, unrelated
+flat rules (see table2_rules.py). v3.4.0's own Category 2 material (SSA
+C.2-C.5) never actually assigns these rules a live ID of their own - it only
+describes them as Household-row + Individual-row pairings; "Rules 13, 14, 15,
+16, 34, 35, 37, and 38" appears once, in SS C.8's prose, as a backward-reference
+to the legacy v3.3.1 addendum numbering this module was originally built
+against, not a v3.4.0 ID assignment. Keeping the bare numbers here would
+silently collide with Category 1's new 13-16 in any audit record keyed on
+`rule_id` alone (the "Table 2 combination evaluated" SS VII field) - the
+`C2-` prefix preserves the historically-meaningful numbers while making that
+collision structurally impossible. Decided by Imran, 2026-09-15 (see
+docs/sessions/in_review/session_16.md).
 """
 
 from __future__ import annotations

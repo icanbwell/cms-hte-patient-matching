@@ -275,7 +275,7 @@ class MatchingEngine:
         max_fuzzy_fields' collision-probability budget was designed around -
         Table 3 has no separate fuzzy u-probability for "dob" (FIELD_U_PROBS's
         dob entry carries no fuzzy variant), so a rule combining DOB* with
-        another starred field (e.g. rule 28's Last Name*+DOB*) only reflects
+        another starred field (e.g. rule 24's Last Name*+DOB*) only reflects
         ONE field's fuzzy multiplier in its published p_collision_fuzzy
         figure - confirmed empirically: it always matches the OTHER starred
         field going fuzzy, never DOB. Counting DOB against max_fuzzy_fields

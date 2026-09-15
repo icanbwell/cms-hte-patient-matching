@@ -18,7 +18,7 @@ class TestApprovedRules:
     renumbering reassigns bare 13-16 to brand-new flat content (First
     Name+Phone/Email+SSN/ITIN Last4) - unrelated to Category 2's rules,
     which now carry a `C2-` prefix specifically to avoid this collision
-    (household_rules.py); see docs/sessions/pending/session_16.md for the
+    (household_rules.py); see docs/sessions/in_review/session_16.md for the
     full old->new mapping and that decision's rationale.
     """
 
