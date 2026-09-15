@@ -81,6 +81,7 @@ run whatever **Suggested Next Session** names below.
 > review turned that into a demonstrated, tested case rather than a prose caveat - see
 > session_17.md's "Post-review fixes" section for the two remediation options (add a
 > discriminating field vs. gate on FHIR's multipleBirth flag) and their tradeoffs.
+>
 > **2026-09-15 addendum (session 18, post-review fix):** an adversarial review of PR #53 found
 > `MatchingManager` (the other public entry point besides `MatchingEngine.match()`) had no way
 > to accept `query_initiator` at all, and that a query with too few fields for ANY rule to be
