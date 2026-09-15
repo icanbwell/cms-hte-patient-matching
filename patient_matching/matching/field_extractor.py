@@ -70,6 +70,25 @@ class PatientFields:
     mother_identities: Set[str] = field(default_factory=set)
     birth_encounter_ids: Set[str] = field(default_factory=set)
 
+    @property
+    def relationship_linkage_child_of_clinical(self) -> Set[str]:
+        """Clinical relationship claims narrowed to specifically "child-of".
+
+        Rule C2-39 requires this exact relationship type, not merely "some
+        clinical relationship claim was made" (adversarial-review finding:
+        the un-narrowed `relationship_linkage_clinical` field matches on
+        ANY code via ordinary set-overlap semantics, so an arbitrary or
+        wrong-typed claim, e.g. "spouse-of", would satisfy the rule)."""
+        return {v for v in self.relationship_linkage_clinical if v == "child-of"}
+
+    @property
+    def relationship_linkage_newborn_of_clinical(self) -> Set[str]:
+        """Clinical relationship claims narrowed to specifically "newborn-of".
+
+        Rule C2-40's equivalent of relationship_linkage_child_of_clinical -
+        see that property's docstring."""
+        return {v for v in self.relationship_linkage_clinical if v == "newborn-of"}
+
     def get_values(self, field_name: str) -> Set[str]:
         """Get the set of values for a canonical field name."""
         mapping = {
@@ -89,6 +108,8 @@ class PatientFields:
             "insurance_subscriber_id": self.insurance_subscriber_ids,
             "relationship_linkage_clinical": self.relationship_linkage_clinical,
             "relationship_linkage_self_reported": self.relationship_linkage_self_reported,
+            "relationship_linkage_child_of_clinical": self.relationship_linkage_child_of_clinical,
+            "relationship_linkage_newborn_of_clinical": self.relationship_linkage_newborn_of_clinical,
             "guardian_identity": self.guardian_identities,
             "mother_identity": self.mother_identities,
             "birth_encounter_id": self.birth_encounter_ids,
@@ -124,10 +145,6 @@ _RELATIONSHIP_LINKAGE_EXTENSION_URL = (
     "https://cms-hte-patient-matching.icanbwell.com/fhir/StructureDefinition/"
     "relationship-linkage"
 )
-_RELATIONSHIP_LINKAGE_SOURCE_FIELDS = {
-    "clinical": "relationship_linkage_clinical",
-    "self-reported": "relationship_linkage_self_reported",
-}
 
 
 class FieldExtractor:
@@ -316,9 +333,7 @@ class FieldExtractor:
             if not relationship_type or not source:
                 continue
 
-            target_field_name = _RELATIONSHIP_LINKAGE_SOURCE_FIELDS.get(source)
-            if target_field_name is None:
-                continue
-
-            target_set = fields.get_values(target_field_name)
-            target_set.add(relationship_type)
+            if source == "clinical":
+                fields.relationship_linkage_clinical.add(relationship_type)
+            elif source == "self-reported":
+                fields.relationship_linkage_self_reported.add(relationship_type)

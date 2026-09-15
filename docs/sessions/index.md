@@ -59,6 +59,22 @@ run whatever **Suggested Next Session** names below.
 > Suggested Next Session** — it has one real `NEEDS HUMAN DECISION` (what "query initiator"
 > means for this repo) to resolve before coding.
 >
+> **2026-09-15 addendum (session 17, post-review fix):** an adversarial review of PR #52
+> found the relationship `type` claim (`"child-of"`/`"newborn-of"`) was never actually
+> constrained - both C2-39 and C2-40 matched on ANY code via ordinary set-overlap semantics,
+> verified empirically to fire on a wrong-typed or even arbitrary claim. Fixed with
+> type-narrowed derived fields that keep each rule's published P(collision) figure intact
+> (narrowing a field's value space can only lower its true collision risk, never raise it).
+> Also confirmed and locked in, but explicitly **not fixed** - it needs a product decision,
+> not a code correction - a second finding: C2-40 has no field capable of distinguishing
+> twins/siblings from the same delivery, so a query for an unregistered twin can resolve as a
+> confident wrong-patient match against their sibling's record when only one twin is in the
+> backend. This doc's own C2-40 description already flagged the underlying
+> birth-encounter-ID-uniqueness assumption as `NEEDS HUMAN DECISION` before this review; the
+> review turned that into a demonstrated, tested case rather than a prose caveat - see
+> session_17.md's "Post-review fixes" section for the two remediation options (add a
+> discriminating field vs. gate on FHIR's multipleBirth flag) and their tradeoffs.
+>
 > **Session 8 — Legacy comparison harness (Tier 3).** Session 6 (below) is now `in_review/`
 > (PR opened 2026-08-18) with its hard code dependency (session 5) satisfied. Session 8's
 > remaining blockers are 3 `NEEDS HUMAN DECISION` items (eval-only dependency on

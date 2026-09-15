@@ -54,6 +54,16 @@ FIELD_U_PROBS: Dict[str, Tuple[float, Optional[float]]] = {
     # as household_rules.I_03) - both rules C2-39/C2-40 require the clinical
     # variant only.
     "relationship_linkage_self_reported": (0.05, None),
+    # Post-review fix: type-narrowed variants actually used by C2-39/C2-40
+    # (see table2_rules.py's definition comment). Each has a strictly SMALLER
+    # value space than the un-narrowed "relationship_linkage_clinical" above
+    # (one specific code vs. any code), so its true collision probability is
+    # at most 0.01, not more - reusing the spec's published 0.01 keeps the
+    # rules' P(collision) figures matching v3.4.0's stated math exactly
+    # rather than inventing a new, unpublished number; the narrowing can only
+    # make the true risk lower than what's priced, never higher.
+    "relationship_linkage_child_of_clinical": (0.01, None),
+    "relationship_linkage_newborn_of_clinical": (0.01, None),
     # Identity-gate fields: NOT a discriminating probabilistic factor. These
     # represent "this record references a guardian/mother identity that was
     # already independently matched by a separate Table 2 rule" - u=1.0 is a

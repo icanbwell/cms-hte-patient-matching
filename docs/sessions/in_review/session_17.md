@@ -325,3 +325,64 @@ Decision: PR opened from `claude/session-17-v340-relationship-linkage-rules-39-4
 `main`, left **open** rather than merged - merging is Imran's call, same as every prior
 session in this repo. Doc moved to `in_review/` and `index.md` updated accordingly, in the
 same PR.
+
+## Post-review fixes (adversarial review pass, 2026-09-15)
+
+An adversarial review of this PR (executed against a live worktree, reproductions run and
+verified, not by inspection) found two real defects:
+
+1. **The relationship `type` code was never constrained - both rules matched on ANY code.**
+   `relationship_linkage_clinical` is a set-of-values field matched by ordinary
+   Core-Principle-10 overlap semantics. Nothing checked that the specific claimed type was
+   `"child-of"` for C2-39 or `"newborn-of"` for C2-40 - verified empirically that C2-39 fired
+   on a `"newborn-of"` claim, C2-40 fired on a `"child-of"` claim, and both fired on an
+   arbitrary/unrecognized code like `"spouse-of"`. **Fix:** added two type-narrowed derived
+   fields to `PatientFields`
+   (`relationship_linkage_child_of_clinical`/`relationship_linkage_newborn_of_clinical`,
+   computed by filtering the existing raw `relationship_linkage_clinical` set down to the one
+   specific type each rule requires) and pointed each rule's individual row at the
+   type-specific field instead of the generic one. Since each narrowed field's value space is
+   a strict subset of the un-narrowed one, its true collision probability is at most what's
+   already published (0.01) - reused that figure directly in `collision.py` rather than
+   inventing a new number. Also fixed, found in the same code path: `_extract_relationship_linkage`
+   wrote through whatever `PatientFields.get_values()` happened to return for the raw field
+   rather than assigning to the named attribute directly - fragile if `get_values()`'s
+   read-only contract were ever tightened (e.g. to return a copy). Now assigns explicitly.
+
+2. **Rule C2-40 has no field that discriminates between twins/siblings from the same
+   delivery.** `NEWBORN-RELATIONSHIP`'s individual leg is relationship-type + DOB +
+   birth-encounter-ID - no name field at all - and per this doc's own already-flagged
+   caveat, a birth-encounter ID is realistically assigned per-delivery, not per-infant.
+   Verified empirically: with only ONE twin registered in the backend, a query for the
+   *other*, unregistered twin resolves as a confident, unique MATCH at confidence >0.99
+   against the wrong sibling's record. **Not fixed** - this doc's own C2-40 description
+   already carried a "NEEDS HUMAN DECISION, carried over from session 6" flag on exactly this
+   uniqueness assumption, and closing it means either adding a discriminating field (changes
+   the CMS-published P(collision) figure) or gating on FHIR's
+   `multipleBirthBoolean`/`multipleBirthInteger` and failing closed when a multiple birth is
+   known or unconfirmed (a product decision on how much of the rule's real-world utility to
+   trade for that safety margin, since most source systems rarely populate that field).
+   Documented and locked in with an explicit `test_KNOWN_LIMITATION_...` test (asserts today's
+   actual, risky behavior, with instructions to update it once the limitation is actually
+   closed) rather than left as an unverified prose caveat. When both twins ARE present as
+   candidates, the rule does correctly escalate (also now covered by a dedicated test) - the
+   risk is specifically the single-candidate case.
+
+A related but smaller gap the same review raised, also not fixed: the household-leg identity
+gates (`GUARDIAN_IDENTITY_ROW`/`MOTHER_IDENTITY_ROW`, priced at u=1.0 on the stated reasoning
+that "the guardian/mother's own uniqueness was already bounded by whichever rule matched
+them") never actually verify that the referenced guardian/mother identity resolves to exactly
+one backend record - the u=1.0 pricing's entire justification is currently unenforced by code.
+Flagging for a future session rather than folding an identity-resolution redesign into this
+fix pass: the fix would mean resolving the guardian/mother identity to a specific candidate
+set size (0, 1, or 2+) before the individual leg runs at all, which is a genuine structural
+change to how this rule category retrieves candidates, not a local correction.
+
+Validation after fixes: `uv run pytest .` - 501 passed (up from 499), 0 regressions. 7 new
+tests in `test_relationship_linkage_rules.py` (twin escalation when both present, the
+documented known-limitation case, 4 relationship-type-enforcement cases) + 2 in
+`test_service.py` (`_compute_confidence` for C2-39/C2-40 - this PR's own headline
+`service.py` fix had no direct regression test until now). 3 of the 4 type-enforcement tests
+confirmed via `git stash` to fail against the pre-fix code. `uv run pre-commit run` clean; the
+one remaining mypy failure (`mongo_atlas_cache.py:264`) confirmed via `git stash` to pre-exist
+on this branch independent of this fix.
