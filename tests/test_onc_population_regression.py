@@ -23,8 +23,9 @@ second repo needs to be checked out alongside this one, including in CI.
 Every (query, candidate) pair in every pool is flattened into one confusion
 matrix, per that repo's Option B. Measured on the current dataset
 (2,000 queries, 8,016 unique candidates, 80,000 query-candidate evaluations)
-with the current rule set (30 Category 1 rules + 8 household rules):
-precision=0.9990, recall=0.9710, FPR=0.0001, accuracy=0.9978, F1=0.9848, 0
+with the current rule set (30 Category 1 rules, including v3.4.0's DOB*
+extension to rules 01/02/03/10, + 8 household rules):
+precision=0.9990, recall=0.9717, FPR=0.0001, accuracy=0.9978, F1=0.9851, 0
 extraction errors. The floors/ceiling below leave headroom above/below those
 measured values.
 """

@@ -1,12 +1,12 @@
 # patient_matching
 
-An open-source Python implementation of the [CMS Patient Matching Proposal v3.2.2](https://confluence.hl7.org/display/PA/Patient+Matching), providing deterministic patient matching using all 26 approved Table 2 field combination rules with support for IAL2 identity-proofed tokens, FHIR R4 Patient resources, and configurable fuzzy matching.
+An open-source Python implementation of the [CMS Patient Matching Proposal v3.2.2](https://confluence.hl7.org/display/PA/Patient+Matching), providing deterministic patient matching using 30 approved Category 1 (flat) Table 2 field combination rules plus 8 Category 2 (household/individual two-step) rules, with support for IAL2 identity-proofed tokens, FHIR R4 Patient resources, and configurable fuzzy matching.
 
 ## Overview
 
 The CMS Patient Matching Proposal defines a standardized approach to matching patients across healthcare systems. This library implements:
 
-- **26 Table 2 matching rules** with exact and fuzzy field comparisons
+- **38 Table 2 matching rules** (30 Category 1 flat + 8 Category 2 household/individual) with exact and fuzzy field comparisons
 - **IAL2 token extraction** — verify JWT tokens from Credential Service Providers (CSPs) and convert to FHIR Patient resources
 - **Demographic normalization** — text normalization, nickname expansion, E.164 phone formatting, USPS address standardization, placeholder detection
 - **FHIR R4 integration** — fetch patients from FHIR servers with OAuth2, paginate through Bundles
@@ -27,7 +27,7 @@ This is a pure Python library with no HTTP layer of its own — [`cms-hte-patien
                 │                  │                   │
        ┌────────▼───────┐  ┌──────▼──────┐  ┌────────▼────────┐
        │ IAL2 Extractor  │  │ Normalizer  │  │ Matching Engine │
-       │ (JWT → FHIR)   │  │ (A.1–D.6)  │  │ (26 Rules)      │
+       │ (JWT → FHIR)   │  │ (A.1–D.6)  │  │ (38 Rules)      │
        └────────────────┘  └─────────────┘  └────────┬────────┘
                                                       │
                                              ┌────────▼────────┐
@@ -227,38 +227,49 @@ No HTTP layer ships in this package — [`cms-hte-patient-matching-service`](htt
 
 ## Table 2 Matching Rules
 
-The CMS proposal defines 26 approved field combinations. Each rule specifies which fields must match, whether fuzzy matching is allowed (marked with `*`), and the collision probability:
+The Category 1 (flat) rule set defines 30 approved field combinations, numbered 01-30 with no
+gaps (CMS v3.4.0's renumbering). Each rule specifies which fields must match, whether fuzzy
+matching is allowed (marked with `*`), and the collision probability:
 
 | Rule | Fields | P(collision) exact | P(collision) fuzzy |
 |------|--------|-------------------:|-------------------:|
-| 01 | First Name\* + Last Name\* + DOB + Street Line\* | 2.86e-14 | 2.73e-11 |
-| 02 | First Name + Last Name\* + DOB + Phone | 2.86e-14 | 3.96e-12 |
-| 03 | First Name\* + Last Name\* + DOB + Email | 1.72e-14 | 1.64e-11 |
-| 04 | First Name\* + Last Name + DOB + SSN Last 4 | 1.00e-11 | 1.00e-09 |
-| 05 | First Name + Last Name\* + DOB + SSN Last 4 | 1.00e-11 | 1.39e-09 |
-| 06 | First Name\* + Last Name + DOB + ITIN Last 4 | 1.00e-11 | 1.00e-09 |
-| 07 | First Name + Last Name\* + DOB + ITIN Last 4 | 1.00e-11 | 1.39e-09 |
-| 08 | First Name + DOB + MBI | 3.60e-13 | — |
-| 09 | First Name + DOB + Legal ID | 3.60e-13 | — |
-| 10 | Last Name\* + DOB + Legal ID | 3.60e-13 | 4.99e-11 |
-| 11 | First Name + DOB + Phone | 3.60e-10 | — |
-| 12 | First Name + DOB + Email | 2.16e-10 | — |
-| 13 | Last Name + Phone + SSN Last 4 | 1.00e-11 | — |
-| 14 | Last Name + Phone + ITIN Last 4 | 1.00e-11 | — |
-| 15 | Last Name\* + Email + SSN Last 4 | 6.00e-12 | 8.31e-10 |
-| 16 | Last Name\* + Email + ITIN Last 4 | 6.00e-12 | 8.31e-10 |
-| 17 | First Name + Phone + SSN Last 4 | 1.00e-11 | — |
-| 18 | First Name + Phone + ITIN Last 4 | 1.00e-11 | — |
-| 19 | First Name + Email + SSN Last 4 | 6.00e-12 | — |
-| 20 | First Name + Email + ITIN Last 4 | 6.00e-12 | — |
-| 21 | Phone + MBI | 1.00e-12 | — |
-| 22 | Phone + Legal ID | 1.00e-12 | — |
-| 23 | Email + MBI | 6.00e-13 | — |
-| 24 | Email + Legal ID | 6.00e-13 | — |
-| 25 | Legal ID + MBI | 1.00e-14 | — |
-| 26 | Namespace-bound unique IDs (EMPI, FHIR ID, CSP UUID) | 0.0 | — |
+| 01 | First Name\* + Last Name\* + DOB\* + Street Line\* | 3.00e-13 | 9.00e-13 |
+| 02 | First Name + Last Name\* + DOB\* + Phone | 1.00e-14 | 2.00e-14 |
+| 03 | First Name\* + Last Name\* + DOB\* + Email | 1.00e-14 | 3.00e-14 |
+| 04 | First Name\* + Last Name + DOB + SSN Last 4 | 1.00e-12 | 1.50e-12 |
+| 05 | First Name + Last Name\* + DOB + SSN Last 4 | 1.00e-12 | 2.00e-12 |
+| 06 | First Name\* + Last Name + DOB + ITIN Last 4 | 1.00e-12 | 1.50e-12 |
+| 07 | First Name + Last Name\* + DOB + ITIN Last 4 | 1.00e-12 | 2.00e-12 |
+| 08 | First Name + DOB + MBI | 2.00e-12 | — |
+| 09 | First Name + DOB + Legal ID | 2.00e-12 | — |
+| 10 | Last Name\* + DOB\* + Legal ID | 5.00e-13 | 1.00e-12 |
+| 11 | First Name + DOB + Phone | 2.00e-12 | — |
+| 12 | First Name + DOB + Email | 2.00e-12 | — |
+| 13 | First Name + Phone + SSN Last 4 | 2.00e-12 | — |
+| 14 | First Name + Phone + ITIN Last 4 | 2.00e-12 | — |
+| 15 | First Name + Email + SSN Last 4 | 2.00e-12 | — |
+| 16 | First Name + Email + ITIN Last 4 | 2.00e-12 | — |
+| 17 | Phone + MBI | 1.00e-12 | — |
+| 18 | Phone + Legal ID | 1.00e-12 | — |
+| 19 | Email + MBI | 1.00e-12 | — |
+| 20 | Email + Legal ID | 1.00e-12 | — |
+| 21 | Legal ID + MBI | 1.00e-12 | — |
+| 22 | Namespace ID (EMPI, FHIR ID, CSP UUID) | 1.00e-15 | — |
+| 23 | First Name + DOB + Insurance Member ID | 2.00e-12 | — |
+| 24 | Last Name\* + DOB\* + Insurance Member ID | 5.00e-13 | 1.00e-12 |
+| 25 | Phone + Insurance Member ID | 1.00e-12 | — |
+| 26 | Email + Insurance Member ID | 1.00e-12 | — |
+| 27 | First Name\* + Last Name + DOB + Insurance Subscriber ID | 1.00e-12 | 1.50e-12 |
+| 28 | First Name + Last Name\* + DOB + Insurance Subscriber ID | 1.00e-12 | 2.00e-12 |
+| 29 | First Name\* + Last Name\* + Phone + ZIP Code | 3.00e-14 | 9.00e-14 |
+| 30 | Last Name\* + DOB + Phone | 5.00e-13 | 1.00e-12 |
 
-Fields marked with `*` are fuzzy-eligible. Fuzzy matching uses **Damerau-Levenshtein distance <= 1** for strings of **5 or more characters** (per CMS Appendix E.3).
+Fields marked with `*` are fuzzy-eligible. Fuzzy matching uses **Damerau-Levenshtein distance <= 1** for strings of **5 or more characters** (per CMS Appendix E.3), except DOB\*, which uses a **+/-1 calendar day** tolerance instead (CMS v3.3) — a date string's edit distance has no relationship to its calendar distance, so DOB is never compared via Damerau-Levenshtein.
+
+Rules 13-16 above are new v3.4.0 flat content (First Name + Phone/Email + SSN/ITIN Last 4) - a
+separate, unrelated set of Category 2 (household/individual two-step) rules also happens to use
+IDs 13-16/34/35/37/38 and is disambiguated with a `C2-` prefix (`C2-13`, etc.) in the engine's
+audit output; see `household_rules.py`.
 
 ## Normalization Pipeline
 

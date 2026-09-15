@@ -95,7 +95,7 @@ class TestEvaluateCombination:
 
 class TestExistingRulesMatchComputedValues:
     @pytest.mark.parametrize("rule", APPROVED_RULES, ids=lambda r: r.rule_id)
-    def test_existing_26_rules_reproduce_published_values(
+    def test_existing_category1_rules_reproduce_published_values(
         self, rule: MatchingRule
     ) -> None:
         """After table2_rules.py computes p_collision_exact/_fuzzy from this
@@ -104,4 +104,4 @@ class TestExistingRulesMatchComputedValues:
         FIELD_U_PROBS) would raise KeyError at import time, not silently produce
         0.0, but this guards against a future refactor reintroducing a
         literal-float regression."""
-        assert rule.p_collision_exact > 0 or rule.rule_id == "26"
+        assert rule.p_collision_exact > 0 or rule.rule_id == "22"  # namespace_id ~=0

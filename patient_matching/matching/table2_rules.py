@@ -1,8 +1,15 @@
-"""Table 2: Approved matching combinations from CMS Proposal v3.2.2.
+"""Table 2 Category 1 (flat) rules: approved matching combinations per CMS
+Proposal v3.4.0.
 
 Each rule defines the required fields, which fields allow fuzzy matching
 (marked with * in the spec), and the maximum number of simultaneously
-fuzzy fields.
+fuzzy fields. `rule_id` values match v3.4.0's clean 01-30 Category 1
+numbering (session 16). Category 2 (household+individual) rules live in
+household_rules.py under a `C2-` prefix (`C2-13`, `C2-14`, ..., `C2-38`) -
+v3.4.0's renumbering happens to reassign bare 13-16 to unrelated new flat
+rules here, so Category 2 keeps its historically-meaningful numbers but
+prefixed, to avoid colliding with this module's IDs (see household_rules.py's
+module docstring for the full rationale).
 """
 
 from __future__ import annotations
@@ -90,55 +97,71 @@ def _rf(name: str, role: FieldRole = _E) -> RuleField:
 APPROVED_RULES: tuple[MatchingRule, ...] = (
     MatchingRule(
         rule_id="01",
-        description="First Name* + Last Name* + DOB + Street Line*",
+        description="First Name* + Last Name* + DOB* + Street Line*",
         fields=(
             _rf(FIRST_NAME, _F),
             _rf(LAST_NAME, _F),
-            _rf(DOB),
+            _rf(DOB, _F),
             _rf(STREET_LINE, _F),
         ),
         max_fuzzy_fields=2,
         p_collision_exact=p_collision(
-            (_rf(FIRST_NAME, _F), _rf(LAST_NAME, _F), _rf(DOB), _rf(STREET_LINE, _F))
+            (
+                _rf(FIRST_NAME, _F),
+                _rf(LAST_NAME, _F),
+                _rf(DOB, _F),
+                _rf(STREET_LINE, _F),
+            )
         ),
+        # v3.4.0 marks DOB fuzzy-eligible (+/-1 day) here too - like rule 24's
+        # Last Name*+DOB*, this doesn't change the fuzzy figure itself (Table 3
+        # has no dob-fuzzy u-value; see matching_engine.py's DOB-fuzzy dispatch
+        # note), so fuzzy_fields below is unchanged from the pre-v3.4.0 figure.
         p_collision_fuzzy=p_collision(
-            (_rf(FIRST_NAME, _F), _rf(LAST_NAME, _F), _rf(DOB), _rf(STREET_LINE, _F)),
+            (
+                _rf(FIRST_NAME, _F),
+                _rf(LAST_NAME, _F),
+                _rf(DOB, _F),
+                _rf(STREET_LINE, _F),
+            ),
             fuzzy_fields=frozenset({FIRST_NAME, LAST_NAME}),
         ),
     ),
     MatchingRule(
         rule_id="02",
-        description="First Name + Last Name* + DOB + Phone Number",
+        description="First Name + Last Name* + DOB* + Phone Number",
         fields=(
             _rf(FIRST_NAME),
             _rf(LAST_NAME, _F),
-            _rf(DOB),
+            _rf(DOB, _F),
             _rf(PHONE),
         ),
         max_fuzzy_fields=1,
         p_collision_exact=p_collision(
-            (_rf(FIRST_NAME), _rf(LAST_NAME, _F), _rf(DOB), _rf(PHONE))
+            (_rf(FIRST_NAME), _rf(LAST_NAME, _F), _rf(DOB, _F), _rf(PHONE))
         ),
+        # v3.4.0 DOB* addition - no numeric effect, see rule 01's comment above.
         p_collision_fuzzy=p_collision(
-            (_rf(FIRST_NAME), _rf(LAST_NAME, _F), _rf(DOB), _rf(PHONE)),
+            (_rf(FIRST_NAME), _rf(LAST_NAME, _F), _rf(DOB, _F), _rf(PHONE)),
             fuzzy_fields=frozenset({LAST_NAME}),
         ),
     ),
     MatchingRule(
         rule_id="03",
-        description="First Name* + Last Name* + DOB + Email Address",
+        description="First Name* + Last Name* + DOB* + Email Address",
         fields=(
             _rf(FIRST_NAME, _F),
             _rf(LAST_NAME, _F),
-            _rf(DOB),
+            _rf(DOB, _F),
             _rf(EMAIL),
         ),
         max_fuzzy_fields=2,
         p_collision_exact=p_collision(
-            (_rf(FIRST_NAME, _F), _rf(LAST_NAME, _F), _rf(DOB), _rf(EMAIL))
+            (_rf(FIRST_NAME, _F), _rf(LAST_NAME, _F), _rf(DOB, _F), _rf(EMAIL))
         ),
+        # v3.4.0 DOB* addition - no numeric effect, see rule 01's comment above.
         p_collision_fuzzy=p_collision(
-            (_rf(FIRST_NAME, _F), _rf(LAST_NAME, _F), _rf(DOB), _rf(EMAIL)),
+            (_rf(FIRST_NAME, _F), _rf(LAST_NAME, _F), _rf(DOB, _F), _rf(EMAIL)),
             fuzzy_fields=frozenset({FIRST_NAME, LAST_NAME}),
         ),
     ),
@@ -244,16 +267,19 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
     ),
     MatchingRule(
         rule_id="10",
-        description="Last Name* + DOB + Legal ID",
+        description="Last Name* + DOB* + Legal ID",
         fields=(
             _rf(LAST_NAME, _F),
-            _rf(DOB),
+            _rf(DOB, _F),
             _rf(LEGAL_ID),
         ),
         max_fuzzy_fields=1,
-        p_collision_exact=p_collision((_rf(LAST_NAME, _F), _rf(DOB), _rf(LEGAL_ID))),
+        p_collision_exact=p_collision(
+            (_rf(LAST_NAME, _F), _rf(DOB, _F), _rf(LEGAL_ID))
+        ),
+        # v3.4.0 DOB* addition - no numeric effect, see rule 01's comment above.
         p_collision_fuzzy=p_collision(
-            (_rf(LAST_NAME, _F), _rf(DOB), _rf(LEGAL_ID)),
+            (_rf(LAST_NAME, _F), _rf(DOB, _F), _rf(LEGAL_ID)),
             fuzzy_fields=frozenset({LAST_NAME}),
         ),
     ),
@@ -280,7 +306,7 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
         p_collision_exact=p_collision((_rf(FIRST_NAME), _rf(DOB), _rf(EMAIL))),
     ),
     MatchingRule(
-        rule_id="17",
+        rule_id="13",
         description="First Name + Phone Number + SSN Last 4",
         fields=(
             _rf(FIRST_NAME),
@@ -291,7 +317,7 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
         p_collision_exact=p_collision((_rf(FIRST_NAME), _rf(PHONE), _rf(SSN_LAST4))),
     ),
     MatchingRule(
-        rule_id="18",
+        rule_id="14",
         description="First Name + Phone Number + ITIN Last 4",
         fields=(
             _rf(FIRST_NAME),
@@ -302,7 +328,7 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
         p_collision_exact=p_collision((_rf(FIRST_NAME), _rf(PHONE), _rf(ITIN_LAST4))),
     ),
     MatchingRule(
-        rule_id="19",
+        rule_id="15",
         description="First Name + Email Address + SSN Last 4",
         fields=(
             _rf(FIRST_NAME),
@@ -313,7 +339,7 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
         p_collision_exact=p_collision((_rf(FIRST_NAME), _rf(EMAIL), _rf(SSN_LAST4))),
     ),
     MatchingRule(
-        rule_id="20",
+        rule_id="16",
         description="First Name + Email Address + ITIN Last 4",
         fields=(
             _rf(FIRST_NAME),
@@ -324,7 +350,7 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
         p_collision_exact=p_collision((_rf(FIRST_NAME), _rf(EMAIL), _rf(ITIN_LAST4))),
     ),
     MatchingRule(
-        rule_id="21",
+        rule_id="17",
         description="Phone Number + MBI",
         fields=(
             _rf(PHONE),
@@ -334,7 +360,7 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
         p_collision_exact=p_collision((_rf(PHONE), _rf(MBI))),
     ),
     MatchingRule(
-        rule_id="22",
+        rule_id="18",
         description="Phone Number + Legal ID (w/issuing-authority namespace)",
         fields=(
             _rf(PHONE),
@@ -344,7 +370,7 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
         p_collision_exact=p_collision((_rf(PHONE), _rf(LEGAL_ID))),
     ),
     MatchingRule(
-        rule_id="23",
+        rule_id="19",
         description="Email Address + MBI",
         fields=(
             _rf(EMAIL),
@@ -354,7 +380,7 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
         p_collision_exact=p_collision((_rf(EMAIL), _rf(MBI))),
     ),
     MatchingRule(
-        rule_id="24",
+        rule_id="20",
         description="Email Address + Legal ID (w/issuing-authority namespace)",
         fields=(
             _rf(EMAIL),
@@ -364,7 +390,7 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
         p_collision_exact=p_collision((_rf(EMAIL), _rf(LEGAL_ID))),
     ),
     MatchingRule(
-        rule_id="25",
+        rule_id="21",
         description="Legal ID + MBI",
         fields=(
             _rf(LEGAL_ID),
@@ -374,7 +400,7 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
         p_collision_exact=p_collision((_rf(LEGAL_ID), _rf(MBI))),
     ),
     MatchingRule(
-        rule_id="26",
+        rule_id="22",
         description="Namespace bound unique identifiers (EMPI, FHIR Patient ID, CSP UUID)",
         fields=(_rf(NAMESPACE_ID),),
         max_fuzzy_fields=0,
@@ -385,7 +411,7 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
     ),
     # --- CMS v3.3.0 base spec additions (session 6) ---
     MatchingRule(
-        rule_id="27",
+        rule_id="23",
         description="First Name + DOB + Member ID (payer namespace)",
         fields=(
             _rf(FIRST_NAME),
@@ -398,7 +424,7 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
         ),
     ),
     MatchingRule(
-        rule_id="28",
+        rule_id="24",
         description="Last Name* + DOB* (+/-1 day) + Member ID (payer namespace)",
         fields=(
             _rf(LAST_NAME, _F),
@@ -421,7 +447,7 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
         ),
     ),
     MatchingRule(
-        rule_id="29",
+        rule_id="25",
         description="Phone Number + Member ID (payer namespace)",
         fields=(
             _rf(PHONE),
@@ -431,7 +457,7 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
         p_collision_exact=p_collision((_rf(PHONE), _rf(INSURANCE_MEMBER_ID))),
     ),
     MatchingRule(
-        rule_id="30",
+        rule_id="26",
         description="Email Address + Member ID (payer namespace)",
         fields=(
             _rf(EMAIL),
@@ -441,7 +467,7 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
         p_collision_exact=p_collision((_rf(EMAIL), _rf(INSURANCE_MEMBER_ID))),
     ),
     MatchingRule(
-        rule_id="31",
+        rule_id="27",
         description="First Name* + Last Name + DOB + Subscriber ID (payer namespace)",
         fields=(
             _rf(FIRST_NAME, _F),
@@ -471,7 +497,7 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
         ),
     ),
     MatchingRule(
-        rule_id="32",
+        rule_id="28",
         description="First Name + Last Name* + DOB + Subscriber ID (payer namespace)",
         fields=(
             _rf(FIRST_NAME),
@@ -499,7 +525,7 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
         ),
     ),
     MatchingRule(
-        rule_id="33",
+        rule_id="29",
         description="First Name* + Last Name* + Phone Number + ZIP Code",
         fields=(
             _rf(FIRST_NAME, _F),
@@ -520,7 +546,7 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
     # with a multiple-birth caveat (no First Name field, can't disambiguate twins
     # sharing a household/DOB - twin handling itself is out of session 6's scope).
     MatchingRule(
-        rule_id="36",
+        rule_id="30",
         description="Last Name* + DOB + Phone Number (legacy exception; no twin disambiguation)",
         fields=(
             _rf(LAST_NAME, _F),

@@ -1,11 +1,13 @@
 """Table 3: per-field conservative u-probabilities, and the P(collision) evaluator,
-per CMS Patient Matching Proposal v3.3.0 SS IV.
+per CMS Patient Matching Proposal v3.4.0 SS IV.
 
 Values transcribed from the spec as of 2026-07-31 (Google Doc, file ID
-1ABHR6e4N-K9lEj1vc7DuzoAy8CuaAqwqAZSpJH9T4Yg - see ../../docs/sessions/conventions.md's
-"Reference documents" section). The spec is a live draft under public comment; if these
-values and the live doc diverge, the live doc wins - update this table and re-run the
-equivalence test in test_collision.py::test_existing_26_rules_reproduce_published_values.
+1ABHR6e4N-K9lEj1vc7DuzoAy8CuaAqwqAZSpJH9T4Yg) and re-confirmed unchanged against v3.4.0
+(Google Doc, file ID 1NytpfZ05aokS-gD7uDIQE7gEyms9zMgoiaIah_w4VTE, 2026-09-15) - see
+../../docs/sessions/conventions.md's "Reference documents" section. The spec is a live
+draft under public comment; if these values and the live doc diverge, the live doc wins -
+update this table and re-run the equivalence test in
+test_collision.py::test_existing_category1_rules_reproduce_published_values.
 
 Three fields the spec defines but which are "dismissed due to observed data quality
 issues and low selectivity" (Middle Name, Suffix, Year of Birth) are intentionally

@@ -9,14 +9,14 @@ matching is owned by `helix.personmatching`/`person-matching-service`, not
 this repo (`docs/PROJECT_MAP.md` §1).
 
 What this test *does* check: exactly one approved rule can evaluate at all
-against NPPES-shaped data - **Rule 33, "First Name* + Last Name* + Phone
+against NPPES-shaped data - **Rule 29, "First Name* + Last Name* + Phone
 Number + ZIP Code"**, `max_fuzzy_fields=2` - the only approved rule requiring
 none of DOB/SSN/MBI/email. It's tested both directions, like the ONC pairs
 test:
 
 - **Recall (does it match when it should):** an exact duplicate of a
   provider's record, and single-edit (Damerau-Levenshtein <= 1, per CMS SS
-  E.2) typo variants of the first name, last name, or both (rule 33 allows
+  E.2) typo variants of the first name, last name, or both (rule 29 allows
   fuzzy on both simultaneously) - phone and ZIP held fixed. All should match.
 - **FPR (does it wrongly match when it shouldn't):** real, distinct providers
   (different NPI) who happen to share a practice phone + ZIP - common in
@@ -26,11 +26,11 @@ test:
 A false positive here is a real, actionable finding, not a data-quality issue
 to paper over the way an ONC hard-negative false positive would be - there's
 no ambiguity about whether two different NPIs are the same person. A false
-negative on the exact-duplicate or single-edit cases would mean rule 33's own
+negative on the exact-duplicate or single-edit cases would mean rule 29's own
 fuzzy tolerance is broken, independent of any practitioner-specific question.
 
 Approach for FPR: normalize/extract every provider once, then block by
-(phone, ZIP) - the two non-fuzzy fields rule 33 requires - and run
+(phone, ZIP) - the two non-fuzzy fields rule 29 requires - and run
 `evaluate_pair()` only within blocks with 2+ distinct NPIs (mirrors how the
 real engine's own blocking works, and how the ONC test-set repo's
 hard-negative miner blocks on strong fields before verifying fuzzy ones - see
@@ -48,7 +48,7 @@ not-applicable for that specific mutation, not silently counted as failures.
 A provider whose practice phone didn't survive normalization at all (a
 placeholder like "000-000-0000", or a non-US/APO number the phone normalizer
 can't parse under its default US region - 27 of 4,943 in this sample) is
-excluded from every recall case, including exact-duplicate - rule 33 can't
+excluded from every recall case, including exact-duplicate - rule 29 can't
 evaluate without phone present, even against an identical copy of itself.
 That's a real, narrow NPPES-data-quality limitation worth surfacing plainly
 (tracked as `not_applicable["missing_phone_or_zip"]` in the summary), not a
@@ -84,7 +84,7 @@ NPPES_FIXTURES_DIR = REPO_ROOT / "tests" / "fixtures" / "nppes"
 
 # Regression guard for the recall side (see module docstring). Measured at
 # 1.0000 (17,299/17,299 true-match cases, 0 false negatives) against the
-# providers where rule 33's mandatory phone/ZIP fields were extractable - the
+# providers where rule 29's mandatory phone/ZIP fields were extractable - the
 # floor leaves only enough headroom to not be a byte-exact pin (see
 # docs/ONC_REGRESSION_TEST_DESIGN.md's "Alternatives Considered" for why exact
 # pinning is avoided generally), not because a large drop is expected to be
@@ -218,11 +218,11 @@ def test_nppes_matching_recall_and_fpr() -> None:
         "both_transpose": 0,
     }
     for (npi, _name, fields), normalized in zip(provider_fields, normalized_rows):
-        # Rule 33 requires phone and ZIP as non-fuzzy, mandatory fields. A
+        # Rule 29 requires phone and ZIP as non-fuzzy, mandatory fields. A
         # provider whose practice phone didn't survive normalization (a
         # placeholder like "000-000-0000", or a non-US/APO number the phone
         # normalizer can't parse under its default US region) can't evaluate
-        # under rule 33 at all - not even against an identical copy of
+        # under rule 29 at all - not even against an identical copy of
         # itself. That's a real, narrow limitation worth surfacing plainly
         # (see module docstring / design doc), not a matching bug to conflate
         # into recall by counting it as a false negative.

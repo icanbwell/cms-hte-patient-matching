@@ -147,3 +147,74 @@ async def test_engine_suffix_conflict_negates_match() -> None:
     query["name"][0]["suffix"] = ["jr"]
     result = await manager.match(query)
     assert result.outcome == MatchOutcome.NO_MATCH
+
+
+# --- DOB +/-1 day tolerance boundary cases (adversarial-review fix) ------------
+#
+# These exercise the *real* backend-blocking path (InMemoryBackend.search),
+# not a stub that returns every candidate unconditionally - the original
+# bug (DOB fuzzy blocking routed through Damerau-Levenshtein string edit
+# distance instead of calendar-day distance) was invisible to any test
+# that bypasses blocking, which is exactly what test_matching_engine.py's
+# local `InMemoryBackend` stub does (its `search()` ignores criteria
+# entirely and returns every candidate). A date string's edit distance has
+# no relationship to its calendar distance - these all describe legitimate
+# CMS v3.3 DOB* matches that a string-fuzzy blocking path silently drops.
+
+
+async def test_dob_month_boundary_one_day_apart_matches() -> None:
+    backend = InMemoryBackend(
+        [_patient("1", "john", "smith", "1990-01-31", "123 main st")]
+    )
+    manager = MatchingManager(backend=backend)
+    result = await manager.match(
+        _patient("q", "john", "smith", "1990-02-01", "123 main st")
+    )
+    assert result.outcome == MatchOutcome.MATCH
+
+
+async def test_dob_year_boundary_one_day_apart_matches() -> None:
+    backend = InMemoryBackend(
+        [_patient("1", "john", "smith", "1999-12-31", "123 main st")]
+    )
+    manager = MatchingManager(backend=backend)
+    result = await manager.match(
+        _patient("q", "john", "smith", "2000-01-01", "123 main st")
+    )
+    assert result.outcome == MatchOutcome.MATCH
+
+
+async def test_dob_leap_day_boundary_matches() -> None:
+    backend = InMemoryBackend(
+        [_patient("1", "john", "smith", "2000-02-29", "123 main st")]
+    )
+    manager = MatchingManager(backend=backend)
+    result = await manager.match(
+        _patient("q", "john", "smith", "2000-03-01", "123 main st")
+    )
+    assert result.outcome == MatchOutcome.MATCH
+
+
+async def test_dob_digit_rollover_one_day_apart_matches() -> None:
+    """ "...-09" -> "...-10" has a large Damerau-Levenshtein distance despite
+    being 1 calendar day apart - exactly the class of pair silently dropped
+    by routing DOB through the generic string-fuzzy blocking path."""
+    backend = InMemoryBackend(
+        [_patient("1", "john", "smith", "1990-01-09", "123 main st")]
+    )
+    manager = MatchingManager(backend=backend)
+    result = await manager.match(
+        _patient("q", "john", "smith", "1990-01-10", "123 main st")
+    )
+    assert result.outcome == MatchOutcome.MATCH
+
+
+async def test_dob_two_days_apart_still_does_not_match() -> None:
+    backend = InMemoryBackend(
+        [_patient("1", "john", "smith", "1990-01-15", "123 main st")]
+    )
+    manager = MatchingManager(backend=backend)
+    result = await manager.match(
+        _patient("q", "john", "smith", "1990-01-17", "123 main st")
+    )
+    assert result.outcome == MatchOutcome.NO_MATCH

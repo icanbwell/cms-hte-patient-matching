@@ -8,6 +8,7 @@ criteria into cache lookups, returning FHIR Patient dicts.
 from __future__ import annotations
 
 import logging
+from datetime import date, timedelta
 from typing import Any, Dict, List, Set
 
 from ..matching.backend import FieldCriterion, MatchingBackend, MatchType
@@ -48,17 +49,20 @@ class CacheMatchingBackend(MatchingBackend):
         all_candidates: Dict[str, Dict[str, Any]] = {}
 
         for criterion in criteria:
-            fuzzy = criterion.match_type == MatchType.FUZZY
-            matches = await self._cache.search_by_field(
-                criterion.field_name,
-                criterion.value,
-                fuzzy=fuzzy,
-            )
-            match_ids = set()
-            for m in matches:
-                match_ids.add(m.patient_id)
-                if m.patient_id not in all_candidates:
-                    all_candidates[m.patient_id] = m.fhir_resource
+            if criterion.match_type == MatchType.DOB_TOLERANCE:
+                match_ids = await self._search_dob_tolerance(criterion, all_candidates)
+            else:
+                fuzzy = criterion.match_type == MatchType.FUZZY
+                matches = await self._cache.search_by_field(
+                    criterion.field_name,
+                    criterion.value,
+                    fuzzy=fuzzy,
+                )
+                match_ids = set()
+                for m in matches:
+                    match_ids.add(m.patient_id)
+                    if m.patient_id not in all_candidates:
+                        all_candidates[m.patient_id] = m.fhir_resource
             candidate_sets.append(match_ids)
 
         if not candidate_sets:
@@ -70,3 +74,45 @@ class CacheMatchingBackend(MatchingBackend):
             result_ids &= s
 
         return [all_candidates[pid] for pid in result_ids if pid in all_candidates]
+
+    async def _search_dob_tolerance(
+        self,
+        criterion: FieldCriterion,
+        all_candidates: Dict[str, Dict[str, Any]],
+    ) -> Set[str]:
+        """Retrieve DOB_TOLERANCE candidates via 3 exact lookups (the query
+        date, and each calendar-adjacent day), not a fuzzy-text search.
+
+        A date string's edit distance has no relationship to its calendar
+        distance (see MatchType.DOB_TOLERANCE) - expanding to exact
+        equality on the 3 candidate dates keeps this an indexed lookup on
+        every cache backend (DuckDB's exact path, Mongo Atlas's plain
+        `find`), rather than DuckDB's full-column-scan fuzzy path or
+        Atlas's token-based `$search`, which tokenizes a date string into
+        year/month/day and returns everyone sharing any one token.
+
+        Malformed/unparseable dates fail closed to a single exact lookup on
+        the literal value (no expansion) - consistent with
+        field_comparator.dob_fuzzy_match's own fail-closed handling of
+        unparseable dates.
+        """
+        try:
+            query_date = date.fromisoformat(criterion.value)
+        except ValueError:
+            candidate_dates = {criterion.value}
+        else:
+            candidate_dates = {
+                (query_date + timedelta(days=offset)).isoformat()
+                for offset in (-1, 0, 1)
+            }
+
+        match_ids: Set[str] = set()
+        for candidate_date in candidate_dates:
+            matches = await self._cache.search_by_field(
+                criterion.field_name, candidate_date, fuzzy=False
+            )
+            for m in matches:
+                match_ids.add(m.patient_id)
+                if m.patient_id not in all_candidates:
+                    all_candidates[m.patient_id] = m.fhir_resource
+        return match_ids

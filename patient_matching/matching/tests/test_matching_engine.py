@@ -275,7 +275,7 @@ class TestMatchingEngineSuffixConflict:
 class TestMatchingEngineRuleSubset:
     async def test_custom_rule_subset(self) -> None:
         """Engine should respect a custom subset of rules."""
-        single_rule = (_rule_by_id("26"),)  # Rule 26: namespace_id
+        single_rule = (_rule_by_id("22"),)  # Rule 22: namespace_id
         candidate = _make_patient(namespace_id="MRN001")
         query = _make_patient(namespace_id="MRN001")
         engine = MatchingEngine(
@@ -285,7 +285,7 @@ class TestMatchingEngineRuleSubset:
         )
         result = await engine.match(query)
         assert result.outcome == MatchOutcome.MATCH
-        assert result.matched_rule_id == "26"
+        assert result.matched_rule_id == "22"
 
     async def test_rule_skipped_when_query_missing_fields(self) -> None:
         """Rule should be skipped if query lacks required fields."""
@@ -310,8 +310,8 @@ class TestMatchingEngineRuleEvaluations:
         assert len(result.rule_evaluations) > 0
 
     async def test_evaluation_field_outcomes(self) -> None:
-        """Rule 26 eval should have namespace_id as exact."""
-        single_rule = (_rule_by_id("26"),)
+        """Rule 22 eval should have namespace_id as exact."""
+        single_rule = (_rule_by_id("22"),)
         candidate = _make_patient(namespace_id="MRN001")
         query = _make_patient(namespace_id="MRN001")
         engine = MatchingEngine(
@@ -320,7 +320,7 @@ class TestMatchingEngineRuleEvaluations:
             household_individual_rules=(),
         )
         result = await engine.match(query)
-        evals = [e for e in result.rule_evaluations if e.rule_id == "26"]
+        evals = [e for e in result.rule_evaluations if e.rule_id == "22"]
         assert len(evals) == 1
         assert evals[0].field_outcomes.get("namespace_id") == "exact"
 
@@ -368,7 +368,7 @@ class TestHouseholdIndividualRules:
         """Rule 13: SSN Last 4 + Phone (household) + First Name/DOB
         (individual). A household member sharing SSN-last-4 and phone but
         with different First Name/DOB must not resolve."""
-        rule_13 = _category2_rule_by_id("13")
+        rule_13 = _category2_rule_by_id("C2-13")
         household_member = _make_patient(
             first="jane", last="smith", dob="1988-05-01", ssn_last4="6789"
         )
@@ -387,7 +387,7 @@ class TestHouseholdIndividualRules:
         """Household step can legitimately surface multiple candidates
         (household members sharing SSN+phone); individual step must narrow
         to only the one whose First Name/DOB also match."""
-        rule_13 = _category2_rule_by_id("13")
+        rule_13 = _category2_rule_by_id("C2-13")
         the_person = _make_patient(
             first="john", last="smith", dob="1990-01-15", ssn_last4="6789"
         )
@@ -404,13 +404,13 @@ class TestHouseholdIndividualRules:
         )
         result = await engine.match(query)
         assert result.outcome == MatchOutcome.MATCH
-        assert result.matched_rule_id == "13"
+        assert result.matched_rule_id == "C2-13"
         assert result.matched_patients == [the_person]
 
     async def test_no_household_match_declines(self) -> None:
         """Zero household-tier matches (different SSN last 4) -> no match,
         even though First Name/DOB (individual-tier) agree."""
-        rule_13 = _category2_rule_by_id("13")
+        rule_13 = _category2_rule_by_id("C2-13")
         candidate = _make_patient(ssn_last4="0000")
         query = _make_patient(ssn_last4="6789")
         engine = MatchingEngine(
@@ -425,7 +425,7 @@ class TestHouseholdIndividualRules:
         """v3.3.1: Last Name is non-blocking corroboration for rules 13-16 -
         a household+individual match must succeed even when Last Name
         differs (the exact blended-family case these rules exist to fix)."""
-        rule_13 = _category2_rule_by_id("13")
+        rule_13 = _category2_rule_by_id("C2-13")
         candidate = _make_patient(
             first="john", last="jones", dob="1990-01-15", ssn_last4="6789"
         )
@@ -439,10 +439,10 @@ class TestHouseholdIndividualRules:
         )
         result = await engine.match(query)
         assert result.outcome == MatchOutcome.MATCH
-        assert result.matched_rule_id == "13"
+        assert result.matched_rule_id == "C2-13"
 
     async def test_rule_38_subscriber_id_household(self) -> None:
-        rule_38 = _category2_rule_by_id("38")
+        rule_38 = _category2_rule_by_id("C2-38")
         candidate = _make_patient(
             first="john",
             last="smith",
@@ -464,7 +464,7 @@ class TestHouseholdIndividualRules:
         )
         result = await engine.match(query)
         assert result.outcome == MatchOutcome.MATCH
-        assert result.matched_rule_id == "38"
+        assert result.matched_rule_id == "C2-38"
 
     async def test_household_individual_rules_can_be_disabled(self) -> None:
         candidate = _make_patient(ssn_last4="6789")
@@ -493,11 +493,11 @@ class TestHouseholdIndividualRules:
         # CATEGORY_2_RULES should still resolve rule 13 (SSN+Phone
         # household, First Name/DOB individual - both share defaults).
         assert result.outcome == MatchOutcome.MATCH
-        assert result.matched_rule_id == "13"
+        assert result.matched_rule_id == "C2-13"
 
 
 class TestDobFuzzyDispatch:
-    """Rule 28: Last Name* + DOB* (+/-1 day) + Member ID."""
+    """Rule 24: Last Name* + DOB* (+/-1 day) + Insurance Member ID."""
 
     def _make_member_id_patient(
         self, *, first: str, last: str, dob: str, member_id: str
@@ -523,7 +523,7 @@ class TestDobFuzzyDispatch:
         """DOB fuzzy-eligibility must not consume max_fuzzy_fields - both
         Last Name (Damerau-Levenshtein) and DOB (+/-1 day) going fuzzy at
         once must not trigger 'fuzzy_exceeded' for either."""
-        rule_28 = _rule_by_id("28")
+        rule_24 = _rule_by_id("24")
         candidate = self._make_member_id_patient(
             first="john", last="smyth", dob="1990-01-16", member_id="M1"
         )
@@ -532,19 +532,19 @@ class TestDobFuzzyDispatch:
         )
         engine = MatchingEngine(
             backend=InMemoryBackend([candidate]),
-            rules=(rule_28,),
+            rules=(rule_24,),
             household_individual_rules=(),
         )
         result = await engine.match(query)
         assert result.outcome == MatchOutcome.MATCH
         evaluation = next(
-            e for e in result.rule_evaluations if e.rule_id == "28" and e.matched
+            e for e in result.rule_evaluations if e.rule_id == "24" and e.matched
         )
         assert evaluation.field_outcomes["last_name"] == "fuzzy"
         assert evaluation.field_outcomes["dob"] == "fuzzy"
 
     async def test_dob_two_days_off_does_not_match(self) -> None:
-        rule_28 = _rule_by_id("28")
+        rule_24 = _rule_by_id("24")
         candidate = self._make_member_id_patient(
             first="john", last="smith", dob="1990-01-17", member_id="M1"
         )
@@ -553,7 +553,66 @@ class TestDobFuzzyDispatch:
         )
         engine = MatchingEngine(
             backend=InMemoryBackend([candidate]),
-            rules=(rule_28,),
+            rules=(rule_24,),
+            household_individual_rules=(),
+        )
+        result = await engine.match(query)
+        assert result.outcome == MatchOutcome.NO_MATCH
+
+
+class TestDobFuzzyExtendedToNewRules:
+    """v3.4.0 extends DOB +/-1 day fuzzy from rule 24 alone to rules 01, 02,
+    03, and 10 (session 16). End-to-end coverage via MatchingEngine.match()
+    that each rule's DOB dispatch actually works - the static
+    FieldComparator.dob_fuzzy_match unit tests and the p_collision figure
+    check (session_16.md's Execution notes) only prove the comparator and
+    the collision-probability math are correct, not that each rule is
+    actually wired to use it."""
+
+    _RULE_ANCHOR_FIELDS = [
+        ("01", {"street": "123 main st"}),  # First*+Last*+DOB*+Street Line*
+        ("02", {"phone": "+12125551234"}),  # First+Last*+DOB*+Phone
+        ("03", {"email": "john@gmail.com"}),  # First*+Last*+DOB*+Email
+        ("10", {"legal_id": "DL123456"}),  # Last*+DOB*+Legal ID (no First Name field)
+    ]
+
+    @pytest.mark.parametrize("rule_id,anchor_kwargs", _RULE_ANCHOR_FIELDS)
+    async def test_dob_one_day_off_matches(
+        self, rule_id: str, anchor_kwargs: Dict[str, Any]
+    ) -> None:
+        rule = _rule_by_id(rule_id)
+        candidate = _make_patient(
+            first="john", last="smith", dob="1990-01-15", **anchor_kwargs
+        )
+        query = _make_patient(
+            first="john", last="smith", dob="1990-01-16", **anchor_kwargs
+        )
+        engine = MatchingEngine(
+            backend=InMemoryBackend([candidate]),
+            rules=(rule,),
+            household_individual_rules=(),
+        )
+        result = await engine.match(query)
+        assert result.outcome == MatchOutcome.MATCH
+        evaluation = next(
+            e for e in result.rule_evaluations if e.rule_id == rule_id and e.matched
+        )
+        assert evaluation.field_outcomes["dob"] == "fuzzy"
+
+    @pytest.mark.parametrize("rule_id,anchor_kwargs", _RULE_ANCHOR_FIELDS)
+    async def test_dob_two_days_off_does_not_match(
+        self, rule_id: str, anchor_kwargs: Dict[str, Any]
+    ) -> None:
+        rule = _rule_by_id(rule_id)
+        candidate = _make_patient(
+            first="john", last="smith", dob="1990-01-17", **anchor_kwargs
+        )
+        query = _make_patient(
+            first="john", last="smith", dob="1990-01-15", **anchor_kwargs
+        )
+        engine = MatchingEngine(
+            backend=InMemoryBackend([candidate]),
+            rules=(rule,),
             household_individual_rules=(),
         )
         result = await engine.match(query)

@@ -83,14 +83,14 @@ class TestCategory2Rules:
     @pytest.mark.parametrize(
         "rule_id,expected_exact",
         [
-            ("13", 2.0e-16),
-            ("14", 2.0e-16),
-            ("15", 2.0e-16),
-            ("16", 2.0e-16),
-            ("34", 6.0e-16),
-            ("35", 6.0e-16),
-            ("37", 6.0e-17),
-            ("38", 2.0e-16),
+            ("C2-13", 2.0e-16),
+            ("C2-14", 2.0e-16),
+            ("C2-15", 2.0e-16),
+            ("C2-16", 2.0e-16),
+            ("C2-34", 6.0e-16),
+            ("C2-35", 6.0e-16),
+            ("C2-37", 6.0e-17),
+            ("C2-38", 2.0e-16),
         ],
     )
     def test_combined_p_collision_matches_published_figure(
@@ -100,8 +100,19 @@ class TestCategory2Rules:
         assert rule.p_collision_exact == pytest.approx(expected_exact, rel=1e-6)
 
     def test_all_8_rules_present(self) -> None:
+        """rule_ids carry a C2- prefix (session 16) so they can't collide with
+        Category 1's own 13-16, which v3.4.0 reassigns to unrelated flat rules."""
         ids = {r.rule_id for r in CATEGORY_2_RULES}
-        assert ids == {"13", "14", "15", "16", "34", "35", "37", "38"}
+        assert ids == {
+            "C2-13",
+            "C2-14",
+            "C2-15",
+            "C2-16",
+            "C2-34",
+            "C2-35",
+            "C2-37",
+            "C2-38",
+        }
 
     def test_all_rules_clear_the_approval_threshold(self) -> None:
         """Every Category 2 rule's combined P(collision) is well under 2e-12 -

@@ -1,8 +1,10 @@
-"""Core matching engine implementing CMS Proposal v3.2.2 Table 2 rules.
+"""Core matching engine implementing CMS Patient Matching Proposal Table 2 rules.
 
 Evaluates a query patient against candidates from the backend, applying:
-  - All 26 approved field combinations
-  - Constrained fuzzy matching (Damerau-Levenshtein <= 1, min 5 chars)
+  - All 30 approved Category 1 (flat) field combinations, plus Category 2
+    (household/individual two-step) rules
+  - Constrained fuzzy matching (Damerau-Levenshtein <= 1, min 5 chars),
+    except DOB, which uses a +/-1 calendar day tolerance instead (v3.3)
   - Suffix conflict detection (B.5 — negates match)
   - Uniqueness check (must produce exactly 1 candidate)
 """
@@ -227,11 +229,18 @@ class MatchingEngine:
                 # Use the first value for backend blocking; the engine
                 # will check all values during verification.
                 primary_value = next(iter(values))
-                match_type = (
-                    MatchType.FUZZY
-                    if rf.role == FieldRole.FUZZY_ELIGIBLE
-                    else MatchType.EXACT
-                )
+                if rf.role != FieldRole.FUZZY_ELIGIBLE:
+                    match_type = MatchType.EXACT
+                elif rf.name == DOB:
+                    # DOB's fuzzy tolerance is +/-1 calendar day, not a
+                    # string edit distance (see MatchType.DOB_TOLERANCE) -
+                    # routing it through MatchType.FUZZY would block on
+                    # Damerau-Levenshtein distance, which silently drops
+                    # genuine +/-1-day matches at month/year boundaries and
+                    # plain digit rollovers (e.g. "...-09"->"...-10").
+                    match_type = MatchType.DOB_TOLERANCE
+                else:
+                    match_type = MatchType.FUZZY
                 criteria.append(
                     FieldCriterion(
                         field_name=rf.name,
@@ -275,7 +284,7 @@ class MatchingEngine:
         max_fuzzy_fields' collision-probability budget was designed around -
         Table 3 has no separate fuzzy u-probability for "dob" (FIELD_U_PROBS's
         dob entry carries no fuzzy variant), so a rule combining DOB* with
-        another starred field (e.g. rule 28's Last Name*+DOB*) only reflects
+        another starred field (e.g. rule 24's Last Name*+DOB*) only reflects
         ONE field's fuzzy multiplier in its published p_collision_fuzzy
         figure - confirmed empirically: it always matches the OTHER starred
         field going fuzzy, never DOB. Counting DOB against max_fuzzy_fields

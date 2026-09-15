@@ -6,7 +6,7 @@ version: **not** a Table 2 compliance test — this repo's Table 2 rules and Tab
 probabilities are patient-specific and don't transfer to practitioner data; see
 `docs/ONC_REGRESSION_TEST_DESIGN.md`'s "Alternatives Considered" for the full reasoning. This is a
 narrower, still-valid safety check: does the one Table 2 rule that *can* evaluate against
-NPPES-shaped data - rule 33, `First Name* + Last Name* + Phone Number + ZIP Code`, the only
+NPPES-shaped data - Rule 29, `First Name* + Last Name* + Phone Number + ZIP Code`, the only
 approved rule requiring none of DOB/SSN/MBI/email - ever produce a false match between two
 genuinely distinct real providers?).
 
