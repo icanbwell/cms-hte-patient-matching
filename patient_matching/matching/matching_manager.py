@@ -56,29 +56,47 @@ class MatchingManager:
             rules=self._rules,
         )
 
-    async def match(self, query_patient: Dict[str, Any]) -> MatchResult:
+    async def match(
+        self,
+        query_patient: Dict[str, Any],
+        *,
+        query_initiator: Optional[str] = None,
+    ) -> MatchResult:
         """Match a normalized FHIR Patient against the backend.
 
         Args:
             query_patient: A normalized FHIR R4 Patient resource dict.
+            query_initiator: SS VII audit field (session 18) - an opaque,
+                caller-supplied identifier for whoever/whatever issued this
+                query. Passed through to MatchingEngine.match() verbatim -
+                see that method's docstring for the full contract.
 
         Returns:
             A MatchResult with outcome, matched patients, and audit data.
         """
-        return await self._engine.match(query_patient)
+        return await self._engine.match(query_patient, query_initiator=query_initiator)
 
     async def match_batch(
-        self, query_patients: List[Dict[str, Any]]
+        self,
+        query_patients: List[Dict[str, Any]],
+        *,
+        query_initiator: Optional[str] = None,
     ) -> List[MatchResult]:
         """Match a list of normalized FHIR Patients against the backend.
 
         Args:
             query_patients: A list of normalized FHIR R4 Patient dicts.
+            query_initiator: SS VII audit field, applied to every patient in
+                the batch - a batch is one caller-issued operation, so all
+                its per-patient audit records share the same initiator.
 
         Returns:
             A list of MatchResults in the same order.
         """
-        return [await self._engine.match(p) for p in query_patients]
+        return [
+            await self._engine.match(p, query_initiator=query_initiator)
+            for p in query_patients
+        ]
 
     @property
     def rule_count(self) -> int:

@@ -187,3 +187,80 @@ Validation:
 Decision: PR opened from `claude/session-18-v340-audit-record-reconciliation` into `main`, left
 **open** rather than merged - merging is Imran's call, same as every prior session in this
 repo. Doc moved to `in_review/` and `index.md` updated accordingly, in the same PR.
+
+## Post-review fixes (adversarial review pass, 2026-09-15)
+
+An adversarial review of this PR (executed against a live worktree, reproductions run and
+verified, not by inspection) found two real defects, fixed here, and two real questions that
+need Imran's input rather than a unilateral code change:
+
+**Fixed: `MatchingManager` - the other public entry point besides `MatchingEngine.match()` -
+had no way to accept `query_initiator` at all.** `MatchingManager.match()`/`match_batch()`
+still called `self._engine.match(query_patient)` with no initiator, verified to produce
+`query_initiator=None` on every query routed through it regardless of what the caller
+supplied. `MatchingManager` is exported in `patient_matching/matching/__init__.py` and its own
+class docstring presents it as "a single entry point" - silently incomplete for SS VII. Fixed
+by adding the same `query_initiator` keyword-only parameter to both methods
+(`match_batch`'s applies to every patient in the batch, since a batch is one caller-issued
+operation). New tests in `test_matching_manager.py` confirmed via `git stash` to fail
+pre-fix.
+
+**Fixed: a query with too few fields for ANY Table 2 rule to be attempted was
+indistinguishable from a genuinely-evaluated-but-not-found query.** Both previously reported
+`MatchOutcome.NO_MATCH` with an empty `rule_evaluations` - but "no Table 2 combination was even
+evaluable" is not the same SS VII "final match determination" as "every evaluable combination
+was checked and none matched," and this doc's own field-mapping treats "Table 2 combination
+evaluated" and "final match determination" as two separate fields that can't both be
+meaningfully populated from the same NO_MATCH value in the empty-evaluations case.
+`MatchOutcome.INSUFFICIENT_FIELDS` was defined in `match_result.py` for exactly this and never
+produced anywhere - confirmed by grep before fixing, not assumed. Fixed by tracking whether any
+rule's (flat or household) field requirements were even satisfiable by the query, independent
+of backend search, and returning `INSUFFICIENT_FIELDS` instead of `NO_MATCH` when none were.
+One existing test (`test_service.py::test_match_patient_no_match`) turned out to be
+accidentally exercising this exact case under a stale "no_match" assertion - its query's phone
+number had an invalid US area code that normalization silently dropped, leaving it with too few
+fields for any rule; fixed the phone number to restore the test's actual intent and added a
+dedicated `test_match_patient_insufficient_fields` for the case it was accidentally covering.
+Two more existing tests genuinely needed their expected outcome updated for the same reason
+(both configured zero evaluable rules on purpose). All confirmed via `git stash` to
+newly-fail/newly-pass correctly across the fix.
+
+**Not fixed, flagged for Imran instead of decided unilaterally:**
+
+1. **No audit record is produced at all on error paths** (a raising backend, IAL2 token
+   verification failure, or normalization failure all abort before any `MatchResult` is
+   constructed - verified by tracing `matching_engine.py` and `service.py`'s exception
+   surfaces). If SS VII requires a record per query *attempted*, a failed query is exactly the
+   case an auditor would care about most. Not fixed here because catching exceptions to still
+   emit a record is a real behavior change to this library's error-handling contract (do
+   callers currently rely on exceptions propagating?), not a local correction - needs a
+   decision on whether failed queries should produce a record at all, and if so, what
+   "failure" outcome/fields it should carry.
+2. **`query_initiator` is untrusted, unvalidated input written verbatim into an audit
+   field.** Verified a forged value containing control characters/newlines passes through
+   unmodified and gets persisted. `MatchResult.query_initiator`'s own docstring already
+   documents "this library does not validate, derive, or require it" as an explicit decision
+   made with Imran on 2026-09-15 (the same day this session ran) - re-litigating that via a
+   silent validation change would override a decision already made on this exact field without
+   new authorization. Flagging instead: was "opaque, unvalidated" meant to include tolerating
+   literal control characters (a log-injection vector once this record reaches any
+   line-oriented sink) and PHI smuggled into a field documented as non-PHI provenance metadata,
+   or does the existing decision need a narrower amendment (e.g. reject control characters/cap
+   length, without deriving or requiring semantic content)?
+
+A related, smaller documentation gap also flagged, not changed: `match_result.py`'s module
+docstring now frames `MatchResult` as "the SS VII per-query audit record," but the dataclass
+still carries full FHIR Patient dicts in `matched_patients` - a consumer following that framing
+literally could persist/export the whole object as its audit record, writing complete PHI
+(name, DOB, address) into a store that needs only identifiers and outcomes. Worth a docstring
+warning or a PHI-free projection method in a follow-up, not blocking this fix pass.
+
+Also added, closing test-coverage gaps the same review found: `TestQueryInitiatorAndTimestampOnEveryOutcomeBranch`
+(query_initiator/timestamp were only tested on the NO_MATCH/MATCH branches of `_build_result`'s
+4 hand-duplicated construction sites - ESCALATE/AMBIGUOUS were unverified), a timestamp
+ISO-8601-UTC well-formedness test (prior tests only checked `!= ""`), and a fuzzy `match_type`
+test (only "exact" was covered).
+
+Validation after fixes: `uv run pytest .` - 485 passed (up from 478), 0 regressions.
+`uv run pre-commit run` clean; the one remaining mypy failure (`mongo_atlas_cache.py:264`)
+confirmed via `git stash` to pre-exist on this branch independent of this fix.

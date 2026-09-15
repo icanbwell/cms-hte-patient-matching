@@ -92,14 +92,37 @@ class TestPatientMatcherService:
         await _populate_cache(cache, [_make_cached("p1")])
         service = PatientMatcherService(cache=cache)
 
+        # A valid, normalizable phone number, per Post-review fix: the
+        # original "+19995551111" here has an invalid US area code ("999")
+        # and was silently dropped by normalization, leaving the query with
+        # no evaluable Table 2 rule at all (first_name+last_name+dob alone
+        # matches none) - this test was actually exercising the
+        # INSUFFICIENT_FIELDS case under a stale "no_match" assertion, not
+        # a genuine no-candidate-found NO_MATCH as its name claims. See
+        # test_match_patient_insufficient_fields below for that case,
+        # tested deliberately instead of by accident.
         query = {
             "resourceType": "Patient",
             "name": [{"family": "jones", "given": ["alice"]}],
             "birthDate": "2000-12-25",
-            "telecom": [{"system": "phone", "value": "+19995551111"}],
+            "telecom": [{"system": "phone", "value": "+12125551111"}],
         }
         result = await service.match_patient(query)
         assert result.outcome == "no_match"
+        assert len(result.matched_patient_ids) == 0
+
+    async def test_match_patient_insufficient_fields(self, cache: DuckDBCache) -> None:
+        """A query with too few extractable fields for ANY Table 2 rule to
+        even be attempted must report INSUFFICIENT_FIELDS, not the same
+        NO_MATCH a genuinely-evaluated-but-not-found query gets - these are
+        different SS VII "final match determination" values (adversarial
+        review, session 18 post-review fix)."""
+        await _populate_cache(cache, [_make_cached("p1")])
+        service = PatientMatcherService(cache=cache)
+
+        query = {"resourceType": "Patient", "name": [{"given": ["alice"]}]}
+        result = await service.match_patient(query)
+        assert result.outcome == "insufficient_fields"
         assert len(result.matched_patient_ids) == 0
 
     async def test_match_from_token_without_extractor(self, cache: DuckDBCache) -> None:

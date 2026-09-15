@@ -81,6 +81,19 @@ run whatever **Suggested Next Session** names below.
 > review turned that into a demonstrated, tested case rather than a prose caveat - see
 > session_17.md's "Post-review fixes" section for the two remediation options (add a
 > discriminating field vs. gate on FHIR's multipleBirth flag) and their tradeoffs.
+> **2026-09-15 addendum (session 18, post-review fix):** an adversarial review of PR #53 found
+> `MatchingManager` (the other public entry point besides `MatchingEngine.match()`) had no way
+> to accept `query_initiator` at all, and that a query with too few fields for ANY rule to be
+> attempted was indistinguishable from a genuinely-evaluated no-match - both fixed, the latter
+> by finally producing `MatchOutcome.INSUFFICIENT_FIELDS`, which existed but was never
+> produced. Two more findings flagged for Imran rather than decided unilaterally: no audit
+> record is produced at all when a query raises (backend error, IAL2 failure, normalization
+> failure) - is that the intended behavior for SS VII, or should failed queries also produce a
+> record? And `query_initiator` is unvalidated, caller-supplied input written verbatim into an
+> audit field (verified: control characters pass through unmodified) - this doc's own
+> `query_initiator` decision from earlier the same day already says "not validated," so
+> tightening that needs Imran's confirmation it was meant to include tolerating literal control
+> characters, not a silent code change. See session_18.md's "Post-review fixes" section.
 >
 > **Session 8 — Legacy comparison harness (Tier 3).** Session 6 (below) is now `in_review/`
 > (PR opened 2026-08-18) with its hard code dependency (session 5) satisfied. Session 8's

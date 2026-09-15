@@ -5,6 +5,7 @@ spec revision touching this section trips an obvious, specific failure
 rather than a generic regression somewhere else in the suite.
 """
 
+from datetime import datetime, timedelta
 from typing import Any, Dict, List
 
 from patient_matching.matching.backend import FieldCriterion, MatchingBackend
@@ -75,6 +76,28 @@ class TestMatchType:
         result = await engine.match(query)
         assert result.match_type == "exact"
 
+    async def test_fuzzy_match_is_recorded(self) -> None:
+        """The other half of this field's stated purpose ("exact" or
+        "fuzzy") was untested. Rule 08 (used elsewhere in this file) has no
+        fuzzy-eligible field, so this uses rule 01 (First+Last*+DOB+Street)
+        via a last-name transposition."""
+
+        def _street_patient(last: str) -> Dict[str, Any]:
+            return {
+                "resourceType": "Patient",
+                "name": [{"given": ["john"], "family": last}],
+                "birthDate": "1990-01-15",
+                "telecom": [],
+                "address": [{"line": ["123 main st"]}],
+            }
+
+        candidate = _street_patient("smtih")
+        query = _street_patient("smith")
+        engine = MatchingEngine(backend=InMemoryBackend([candidate]))
+        result = await engine.match(query)
+        assert result.outcome == MatchOutcome.MATCH
+        assert result.match_type == "fuzzy"
+
 
 class TestIdentifiersOfRecordsMatched:
     """Satisfied by RuleEvaluation.field_outcomes - its keys are canonical
@@ -119,6 +142,39 @@ class TestFinalMatchDetermination:
         assert no_match_result.outcome == MatchOutcome.NO_MATCH
 
 
+class TestQueryInitiatorAndTimestampOnEveryOutcomeBranch:
+    """Adversarial-review finding (session 18 post-review fix):
+    query_initiator/timestamp are hand-copied into 4 separate MatchResult
+    construction sites in _build_result (NO_MATCH, single-MATCH, ESCALATE,
+    AMBIGUOUS) - only the first two were exercised by any existing test,
+    leaving the copy-paste-prone ESCALATE/AMBIGUOUS branches unverified."""
+
+    async def test_present_on_escalate(self) -> None:
+        # Two distinct patient records (different id) that both, per the
+        # engine's own field-verification, satisfy rule 08 against the same
+        # query - identical demographics is the simplest way to construct
+        # this without relying on fuzzy matching.
+        candidate_a = {**_mbi_patient(), "id": "a"}
+        candidate_b = {**_mbi_patient(), "id": "b"}
+        engine = MatchingEngine(backend=InMemoryBackend([candidate_a, candidate_b]))
+        result = await engine.match(
+            _mbi_patient(), query_initiator="svc-eligibility-check"
+        )
+        assert result.outcome == MatchOutcome.ESCALATE
+        assert result.query_initiator == "svc-eligibility-check"
+        assert result.timestamp != ""
+
+    async def test_present_on_ambiguous(self) -> None:
+        candidates = [{**_mbi_patient(), "id": str(i)} for i in range(3)]
+        engine = MatchingEngine(backend=InMemoryBackend(candidates))
+        result = await engine.match(
+            _mbi_patient(), query_initiator="svc-eligibility-check"
+        )
+        assert result.outcome == MatchOutcome.AMBIGUOUS
+        assert result.query_initiator == "svc-eligibility-check"
+        assert result.timestamp != ""
+
+
 class TestTimestamp:
     async def test_is_populated_on_a_match(self) -> None:
         candidate = _mbi_patient()
@@ -135,3 +191,16 @@ class TestTimestamp:
         result = await engine.match({})
         assert result.rule_evaluations == []
         assert result.timestamp != ""
+
+    async def test_is_a_well_formed_iso8601_utc_timestamp(self) -> None:
+        """Every prior assertion in this class only checked `!= ""` - the
+        docstring promises "ISO 8601 UTC" specifically (adversarial-review
+        finding, session 18 post-review fix); a malformed string or a naive
+        (non-UTC) local timestamp would have passed every existing test."""
+        candidate = _mbi_patient()
+        query = _mbi_patient()
+        engine = MatchingEngine(backend=InMemoryBackend([candidate]))
+        result = await engine.match(query)
+        parsed = datetime.fromisoformat(result.timestamp)
+        assert parsed.tzinfo is not None
+        assert parsed.utcoffset() == timedelta(0)
