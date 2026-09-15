@@ -107,27 +107,83 @@ None new.
 
 ## Validation (definition of "resolved")
 
-- [ ] All 7 of v3.4.0 §VII's per-query audit fields are present and populated on
+- [x] All 7 of v3.4.0 §VII's per-query audit fields are present and populated on
       `MatchResult`/`RuleEvaluation`.
-- [ ] `match_result.py`'s docstring correctly scopes Path A (covered) vs. Path B (not
+- [x] `match_result.py`'s docstring correctly scopes Path A (covered) vs. Path B (not
       covered).
-- [ ] `uv run pytest .` green, full suite, no regressions.
-- [ ] `uv run pre-commit run` clean on touched files.
-- [ ] Not a rule-changing session (no Table 2/collision-probability change) — the statistical
+- [x] `uv run pytest .` green, full suite, no regressions (484 passed, up from 470; 21
+      pre-existing Docker-dependent tests deselected, unrelated to this session).
+- [x] `uv run pre-commit run` clean on touched files.
+- [x] Not a rule-changing session (no Table 2/collision-probability change) — the statistical
       rigor gate does not apply per conventions.md's "Sessions that don't touch rule behavior
       are exempt entirely."
 
 ## Open questions
 
-- **`NEEDS HUMAN DECISION`**: what does "query initiator" concretely mean for this repo, and
-  who supplies it? Candidates: an opaque caller-supplied string (e.g. the calling service's
-  name/client ID, passed as a new parameter with no validation by this library); something
-  derived from the IAL2 token's issuer/CSP claim when the query came via
-  `match_from_token`; or something Phase 2's production service (not this repo) is expected to
-  populate, in which case this session should add the *field* but leave it caller-optional
-  with no derivation logic here. This shapes Task 2's actual implementation — resolve before
-  writing code, per conventions.md's open-questions handling.
+- **`NEEDS HUMAN DECISION`, resolved by Imran (2026-09-15) before coding**: "query initiator"
+  is an opaque, caller-supplied string with no validation or derivation by this library —
+  deliberately *not* derived from the IAL2 token's issuer/CSP claim, since that identifies who
+  verified the patient's identity, not who is asking for this match. See Execution notes for
+  the implementation.
+- **Resolved during execution, not anticipated when this doc was drafted**: "identifiers of
+  records matched" (one of the 7 required fields) is genuinely ambiguous in the spec's own
+  text — it could mean "which candidate record IDs matched" or "which identifying fields
+  matched." Resolved as the latter: `RuleEvaluation.field_outcomes` already records which
+  canonical fields (several of which are literally identifiers — SSN, ITIN, Legal ID, MBI,
+  Namespace ID, Member ID, Subscriber ID) were compared and how. Documented as an
+  interpretation in `match_result.py`'s module docstring, not silently assumed. Not escalated
+  to Imran as a second `NEEDS HUMAN DECISION` since it's a documentation/interpretation choice
+  with no material behavior difference either way, not a design decision with real stakes.
 
 ## Execution notes
 
-_(filled in at close)_
+Executed 2026-09-15 on branch `claude/session-18-v340-audit-record-reconciliation`, cut from
+`main` (session 16/PR #51 still open — soft dependency only, per this doc's own "Upstream
+sessions" section; no `rule_id` values are referenced in this session's new fixtures in a way
+that would need a second pass). `docs/sessions/pending/session_{18,19}.md` and the updated
+`index.md`/`conventions.md` only existed on session 16's branch (never merged to `main`) - like
+sessions 17/18 before it, pulled across via `git checkout claude/session-17-... -- <paths>`
+(session 17's branch, since it already had the latest copies) as a separate commit, not part of
+this session's own diff.
+
+**Re-verified §VII's exact text against the raw v3.4.0 spec before implementing** (not just
+this doc's paraphrase): the 7-field list, the Path A/B definitions, and the "SHOULD also retain
+the applicable rules or software version" line all matched this doc's Outcome purpose exactly -
+no surprises here, unlike sessions 16/17.
+
+**Real, load-bearing gap found while doing the field-by-field mapping (Task 1), not anticipated
+by this doc's "expect this to be small or empty" framing**: `RuleEvaluation.timestamp` exists,
+but a query that matches zero rules (e.g. an empty query patient, or one missing every field
+every enabled rule needs) produces an empty `rule_evaluations` list - meaning **no timestamp
+existed anywhere on the result** for that case. Fixed by adding a query-level `timestamp` to
+`MatchResult` itself, generated once per `MatchingEngine.match()` call, independent of how many
+(if any) rule evaluations occur. Verified by a dedicated test
+(`test_match_result.py::TestTimestamp::test_is_populated_even_with_zero_rule_evaluations`).
+
+**`query_initiator` threading**: added as a keyword-only parameter on
+`MatchingEngine.match()`, `PatientMatcherService.match_patient()`, and
+`PatientMatcherService.match_from_token()`, flowing through `_build_result`'s 4
+`MatchResult(...)` construction sites into `MatchResult.query_initiator`, then surfaced on the
+service-layer `MatchResponse` too (alongside `timestamp`) so it's visible at both the engine and
+service API levels, consistent with how `matched_rule_id`/`match_type` are already surfaced at
+both.
+
+**No structural changes needed for the other 5 fields** - confirmed by direct mapping, not
+assumed: Table 2 combination evaluated -> `matched_rule_id`/`RuleEvaluation.rule_id`; match
+type -> `match_type`; uniqueness-check result -> `is_unique`/`outcome`; final determination ->
+`outcome`; identifiers of records matched -> `field_outcomes` (see Open Questions for why this
+mapping, not a literal reading, was chosen).
+
+Validation:
+- `uv run pytest .`: 484 passed (up from 470), 0 regressions. New tests: 14 across
+  `test_match_result.py` (a new file - one test class per SS VII field, 12 tests total,
+  including the zero-rule-evaluations timestamp edge case) and `test_service.py` (3 tests:
+  query-initiator echoed through both `match_patient()` and `match_from_token()`, and its
+  absence defaulting to `None` without breaking existing callers).
+- `uv run pre-commit run` on all touched files: clean (ruff, ruff-format, mypy, bandit,
+  detect-secrets, standard hooks).
+- Not a rule-changing session - statistical rigor gate exempt, per conventions.md.
+
+Decision: PR opened from `claude/session-18-v340-audit-record-reconciliation` into `main`, left
+**open** rather than merged - merging is Imran's call, same as every prior session in this
+repo. Doc moved to `in_review/` and `index.md` updated accordingly, in the same PR.

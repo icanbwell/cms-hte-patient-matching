@@ -41,6 +41,11 @@ class MatchResponse:
         confidence_score: Estimated match confidence (0.0 - 1.0).
         candidate_count: Total number of candidates found.
         rule_evaluations_summary: Summary of rules evaluated.
+        query_initiator: SS VII audit field (session 18) - the caller-
+            supplied identifier passed to match_patient()/match_from_token(),
+            echoed back here. None if the caller didn't supply one.
+        timestamp: SS VII audit field (session 18) - ISO 8601 UTC timestamp
+            for this query.
     """
 
     outcome: str
@@ -51,6 +56,8 @@ class MatchResponse:
     confidence_score: float = 0.0
     candidate_count: int = 0
     rule_evaluations_summary: List[Dict[str, Any]] = field(default_factory=list)
+    query_initiator: Optional[str] = None
+    timestamp: str = ""
 
 
 @dataclass
@@ -112,7 +119,9 @@ class PatientMatcherService:
             rules=rules,
         )
 
-    async def match_from_token(self, token: str) -> MatchResponse:
+    async def match_from_token(
+        self, token: str, *, query_initiator: Optional[str] = None
+    ) -> MatchResponse:
         """Match a patient from an IAL2 JWT token.
 
         Full pipeline: verify token → extract demographics →
@@ -120,6 +129,12 @@ class PatientMatcherService:
 
         Args:
             token: A signed IAL2 JWT token string.
+            query_initiator: SS VII audit field (session 18) - an opaque,
+                caller-supplied identifier for whoever/whatever issued this
+                query. Not derived from the token itself (see
+                MatchResult.query_initiator's docstring for why) - the
+                token's issuer identifies who verified the patient's
+                identity, not who is asking for this match.
 
         Returns:
             A MatchResponse with outcome and matched patient IDs.
@@ -143,10 +158,16 @@ class PatientMatcherService:
         normalized = self._normalizer.normalize(fhir_patient)
 
         # Step 3: Match
-        return await self._match_and_respond(normalized)
+        return await self._match_and_respond(
+            normalized, query_initiator=query_initiator
+        )
 
     async def match_patient(
-        self, patient: Dict[str, Any], *, skip_normalization: bool = False
+        self,
+        patient: Dict[str, Any],
+        *,
+        skip_normalization: bool = False,
+        query_initiator: Optional[str] = None,
     ) -> MatchResponse:
         """Match a FHIR Patient resource against the cache.
 
@@ -154,6 +175,9 @@ class PatientMatcherService:
             patient: A FHIR R4 Patient resource dict.
             skip_normalization: If True, assumes the patient is already
                 normalized. Default False.
+            query_initiator: SS VII audit field (session 18) - an opaque,
+                caller-supplied identifier for whoever/whatever issued this
+                query. Not validated or required.
 
         Returns:
             A MatchResponse with outcome and matched patient IDs.
@@ -163,13 +187,20 @@ class PatientMatcherService:
         else:
             normalized = self._normalizer.normalize(patient)
 
-        return await self._match_and_respond(normalized)
+        return await self._match_and_respond(
+            normalized, query_initiator=query_initiator
+        )
 
     async def _match_and_respond(
-        self, normalized_patient: Dict[str, Any]
+        self,
+        normalized_patient: Dict[str, Any],
+        *,
+        query_initiator: Optional[str] = None,
     ) -> MatchResponse:
         """Run matching engine and build response."""
-        result = await self._engine.match(normalized_patient)
+        result = await self._engine.match(
+            normalized_patient, query_initiator=query_initiator
+        )
         return self._build_response(result)
 
     @staticmethod
@@ -205,6 +236,8 @@ class PatientMatcherService:
             confidence_score=confidence,
             candidate_count=result.candidate_count,
             rule_evaluations_summary=eval_summary,
+            query_initiator=result.query_initiator,
+            timestamp=result.timestamp,
         )
 
 

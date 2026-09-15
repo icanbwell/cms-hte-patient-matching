@@ -130,6 +130,58 @@ class TestPatientMatcherService:
         assert result.outcome == "match"
         mock_extractor.extract.assert_called_once_with("fake.jwt.token")
 
+    async def test_match_patient_echoes_query_initiator(
+        self, cache: DuckDBCache
+    ) -> None:
+        """SS VII audit field (session 18) - passed through unvalidated."""
+        await _populate_cache(cache, [_make_cached("p1")])
+        service = PatientMatcherService(cache=cache)
+
+        query = {
+            "resourceType": "Patient",
+            "name": [{"family": "smith", "given": ["john"]}],
+            "birthDate": "1990-01-15",
+            "telecom": [
+                {"system": "phone", "value": "+12125551234"},
+                {"system": "email", "value": "john@gmail.com"},
+            ],
+            "address": [{"line": ["123 main st"]}],
+            "identifier": [
+                {"system": "http://hl7.org/fhir/sid/us-ssn", "value": "xxx-xx-6789"},
+            ],
+        }
+        result = await service.match_patient(query, query_initiator="svc-portal")
+        assert result.query_initiator == "svc-portal"
+        assert result.timestamp != ""
+
+    async def test_match_patient_query_initiator_defaults_to_none(
+        self, cache: DuckDBCache
+    ) -> None:
+        """Absence of a query initiator must not break existing callers."""
+        service = PatientMatcherService(cache=cache)
+        query = {
+            "resourceType": "Patient",
+            "name": [{"family": "jones", "given": ["alice"]}],
+            "birthDate": "2000-12-25",
+        }
+        result = await service.match_patient(query)
+        assert result.query_initiator is None
+
+    async def test_match_from_token_echoes_query_initiator(
+        self, cache: DuckDBCache
+    ) -> None:
+        mock_extractor = MagicMock(spec=IAL2Extractor)
+        mock_extractor.extract.return_value = {
+            "resourceType": "Patient",
+            "name": [{"family": "jones", "given": ["alice"]}],
+            "birthDate": "2000-12-25",
+        }
+        service = PatientMatcherService(cache=cache, ial2_extractor=mock_extractor)
+        result = await service.match_from_token(
+            "fake.jwt.token", query_initiator="mobile-app"
+        )
+        assert result.query_initiator == "mobile-app"
+
 
 class TestComputeConfidence:
     def test_no_match_returns_zero(self) -> None:
