@@ -75,6 +75,7 @@ dev = [
     # For MongoAtlasCache's testcontainer tests (mongodb-atlas-local) -- session_12.
     "testcontainers>=4.9.0",
     "docker>=7.1.0",
+    "pip-licenses>=5.0.0",
 ]
 
 [tool.setuptools.dynamic]
