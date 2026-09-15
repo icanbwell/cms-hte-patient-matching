@@ -41,6 +41,7 @@ run whatever **Suggested Next Session** names below.
 > review found. One open question flagged for Imran, not resolved unilaterally: whether rules
 > 01/10's published `p_collision_fuzzy` figures should account for DOB*'s tolerance now that
 > it's extended to high-volume rules - see session_16.md's "Post-review fixes" section.
+>
 > **Session 17 is the new Suggested Next Session.**
 >
 > **Session 8 — Legacy comparison harness (Tier 3).** Session 6 (below) is now `in_review/`
