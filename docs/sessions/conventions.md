@@ -151,13 +151,20 @@ solo/two-person review model, not a technical one.
 
 ## Reference documents (intentionally NOT copied into this repo)
 
-- **CMS v3.3 spec** (Google Doc, "Draft for Technical Validation," open public-comment
-  period, unresolved reviewer comments): `https://docs.google.com/document/d/1ABHR6e4N-K9lEj1vc7DuzoAy8CuaAqwqAZSpJH9T4Yg/edit`
-  (file ID `1ABHR6e4N-K9lEj1vc7DuzoAy8CuaAqwqAZSpJH9T4Yg`). This is a live, actively-commented
-  draft this repo doesn't own — sessions that need its content (5, 6) fetch it fresh via
-  Google Drive access as their first task, rather than trusting a committed copy that could
-  silently go stale while the comment period is open. (A full copy was tried and reverted
-  2026-07-28 because it created two things to keep in sync — see git history on this branch.)
+- **CMS v3.4.0 spec** (Google Doc, "Final Consolidated Draft" — but still unfinalized:
+  `Comment Period Ends`/`Effective Date` are unfilled placeholders as of 2026-09-15):
+  `https://docs.google.com/document/d/1NytpfZ05aokS-gD7uDIQE7gEyms9zMgoiaIah_w4VTE/edit`
+  (file ID `1NytpfZ05aokS-gD7uDIQE7gEyms9zMgoiaIah_w4VTE`). Supersedes v3.3 as this repo's
+  active target (Imran, 2026-09-15). Same policy as v3.3 below: a live draft this repo doesn't
+  own — sessions that need its content (16, 17, 18, 19) fetch it fresh via Google Drive access
+  as their first task, rather than trusting a committed copy that could silently go stale while
+  the comment period is open.
+- **CMS v3.3 spec** (superseded by v3.4.0 above, 2026-09-15 — kept here for history, not as an
+  active reference): `https://docs.google.com/document/d/1ABHR6e4N-K9lEj1vc7DuzoAy8CuaAqwqAZSpJH9T4Yg/edit`
+  (file ID `1ABHR6e4N-K9lEj1vc7DuzoAy8CuaAqwqAZSpJH9T4Yg`). Sessions 5 and 6 fetched its content
+  fresh via Google Drive access rather than trusting a committed copy. (A full copy was tried
+  and reverted 2026-07-28 because it created two things to keep in sync — see git history on
+  this branch.)
 - **v3.2.2 spec** (finalized/superseded version): `docs/CMS_Patient_Matching_Proposal_v3.2.2.{pdf,txt}`
   — this one IS committed, because it's a frozen prior version, not a live draft.
 - **ONC patient-matching test dataset**: a public, de-identified, versioned benchmark (the

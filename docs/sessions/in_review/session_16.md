@@ -100,11 +100,20 @@ This mapping was cross-checked field-by-field against v3.4.0's clean Table 2 (al
 not inferred from ID position alone — re-verify against the live doc at session-start per the
 dependency note above, since it's still a live draft.
 
-**Category 2 rules 13, 14, 15, 16, 34, 35, 37, 38 in `household_rules.py` keep their current
-IDs — already an exact match to v3.4.0's Category 2 numbering** (confirmed 2026-09-15 by
-direct comparison: H-12+I-01=6.0e-16 (34), H-13+I-01=6.0e-16 (35), H-14+I-01=6.0e-17 (37),
-H-07+I-01=2.0e-16 (38), matching the file's existing values exactly). No change to
-`household_rules.py` in this session.
+**Correction, found during execution, not anticipated when this doc was first drafted:**
+v3.4.0's Category 1 table reassigns bare `13`-`16` to brand-new flat content (First
+Name+Phone/Email+SSN/ITIN Last4 — what this repo had as old rules `17`-`20`). Checking
+v3.4.0's actual Category 2 material (SS C.2-C.5) directly: it never assigns those 8 rules a
+live ID of their own — it only describes them as Household-row + Individual-row pairings.
+"Rules 13, 14, 15, 16, 34, 35, 37, and 38" appears exactly once, in SS C.8's prose, as a
+backward-reference to the legacy v3.3.1 addendum numbering `household_rules.py` was
+originally built against — not a v3.4.0 ID assignment. Left as-is, this collides with
+Category 1's new `13`-`16` in any audit record keyed on bare `rule_id` (the SS VII "Table 2
+combination evaluated" field can't tell the two apart). Imran decided (2026-09-15): prefix
+Category 2's `rule_id` values with `C2-` (`C2-13`, `C2-14`, `C2-15`, `C2-16`, `C2-34`,
+`C2-35`, `C2-37`, `C2-38`) — preserves the historically-meaningful numbers while making the
+collision structurally impossible. **This session now includes updating
+`household_rules.py` and its tests, not skipping them as originally scoped.**
 
 **2. Extend DOB `*` (±1-day fuzzy) to (new-numbering) rules 01, 02, 03, 10.** File:
 `patient_matching/matching/table2_rules.py`. Change each rule's `DOB` `RuleField` from
@@ -143,6 +152,13 @@ a fuzzy variant (First Name and/or Last Name). Target figures to verify against 
 1. **Renumber Category 1 `rule_id` values** in `table2_rules.py`'s `APPROVED_RULES` tuple per
    the mapping table above. Field compositions, `max_fuzzy_fields`, and `p_collision_*` calls
    are otherwise unchanged except for Task 2's four rules.
+
+1a. **Prefix Category 2 `rule_id` values with `C2-`** in `household_rules.py`'s
+   `CATEGORY_2_RULES` tuple (`13`→`C2-13`, `14`→`C2-14`, `15`→`C2-15`, `16`→`C2-16`,
+   `34`→`C2-34`, `35`→`C2-35`, `37`→`C2-37`, `38`→`C2-38`) — see the correction note above for
+   why. Update `test_household_rules.py` and every `test_matching_engine.py` case that
+   references a Category 2 rule by its bare old ID (`_category2_rule_by_id(...)`,
+   `result.matched_rule_id == ...`) to match.
 
 2. **Mark DOB fuzzy-eligible on new-numbering rules 01, 02, 03, 10** (`_rf(DOB, _F)`), and
    confirm each rule's computed `p_collision_exact`/`_fuzzy` still matches the target figures
@@ -186,29 +202,87 @@ New/extended tests:
 
 ## Validation (definition of "resolved")
 
-- [ ] `APPROVED_RULES` has exactly 30 entries with `rule_id` values `01`-`30`, no gaps, no
+- [x] `APPROVED_RULES` has exactly 30 entries with `rule_id` values `01`-`30`, no gaps, no
       duplicates.
-- [ ] Rules 01, 02, 03, 10 have DOB marked `FUZZY_ELIGIBLE`, dispatch through
+- [x] Rules 01, 02, 03, 10 have DOB marked `FUZZY_ELIGIBLE`, dispatch through
       `dob_fuzzy_match` (verified by test, not just field-role inspection), and their
       `p_collision_exact`/`_fuzzy` match the target table above.
-- [ ] Every non-`table2_rules.py` reference to an old Category 1 ID has been updated to the new
+- [x] Every non-`table2_rules.py` reference to an old Category 1 ID has been updated to the new
       ID (verified by re-running the Task 4 grep and confirming zero remaining old-ID hits that
       refer to a Category 1 rule).
-- [ ] `household_rules.py`'s Category 2 rule IDs are unchanged (13,14,15,16,34,35,37,38).
-- [ ] `uv run pytest .` is green, full suite, no regressions.
-- [ ] `uv run pre-commit run` on all touched files is clean.
-- [ ] Per conventions.md's statistical rigor gate: session 3's Tier-1 report already exists on
+- [x] `household_rules.py`'s Category 2 rule IDs carry the `C2-` prefix
+      (`C2-13`,`C2-14`,`C2-15`,`C2-16`,`C2-34`,`C2-35`,`C2-37`,`C2-38`) and are disjoint from
+      `APPROVED_RULES`'s ID set (verified by test, not just inspection).
+- [x] `uv run pytest .` is green, full suite, no regressions (470 passed; 21 deselected —
+      pre-existing Docker-dependent MongoDB Atlas testcontainer tests, unrelated to this
+      session, error without a local Docker daemon per conventions.md's documented exception).
+- [x] `uv run pre-commit run` on all touched files is clean.
+- [x] Per conventions.md's statistical rigor gate: session 3's Tier-1 report already exists on
       `main` and this session's field-composition changes don't alter any rule's computed
       collision probability (see "Out of scope") — merge gate satisfied without a fresh run,
       same precedent as session 6.
 
 ## Open questions
 
-None requiring a human decision — the two decisions this session depended on (relabel vs. map,
-and whether to proceed) were already made by Imran (2026-09-15, this doc's Outcome purpose).
-The exact set of non-`table2_rules.py` files needing updates (Task 4) is an implementation
-detail the executing agent resolves by grepping, not a `NEEDS HUMAN DECISION`.
+The two decisions this session originally depended on (relabel vs. map, and whether to
+proceed) were made by Imran before execution started (2026-09-15, this doc's Outcome purpose).
+One more surfaced mid-execution, not anticipated when this doc was first drafted — see
+Execution notes: whether Category 2's legacy `13-16/34/35/37/38` labels should be relabeled
+once Category 1's renumbering claimed those same bare IDs. Resolved by Imran (2026-09-15):
+`C2-` prefix. No open items remain.
 
 ## Execution notes
 
-_(filled in at close)_
+Executed 2026-09-15 on branch `claude/session-16-v340-renumber-dob-fuzzy`, cut from `main`.
+
+**Real finding, not anticipated when this doc was first drafted:** Category 1's clean v3.4.0
+renumbering claims bare `13`-`16` for brand-new flat rules (First Name+Phone/Email+SSN/ITIN
+Last4 — old rules `17`-`20`). This doc originally assumed Category 2's existing
+`13,14,15,16,34,35,37,38` labels needed no change, reasoning from §C.8's prose ("Rules 13, 14,
+15, 16, 34, 35, 37, and 38"). Checked the actual §C.2-C.5 tables directly before writing code
+(not just the prose) and found they carry **no ID column of their own** — §C.8's numbers are a
+backward-reference to the legacy v3.3.1 addendum numbering, not a v3.4.0 assignment. Also found
+a second, independent confirmation the doc's cross-references are stale: §C.7's persistent-ID
+anchoring text cites "Rule 26, ≈0 collision" for the namespace-ID rule, but v3.4.0's own master
+Table 2 assigns that rule ID `22` — i.e., prose sections weren't updated after Table 2's
+renumbering pass, a second instance of the same class of drafting gap. Flagged to Imran
+mid-session rather than guessing; decided: `C2-` prefix (`C2-13` etc.) on Category 2's
+`rule_id` values. Updated `household_rules.py`, `test_household_rules.py`, and every
+`test_matching_engine.py` case referencing a Category 2 rule by its bare old ID.
+
+**Task 4 pre-flight grep results:** no old-ID references found in `patient_matching/api/
+service.py`, its test, `matching_engine.py` itself, or `test_in_memory_backend.py` (confirming
+`MatchingEngine` dispatches DOB/rules generically, not by hardcoded ID). Real hits: `test_
+table2_rules.py` (`rule_26_namespace_id_only` → renamed `rule_22_...`), `test_matching_engine.py`
+(rule `"26"`→`"22"` in `TestMatchingEngineRuleSubset`/`TestMatchingEngineRuleEvaluations`; rule
+`"28"`→`"24"` in `TestDobFuzzyDispatch`, including the local variable name `rule_28`→`rule_24`
+for clarity), `test_collision.py` (`"26"`→`"22"` in the namespace-ID carve-out, plus renamed
+`test_existing_26_rules_reproduce_published_values` →
+`test_existing_category1_rules_reproduce_published_values` since "26" no longer means anything
+after the renumbering). Also updated `collision.py`'s module docstring (stale v3.3.0 doc-ID
+reference and its own cross-reference to the just-renamed test) and its own test-name
+cross-reference, plus `table2_rules.py`'s module docstring (was still v3.2.2 even before this
+session).
+
+**Fixed `test_13_through_16_are_not_in_the_flat_rule_set`**, whose original assertion
+(`APPROVED_RULES` must never contain `13`-`16`) is now backwards — Category 1 legitimately
+owns bare `13`-`16` post-renumbering. Replaced with
+`test_rule_ids_disjoint_from_category_2`, asserting `APPROVED_RULES`' and
+`CATEGORY_2_RULES`' ID sets don't intersect — a more direct guard against exactly the collision
+this session found, and one that will trip immediately if a future session ever drops the
+`C2-` prefix.
+
+Validation:
+- `uv run pytest .`: 470 passed, 0 regressions (21 pre-existing Docker-dependent tests
+  deselected, unrelated to this session).
+- Direct numeric check (not just test-pass): rules 01/02/03/10's computed
+  `p_collision_exact`/`_fuzzy` reproduce v3.4.0's stated figures exactly (3e-13/9e-13,
+  1e-14/2e-14, 1e-14/3e-14, 5e-13/1e-12).
+- `uv run pre-commit run` on all touched files: clean (ruff, ruff-format, mypy, bandit,
+  detect-secrets, standard hooks) — one file was auto-reformatted by ruff-format
+  (`table2_rules.py`, line-wrapping a multi-line tuple call), not a content change.
+
+Decision: PR opened from `claude/session-16-v340-renumber-dob-fuzzy` into `main`, left
+**open** rather than merged — per conventions.md's Definition of Done, merging is the project
+lead's (Imran's) call. Doc moved to `in_review/` and `index.md` updated accordingly, in the
+same PR.

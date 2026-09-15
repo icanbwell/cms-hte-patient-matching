@@ -13,6 +13,19 @@ Every row's p_collision is computed via collision.p_collision(), the same
 FIELD_U_PROBS table table2_rules.py's flat rules use - this is a sanity check
 against the source-doc figures transcribed in
 docs/sessions/completed/session_6.md, not a hardcoded literal.
+
+**rule_id values carry a `C2-` prefix (session 16, v3.4.0).** v3.4.0's Category 1
+table renumbers to a clean, gapless 01-30 sequence that happens to claim 13-16 for
+brand-new, unrelated flat rules (see table2_rules.py). v3.4.0's own Category 2
+material (SSA C.2-C.5) never actually assigns these rules a live ID of their own -
+it only describes them as Household-row + Individual-row pairings; "Rules 13, 14,
+15, 16, 34, 35, 37, and 38" appears once, in SS C.8's prose, as a backward-reference
+to the legacy v3.3.1 addendum numbering this module was originally built against,
+not a v3.4.0 ID assignment. Keeping the bare numbers here would silently collide
+with Category 1's new 13-16 in any audit record keyed on `rule_id` alone (the
+"Table 2 combination evaluated" SS VII field) - the `C2-` prefix preserves the
+historically-meaningful numbers while making that collision structurally
+impossible. Decided by Imran, 2026-09-15 (see docs/sessions/pending/session_16.md).
 """
 
 from __future__ import annotations
@@ -195,7 +208,7 @@ INDIVIDUAL_ROWS: tuple[IndividualRow, ...] = (I_01, I_02, I_03)
 
 CATEGORY_2_RULES: tuple[HouseholdIndividualRule, ...] = (
     HouseholdIndividualRule(
-        rule_id="13",
+        rule_id="C2-13",
         description=(
             "SSN Last 4 + Phone (household) + First Name/DOB (individual); "
             "Last Name is non-blocking corroboration only, per v3.3.1 - amends "
@@ -205,7 +218,7 @@ CATEGORY_2_RULES: tuple[HouseholdIndividualRule, ...] = (
         individual_row=I_01,
     ),
     HouseholdIndividualRule(
-        rule_id="14",
+        rule_id="C2-14",
         description=(
             "ITIN Last 4 + Phone (household) + First Name/DOB (individual); "
             "Last Name is non-blocking corroboration only - amends the v3.2.2 "
@@ -215,7 +228,7 @@ CATEGORY_2_RULES: tuple[HouseholdIndividualRule, ...] = (
         individual_row=I_01,
     ),
     HouseholdIndividualRule(
-        rule_id="15",
+        rule_id="C2-15",
         description=(
             "SSN Last 4 + Email (household) + First Name/DOB (individual); "
             "Last Name* is non-blocking corroboration only - amends the v3.2.2 "
@@ -225,7 +238,7 @@ CATEGORY_2_RULES: tuple[HouseholdIndividualRule, ...] = (
         individual_row=I_01,
     ),
     HouseholdIndividualRule(
-        rule_id="16",
+        rule_id="C2-16",
         description=(
             "ITIN Last 4 + Email (household) + First Name/DOB (individual); "
             "Last Name* is non-blocking corroboration only - amends the v3.2.2 "
@@ -235,19 +248,19 @@ CATEGORY_2_RULES: tuple[HouseholdIndividualRule, ...] = (
         individual_row=I_01,
     ),
     HouseholdIndividualRule(
-        rule_id="34",
+        rule_id="C2-34",
         description="Phone + ZIP Code (household) + First Name/DOB (individual)",
         household_row=H_12,
         individual_row=I_01,
     ),
     HouseholdIndividualRule(
-        rule_id="35",
+        rule_id="C2-35",
         description="Email + ZIP Code (household) + First Name/DOB (individual)",
         household_row=H_13,
         individual_row=I_01,
     ),
     HouseholdIndividualRule(
-        rule_id="37",
+        rule_id="C2-37",
         description=(
             "Phone + Street Line (household) + First Name/DOB (individual); "
             "household leg gated on v3.3.6 institutional-address exclusion, "
@@ -257,7 +270,7 @@ CATEGORY_2_RULES: tuple[HouseholdIndividualRule, ...] = (
         individual_row=I_01,
     ),
     HouseholdIndividualRule(
-        rule_id="38",
+        rule_id="C2-38",
         description=(
             "Subscriber ID + Phone (household) + First Name/DOB (individual) - "
             "recovers Table 4's previously-rejected Subscriber ID + DOB"
