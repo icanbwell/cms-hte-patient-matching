@@ -29,6 +29,12 @@ class TestFieldUProbs:
             ("email", 0.000001),
             ("ssn_last4", 0.0001),
             ("mbi", 0.000001),
+            # v3.4.0 additions (session 17):
+            ("relationship_linkage_clinical", 0.01),
+            ("relationship_linkage_self_reported", 0.05),
+            ("guardian_identity", 1.0),
+            ("mother_identity", 1.0),
+            ("birth_encounter_id", 1e-15),
         ],
     )
     def test_known_field_exact_u_values(
@@ -40,6 +46,14 @@ class TestFieldUProbs:
     def test_dismissed_fields_are_absent(self) -> None:
         for dismissed in ("middle_name", "suffix", "year_of_birth"):
             assert dismissed not in FIELD_U_PROBS
+
+    def test_identity_gate_fields_have_no_fuzzy_variant(self) -> None:
+        """guardian_identity/mother_identity's u=1.0 must never be shadowed
+        by a fuzzy variant - these are exact-only identity references, not
+        fuzzy-matchable demographic fields."""
+        for field_name in ("guardian_identity", "mother_identity"):
+            _, fuzzy = FIELD_U_PROBS[field_name]
+            assert fuzzy is None
 
 
 class TestPCollision:

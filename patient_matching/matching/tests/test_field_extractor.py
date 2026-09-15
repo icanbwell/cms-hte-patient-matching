@@ -296,3 +296,166 @@ class TestFieldExtractorCmsV33Fields:
         fields = extractor.extract(patient)
         assert fields.insurance_member_ids == {"https://payer.example/x|M1"}
         assert fields.insurance_subscriber_ids == {"https://payer.example/x|S1"}
+
+
+class TestFieldExtractorCmsV340Fields:
+    """guardian_identity, mother_identity, birth_encounter_id,
+    relationship_linkage_clinical/_self_reported (session 17)."""
+
+    _RELATIONSHIP_LINKAGE_URL = (
+        "https://cms-hte-patient-matching.icanbwell.com/fhir/StructureDefinition/"
+        "relationship-linkage"
+    )
+
+    def test_extract_guardian_identity_namespace_scoped(
+        self, extractor: FieldExtractor
+    ) -> None:
+        patient: Dict[str, Any] = {
+            "identifier": [
+                {
+                    "system": "urn:cms-hte:guardian",
+                    "type": {"coding": [{"code": "CMS-GRDN"}]},
+                    "value": "GRD001",
+                }
+            ]
+        }
+        fields = extractor.extract(patient)
+        assert "urn:cms-hte:guardian|GRD001" in fields.guardian_identities
+
+    def test_guardian_identity_without_namespace_is_excluded(
+        self, extractor: FieldExtractor
+    ) -> None:
+        patient: Dict[str, Any] = {
+            "identifier": [{"type": {"coding": [{"code": "CMS-GRDN"}]}, "value": "G1"}]
+        }
+        fields = extractor.extract(patient)
+        assert fields.guardian_identities == set()
+
+    def test_extract_mother_identity_namespace_scoped(
+        self, extractor: FieldExtractor
+    ) -> None:
+        patient: Dict[str, Any] = {
+            "identifier": [
+                {
+                    "system": "urn:cms-hte:mother",
+                    "type": {"coding": [{"code": "CMS-MTHR"}]},
+                    "value": "MOM001",
+                }
+            ]
+        }
+        fields = extractor.extract(patient)
+        assert "urn:cms-hte:mother|MOM001" in fields.mother_identities
+
+    def test_extract_birth_encounter_id_namespace_scoped(
+        self, extractor: FieldExtractor
+    ) -> None:
+        patient: Dict[str, Any] = {
+            "identifier": [
+                {
+                    "system": "urn:hospital:abc",
+                    "type": {"coding": [{"code": "CMS-BEID"}]},
+                    "value": "ENC12345",
+                }
+            ]
+        }
+        fields = extractor.extract(patient)
+        assert "urn:hospital:abc|ENC12345" in fields.birth_encounter_ids
+
+    def test_birth_encounter_id_without_namespace_is_excluded(
+        self, extractor: FieldExtractor
+    ) -> None:
+        patient: Dict[str, Any] = {
+            "identifier": [
+                {"type": {"coding": [{"code": "CMS-BEID"}]}, "value": "ENC1"}
+            ]
+        }
+        fields = extractor.extract(patient)
+        assert fields.birth_encounter_ids == set()
+
+    def test_guardian_mother_and_encounter_id_are_distinct_fields(
+        self, extractor: FieldExtractor
+    ) -> None:
+        patient: Dict[str, Any] = {
+            "identifier": [
+                {
+                    "system": "urn:x",
+                    "type": {"coding": [{"code": "CMS-GRDN"}]},
+                    "value": "G1",
+                },
+                {
+                    "system": "urn:x",
+                    "type": {"coding": [{"code": "CMS-MTHR"}]},
+                    "value": "M1",
+                },
+                {
+                    "system": "urn:x",
+                    "type": {"coding": [{"code": "CMS-BEID"}]},
+                    "value": "E1",
+                },
+            ]
+        }
+        fields = extractor.extract(patient)
+        assert fields.guardian_identities == {"urn:x|G1"}
+        assert fields.mother_identities == {"urn:x|M1"}
+        assert fields.birth_encounter_ids == {"urn:x|E1"}
+
+    def test_extract_relationship_linkage_clinical(
+        self, extractor: FieldExtractor
+    ) -> None:
+        patient: Dict[str, Any] = {
+            "extension": [
+                {
+                    "url": self._RELATIONSHIP_LINKAGE_URL,
+                    "extension": [
+                        {"url": "type", "valueCode": "child-of"},
+                        {"url": "source", "valueCode": "clinical"},
+                    ],
+                }
+            ]
+        }
+        fields = extractor.extract(patient)
+        assert fields.relationship_linkage_clinical == {"child-of"}
+        assert fields.relationship_linkage_self_reported == set()
+
+    def test_extract_relationship_linkage_self_reported(
+        self, extractor: FieldExtractor
+    ) -> None:
+        patient: Dict[str, Any] = {
+            "extension": [
+                {
+                    "url": self._RELATIONSHIP_LINKAGE_URL,
+                    "extension": [
+                        {"url": "type", "valueCode": "newborn-of"},
+                        {"url": "source", "valueCode": "self-reported"},
+                    ],
+                }
+            ]
+        }
+        fields = extractor.extract(patient)
+        assert fields.relationship_linkage_self_reported == {"newborn-of"}
+        assert fields.relationship_linkage_clinical == set()
+
+    def test_relationship_linkage_ignores_unrelated_extensions(
+        self, extractor: FieldExtractor
+    ) -> None:
+        patient: Dict[str, Any] = {
+            "extension": [{"url": "https://example.com/some-other-extension"}]
+        }
+        fields = extractor.extract(patient)
+        assert fields.relationship_linkage_clinical == set()
+        assert fields.relationship_linkage_self_reported == set()
+
+    def test_relationship_linkage_missing_type_or_source_is_ignored(
+        self, extractor: FieldExtractor
+    ) -> None:
+        patient: Dict[str, Any] = {
+            "extension": [
+                {
+                    "url": self._RELATIONSHIP_LINKAGE_URL,
+                    "extension": [{"url": "type", "valueCode": "child-of"}],
+                }
+            ]
+        }
+        fields = extractor.extract(patient)
+        assert fields.relationship_linkage_clinical == set()
+        assert fields.relationship_linkage_self_reported == set()

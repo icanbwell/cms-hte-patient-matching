@@ -149,3 +149,26 @@ class TestComputeConfidence:
     def test_ambiguous_returns_zero(self) -> None:
         result = MatchResult(outcome=MatchOutcome.AMBIGUOUS)
         assert _compute_confidence(result) == 0.0
+
+    def test_c2_39_match_returns_high_confidence(self) -> None:
+        """Regression guard for this PR's own headline fix: service.py's
+        confidence lookup previously only searched the original 8 Category
+        2 rules, so a C2-39/C2-40 match silently scored 0.0 confidence. The
+        Execution notes justified skipping this test as needing "the full
+        IAL2/cache pipeline," which isn't true - _compute_confidence takes
+        a bare MatchResult, same as test_match_returns_high_confidence
+        above."""
+        result = MatchResult(
+            outcome=MatchOutcome.MATCH,
+            matched_rule_id="C2-39",
+            match_type="exact",
+        )
+        assert _compute_confidence(result) > 0.99
+
+    def test_c2_40_match_returns_high_confidence(self) -> None:
+        result = MatchResult(
+            outcome=MatchOutcome.MATCH,
+            matched_rule_id="C2-40",
+            match_type="exact",
+        )
+        assert _compute_confidence(result) > 0.99

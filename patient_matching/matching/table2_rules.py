@@ -78,6 +78,19 @@ NAMESPACE_ID = "namespace_id"
 ZIP_CODE = "zip_code"
 INSURANCE_MEMBER_ID = "insurance_member_id"
 INSURANCE_SUBSCRIBER_ID = "insurance_subscriber_id"
+# CMS v3.4.0 additions (session 17) - see relationship_linkage_rules.py
+RELATIONSHIP_LINKAGE_CLINICAL = "relationship_linkage_clinical"
+RELATIONSHIP_LINKAGE_SELF_REPORTED = "relationship_linkage_self_reported"
+# Post-review fix: type-narrowed variants of RELATIONSHIP_LINKAGE_CLINICAL -
+# a RuleField referencing the bare field above matches on ANY relationship
+# code via ordinary set-overlap semantics, so C2-39/C2-40 need these to
+# require the SPECIFIC relationship type each rule's individual leg claims
+# to check (see field_extractor.PatientFields.relationship_linkage_child_of_clinical).
+RELATIONSHIP_LINKAGE_CHILD_OF_CLINICAL = "relationship_linkage_child_of_clinical"
+RELATIONSHIP_LINKAGE_NEWBORN_OF_CLINICAL = "relationship_linkage_newborn_of_clinical"
+GUARDIAN_IDENTITY = "guardian_identity"
+MOTHER_IDENTITY = "mother_identity"
+BIRTH_ENCOUNTER_ID = "birth_encounter_id"
 
 # Helper constructors
 _E = FieldRole.EXACT

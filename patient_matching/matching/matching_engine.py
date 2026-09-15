@@ -22,12 +22,22 @@ from .field_comparator import FieldComparator
 from .field_extractor import FieldExtractor, PatientFields
 from .household_rules import CATEGORY_2_RULES, HouseholdIndividualRule
 from .match_result import MatchOutcome, MatchResult, RuleEvaluation
+from .relationship_linkage_rules import RELATIONSHIP_LINKAGE_RULES
 from .table2_rules import (
     APPROVED_RULES,
     DOB,
     FieldRole,
     MatchingRule,
     RuleField,
+)
+
+# All Category 2 (two-step) rules: the original 8 household+individual rules
+# (household_rules.py) plus session 17's Relationship Linkage rules (C2-39,
+# C2-40). Combined here rather than in household_rules.py itself to avoid a
+# circular import (relationship_linkage_rules.py imports the Household/
+# Individual/HouseholdIndividualRule types from household_rules.py).
+_ALL_CATEGORY_2_RULES: tuple[HouseholdIndividualRule, ...] = (
+    CATEGORY_2_RULES + RELATIONSHIP_LINKAGE_RULES
 )
 
 logger = logging.getLogger(__name__)
@@ -62,8 +72,9 @@ class MatchingEngine:
             Defaults to all 30.
         household_individual_rules: Subset of Category 2 (two-step
             household-then-individual) Table 2 rules to evaluate. Defaults
-            to all 8. Independent of `rules` - passing a custom `rules`
-            subset does not affect this default.
+            to all 10 (the original 8 plus session 17's Relationship
+            Linkage rules C2-39/C2-40). Independent of `rules` - passing a
+            custom `rules` subset does not affect this default.
     """
 
     def __init__(
@@ -84,7 +95,7 @@ class MatchingEngine:
         self._household_individual_rules = (
             household_individual_rules
             if household_individual_rules is not None
-            else CATEGORY_2_RULES
+            else _ALL_CATEGORY_2_RULES
         )
 
     async def match(self, query_patient: Dict[str, Any]) -> MatchResult:
