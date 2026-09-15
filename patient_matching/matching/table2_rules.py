@@ -78,6 +78,12 @@ NAMESPACE_ID = "namespace_id"
 ZIP_CODE = "zip_code"
 INSURANCE_MEMBER_ID = "insurance_member_id"
 INSURANCE_SUBSCRIBER_ID = "insurance_subscriber_id"
+# CMS v3.4.0 additions (session 17) - see relationship_linkage_rules.py
+RELATIONSHIP_LINKAGE_CLINICAL = "relationship_linkage_clinical"
+RELATIONSHIP_LINKAGE_SELF_REPORTED = "relationship_linkage_self_reported"
+GUARDIAN_IDENTITY = "guardian_identity"
+MOTHER_IDENTITY = "mother_identity"
+BIRTH_ENCOUNTER_ID = "birth_encounter_id"
 
 # Helper constructors
 _E = FieldRole.EXACT

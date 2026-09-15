@@ -21,6 +21,7 @@ from ..matching.matching_engine import MatchingEngine
 from ..matching.field_extractor import FieldExtractor
 from ..matching.field_comparator import FieldComparator
 from ..matching.household_rules import CATEGORY_2_RULES
+from ..matching.relationship_linkage_rules import RELATIONSHIP_LINKAGE_RULES
 from ..matching.table2_rules import APPROVED_RULES, MatchingRule
 from ..normalization.manager import NormalizationManager
 
@@ -237,7 +238,12 @@ def _compute_confidence(result: MatchResult) -> float:
             # Confidence = 1 - P(collision), clamped to [0, 1]
             return max(0.0, min(1.0, 1.0 - p_collision))
 
-    for hh_rule in CATEGORY_2_RULES:
+    # CATEGORY_2_RULES (the original 8) and RELATIONSHIP_LINKAGE_RULES
+    # (session 17's C2-39/C2-40) are searched together - MatchingEngine's
+    # own default likewise combines both (see matching_engine.py's
+    # _ALL_CATEGORY_2_RULES), so a match via either must resolve to a real
+    # confidence score here, not silently fall through to 0.0 below.
+    for hh_rule in CATEGORY_2_RULES + RELATIONSHIP_LINKAGE_RULES:
         if hh_rule.rule_id == result.matched_rule_id:
             p_collision = (
                 hh_rule.p_collision_fuzzy

@@ -44,6 +44,21 @@ run whatever **Suggested Next Session** names below.
 >
 > **Session 17 is the new Suggested Next Session.**
 >
+> **2026-09-15 addendum (session 17 done):** session 17 executed same-day, on branch cut from
+> `main` before session 16/PR #51 merged (Imran's explicit go-ahead) — PR
+> [#52](https://github.com/icanbwell/cms-hte-patient-matching/pull/52), left open, moved to
+> `in_review/`. Found and corrected a real error before it shipped: this doc's original
+> Scope assumed "guardian's independently-matched identity" would be a near-zero-collision
+> *field* multiplied into rule 39's product; re-deriving the spec's own stated math
+> ("flat product: 0.02 × 0.0001 × 0.01 × 0.00003") showed it's a u=1.0 no-op gate instead -
+> multiplying by ~1e-15 as originally planned would have misreported the rule's collision risk
+> by ~15 orders of magnitude. Rules now live as `C2-39`/`C2-40` in a new
+> `relationship_linkage_rules.py` module. Also caught and fixed a real bug pre-merge:
+> `service.py`'s confidence-scoring lookup only searched the original 8 Category 2 rules, so a
+> `C2-39`/`C2-40` match would have silently scored 0.0 confidence. **Session 18 is the new
+> Suggested Next Session** — it has one real `NEEDS HUMAN DECISION` (what "query initiator"
+> means for this repo) to resolve before coding.
+>
 > **Session 8 — Legacy comparison harness (Tier 3).** Session 6 (below) is now `in_review/`
 > (PR opened 2026-08-18) with its hard code dependency (session 5) satisfied. Session 8's
 > remaining blockers are 3 `NEEDS HUMAN DECISION` items (eval-only dependency on
@@ -75,7 +90,6 @@ run whatever **Suggested Next Session** names below.
 
 | # | Session | Thread | Depends on | Size | Status | One-line summary |
 |---|---------|--------|-----------|------|--------|-------------------|
-| 17 | [session_17](pending/session_17.md) | Line B: CMS v3.4.0 migration | 16 (soft, file-conflict avoidance only — 16 now `in_review/`, PR #51) | L | pending | Relationship Linkage field (Table 3) + Rules 39/40 (guardian-verified minor / newborn-via-maternal-linkage) — built best-effort with the spec's own unresolved caveats documented. |
 | 18 | [session_18](pending/session_18.md) | Line B: CMS v3.4.0 migration | 16 (soft, ID-reference ordering only) | M | pending — blocked on 1 `NEEDS HUMAN DECISION` (what "query initiator" means for this repo) | §VII audit record reconciliation: confirm 6 of 7 required fields already present, add query initiator as the 7th. Path B aggregate metrics explicitly out of scope. |
 | 19 | [session_19](pending/session_19.md) | Line B: CMS v3.4.0 migration | 17 (soft, avoid two sessions inventing different relationship-data FHIR conventions) | M | pending | §C.7 twin/multiple-birth handling (4 new operational rules, none exist yet) + §C.9 defensive relationship-data flagging (SHOULD-level, lower priority). |
 | 8 | [session_8](https://github.com/icanbwell/cms-hte-patient-matching-test-set/blob/main/docs/sessions/pending/session_8.md) (moved) | Evaluation & Statistical Rigor | 3, 4, 9 (hard, all satisfied); 6 (soft, quality-of-result only) | L | pending — hard code dependencies satisfied (session 4: PR #22 merged, live run 2026-08-18 via PR #36; session 9: PR #27 merged); blocked on 3 `NEEDS HUMAN DECISION` items — see the moved session_8.md | Tier 3: legacy comparison harness, precision/recall-as-agreement, disagreement buckets, per-pair explanations |
@@ -89,6 +103,7 @@ satisfied; session 6 itself moved to `in_review/` below on 2026-08-18.
 
 | # | Session | Thread | PR | One-line summary |
 |---|---------|--------|----|--------------------|
+| 17 | [session_17](in_review/session_17.md) | Line B: CMS v3.4.0 migration | [#52](https://github.com/icanbwell/cms-hte-patient-matching/pull/52) (open) | Relationship Linkage field (Table 3) + Rules `C2-39`/`C2-40` (guardian-verified minor / newborn-via-maternal-linkage), built best-effort with the spec's own unresolved caveats documented. Corrected a math error before shipping (guardian identity is a u=1.0 gate, not a near-zero field) and fixed a real confidence-scoring bug in `service.py` (see doc's Execution notes). |
 | 16 | [session_16](in_review/session_16.md) | Line B: CMS v3.4.0 migration | [#51](https://github.com/icanbwell/cms-hte-patient-matching/pull/51) (open) | Renumbers Category 1 rules to v3.4.0's clean 01-30 sequence; extends DOB +/-1 day fuzzy to rules 01/02/03/10; prefixes Category 2's rule_ids with `C2-` after finding v3.4.0's renumbering collides with their legacy IDs (see doc's Execution notes). |
 | 6 | [session_6](in_review/session_6.md) | Line B: CMS v3.3 migration | [#39](https://github.com/icanbwell/patient-matching/pull/39) (open) | Table 2 v3.3.0 base + v3.3.1/v3.3.3/v3.3.4/v3.3.6 addenda: 3 new fields, DOB +/-1 day fuzzy, Household/Individual two-step architecture (rules 13-16 amended, 34/35/37/38 new), 30 flat + 8 two-step = 38 rules total. Rules 39/40 and v3.3.6 institutional-address integration explicitly deferred. |
 | 13 | [session_13](in_review/session_13.md) | Phase 2: production candidate-retrieval scaling | [#46](https://github.com/icanbwell/cms-hte-patient-matching/pull/46) (merged 2026-09-06) | Publish `cms-hte-patient-matching` to PyPI via OIDC Trusted Publishing. Packaging fixes done and verified locally (`[build-system]` added, stale `setup.py`/`setup.cfg` and stray `patientmatching/` dir removed, Makefile `dist`/`testpackage`/`package` targets added); pypi.org Trusted Publisher registered. |

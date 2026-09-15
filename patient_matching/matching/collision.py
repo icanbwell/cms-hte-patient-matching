@@ -47,6 +47,32 @@ FIELD_U_PROBS: Dict[str, Tuple[float, Optional[float]]] = {
     ),  # spec: "~=0"; a small nonzero float avoids a literal 0.0 * anything == 0.0 masking other fields in a product
     "insurance_member_id": (0.000001, None),
     "insurance_subscriber_id": (0.0001, None),
+    # v3.4.0 additions (session 17):
+    "relationship_linkage_clinical": (0.01, None),
+    # Self-reported/intake variant: defined per Table 3, deliberately unused by
+    # any rule this session builds (same "define but leave unused" precedent
+    # as household_rules.I_03) - both rules C2-39/C2-40 require the clinical
+    # variant only.
+    "relationship_linkage_self_reported": (0.05, None),
+    # Identity-gate fields: NOT a discriminating probabilistic factor. These
+    # represent "this record references a guardian/mother identity that was
+    # already independently matched by a separate Table 2 rule" - u=1.0 is a
+    # deliberate no-op multiplier, not a placeholder. The spec's own math for
+    # rule 39 ("flat product: 0.02 x 0.0001 x 0.01 x 0.00003") has exactly 4
+    # factors and no room for a 5th, near-zero one - the guardian/mother's own
+    # uniqueness was already bounded by whichever rule matched THEM, so this
+    # rule's P(collision) is conditional on that gate already holding, not
+    # compounded with it. Using namespace_id's near-zero tier here instead
+    # would misreport rule 39/40's collision risk by ~15 orders of magnitude.
+    "guardian_identity": (1.0, None),
+    "mother_identity": (1.0, None),
+    # Not given an explicit figure anywhere in Table 3 - the spec only says a
+    # true per-encounter ID "clears with wide margin" and a shared facility ID
+    # "is far above the threshold." Reuses namespace_id's 1e-15 tier as the
+    # closest existing analogue (both represent a namespace-bound,
+    # per-entity-unique identifier) - an interpretation, not a spec-given
+    # number; re-verify against the live doc if it's ever clarified.
+    "birth_encounter_id": (1e-15, None),
 }
 
 APPROVAL_THRESHOLD = 2e-12
