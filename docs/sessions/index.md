@@ -12,6 +12,20 @@ run whatever **Suggested Next Session** names below.
 
 ## Suggested Next Session
 
+> **2026-09-15 addendum (CMS v3.4.0 migration):** Imran shared the v3.4.0 spec diff and the
+> full v3.4.0 doc directly, and asked for this repo to be brought into compliance. Four new
+> sessions are queued for this: 16 (renumber Category 1 rules to v3.4.0's clean 01-30
+> sequence + extend DOB fuzzy to rules 01/02/03/10), 17 (Relationship Linkage field + rules
+> 39/40, guardian-verified minor / newborn-via-maternal-linkage — Imran decided: implement
+> now, best-effort, with the spec's own unresolved caveats documented as known limitations),
+> 18 (§VII audit record reconciliation — one real `NEEDS HUMAN DECISION` on what "query
+> initiator" means for this repo), and 19 (§C.7 twin-handling + §C.9 defensive relationship-data
+> flagging). **Session 16 is the new Suggested Next Session** — it's the smallest, most
+> mechanical of the four, and sessions 17/18 both prefer (don't require) landing after it to
+> avoid `table2_rules.py`/ID-reference churn. This work is independent of session 8's Tier-3
+> harness below; both can proceed in parallel once session 8's `NEEDS HUMAN DECISION` items
+> (in the moved repo) are answered.
+>
 > **Session 8 — Legacy comparison harness (Tier 3).** Session 6 (below) is now `in_review/`
 > (PR opened 2026-08-18) with its hard code dependency (session 5) satisfied. Session 8's
 > remaining blockers are 3 `NEEDS HUMAN DECISION` items (eval-only dependency on
@@ -43,6 +57,10 @@ run whatever **Suggested Next Session** names below.
 
 | # | Session | Thread | Depends on | Size | Status | One-line summary |
 |---|---------|--------|-----------|------|--------|-------------------|
+| 16 | [session_16](pending/session_16.md) | Line B: CMS v3.4.0 migration | 6 (hard, satisfied — merged to `main` via `b7f44bc`) | M | pending | Renumber Category 1 rules to v3.4.0's clean 01-30 sequence; extend DOB +/-1 day fuzzy to (new) rules 01/02/03/10. |
+| 17 | [session_17](pending/session_17.md) | Line B: CMS v3.4.0 migration | 16 (soft, file-conflict avoidance only) | L | pending | Relationship Linkage field (Table 3) + Rules 39/40 (guardian-verified minor / newborn-via-maternal-linkage) — built best-effort with the spec's own unresolved caveats documented. |
+| 18 | [session_18](pending/session_18.md) | Line B: CMS v3.4.0 migration | 16 (soft, ID-reference ordering only) | M | pending — blocked on 1 `NEEDS HUMAN DECISION` (what "query initiator" means for this repo) | §VII audit record reconciliation: confirm 6 of 7 required fields already present, add query initiator as the 7th. Path B aggregate metrics explicitly out of scope. |
+| 19 | [session_19](pending/session_19.md) | Line B: CMS v3.4.0 migration | 17 (soft, avoid two sessions inventing different relationship-data FHIR conventions) | M | pending | §C.7 twin/multiple-birth handling (4 new operational rules, none exist yet) + §C.9 defensive relationship-data flagging (SHOULD-level, lower priority). |
 | 8 | [session_8](https://github.com/icanbwell/cms-hte-patient-matching-test-set/blob/main/docs/sessions/pending/session_8.md) (moved) | Evaluation & Statistical Rigor | 3, 4, 9 (hard, all satisfied); 6 (soft, quality-of-result only) | L | pending — hard code dependencies satisfied (session 4: PR #22 merged, live run 2026-08-18 via PR #36; session 9: PR #27 merged); blocked on 3 `NEEDS HUMAN DECISION` items — see the moved session_8.md | Tier 3: legacy comparison harness, precision/recall-as-agreement, disagreement buckets, per-pair explanations |
 
 Session 3 merged into `main` (PR [#11](https://github.com/icanbwell/patient-matching/pull/11),
