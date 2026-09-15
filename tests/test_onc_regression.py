@@ -26,10 +26,11 @@ purely for reference, not a claim about real-world precision.
 The floor/ceiling below are regression guards, not a re-derivation of the
 sibling repo's own `evaluation/baselines/v3_2_2_onc_baseline.txt` - that
 baseline was computed with 26 rules over a much larger (~2M-pair) generated
-set; this engine currently ships 30 approved rules (Category 1) + 8
-household/individual rules (Category 2), evaluated here over the smaller,
-committed `sample_labeled_pairs.jsonl` (6,290 pairs). Measured on that file
-with the current rule set: recall=0.9710, FPR=0.0069. The floor/ceiling give
+set; this engine currently ships 30 approved rules (Category 1, including
+v3.4.0's DOB* extension to rules 01/02/03/10) + 8 household/individual rules
+(Category 2), evaluated here over the smaller, committed
+`sample_labeled_pairs.jsonl` (6,290 pairs). Measured on that file with the
+current rule set: recall=0.9717, FPR=0.0069. The floor/ceiling give
 headroom for legitimate improvement while catching a real regression - a false
 positive here is a wrong-patient record link, the critical error this whole
 engine exists to avoid, so the FPR ceiling is intentionally tight.

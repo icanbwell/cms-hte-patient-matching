@@ -97,4 +97,6 @@ class InMemoryBackend(MatchingBackend):
             return True
         if criterion.match_type == MatchType.FUZZY:
             return self._comparator.fuzzy_match(query_values, candidate_values)
+        if criterion.match_type == MatchType.DOB_TOLERANCE:
+            return self._comparator.dob_fuzzy_match(query_values, candidate_values)
         return False

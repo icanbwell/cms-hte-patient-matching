@@ -14,10 +14,20 @@ from typing import Any, Dict, List
 
 
 class MatchType(Enum):
-    """How a field criterion should be matched."""
+    """How a field criterion should be matched.
+
+    DOB_TOLERANCE (CMS v3.3's +/-1 calendar day DOB tolerance) is distinct
+    from FUZZY: a date string's Damerau-Levenshtein edit distance has no
+    relationship to its calendar distance (e.g. "2000-02-29"->"2000-03-01"
+    is 3 edits but 1 day apart, while "2015-06-01"->"2015-06-02" is 1 edit
+    AND 1 day apart only by coincidence). A backend must expand
+    DOB_TOLERANCE into an exact lookup on {value-1day, value, value+1day},
+    never a fuzzy-text/edit-distance search.
+    """
 
     EXACT = "exact"
     FUZZY = "fuzzy"
+    DOB_TOLERANCE = "dob_tolerance"
 
 
 @dataclass

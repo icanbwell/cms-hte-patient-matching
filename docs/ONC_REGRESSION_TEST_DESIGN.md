@@ -17,15 +17,15 @@ The data itself is **vendored into this repo** at `tests/fixtures/onc/` (copied 
 `cms-hte-patient-matching-test-set` repo — see "Vendoring decision" below) — this repo is
 standalone and does not require a second repo checked out to run these tests, including in CI.
 
-Both are written, passing, and clean under ruff/mypy. Measured live: pairs tier — recall 0.9710,
-FPR 0.0069, 0 extraction errors on 6,290 pairs; population tier — precision 0.9990, recall 0.9710,
-FPR 0.0001, accuracy 0.9978, F1 0.9848, 0 extraction errors on 80,000 query-candidate evaluations
+Both are written, passing, and clean under ruff/mypy. Measured live: pairs tier — recall 0.9717,
+FPR 0.0069, 0 extraction errors on 6,290 pairs; population tier — precision 0.9990, recall 0.9717,
+FPR 0.0001, accuracy 0.9978, F1 0.9851, 0 extraction errors on 80,000 query-candidate evaluations
 (2,000 queries × ~40-candidate pools, 8,016 unique candidates).
 
 No practitioner/NPPES *compliance* test was built — see "Alternatives Considered" for why that's
 not a gap. A narrower, valid NPPES-based test was added instead: `tests/test_nppes_matching.py`,
 checking both directions of the one approved rule that *can* evaluate against NPPES-shaped data
-(Rule 33) — recall 1.0000 on exact-duplicate/single-edit true-match cases, FPR 0.0000 on 307
+(rule 29) — recall 1.0000 on exact-duplicate/single-edit true-match cases, FPR 0.0000 on 307
 real distinct-provider collisions — data vendored at `tests/fixtures/nppes/`. See the "Update
 (2026-09-04)" note under "Alternatives Considered" for the full rationale.
 
@@ -122,7 +122,7 @@ Run against the current engine (30 Category 1 rules + 8 household rules):
 
 | Metric | Measured | Threshold | Headroom |
 |---|---|---|---|
-| Recall | 0.9710 (tp=5826, fn=174) | ≥ 0.95 | ~2 points below measured; still above the historical 26-rule baseline (0.9508) |
+| Recall | 0.9717 (tp=5830, fn=170) | ≥ 0.95 | ~2 points below measured; still above the historical 26-rule baseline (0.9508) |
 | FPR | 0.0069 (fp=2, tn=288) | ≤ 0.01 | ~0.3 points above measured — deliberately tight; a false positive here is a wrong-patient record link, the error this whole engine exists to prevent |
 | Extraction errors | 0 | must be 0 | none — any error is a bug, not a case to skip |
 
@@ -133,7 +133,7 @@ Per-category breakdown (for diagnosability, not separately asserted):
 
 | Category | tp | fp | tn | fn | recall | fpr |
 |---|---|---|---|---|---|---|
-| fuzzy_variant | 1848 | 0 | 0 | 152 | 0.9240 | n/a |
+| fuzzy_variant | 1852 | 0 | 0 | 148 | 0.9260 | n/a |
 | normalization_edge_case | 3978 | 0 | 0 | 22 | 0.9945 | n/a |
 | hard_negative | 0 | 0 | 4 | 0 | n/a | 0.0000 |
 | special_population | 0 | 2 | 284 | 0 | n/a | 0.0070 |
@@ -170,10 +170,10 @@ than helix's file-based tracking.
 
 | Metric | Measured | Threshold | Headroom |
 |---|---|---|---|
-| Precision | 0.9990 (tp=5826, fp=6) | ≥ 0.99 | matches the pairs-tier tp/fn since true matches are counted the same way; fp differs (6 vs. 2) because the population tier's much larger candidate pool surfaces more near-miss distractors |
-| Recall | 0.9710 | ≥ 0.95 | same as pairs tier |
+| Precision | 0.9990 (tp=5830, fp=6) | ≥ 0.99 | matches the pairs-tier tp/fn since true matches are counted the same way; fp differs (6 vs. 2) because the population tier's much larger candidate pool surfaces more near-miss distractors |
+| Recall | 0.9717 | ≥ 0.95 | same as pairs tier |
 | FPR | 0.0001 (fp=6, tn=73,994) | ≤ 0.001 | 10x headroom; naturally tiny here because tn dominates the pool, but still a tight absolute ceiling — same false-positive-is-critical reasoning as the pairs tier |
-| F1 | 0.9848 | ≥ 0.97 | ~1.5 points below measured |
+| F1 | 0.9851 | ≥ 0.97 | ~1.5 points below measured |
 | Accuracy | 0.9978 | not asserted | reported in the failure-message summary only; dominated by the huge tn count so less sensitive to a real regression than the other four metrics |
 
 ### Skip behavior
@@ -216,7 +216,7 @@ Practitioner/provider matching is already owned by those two repos. **No practit
 `tests/test_nppes_matching.py`, data vendored at `tests/fixtures/nppes/` (copied from
 `helix.personmatching`'s own NPPES sample, provenance in that directory's README). It is **not** a
 reversal of the conclusion above: it doesn't claim this engine matches practitioners in general.
-Exactly one approved Table 2 rule can evaluate at all against NPPES-shaped data — Rule 33, `First
+Exactly one approved Table 2 rule can evaluate at all against NPPES-shaped data — Rule 29, `First
 Name* + Last Name* + Phone Number + ZIP Code`, the only approved rule requiring none of
 DOB/SSN/MBI/email — and the test checks that rule both directions, the same way the ONC pairs test
 checks recall and FPR for patients:
@@ -225,7 +225,7 @@ checks recall and FPR for patients:
   provider's name should all still match (phone/ZIP held fixed) — measured **1.0000** (17,299/
   17,299 true-match cases, 0 false negatives), gated at ≥ 0.99. 27 of 4,943 providers are excluded
   from this measurement (tracked, not hidden) because their practice phone didn't survive
-  normalization at all (a placeholder like `000-000-0000`, or a non-US/APO number) — rule 33 can't
+  normalization at all (a placeholder like `000-000-0000`, or a non-US/APO number) — rule 29 can't
   evaluate without phone present, even against an identical copy of itself.
 - **FPR:** real group practices commonly share one practice phone+ZIP across multiple distinct
   providers (130 such (phone, ZIP) collisions found in the vendored sample, 307 distinct-NPI pairs
@@ -281,14 +281,14 @@ non-whitespace character; a handful of ONC-derived records have an empty city/st
 | Metric | This repo (Table 2, 30+8 rules) | `helix.personmatching` (legacy weighted score, threshold 0.955) |
 |---|---|---|
 | **Pairs tier** (6,290 pairs) | | |
-| Recall | 0.9710 (tp=5,826, fn=174) | **1.0000** (tp=6,000, fn=0) |
+| Recall | 0.9717 (tp=5,830, fn=170) | **1.0000** (tp=6,000, fn=0) |
 | Precision | 0.9997 (not representative - see above) | 1.0000 (not representative, same reason) |
 | FPR | 0.0069 (fp=2, tn=288) | **0.0000** (fp=0, tn=290) |
 | **Population tier** (80,000 query-candidate evals) | | |
-| Recall | 0.9710 | **1.0000** |
+| Recall | 0.9717 | **1.0000** |
 | Precision | 0.9990 | 0.9993 |
 | FPR | 0.0001 (fp=6, tn=73,994) | 0.0001 (fp=4, tn=73,996) |
-| F1 | 0.9848 | **0.9997** |
+| F1 | 0.9851 | **0.9997** |
 | Accuracy | 0.9978 | 1.0000 |
 
 **Read plainly: on this exact same data, `helix.personmatching`'s legacy engine has meaningfully

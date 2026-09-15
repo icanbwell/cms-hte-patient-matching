@@ -497,7 +497,7 @@ class TestHouseholdIndividualRules:
 
 
 class TestDobFuzzyDispatch:
-    """Rule 28: Last Name* + DOB* (+/-1 day) + Member ID."""
+    """Rule 24: Last Name* + DOB* (+/-1 day) + Insurance Member ID."""
 
     def _make_member_id_patient(
         self, *, first: str, last: str, dob: str, member_id: str
