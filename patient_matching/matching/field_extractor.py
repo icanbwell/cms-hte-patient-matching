@@ -47,11 +47,21 @@ class PatientFields:
             separately-matched identity (CMS v3.4.0 Rule C2-40).
         birth_encounter_ids: Namespace-scoped, per-encounter birth identifiers
             (CMS v3.4.0 Rule C2-40).
+        middle_names: Given names beyond the first (CMS v3.4.0 SS C.7,
+            session 19) - deliberately NOT a Table 2/Table 3 field (CMS
+            dismisses Middle Name from the collision-probability tables
+            for data-quality/low-selectivity reasons; see collision.py's
+            module docstring) and NOT included in get_values()'s mapping,
+            so it can never be referenced by a RuleField/p_collision() call.
+            Used only as an out-of-band twin/multiple-birth tiebreaker
+            within MatchingEngine's household/individual two-step
+            resolution - see matching_engine.py's twin-handling note.
     """
 
     first_names: Set[str] = field(default_factory=set)
     last_names: Set[str] = field(default_factory=set)
     suffixes: Set[str] = field(default_factory=set)
+    middle_names: Set[str] = field(default_factory=set)
     dob: Set[str] = field(default_factory=set)
     street_lines: Set[str] = field(default_factory=set)
     phones: Set[str] = field(default_factory=set)
@@ -182,11 +192,21 @@ class FieldExtractor:
             if family:
                 fields.last_names.add(family)
 
-            # Given names — first given is the "first name"
+            # Given names — first given is the "first name"; every given
+            # name (not just the first) is also added to first_names per
+            # Core Principle 10 ("match on any known value") - this
+            # pre-dates session 19 and is unchanged here.
             given_list: List[str] = name_entry.get("given") or []
             for g in given_list:
                 if g:
                     fields.first_names.add(g)
+
+            # Middle names: given names beyond the first, by FHIR positional
+            # convention (session 19) - additive only, does not change what
+            # first_names already collects above.
+            for g in given_list[1:]:
+                if g:
+                    fields.middle_names.add(g)
 
             # Nicknames (attached by normalization as _nicknames)
             for nick in name_entry.get("_nicknames") or []:

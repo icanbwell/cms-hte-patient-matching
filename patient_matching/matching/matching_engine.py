@@ -26,6 +26,7 @@ from .relationship_linkage_rules import RELATIONSHIP_LINKAGE_RULES
 from .table2_rules import (
     APPROVED_RULES,
     DOB,
+    FIRST_NAME,
     FieldRole,
     MatchingRule,
     RuleField,
@@ -407,6 +408,18 @@ class MatchingEngine:
         duplicate. Two sequential field-verification narrowing passes
         (household, then individual) achieves the same practical effect
         for this repo's Definition of Done.
+
+        CMS v3.4.0 SS C.7 twin/multiple-birth handling (session 19): twins
+        share every household-tier field by definition, plus an exact DOB -
+        First Name is the only field doing individuating work. When the
+        household step surfaces multiple candidates sharing an identical
+        DOB, First Name comparison is forced exact (never fuzzy) rather
+        than using the individual row's normal fuzzy-eligibility, and a
+        2-candidate tie remaining after that is given one last-resort
+        middle-name tiebreak before falling through to the base document's
+        existing 1/2/3+ escalation. SS C.7's 4th refinement (anchoring to a
+        persistent identifier so a later query skips the tiebreak) needs no
+        new code here - see this method's own note further down for why.
         """
         evaluations: List[RuleEvaluation] = []
         household_fields = rule.household_row.fields
@@ -438,6 +451,13 @@ class MatchingEngine:
         if not self._query_has_all_fields(query_fields, individual_fields):
             return [], evaluations
 
+        # SS C.7(1): force exact First Name whenever >1 household-tier match
+        # shares an identical DOB - the normal one-edit fuzzy tolerance
+        # could otherwise conflate two genuinely different but similar
+        # names (e.g. "Jayden" and "Jaden") between twins/siblings.
+        if self._household_matches_share_a_dob(household_matches):
+            individual_fields = self._force_exact_first_name(individual_fields)
+
         resolved: List[Dict[str, Any]] = []
         for candidate in household_matches:
             cand_fields = self._extractor.extract(candidate)
@@ -458,7 +478,110 @@ class MatchingEngine:
                 evaluation.matched = False
                 evaluation.negated_by_suffix = True
 
+        # SS C.7(2): placeholder/identical-name fail-closed and the
+        # 2-candidate escalation itself need no new code here - a query
+        # whose First Name resolves to nothing distinguishing (placeholder
+        # stripped to empty, or identical between twins) naturally produces
+        # 0 or 2+ entries in `resolved` above via the existing per-candidate
+        # exact/missing-field checks, which _build_result already turns
+        # into NO_MATCH or ESCALATE/AMBIGUOUS - no twin-specific branch
+        # needed to reproduce that outcome.
+        #
+        # SS C.7(4) before (3): anchoring to a persistent identifier
+        # (MRN/EMPI/FHIR Patient.id, i.e. namespace_id) takes priority over
+        # the middle-name heuristic when both are available, since it's a
+        # near-zero-collision signal rather than a last-resort one.
+        # **Correction, found empirically while testing, not assumed:**
+        # this cannot be "free" via cross-rule aggregation alone. A query
+        # carrying the resolved namespace_id also matching the standing
+        # namespace_id flat rule does NOT by itself suppress this method's
+        # own ambiguous 2-candidate result - _build_result's aggregation is
+        # a union across every contributing rule, not "the most specific
+        # rule wins," so the twin household/individual tie would still
+        # independently contribute both candidates regardless of what the
+        # namespace_id rule separately resolves. The anchor has to be
+        # applied here, at the point of tie resolution, not left to emerge
+        # from aggregation.
+        if len(resolved) == 2 and self._household_matches_share_a_dob(
+            household_matches
+        ):
+            narrowed = self._break_twin_tie_with_namespace_id(
+                query_fields, resolved
+            ) or self._break_twin_tie_with_middle_name(query_fields, resolved)
+            if narrowed is not None:
+                resolved = [narrowed]
+
         return resolved, evaluations
+
+    def _household_matches_share_a_dob(self, candidates: List[Dict[str, Any]]) -> bool:
+        """True if 2+ candidates in this household-tier match set share an
+        identical DOB value - the twin/multiple-birth signal SS C.7 keys
+        off of. Compares candidates to each other, not to the query - the
+        individual-tier DOB check against the query happens separately."""
+        dob_counts: Dict[str, int] = {}
+        for candidate in candidates:
+            for dob_value in self._extractor.extract(candidate).dob:
+                dob_counts[dob_value] = dob_counts.get(dob_value, 0) + 1
+        return any(count > 1 for count in dob_counts.values())
+
+    @staticmethod
+    def _force_exact_first_name(
+        fields: tuple[RuleField, ...],
+    ) -> tuple[RuleField, ...]:
+        """Return a copy of `fields` with First Name's role forced to
+        FieldRole.EXACT, leaving every other field untouched. RuleField is
+        frozen, so this rebuilds the tuple rather than mutating in place."""
+        return tuple(
+            RuleField(name=rf.name, role=FieldRole.EXACT)
+            if rf.name == FIRST_NAME
+            else rf
+            for rf in fields
+        )
+
+    def _break_twin_tie_with_namespace_id(
+        self,
+        query_fields: PatientFields,
+        tied_candidates: List[Dict[str, Any]],
+    ) -> Optional[Dict[str, Any]]:
+        """SS C.7(4): if the query carries a namespace-bound persistent
+        identifier (MRN/EMPI/FHIR Patient.id) recorded at a prior
+        resolution, and it overlaps exactly one of the two tied candidates'
+        own namespace_id, that candidate wins the tiebreak outright -
+        skipping the name-based heuristics entirely, since this is a
+        near-zero-collision signal rather than a last-resort one. Returns
+        None (defer to the middle-name tiebreak) if the query has no
+        namespace_id, or if both/neither candidate's matches."""
+        if not query_fields.namespace_ids:
+            return None
+
+        matches = [
+            candidate
+            for candidate in tied_candidates
+            if query_fields.namespace_ids
+            & self._extractor.extract(candidate).namespace_ids
+        ]
+        return matches[0] if len(matches) == 1 else None
+
+    def _break_twin_tie_with_middle_name(
+        self,
+        query_fields: PatientFields,
+        tied_candidates: List[Dict[str, Any]],
+    ) -> Optional[Dict[str, Any]]:
+        """SS C.7(3): if the query has a middle name and it overlaps exactly
+        one of the two tied candidates' own middle names, that candidate
+        wins the tiebreak. Returns None (still ambiguous) if the query has
+        no middle name, or if both/neither candidate's middle name matches -
+        a non-discriminating middle name must not force a pick."""
+        if not query_fields.middle_names:
+            return None
+
+        matches = [
+            candidate
+            for candidate in tied_candidates
+            if query_fields.middle_names
+            & self._extractor.extract(candidate).middle_names
+        ]
+        return matches[0] if len(matches) == 1 else None
 
     @staticmethod
     def _suffix_conflict(query_suffixes: Set[str], cand_suffixes: Set[str]) -> bool:

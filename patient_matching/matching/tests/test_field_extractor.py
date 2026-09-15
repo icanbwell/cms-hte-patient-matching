@@ -106,6 +106,23 @@ class TestFieldExtractor:
         fields = extractor.extract(full_patient)
         assert "jr" in fields.suffixes
 
+    def test_extract_middle_names(
+        self, extractor: FieldExtractor, full_patient: Dict[str, Any]
+    ) -> None:
+        """CMS v3.4.0 SS C.7 twin tiebreaker (session 19) - given names
+        beyond the first, additive to (not instead of) first_names."""
+        fields = extractor.extract(full_patient)
+        assert "michael" in fields.middle_names
+        assert "michael" in fields.first_names  # unchanged existing behavior
+
+    def test_single_given_name_has_no_middle_name(
+        self, extractor: FieldExtractor
+    ) -> None:
+        patient: Dict[str, Any] = {"name": [{"given": ["john"], "family": "smith"}]}
+        fields = extractor.extract(patient)
+        assert fields.middle_names == set()
+        assert fields.first_names == {"john"}
+
     def test_extract_dob(
         self, extractor: FieldExtractor, full_patient: Dict[str, Any]
     ) -> None:
