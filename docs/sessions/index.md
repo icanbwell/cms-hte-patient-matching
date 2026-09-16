@@ -64,7 +64,19 @@ run whatever **Suggested Next Session** names below.
 > while doing the field-by-field mapping: `RuleEvaluation.timestamp` only exists per rule
 > evaluated, so a query matching zero rules (e.g. an empty patient) had no timestamp anywhere
 > on the result — fixed by adding a query-level `MatchResult.timestamp`, always populated.
-> **Session 19 is the new Suggested Next Session.**
+>
+> **2026-09-15 addendum (session 19 done, v3.4.0 backlog complete):** session 19 executed
+> same-day — PR [#54](https://github.com/icanbwell/cms-hte-patient-matching/pull/54), left
+> open, moved to `in_review/`. Built all four §C.7 twin/multiple-birth behaviors; deferred §C.9
+> (defensive relationship-data flagging) as a real API-surface question needing its own scoping,
+> not a quick addition — noted, not silently dropped. Found and corrected a real architectural
+> assumption before it shipped: a first attempt relied on `MatchingEngine`'s cross-rule
+> aggregation to let a resolved `namespace_id` "for free" narrow an otherwise-ambiguous twin
+> tie — a dedicated test disproved this immediately (`_build_result` unions every rule's
+> matches rather than letting a more-specific rule suppress a less-specific one), so the
+> `namespace_id` anchor had to be applied inside the tie-resolution itself instead. This closes
+> out sessions 16-19, all in_review awaiting merge (PRs #51-#54) — **session 8 (Tier 3, in the
+> moved test-set repo) is the next queued session**, unchanged from before this migration began.
 >
 > **2026-09-15 addendum (session 17, post-review fix):** an adversarial review of PR #52
 > found the relationship `type` claim (`"child-of"`/`"newborn-of"`) was never actually
@@ -81,6 +93,7 @@ run whatever **Suggested Next Session** names below.
 > review turned that into a demonstrated, tested case rather than a prose caveat - see
 > session_17.md's "Post-review fixes" section for the two remediation options (add a
 > discriminating field vs. gate on FHIR's multipleBirth flag) and their tradeoffs.
+>
 > **2026-09-15 addendum (session 18, post-review fix):** an adversarial review of PR #53 found
 > `MatchingManager` (the other public entry point besides `MatchingEngine.match()`) had no way
 > to accept `query_initiator` at all, and that a query with too few fields for ANY rule to be
@@ -94,6 +107,28 @@ run whatever **Suggested Next Session** names below.
 > `query_initiator` decision from earlier the same day already says "not validated," so
 > tightening that needs Imran's confirmation it was meant to include tolerating literal control
 > characters, not a silent code change. See session_18.md's "Post-review fixes" section.
+>
+> **2026-09-15 addendum (session 19, post-review fixes):** an adversarial review of PR #54
+> (run against a live worktree, not by inspection) found 3 real defects that survived the
+> session's own tests because every test used `rules=()`, disabling all Category 1 flat rules:
+> (1) the twin tiebreak was empirically inert under the production default rule set — a flat
+> rule matching on a shared name alias re-introduced the twin the tiebreak had just excluded,
+> since `_build_result`'s cross-rule union has no "more specific rule wins" concept; (2) the
+> exact-First-Name gate was household-wide instead of per-candidate, so a non-twin household
+> member (e.g. a parent) lost ordinary fuzzy First Name matching whenever the household also
+> contained a twin pair; (3) a candidate's *absent* middle name was treated as discriminating
+> evidence against them in the tiebreak, rather than as missing data. All three fixed in
+> `matching_engine.py`, each with a regression test confirmed (via `git stash`) to fail
+> pre-fix and pass post-fix — see session_19.md's "Post-review fixes" section for detail. Four
+> related but out-of-scope-for-a-bug-fix-pass gaps were found and documented, not fixed:
+> higher-order multiples (triplets+) still don't get an anchor-based tiebreak even when one
+> would resolve cleanly (safe direction, under-return only); §C.7(1)'s hardening only covers
+> Category 2 rules, leaving the flat Category 1 path exposed to the same fuzzy-name twin
+> collision it closed for Category 2; nickname aliasing can still let `_force_exact_first_name`
+> match on a nickname rather than a legal first name; and DOB-sharing detection is exact-string
+> only, missing twins whose recorded DOBs are one calendar day apart. **Candidate follow-up
+> session** once 16-19 land: close these four gaps, scoped as their own session rather than
+> folded into 19 (each is a spec-interpretation or data-model decision, not a mechanical fix).
 >
 > **Session 8 — Legacy comparison harness (Tier 3).** Session 6 (below) is now `in_review/`
 > (PR opened 2026-08-18) with its hard code dependency (session 5) satisfied. Session 8's
@@ -126,7 +161,6 @@ run whatever **Suggested Next Session** names below.
 
 | # | Session | Thread | Depends on | Size | Status | One-line summary |
 |---|---------|--------|-----------|------|--------|-------------------|
-| 19 | [session_19](pending/session_19.md) | Line B: CMS v3.4.0 migration | 17 (soft, avoid two sessions inventing different relationship-data FHIR conventions) | M | pending | §C.7 twin/multiple-birth handling (4 new operational rules, none exist yet) + §C.9 defensive relationship-data flagging (SHOULD-level, lower priority). |
 | 8 | [session_8](https://github.com/icanbwell/cms-hte-patient-matching-test-set/blob/main/docs/sessions/pending/session_8.md) (moved) | Evaluation & Statistical Rigor | 3, 4, 9 (hard, all satisfied); 6 (soft, quality-of-result only) | L | pending — hard code dependencies satisfied (session 4: PR #22 merged, live run 2026-08-18 via PR #36; session 9: PR #27 merged); blocked on 3 `NEEDS HUMAN DECISION` items — see the moved session_8.md | Tier 3: legacy comparison harness, precision/recall-as-agreement, disagreement buckets, per-pair explanations |
 
 Session 3 merged into `main` (PR [#11](https://github.com/icanbwell/patient-matching/pull/11),
@@ -138,6 +172,7 @@ satisfied; session 6 itself moved to `in_review/` below on 2026-08-18.
 
 | # | Session | Thread | PR | One-line summary |
 |---|---------|--------|----|--------------------|
+| 19 | [session_19](in_review/session_19.md) | Line B: CMS v3.4.0 migration | [#54](https://github.com/icanbwell/cms-hte-patient-matching/pull/54) (open) | §C.7 twin/multiple-birth handling (4 new operational rules) built in full; §C.9 defensive relationship-data flagging explicitly deferred as a real API-surface question. Corrected a real aggregation-assumption bug before shipping (namespace_id anchor must apply inside tie-resolution, not rely on cross-rule union) - see doc's Execution notes. |
 | 18 | [session_18](in_review/session_18.md) | Line B: CMS v3.4.0 migration | [#53](https://github.com/icanbwell/cms-hte-patient-matching/pull/53) (open) | §VII audit record reconciliation: adds `query_initiator` (opaque, caller-supplied, per Imran's decision) and a query-level `timestamp` (found missing for zero-rule-evaluation queries) to `MatchResult`/`MatchResponse`. Path B aggregate metrics explicitly out of scope. |
 | 17 | [session_17](in_review/session_17.md) | Line B: CMS v3.4.0 migration | [#52](https://github.com/icanbwell/cms-hte-patient-matching/pull/52) (open) | Relationship Linkage field (Table 3) + Rules `C2-39`/`C2-40` (guardian-verified minor / newborn-via-maternal-linkage), built best-effort with the spec's own unresolved caveats documented. Corrected a math error before shipping (guardian identity is a u=1.0 gate, not a near-zero field) and fixed a real confidence-scoring bug in `service.py` (see doc's Execution notes). |
 | 16 | [session_16](in_review/session_16.md) | Line B: CMS v3.4.0 migration | [#51](https://github.com/icanbwell/cms-hte-patient-matching/pull/51) (open) | Renumbers Category 1 rules to v3.4.0's clean 01-30 sequence; extends DOB +/-1 day fuzzy to rules 01/02/03/10; prefixes Category 2's rule_ids with `C2-` after finding v3.4.0's renumbering collides with their legacy IDs (see doc's Execution notes). |
@@ -206,6 +241,12 @@ _(none yet — see `rejected/README.md`)_
   `evaluate_pair()` calls on precomputed pairs and never calls `InMemoryBackend.search()`;
   matters once actual `match()`/`match_batch()` calls need to scale against a large corpus
   (e.g. session 4 or eventual production-shaped batch runs).
+- **CMS v3.4.0 §C.9 defensive relationship-data flagging** (deferred by session 19, 2026-09-15
+  — see `in_review/session_19.md`'s Execution notes). A real API-surface question, not a quick
+  addition: `FieldExtractor.extract()` only ever sees a single FHIR `Patient` dict, but
+  `RelatedPerson` is a separate resource type entirely, so this needs a decision on how a caller
+  supplies relationship data to the engine at all (a new parameter? reuse session 17's
+  linked-identity convention once it lands?) before it can be built.
 
 ## Dependency graph (at a glance)
 
