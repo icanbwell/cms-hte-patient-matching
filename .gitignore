@@ -48,6 +48,10 @@ nosetests.xml
 coverage.xml
 *.cover
 *.py,cover
+
+# CI's junitxml/ONC-metrics output folder (see build_and_test.yml) -- created
+# fresh each run, never meant to be committed.
+/reports/
 .hypothesis/
 .pytest_cache/
 

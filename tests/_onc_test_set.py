@@ -9,10 +9,13 @@ Not itself a test module - `test_*.py` files import from here.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
+from typing import Any, Dict
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ONC_CASES_DIR = REPO_ROOT / "tests" / "fixtures" / "onc"
+REPORTS_DIR = REPO_ROOT / "reports"
 
 
 def missing_fixture_data_reason(path: Path) -> str:
@@ -26,3 +29,18 @@ def missing_fixture_data_reason(path: Path) -> str:
         f"ONC test data not found at {path}. Run `make fetch-onc-data` "
         "(see tests/fixtures/onc/README.md) to download it."
     )
+
+
+def write_metrics_report(name: str, metrics: Dict[str, Any]) -> None:
+    """Write a tier's measured metrics to `reports/onc_<name>_metrics.json`.
+
+    Best-effort, not a test gate: `scripts/summarize_onc_metrics.py` reads
+    this in CI to render a job-summary table (see the "Report ONC metrics"
+    step in `.github/workflows/build_and_test.yml`), which is a reporting
+    aid, not part of what makes the test pass or fail. `reports/` only
+    exists in CI (created by the "Create reports output folder" step) - a
+    local `pytest` run without it is the expected common case, not an error.
+    """
+    if not REPORTS_DIR.is_dir():
+        return
+    (REPORTS_DIR / f"onc_{name}_metrics.json").write_text(json.dumps(metrics, indent=2))

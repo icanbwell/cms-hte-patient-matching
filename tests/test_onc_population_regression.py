@@ -44,7 +44,11 @@ from patient_matching.matching.matching_engine import MatchingEngine
 from patient_matching.normalization.manager import NormalizationManager
 
 from ._null_backend import NullBackend
-from ._onc_test_set import ONC_CASES_DIR, missing_fixture_data_reason
+from ._onc_test_set import (
+    ONC_CASES_DIR,
+    missing_fixture_data_reason,
+    write_metrics_report,
+)
 
 POPULATION_QUERIES_PATH = ONC_CASES_DIR / "population_queries.jsonl"
 POPULATION_CANDIDATES_PATH = ONC_CASES_DIR / "population_candidates.jsonl"
@@ -129,14 +133,6 @@ def test_onc_population_precision_recall_fpr_f1() -> None:
             else:
                 tn += 1
 
-    # Per the sibling repo's Option B guidance: report (and here, gate on) how
-    # many query-candidate evaluations actually succeeded vs. errored, rather
-    # than silently reporting metrics only over what worked.
-    assert not errors, (
-        f"{len(errors)} query/candidate evaluations raised instead of "
-        f"evaluating: " + "; ".join(errors[:10])
-    )
-
     precision = tp / (tp + fp) if (tp + fp) else float("nan")
     recall = tp / (tp + fn) if (tp + fn) else float("nan")
     fpr = fp / (fp + tn) if (fp + tn) else float("nan")
@@ -145,6 +141,37 @@ def test_onc_population_precision_recall_fpr_f1() -> None:
         2 * precision * recall / (precision + recall)
         if (precision + recall)
         else float("nan")
+    )
+
+    write_metrics_report(
+        "population",
+        {
+            "n_queries": len(queries),
+            "n_candidates": len(candidates),
+            "n_evals": n_evals,
+            "tp": tp,
+            "fp": fp,
+            "tn": tn,
+            "fn": fn,
+            "precision": precision,
+            "recall": recall,
+            "fpr": fpr,
+            "accuracy": accuracy,
+            "f1": f1,
+            "precision_floor": PRECISION_FLOOR,
+            "recall_floor": RECALL_FLOOR,
+            "fpr_ceiling": FPR_CEILING,
+            "f1_floor": F1_FLOOR,
+            "extraction_errors": len(errors),
+        },
+    )
+
+    # Per the sibling repo's Option B guidance: report (and here, gate on) how
+    # many query-candidate evaluations actually succeeded vs. errored, rather
+    # than silently reporting metrics only over what worked.
+    assert not errors, (
+        f"{len(errors)} query/candidate evaluations raised instead of "
+        f"evaluating: " + "; ".join(errors[:10])
     )
 
     summary = (

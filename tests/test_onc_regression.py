@@ -51,7 +51,11 @@ from patient_matching.matching.matching_engine import MatchingEngine
 from patient_matching.normalization.manager import NormalizationManager
 
 from ._null_backend import NullBackend
-from ._onc_test_set import ONC_CASES_DIR, missing_fixture_data_reason
+from ._onc_test_set import (
+    ONC_CASES_DIR,
+    missing_fixture_data_reason,
+    write_metrics_report,
+)
 
 ONC_PAIRS_PATH = ONC_CASES_DIR / "sample_labeled_pairs.jsonl"
 
@@ -115,14 +119,6 @@ def test_onc_labeled_pairs_recall_and_fpr() -> None:
         else:
             tn += 1
 
-    # Per the sibling repo's Option A guidance: never silently skip cases and
-    # report metrics only over what succeeded - a raised exception on any
-    # case is itself a bug worth surfacing, not a case to drop.
-    assert not errors, (
-        f"{len(errors)}/{len(pairs)} pairs raised instead of evaluating: "
-        + "; ".join(errors[:10])
-    )
-
     recall = tp / (tp + fn) if (tp + fn) else float("nan")
     fpr = fp / (fp + tn) if (fp + tn) else float("nan")
     # Reported for visibility only, not gated - see module docstring: this
@@ -130,6 +126,24 @@ def test_onc_labeled_pairs_recall_and_fpr() -> None:
     # real-world interpretation here. Use the population tier's precision
     # instead for anything that needs a real number.
     precision = tp / (tp + fp) if (tp + fp) else float("nan")
+
+    write_metrics_report(
+        "pairs",
+        {
+            "n": len(pairs),
+            "tp": tp,
+            "fp": fp,
+            "tn": tn,
+            "fn": fn,
+            "recall": recall,
+            "fpr": fpr,
+            "precision": precision,
+            "recall_floor": RECALL_FLOOR,
+            "fpr_ceiling": FPR_CEILING,
+            "extraction_errors": len(errors),
+            "by_category": {cat: dict(c) for cat, c in sorted(by_category.items())},
+        },
+    )
 
     breakdown = "\n".join(
         f"  {cat}: tp={c['tp']} fp={c['fp']} tn={c['tn']} fn={c['fn']}"
@@ -139,6 +153,14 @@ def test_onc_labeled_pairs_recall_and_fpr() -> None:
         f"n={len(pairs)} tp={tp} fp={fp} tn={tn} fn={fn} "
         f"recall={recall:.4f} fpr={fpr:.4f} precision(not representative, see docstring)={precision:.4f}"
         f"\nBy rationale category:\n{breakdown}"
+    )
+
+    # Per the sibling repo's Option A guidance: never silently skip cases and
+    # report metrics only over what succeeded - a raised exception on any
+    # case is itself a bug worth surfacing, not a case to drop.
+    assert not errors, (
+        f"{len(errors)}/{len(pairs)} pairs raised instead of evaluating: "
+        + "; ".join(errors[:10])
     )
 
     assert recall >= RECALL_FLOOR, f"Recall regressed below {RECALL_FLOOR}.\n{summary}"
