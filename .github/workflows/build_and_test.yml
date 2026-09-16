@@ -61,6 +61,12 @@ jobs:
       - name: Create reports output folder
         run: mkdir -p ${{ github.workspace }}/reports
 
+      # ONC test data is fetched from a pinned tag of cms-hte-patient-matching-test-set
+      # rather than committed here (see tests/fixtures/onc/README.md) -- the ONC
+      # regression tests skip, not fail, if this step is ever missing.
+      - name: Fetch ONC test data
+        run: make fetch-onc-data
+
       - name: tests
         run: uv run --frozen --no-sync pytest . --tb=auto --junitxml=${{ github.workspace }}/reports/test-results.xml
 

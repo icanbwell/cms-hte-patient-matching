@@ -51,27 +51,46 @@ nothing connects them.
 
 ## Design
 
-### Vendoring decision (2026-09-04)
+### Fetch-on-demand decision (2026-09-15, supersedes the vendoring decision below)
 
-**This repo now vendors a copy of the ONC-derived test data at `tests/fixtures/onc/`** — copied
+**This repo no longer commits a copy of the ONC-derived test data.** `scripts/fetch_onc_test_data.py`
+(`make fetch-onc-data`) downloads it from a pinned tag of `cms-hte-patient-matching-test-set`
+(`0.0.1` as of this writing — see the script's `SOURCE_TAG` constant, which is the authoritative
+pin, not this doc) into `tests/fixtures/onc/`, which is now gitignored.
+
+**Why:** the vendoring decision below traded "always current" for "standalone," but the resulting
+committed copy could still drift silently from the sibling repo — nothing forced anyone to notice
+or act on that drift. Pinning to a tag and fetching on demand keeps the *entire* size/staleness
+tradeoff in one reviewable line (`SOURCE_TAG = "0.0.1"`) instead of a multi-megabyte file diff each
+time the pin needs to move, while keeping the property the vendoring decision was solving for: no
+second repo needs to be checked out alongside this one, including in CI (CI just runs
+`make fetch-onc-data` as its own step — see `.github/workflows/build_and_test.yml`).
+
+**Tradeoff accepted:** this repo's test suite now has a network dependency at
+`make fetch-onc-data` time (not at every `pytest` invocation — the two ONC tests still skip, not
+fail, if that step hasn't been run). A GitHub outage or the `0.0.1` tag being deleted upstream
+would block that one step; both ONC tests already skip gracefully rather than failing the rest of
+the suite if the data isn't present.
+
+### Vendoring decision (2026-09-04, superseded above)
+
+**This repo used to vendor a copy of the ONC-derived test data at `tests/fixtures/onc/`** — copied
 from `cms-hte-patient-matching-test-set`'s `evaluation/cases/{sample_labeled_pairs,
-population_queries,population_candidates}.jsonl` (provenance, source commit, and refresh
-instructions in `tests/fixtures/onc/README.md`). This reverses the original design in this doc,
+population_queries,population_candidates}.jsonl`. This reversed the original design in this doc,
 which read the data live from a sibling repo checkout.
 
 **Why:** explicit direction that this repo should be standalone for testing — a second repo
 should not need to be cloned alongside this one (or checked out in CI) for its test suite to run
-and gate PRs. Vendoring solves the CI-visibility gap flagged in this doc's Limitations/Open
-Questions without any CI workflow change: the data is just here now.
+and gate PRs. Vendoring solved the CI-visibility gap flagged in this doc's Limitations/Open
+Questions without any CI workflow change: the data was just there.
 
-**Tradeoff accepted:** this copy will not update automatically if the sibling repo regenerates its
-dataset. `tests/fixtures/onc/README.md` documents the refresh procedure and records the source
-commit hash so drift is at least detectable, not silent-forever — but keeping it current is now a
-manual, deliberate act rather than always-current-by-construction. This was the reason the earlier
-design didn't vendor in the first place (see the original Problem/Design rationale below, which
-still explains why the *generation* code and the raw ~1M-row ONC CSVs stay in the sibling repo —
-only the three already-generated output files are duplicated here, not the mutation/mining
-pipeline that produces them).
+**Tradeoff that led to the fetch-on-demand decision above:** the copy did not update automatically
+if the sibling repo regenerated its dataset, and nothing detected drift beyond a documented (but
+easy to skip) manual refresh procedure. This was the reason the earlier design didn't vendor in
+the first place (see the original Problem/Design rationale below, which still explains why the
+*generation* code and the raw ~1M-row ONC CSVs stay in the sibling repo — only the three
+already-generated output files were ever duplicated here, not the mutation/mining pipeline that
+produces them).
 
 ### Data source (pairs tier)
 
@@ -332,20 +351,23 @@ PYTHONPATH=. python evaluation/legacy_comparison.py --helix-repo /path/to/helix.
 
 ## Limitations / Non-Goals
 
-- **Data can silently drift from the sibling repo's canonical copy.** Vendoring trades "always
-  current" for "standalone" — see "Vendoring decision" above and `tests/fixtures/onc/README.md`
-  for the refresh procedure. Nothing automated detects drift; it's a manual, deliberate act.
+- **CI has a network dependency at `make fetch-onc-data` time.** Fetch-on-demand trades "no
+  network needed" for "no silent drift and no multi-megabyte file diffs" — see "Fetch-on-demand
+  decision" above. Both ONC tests skip (not fail) if the fetch step didn't run or the pinned tag
+  becomes unreachable, so a transient outage degrades to a skipped test, not a broken build.
 - **No practitioner/provider coverage** — see Alternatives Considered. Out of scope for this repo.
 
-Superseded by the vendoring decision above: this section previously noted that both tests skipped
-in CI because `.github/workflows/build_and_test.yml` doesn't check out the sibling repo. That's no
-longer true — the data is vendored locally, so both tests run as real gates in CI with no workflow
-change needed. See Open Questions #1 for how that open question was resolved, then superseded.
+Superseded by the fetch-on-demand decision above (itself superseding the vendoring decision): this
+section previously noted that both tests skipped in CI because `.github/workflows/build_and_test.yml`
+doesn't check out the sibling repo. That's still not needed — CI now runs `make fetch-onc-data` as
+its own step instead of checking out a second repo, so both tests run as real gates with a small,
+explicit workflow change (not zero, as the vendoring decision had achieved, but still no sibling
+repo checkout). See Open Questions #1 for how that open question was resolved, then superseded twice.
 
 ## Open Questions
 
 | # | Question | Needed From | Impact on Proposal |
 |---|---|---|---|
-| 1 | ~~Should CI check out the sibling repo so this test actually gates PRs?~~ **Resolved 2026-09-04: leave local-only for now** — then **superseded same day: vendor the data into this repo instead** (see "Vendoring decision"), making the original question moot. No CI checkout of a second repo is needed; both tests now run as real gates on every PR. | — | Both tests are real CI gates, not local-only/advisory. |
+| 1 | ~~Should CI check out the sibling repo so this test actually gates PRs?~~ **Resolved 2026-09-04: leave local-only for now** — then **superseded same day: vendor the data into this repo instead** (see "Vendoring decision") — then **superseded again 2026-09-15: fetch from a pinned tag on demand instead** (see "Fetch-on-demand decision"), adding one explicit `make fetch-onc-data` CI step in place of either a sibling-repo checkout or a committed copy. No CI checkout of a second repo is needed; both tests still run as real gates on every PR. | — | Both tests are real CI gates, not local-only/advisory. |
 | 2 | ~~Should this also cover the population-query tier for precision/F1/accuracy?~~ **Resolved 2026-09-04: yes** — `tests/test_onc_population_regression.py` added, following `helix.personmatching`'s precedent of having a second, broader test tier alongside the pairs-style test. | — | Done — see "Population tier" above. |
 | 3 | ~~Should thresholds track closer to measured values for tighter regression sensitivity?~~ **Resolved 2026-09-04: keep current headroom** — follow `helix.personmatching`'s own precedent, which is deliberately lenient on aggregate pass rate (`test_cms_dataset.py`/`test_cms_performance.py` assert things like `n_fail / total < 1.0`, essentially "not everything failed") and reserves zero-tolerance for one specific dangerous condition (`failed_records_with_higher_probabilities == 0` — a wrong match scoring higher than the correct one). This repo's thresholds are already well past that bar in rigor (real floor/ceiling numbers with headroom, not near-no-op checks, plus a zero-tolerance extraction-error gate of our own) without going all the way to exact-value pinning, which was already rejected above for a different reason (forces edits on every legitimate improvement). | — | Thresholds unchanged: pairs recall ≥ 0.95 / FPR ≤ 0.01; population precision ≥ 0.99 / recall ≥ 0.95 / FPR ≤ 0.001 / F1 ≥ 0.97. |

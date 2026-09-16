@@ -15,10 +15,11 @@ does for the legacy scoring engine (matching a masked query against the rest
 of the population), but uses that repo's pre-built candidate pools (with real
 mined/constructed non-matches) rather than self-matching an unmasked baseline.
 
-Data is vendored into `tests/fixtures/onc/` (see that directory's README.md
-for provenance and how to refresh it) rather than read live from the
-`cms-hte-patient-matching-test-set` repo, so this test runs standalone - no
-second repo needs to be checked out alongside this one, including in CI.
+Data is downloaded from a pinned tag of `cms-hte-patient-matching-test-set`
+into `tests/fixtures/onc/` (`make fetch-onc-data`; see that directory's
+README.md for provenance and how to bump the pin) rather than read from a live
+checkout of that repo, so this test runs standalone - no second repo needs to
+be checked out alongside this one, including in CI.
 
 Every (query, candidate) pair in every pool is flattened into one confusion
 matrix, per that repo's Option B. Measured on the current dataset

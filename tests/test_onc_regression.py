@@ -8,10 +8,11 @@ rate haven't regressed.
 Data source: the ONC 2017 Patient Matching Algorithm Challenge dataset (public,
 synthetic, non-PHI), as mutated/mined into labeled pairs by the
 `cms-hte-patient-matching-test-set` repo - see `tests/fixtures/onc/README.md`
-for exactly which files were vendored, from where, and how to refresh them.
-The data is vendored (copied) into `tests/fixtures/onc/` rather than read live
-from that repo, so this test runs standalone - no second repo needs to be
-checked out alongside this one, including in CI.
+for exactly which files this fetches, from where, and how to bump the pin.
+The data is downloaded from a pinned tag of that repo (`make fetch-onc-data`)
+into `tests/fixtures/onc/` rather than read from a live checkout, so this test
+runs standalone - no second repo needs to be checked out alongside this one,
+including in CI.
 
 Only recall and FPR are **gated** here - precision is computed and included in
 the summary for visibility (not asserted) since `sample_labeled_pairs.jsonl`

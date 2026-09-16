@@ -26,6 +26,10 @@ help: ## Show this help.
 	# from https://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
+.PHONY: fetch-onc-data
+fetch-onc-data: ## Download the ONC-derived test data the ONC regression tests read (tests/fixtures/onc/) -- run before `make tests` to include them; they skip (not fail) if this hasn't been run
+	uv run python scripts/fetch_onc_test_data.py
+
 .PHONY: tests
 tests: ## Runs all the tests
 	uv run pytest .
