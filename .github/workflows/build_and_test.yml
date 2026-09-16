@@ -61,8 +61,21 @@ jobs:
       - name: Create reports output folder
         run: mkdir -p ${{ github.workspace }}/reports
 
+      # ONC test data is fetched from a pinned tag of cms-hte-patient-matching-test-set
+      # rather than committed here (see tests/fixtures/onc/README.md) -- the ONC
+      # regression tests skip, not fail, if this step is ever missing.
+      - name: Fetch ONC test data
+        run: make fetch-onc-data
+
       - name: tests
         run: uv run --frozen --no-sync pytest . --tb=auto --junitxml=${{ github.workspace }}/reports/test-results.xml
+
+      # Renders the ONC regression tests' measured recall/FPR/precision/F1 into this
+      # run's job summary - see scripts/summarize_onc_metrics.py. always() because the
+      # metrics are just as useful (more so) when a threshold assertion failed above.
+      - name: Report ONC metrics
+        if: always()
+        run: uv run --frozen --no-sync python scripts/summarize_onc_metrics.py >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload pytest test results
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

@@ -48,6 +48,10 @@ nosetests.xml
 coverage.xml
 *.cover
 *.py,cover
+
+# CI's junitxml/ONC-metrics output folder (see build_and_test.yml) -- created
+# fresh each run, never meant to be committed.
+/reports/
 .hypothesis/
 .pytest_cache/
 
@@ -132,3 +136,8 @@ dmypy.json
 /.idea/
 
 .worktrees/
+
+# ONC test data is fetched on demand, not committed -- see
+# `scripts/fetch_onc_test_data.py` / `make fetch-onc-data` and
+# `tests/fixtures/onc/README.md`.
+/tests/fixtures/onc/*.jsonl
