@@ -54,23 +54,31 @@ nothing connects them.
 ### Fetch-on-demand decision (2026-09-15, supersedes the vendoring decision below)
 
 **This repo no longer commits a copy of the ONC-derived test data.** `scripts/fetch_onc_test_data.py`
-(`make fetch-onc-data`) downloads it from a pinned tag of `cms-hte-patient-matching-test-set`
-(`0.0.1` as of this writing — see the script's `SOURCE_TAG` constant, which is the authoritative
-pin, not this doc) into `tests/fixtures/onc/`, which is now gitignored.
+(`make fetch-onc-data`) downloads it from a pinned commit of `cms-hte-patient-matching-test-set`
+(tag `0.0.1` as of this writing, resolved to a commit SHA at fetch time — see the script's
+`SOURCE_TAG`/`SOURCE_COMMIT` constants, which are the authoritative pin, not this doc) into
+`tests/fixtures/onc/`, which is now gitignored.
 
 **Why:** the vendoring decision below traded "always current" for "standalone," but the resulting
 committed copy could still drift silently from the sibling repo — nothing forced anyone to notice
-or act on that drift. Pinning to a tag and fetching on demand keeps the *entire* size/staleness
-tradeoff in one reviewable line (`SOURCE_TAG = "0.0.1"`) instead of a multi-megabyte file diff each
-time the pin needs to move, while keeping the property the vendoring decision was solving for: no
-second repo needs to be checked out alongside this one, including in CI (CI just runs
-`make fetch-onc-data` as its own step — see `.github/workflows/build_and_test.yml`).
+or act on that drift. Pinning and fetching on demand keeps the *entire* size/staleness tradeoff in
+one reviewable diff (bumping `SOURCE_TAG`/`SOURCE_COMMIT`) instead of a multi-megabyte file diff
+each time the pin needs to move, while keeping the property the vendoring decision was solving
+for: no second repo needs to be checked out alongside this one, including in CI (CI just runs
+`make fetch-onc-data` as its own step — see `.github/workflows/build_and_test.yml`). The fetch
+itself resolves against the commit SHA, not the tag name, because a tag is a mutable ref that
+could be force-moved upstream without leaving any trace in this repo's history — that would
+silently reintroduce exactly the drift this decision exists to eliminate.
 
 **Tradeoff accepted:** this repo's test suite now has a network dependency at
 `make fetch-onc-data` time (not at every `pytest` invocation — the two ONC tests still skip, not
-fail, if that step hasn't been run). A GitHub outage or the `0.0.1` tag being deleted upstream
-would block that one step; both ONC tests already skip gracefully rather than failing the rest of
-the suite if the data isn't present.
+fail, if that step hasn't been run *locally*). In CI, though, the "Fetch ONC test data" step in
+`.github/workflows/build_and_test.yml` has no `continue-on-error`, so a GitHub outage (or the
+pinned commit becoming unreachable) fails that step outright and the whole job stops before
+`pytest` ever runs — the entire build goes red, not just the two ONC tests. The skip-not-fail
+behavior only covers the local-dev case of not having run `make fetch-onc-data` yet; a CI-time
+fetch failure is a hard build failure by design, so the regression gate can't silently go dark
+without anyone noticing.
 
 ### Vendoring decision (2026-09-04, superseded above)
 
@@ -353,8 +361,10 @@ PYTHONPATH=. python evaluation/legacy_comparison.py --helix-repo /path/to/helix.
 
 - **CI has a network dependency at `make fetch-onc-data` time.** Fetch-on-demand trades "no
   network needed" for "no silent drift and no multi-megabyte file diffs" — see "Fetch-on-demand
-  decision" above. Both ONC tests skip (not fail) if the fetch step didn't run or the pinned tag
-  becomes unreachable, so a transient outage degrades to a skipped test, not a broken build.
+  decision" above. Locally, both ONC tests skip (not fail) if the fetch hasn't been run. In CI,
+  the fetch step itself has no `continue-on-error`, so an outage or the pinned commit becoming
+  unreachable fails the whole build, not just the two ONC tests — a deliberate choice so the
+  regression gate can't silently stop running without anyone noticing.
 - **No practitioner/provider coverage** — see Alternatives Considered. Out of scope for this repo.
 
 Superseded by the fetch-on-demand decision above (itself superseding the vendoring decision): this

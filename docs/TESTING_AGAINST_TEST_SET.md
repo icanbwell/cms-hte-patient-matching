@@ -19,8 +19,9 @@ make fetch-onc-data
 uv run pytest tests/test_onc_regression.py tests/test_onc_population_regression.py -v
 ```
 
-`make fetch-onc-data` downloads three JSON Lines files from a pinned tag of the sibling repo
-(`scripts/fetch_onc_test_data.py`'s `SOURCE_TAG`) into `tests/fixtures/onc/`. This is a separate,
+`make fetch-onc-data` downloads three JSON Lines files from a pinned commit of the sibling repo
+(`scripts/fetch_onc_test_data.py`'s `SOURCE_COMMIT`, the commit `SOURCE_TAG` resolved to) into
+`tests/fixtures/onc/`. This is a separate,
 explicit step, not a dependency of `make tests` — running `pytest`/`make tests` without it first
 just skips the two ONC tests rather than fetching over the network on every invocation.
 
@@ -113,8 +114,8 @@ output directory instead of `tests/fixtures/onc/`. Adapt the same pattern for
 A"/"Option B") for the scoring contract this follows.
 
 If the result looks good and you want this repo to actually track it, tag the sibling repo commit,
-then bump `SOURCE_TAG` in `scripts/fetch_onc_test_data.py` (see `tests/fixtures/onc/README.md`,
-"Bumping the pinned tag") — don't copy the files in by hand.
+then bump `SOURCE_TAG` and `SOURCE_COMMIT` in `scripts/fetch_onc_test_data.py` (see
+`tests/fixtures/onc/README.md`, "Bumping the pinned tag") — don't copy the files in by hand.
 
 ### 2c. Statistical before/after comparison (`rule_eval.py`)
 
@@ -165,8 +166,8 @@ of the file by construction).
 - `docs/ONC_REGRESSION_TEST_DESIGN.md` — why these tests fetch data the way they do, measured
   values, thresholds, and the `helix.personmatching` comparison.
 - `tests/fixtures/onc/README.md` — provenance of the pinned tag and how to bump it.
-- `scripts/fetch_onc_test_data.py` — the fetch script itself; `SOURCE_TAG` is the authoritative
-  pin.
+- `scripts/fetch_onc_test_data.py` — the fetch script itself; `SOURCE_TAG`/`SOURCE_COMMIT` are the
+  authoritative pin.
 - `~/git/cms-hte-patient-matching-test-set`'s `evaluation/cases/README.md` — full generation
   methodology, file formats, and the Option A/B scoring contracts this doc's snippets follow.
 - `~/git/cms-hte-patient-matching-test-set`'s `docs/METHODOLOGY.md` — current-state summary of what
