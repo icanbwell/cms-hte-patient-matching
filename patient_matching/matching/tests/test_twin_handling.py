@@ -13,7 +13,10 @@ from patient_matching.matching.match_result import MatchOutcome
 from patient_matching.matching.matching_engine import MatchingEngine
 from patient_matching.matching.table2_rules import APPROVED_RULES
 
-_RULE_13 = next(r for r in CATEGORY_2_RULES if r.rule_id == "13")
+# Session 16 (PR #51) prefixed Category 2 rule IDs with "C2-" to avoid
+# colliding with v3.4.0's new bare Category 1 rule "13" - this branch
+# predates that rename, so the reference here needs the prefix too.
+_RULE_13 = next(r for r in CATEGORY_2_RULES if r.rule_id == "C2-13")
 
 
 class _InMemoryBackend(MatchingBackend):
@@ -404,3 +407,52 @@ class TestHigherOrderMultiples:
 
         assert result.outcome == MatchOutcome.AMBIGUOUS
         assert len(result.matched_patients) == 3
+
+
+class TestInteractionWithSsViiAuditFields:
+    """Regression guard for the #53/#54 merge reconciliation (both PRs
+    independently changed match()/_build_result's signature - see
+    session_19.md's "Post-review fixes" for the merge notes): the twin
+    tiebreak's excluded_ids mechanism must keep working correctly alongside
+    query_initiator/timestamp threading and the INSUFFICIENT_FIELDS
+    distinction, not just in isolation."""
+
+    async def test_query_initiator_is_echoed_on_a_twin_tiebreak_resolution(
+        self,
+    ) -> None:
+        """A twin-tiebreak MATCH (which relies on excluded_ids filtering
+        the union) must still carry the caller-supplied query_initiator -
+        confirms the two mechanisms compose rather than one clobbering the
+        other's kwargs on the same MatchResult construction sites."""
+        twin_a = _twin_patient(
+            first="james", dob="2015-06-01", namespace_id="urn:hospital:abc|MRN001"
+        )
+        twin_b = _twin_patient(
+            first="james", dob="2015-06-01", namespace_id="urn:hospital:abc|MRN002"
+        )
+        query = _twin_patient(
+            first="james", dob="2015-06-01", namespace_id="urn:hospital:abc|MRN001"
+        )
+        engine = _default_rules_engine([twin_a, twin_b])
+
+        result = await engine.match(query, query_initiator="svc-eligibility-check")
+
+        assert result.outcome == MatchOutcome.MATCH
+        assert result.matched_patients == [twin_a]
+        assert result.query_initiator == "svc-eligibility-check"
+        assert result.timestamp != ""
+
+    async def test_insufficient_fields_still_reported_with_household_rules_configured(
+        self,
+    ) -> None:
+        """A query too sparse for any Category 1 OR Category 2 rule to be
+        evaluable must still report INSUFFICIENT_FIELDS (not NO_MATCH) even
+        when household_individual_rules are configured - confirms
+        any_rule_evaluable's household-loop tracking (added for #53) wasn't
+        lost or shadowed by #54's excluded_ids threading through the same
+        loop."""
+        engine = _default_rules_engine([])
+
+        result = await engine.match({"resourceType": "Patient"})
+
+        assert result.outcome == MatchOutcome.INSUFFICIENT_FIELDS
