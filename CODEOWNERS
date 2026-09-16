@@ -1,3 +1,6 @@
-# Architecture instruction files owned by Enterprise Architecture
-/AGENTS.md @icanbwell/enterprise-architecture
-/CLAUDE.md @icanbwell/enterprise-architecture
+# Service ownership
+* @icanbwell/bailey-ai
+
+# AI Agent Instructions - EA Ownership
+AGENTS.md @icanbwell/enterprise-architecture
+CLAUDE.md @icanbwell/enterprise-architecture
