@@ -54,6 +54,19 @@ class MatchingBackend(ABC):
 
     The backend may cast a wide net (e.g. blocking on DOB + last name
     initial) or be precise — the engine handles correctness either way.
+
+    **Identity stability contract (CMS v3.4.0 SS C.7, session 19):**
+    `MatchingEngine` cross-references candidates returned by separate
+    `search()` calls within one `match()` invocation - both for its
+    existing dedup logic and for the twin/multiple-birth tiebreak's
+    `excluded_ids` mechanism, which must recognize a candidate excluded by
+    one rule if a different rule's `search()` call also returns it.
+    Identity is determined by FHIR `id` when present, falling back to
+    Python object identity (`MatchingEngine._patient_id`) when it's not.
+    A backend whose `search()` constructs a fresh dict per call for the
+    same underlying record - rather than returning a shared/cached object
+    reference - **must** populate a stable FHIR `id` on every returned
+    dict, or these safety mechanisms silently no-op for that record.
     """
 
     @abstractmethod
@@ -66,5 +79,8 @@ class MatchingBackend(ABC):
                 approximate matching.
 
         Returns:
-            A list of FHIR Patient resource dicts.
+            A list of FHIR Patient resource dicts. See this class's
+            docstring for the identity-stability contract these dicts
+            must satisfy across calls within one MatchingEngine.match()
+            invocation.
         """
