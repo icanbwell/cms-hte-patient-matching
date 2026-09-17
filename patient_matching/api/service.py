@@ -1,10 +1,13 @@
 """End-to-end patient matching service.
 
 Orchestrates the full pipeline:
-  - IAL2 Token → verify → extract → FHIR Patient
-  - Normalize incoming demographics
+  - Normalize incoming FHIR Patient demographics
   - Match against the patient cache
   - Return FHIR Patient IDs with confidence scores
+
+Callers presenting an IAL2 token must convert it to a FHIR Patient
+themselves first, e.g. with the `cms-hte-ial2-reader` package, then pass
+the result to match_patient().
 """
 
 from __future__ import annotations
@@ -15,7 +18,6 @@ from typing import Any, Dict, List, Optional
 
 from ..cache.cache_backend import CacheBackend
 from ..cache.matching_adapter import CacheMatchingBackend
-from ..ial2_extraction.ial2_extractor import IAL2Extractor
 from ..matching.match_result import MatchOutcome, MatchResult
 from ..matching.matching_engine import MatchingEngine
 from ..matching.field_extractor import FieldExtractor
@@ -42,8 +44,8 @@ class MatchResponse:
         candidate_count: Total number of candidates found.
         rule_evaluations_summary: Summary of rules evaluated.
         query_initiator: SS VII audit field (session 18) - the caller-
-            supplied identifier passed to match_patient()/match_from_token(),
-            echoed back here. None if the caller didn't supply one.
+            supplied identifier passed to match_patient(), echoed back
+            here. None if the caller didn't supply one.
         timestamp: SS VII audit field (session 18) - ISO 8601 UTC timestamp
             for this query.
     """
@@ -74,25 +76,19 @@ class ServiceConfig:
 class PatientMatcherService:
     """End-to-end patient matching service.
 
-    Chains IAL2 extraction, normalization, and matching into a single
-    pipeline. Can also match pre-built FHIR Patient resources directly.
+    Normalizes and matches FHIR Patient resources against the cache.
+    Callers holding an IAL2 token must convert it to a FHIR Patient
+    themselves (e.g. via `cms-hte-ial2-reader`) before calling
+    match_patient().
 
     Args:
         cache: The patient cache backend.
-        ial2_extractor: Optional IAL2 token extractor.
         normalizer: Optional normalization manager.
         config: Optional service configuration.
 
     Example::
 
-        service = PatientMatcherService(
-            cache=duckdb_cache,
-            ial2_extractor=ial2_extractor,
-        )
-        # Match from IAL2 token
-        result = await service.match_from_token(jwt_token)
-
-        # Match from FHIR Patient
+        service = PatientMatcherService(cache=duckdb_cache)
         result = await service.match_patient(normalized_patient)
     """
 
@@ -100,12 +96,10 @@ class PatientMatcherService:
         self,
         *,
         cache: CacheBackend,
-        ial2_extractor: Optional[IAL2Extractor] = None,
         normalizer: Optional[NormalizationManager] = None,
         config: Optional[ServiceConfig] = None,
     ) -> None:
         self._cache = cache
-        self._ial2_extractor = ial2_extractor
         self._normalizer = normalizer or NormalizationManager()
         self._config = config or ServiceConfig()
 
@@ -117,49 +111,6 @@ class PatientMatcherService:
             extractor=FieldExtractor(),
             comparator=FieldComparator(),
             rules=rules,
-        )
-
-    async def match_from_token(
-        self, token: str, *, query_initiator: Optional[str] = None
-    ) -> MatchResponse:
-        """Match a patient from an IAL2 JWT token.
-
-        Full pipeline: verify token → extract demographics →
-        convert to FHIR → normalize → match against cache.
-
-        Args:
-            token: A signed IAL2 JWT token string.
-            query_initiator: SS VII audit field (session 18) - an opaque,
-                caller-supplied identifier for whoever/whatever issued this
-                query. Not derived from the token itself (see
-                MatchResult.query_initiator's docstring for why) - the
-                token's issuer identifies who verified the patient's
-                identity, not who is asking for this match.
-
-        Returns:
-            A MatchResponse with outcome and matched patient IDs.
-
-        Raises:
-            ValueError: If no IAL2 extractor is configured.
-            TokenVerificationError: If the token is invalid.
-        """
-        if self._ial2_extractor is None:
-            raise ValueError(
-                "IAL2 extractor not configured. Provide an IAL2Extractor "
-                "to match from tokens."
-            )
-
-        logger.info("Matching from IAL2 token")
-
-        # Step 1: Verify token and extract FHIR Patient
-        fhir_patient = await self._ial2_extractor.extract(token)
-
-        # Step 2: Normalize
-        normalized = self._normalizer.normalize(fhir_patient)
-
-        # Step 3: Match
-        return await self._match_and_respond(
-            normalized, query_initiator=query_initiator
         )
 
     async def match_patient(

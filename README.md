@@ -1,13 +1,12 @@
 # patient_matching
 
-An open-source Python implementation of the [CMS Patient Matching Proposal v3.4.0](https://confluence.hl7.org/display/PA/Patient+Matching), providing deterministic patient matching using 30 approved Category 1 (flat) Table 2 field combination rules plus 10 Category 2 (household/individual two-step, plus guardian/newborn relationship-linkage) rules, with support for IAL2 identity-proofed tokens, FHIR R4 Patient resources, and configurable fuzzy matching.
+An open-source Python implementation of the [CMS Patient Matching Proposal v3.4.0](https://confluence.hl7.org/display/PA/Patient+Matching), providing deterministic patient matching using 30 approved Category 1 (flat) Table 2 field combination rules plus 10 Category 2 (household/individual two-step, plus guardian/newborn relationship-linkage) rules, over FHIR R4 Patient resources, with configurable fuzzy matching.
 
 ## Overview
 
 The CMS Patient Matching Proposal defines a standardized approach to matching patients across healthcare systems. This library implements:
 
 - **40 Table 2 matching rules** (30 Category 1 flat + 10 Category 2: 8 household/individual two-step + 2 guardian/newborn relationship-linkage) with exact and fuzzy field comparisons, plus multiple-birth (twin) tie-resolution handling
-- **IAL2 token extraction** — verify JWT tokens from Credential Service Providers (CSPs) and convert to FHIR Patient resources
 - **Demographic normalization** — text normalization, nickname expansion, E.164 phone formatting, USPS address standardization, placeholder detection
 - **FHIR R4 integration** — fetch patients from FHIR servers with OAuth2, paginate through Bundles
 - **Patient cache** — pluggable backend (in-process DuckDB, or MongoDB Atlas Search for shared/multi-replica deployments) with field-level indexing and fuzzy search
@@ -15,20 +14,22 @@ The CMS Patient Matching Proposal defines a standardized approach to matching pa
 
 This is a pure Python library with no HTTP layer of its own — [`cms-hte-patient-matching-service`](https://github.com/icanbwell/cms-hte-patient-matching-service) wraps `PatientMatcherService`/`MatchingEngine` as a production HTTP microservice.
 
+Callers holding an IAL2 identity-proofed token (rather than a FHIR Patient) must convert it themselves first, e.g. with [`cms-hte-ial2-reader`](https://github.com/icanbwell/cms-hte-ial2-reader), then pass the resulting FHIR Patient resource into `match_patient()`. This library only matches FHIR Patient resources — it does not verify or extract IAL2 tokens.
+
 ## Architecture
 
 ```
                           ┌─────────────────┐
                           │ PatientMatcher   │
                           │    Service       │
-                          └──┬─────┬─────┬──┘
-                             │     │     │
-                ┌────────────┘     │     └────────────┐
-                │                  │                   │
-       ┌────────▼───────┐  ┌──────▼──────┐  ┌────────▼────────┐
-       │ IAL2 Extractor  │  │ Normalizer  │  │ Matching Engine │
-       │ (JWT → FHIR)   │  │ (A.1–D.6)  │  │ (38 Rules)      │
-       └────────────────┘  └─────────────┘  └────────┬────────┘
+                          └───────┬─────┬───┘
+                                  │     │
+                          ┌───────┘     └────────────┐
+                          │                          │
+                   ┌──────▼──────┐          ┌────────▼────────┐
+                   │ Normalizer  │          │ Matching Engine │
+                   │ (A.1–D.6)  │          │ (38 Rules)      │
+                   └─────────────┘          └────────┬────────┘
                                                       │
                                              ┌────────▼────────┐
                                              │  Cache Backend   │
@@ -204,8 +205,13 @@ print(response.matched_patient_ids)
 
 ### Match from an IAL2 Token
 
+This library does not verify or extract IAL2 tokens — convert the token to a
+FHIR Patient resource yourself first, e.g. with
+[`cms-hte-ial2-reader`](https://github.com/icanbwell/cms-hte-ial2-reader),
+then match it like any other FHIR Patient:
+
 ```python
-from patient_matching.ial2_extraction import IAL2Extractor, TokenVerifier
+from cmshteial2reader import IAL2Extractor, TokenVerifier
 
 verifier = TokenVerifier(
     jwks_uri="https://idp.example.com/.well-known/jwks.json",
@@ -213,14 +219,10 @@ verifier = TokenVerifier(
 )
 extractor = IAL2Extractor(verifier=verifier)
 
-service = PatientMatcherService(
-    engine=engine,
-    normalizer=normalizer,
-    ial2_extractor=extractor,
-)
+# Verify JWT → extract demographics → convert to FHIR Patient
+fhir_patient = await extractor.extract(jwt_token_string)
 
-# Full pipeline: verify JWT → extract demographics → normalize → match
-response = await service.match_from_token(jwt_token_string)
+response = await service.match_patient(fhir_patient)
 ```
 
 No HTTP layer ships in this package — [`cms-hte-patient-matching-service`](https://github.com/icanbwell/cms-hte-patient-matching-service) is the FastAPI microservice that wraps `PatientMatcherService` and exposes it over `/Patient/$match` and `/match/ial2`.
@@ -350,20 +352,11 @@ FHIR R4 client with OAuth2 support.
 - **`FhirClient`** — paginated patient fetching with Bundle `next` link traversal
 - **`ClientCredentialsAuth`** — OAuth2 client credentials flow with token caching
 
-### `patient_matching.ial2_extraction`
-
-IAL2 JWT token processing per CSP Payload Specification V7.1.
-
-- **`IAL2Extractor`** — verify token, extract claims, convert to FHIR Patient
-- **`TokenVerifier`** — JWKS-based JWT signature verification
-- **`IAL2Claims`** — structured claims model with alias resolution
-- **`IAL2ToFhirConverter`** — converts IAL2 claims to FHIR R4 Patient resource
-
 ### `patient_matching.api`
 
 End-to-end orchestration, no HTTP layer of its own.
 
-- **`PatientMatcherService`** — chains IAL2 extraction, normalization, and matching against a cache into a single async entry point, with confidence scoring
+- **`PatientMatcherService`** — chains normalization and matching against a cache into a single async entry point, with confidence scoring. Accepts FHIR Patient resources only — IAL2 token holders must convert with [`cms-hte-ial2-reader`](https://github.com/icanbwell/cms-hte-ial2-reader) first.
 
 ### `patient_matching.fuzzy`
 
@@ -401,7 +394,7 @@ make devsetup      # Install dependencies, set up pre-commit hooks, run tests
 make tests         # uv run pytest .
 ```
 
-599 tests cover all modules including matching rules, normalization, caching, FHIR client, IAL2 extraction, and fuzzy backends.
+Tests cover all modules including matching rules, normalization, caching, FHIR client, and fuzzy backends.
 
 ### Code Quality
 
@@ -449,12 +442,6 @@ patient_matching/
 │   ├── fhir_client/            # FHIR R4 client
 │   │   ├── auth.py             # OAuth2 client credentials
 │   │   ├── client.py           # Patient fetcher with pagination
-│   │   └── tests/
-│   ├── ial2_extraction/        # IAL2 JWT processing
-│   │   ├── token_verifier.py   # JWKS signature verification
-│   │   ├── ial2_extractor.py   # Token → FHIR Patient
-│   │   ├── claims_model.py     # CSP Payload V7.1 claims
-│   │   ├── fhir_converter.py   # Claims → FHIR conversion
 │   │   └── tests/
 │   ├── matching/               # Core matching engine
 │   │   ├── matching_engine.py  # Rule evaluation + deduplication + twin tie-resolution

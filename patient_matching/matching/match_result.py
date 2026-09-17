@@ -107,7 +107,7 @@ class MatchResult:
             derived from an IAL2 token's issuer/CSP claim: that identifies
             who verified the patient's identity, not who is asking for a
             match, and conflating the two would misattribute the audit
-            record (decided with Imran, 2026-09-15).
+            record (decided with the project lead, 2026-09-15).
         timestamp: SS VII audit field (session 18) - ISO 8601 UTC
             timestamp for this query, always populated even when
             `rule_evaluations` is empty (e.g. an empty query patient
