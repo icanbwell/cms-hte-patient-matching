@@ -1,12 +1,12 @@
 # patient_matching
 
-An open-source Python implementation of the [CMS Patient Matching Proposal v3.2.2](https://confluence.hl7.org/display/PA/Patient+Matching), providing deterministic patient matching using 30 approved Category 1 (flat) Table 2 field combination rules plus 8 Category 2 (household/individual two-step) rules, with support for IAL2 identity-proofed tokens, FHIR R4 Patient resources, and configurable fuzzy matching.
+An open-source Python implementation of the [CMS Patient Matching Proposal v3.4.0](https://confluence.hl7.org/display/PA/Patient+Matching), providing deterministic patient matching using 30 approved Category 1 (flat) Table 2 field combination rules plus 10 Category 2 (household/individual two-step, plus guardian/newborn relationship-linkage) rules, with support for IAL2 identity-proofed tokens, FHIR R4 Patient resources, and configurable fuzzy matching.
 
 ## Overview
 
 The CMS Patient Matching Proposal defines a standardized approach to matching patients across healthcare systems. This library implements:
 
-- **38 Table 2 matching rules** (30 Category 1 flat + 8 Category 2 household/individual) with exact and fuzzy field comparisons
+- **40 Table 2 matching rules** (30 Category 1 flat + 10 Category 2: 8 household/individual two-step + 2 guardian/newborn relationship-linkage) with exact and fuzzy field comparisons, plus multiple-birth (twin) tie-resolution handling
 - **IAL2 token extraction** — verify JWT tokens from Credential Service Providers (CSPs) and convert to FHIR Patient resources
 - **Demographic normalization** — text normalization, nickname expansion, E.164 phone formatting, USPS address standardization, placeholder detection
 - **FHIR R4 integration** — fetch patients from FHIR servers with OAuth2, paginate through Bundles
@@ -264,12 +264,15 @@ matching is allowed (marked with `*`), and the collision probability:
 | 29 | First Name\* + Last Name\* + Phone + ZIP Code | 3.00e-14 | 9.00e-14 |
 | 30 | Last Name\* + DOB + Phone | 5.00e-13 | 1.00e-12 |
 
-Fields marked with `*` are fuzzy-eligible. Fuzzy matching uses **Damerau-Levenshtein distance <= 1** for strings of **5 or more characters** (per CMS Appendix E.3), except DOB\*, which uses a **+/-1 calendar day** tolerance instead (CMS v3.3) — a date string's edit distance has no relationship to its calendar distance, so DOB is never compared via Damerau-Levenshtein.
+Fields marked with `*` are fuzzy-eligible. Fuzzy matching uses **Damerau-Levenshtein distance <= 1** for strings of **5 or more characters** (per CMS Appendix E.3), except DOB\*, which uses a **+/-1 calendar day** tolerance instead — implemented as an exact `{value-1day, value, value+1day}` lookup rather than string edit distance, since a date string's edit distance has no relationship to its calendar distance. Extended to rules 01, 02, 03, and 10 as part of the v3.4.0 renumbering.
 
 Rules 13-16 above are new v3.4.0 flat content (First Name + Phone/Email + SSN/ITIN Last 4) - a
 separate, unrelated set of Category 2 (household/individual two-step) rules also happens to use
 IDs 13-16/34/35/37/38 and is disambiguated with a `C2-` prefix (`C2-13`, etc.) in the engine's
-audit output; see `household_rules.py`.
+audit output; see `household_rules.py`. Two further Category 2 rules, `C2-39` and `C2-40`
+(guardian-verified minor / newborn-via-maternal-linkage), were added by v3.4.0's Relationship
+Linkage field — see `relationship_linkage_rules.py`. Multiple-birth (twin) handling is
+tie-resolution logic in `matching_engine.py`, not additional rule IDs.
 
 ## Normalization Pipeline
 
@@ -310,7 +313,7 @@ Before matching, patient demographics are normalized following the CMS proposal 
 
 ### `patient_matching.matching`
 
-Core matching engine implementing the 26 Table 2 rules.
+Core matching engine implementing the 40 Table 2 rules (30 Category 1 + 10 Category 2).
 
 - **`MatchingEngine`** — evaluates all rules against a query patient, returns match/no_match/ambiguous
 - **`FieldExtractor`** — extracts matching-relevant fields from FHIR Patient resources
@@ -398,7 +401,7 @@ make devsetup      # Install dependencies, set up pre-commit hooks, run tests
 make tests         # uv run pytest .
 ```
 
-478 tests cover all modules including matching rules, normalization, caching, FHIR client, IAL2 extraction, and fuzzy backends.
+599 tests cover all modules including matching rules, normalization, caching, FHIR client, IAL2 extraction, and fuzzy backends.
 
 ### Code Quality
 
@@ -454,8 +457,10 @@ patient_matching/
 │   │   ├── fhir_converter.py   # Claims → FHIR conversion
 │   │   └── tests/
 │   ├── matching/               # Core matching engine
-│   │   ├── matching_engine.py  # Rule evaluation + deduplication
-│   │   ├── table2_rules.py     # 26 CMS-approved rules
+│   │   ├── matching_engine.py  # Rule evaluation + deduplication + twin tie-resolution
+│   │   ├── table2_rules.py     # 30 Category 1 (flat) CMS-approved rules
+│   │   ├── household_rules.py  # 8 Category 2 household/individual two-step rules (C2-*)
+│   │   ├── relationship_linkage_rules.py # 2 Category 2 guardian/newborn rules (C2-39, C2-40)
 │   │   ├── field_extractor.py  # FHIR → matching fields
 │   │   ├── field_comparator.py # Exact + fuzzy comparison
 │   │   ├── backend.py          # Abstract candidate retrieval
