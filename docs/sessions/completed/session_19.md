@@ -1,6 +1,7 @@
 # Session 19 — CMS v3.4.0: §C.7 twin/multiple-birth handling + §C.9 defensive flagging
 
-**Status:** pending
+**Status:** completed ([PR #54](https://github.com/icanbwell/cms-hte-patient-matching/pull/54),
+merged 2026-09-16)
 **Thread:** Line B: CMS v3.4.0 migration
 **Estimated size:** M — corrects an initial "just verify" assumption: none of §C.7's four
 operational behaviors exist yet (confirmed by grep, 2026-09-15 — only the base 1/2/3+

@@ -1,6 +1,7 @@
 # Session 17 — CMS v3.4.0: Relationship Linkage field + Rules 39/40
 
-**Status:** pending
+**Status:** completed ([PR #52](https://github.com/icanbwell/cms-hte-patient-matching/pull/52),
+merged 2026-09-15)
 **Thread:** Line B: CMS v3.4.0 migration
 **Estimated size:** L — a genuinely new architectural concept (matching against an
 *already-resolved, external* identity rather than fields on the same record pair), not an

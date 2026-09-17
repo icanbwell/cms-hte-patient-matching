@@ -1,9 +1,8 @@
 # Session 15 — Remove FastAPI + Docker: this repo is a pure Python package
 
-**Status:** in_review — executed 2026-09-06, same conversation as session 14, on the same
-branch (`session-14/async-cache-backend`, PR #48) since it directly touches files that PR
-already modifies. **Stacked on PR #45 (session 12) via session 14** — cannot merge before
-those do.
+**Status:** completed — executed 2026-09-06, same conversation as session 14, on the same
+branch (`session-14/async-cache-backend`, [PR #48](https://github.com/icanbwell/cms-hte-patient-matching/pull/48),
+merged 2026-09-07) since it directly touches files that PR already modifies.
 **Thread:** `Phase 2: production candidate-retrieval scaling` (same thread as sessions 12/13/14).
 **Estimated size:** M — a full Dockerfile/docker-compose removal plus an HTTP-layer removal,
 touching Makefile, pyproject.toml, README, CI comments, and the MongoDB testcontainer fixtures.

@@ -1,10 +1,10 @@
 # Session 13 — Publish `cms-hte-patient-matching` to PyPI
 
-**Status:** in_review — executed 2026-09-04 on this same branch/PR (`session-13/pypi-publishing-design`,
-PR #46) as the design capture, since both blocking decisions resolved within the same
-conversation. All code tasks done and verified locally; the one remaining task (cutting a real
-GitHub Release to exercise `python-publish.yml` end-to-end) holds for the project lead's explicit
-go-ahead — see Execution notes.
+**Status:** completed — executed 2026-09-04 on this same branch/PR (`session-13/pypi-publishing-design`,
+[PR #46](https://github.com/icanbwell/cms-hte-patient-matching/pull/46), merged 2026-09-06) as
+the design capture, since both blocking decisions resolved within the same conversation. All
+code tasks done and verified locally; see Execution notes for the remaining
+GitHub-Release/`python-publish.yml` follow-up.
 **Thread:** `Phase 2: production candidate-retrieval scaling` (same thread as session 12 —
 distribution packaging for the sibling `cms-hte-patient-matching-service` to consume).
 **Estimated size:** S — the packaging fixes are small and mechanical; this repo's

@@ -130,8 +130,22 @@ run whatever **Suggested Next Session** names below.
 > session** once 16-19 land: close these four gaps, scoped as their own session rather than
 > folded into 19 (each is a spec-interpretation or data-model decision, not a mechanical fix).
 >
-> **Session 8 — Legacy comparison harness (Tier 3).** Session 6 (below) is now `in_review/`
-> (PR opened 2026-08-18) with its hard code dependency (session 5) satisfied. Session 8's
+> **2026-09-17 addendum (PRs #51-#54 confirmed merged; docs reconciled):** sessions 16, 17, 18,
+> and 19 were all previously shown as `in_review/` above, but their PRs had already merged into
+> `main` (2026-09-15/16). Moved all four docs to `completed/`, along with sessions 6, 13, 14,
+> and 15 (also merged but stuck showing `in_review/`). `README.md` and
+> `docs/PROJECT_MAP.md` updated to match: version references corrected from v3.2.2/v3.3 to
+> v3.4.0, rule counts corrected to 30 Category 1 + 10 Category 2 (8 household + `C2-39`/`C2-40`)
+> = 40 total, DOB tolerance description corrected to reflect the exact-lookup mechanism from
+> session 16's post-review fix, and the test count corrected to 599 (`make tests` collection).
+> §C.9 (defensive relationship-data flagging) remains the one deferred v3.4.0 item, tracked
+> under "Candidate future sessions" below. The CMS v3.4.0 Google Doc the project lead shared
+> (file ID `1NytpfZ05aokS-gD7uDIQE7gEyms9zMgoiaIah_w4VTE`) is titled "Final Consolidated Draft"
+> and was last modified 2026-09-17 — still the live reference per `conventions.md`, not copied
+> into this repo.
+>
+> **Session 8 — Legacy comparison harness (Tier 3).** Session 6 is now `completed/`
+> (PR #39, merged 2026-09-03) with its hard code dependency (session 5) satisfied. Session 8's
 > remaining blockers are 3 `NEEDS HUMAN DECISION` items (eval-only dependency on
 > `helix-personmatching`, adjudicator identity, replace-vs-alongside the labeled-set approach)
 > — not code. Once those are answered, session 8 is the next session to run; session 6's
@@ -166,28 +180,23 @@ run whatever **Suggested Next Session** names below.
 Session 3 merged into `main` (PR [#11](https://github.com/icanbwell/patient-matching/pull/11),
 2026-07-30) and session 5 merged into `main` (PR [#16](https://github.com/icanbwell/patient-matching/pull/16),
 2026-08-02, doc in `completed/` as of 2026-08-03) — both of session 6's dependencies are
-satisfied; session 6 itself moved to `in_review/` below on 2026-08-18.
+satisfied; session 6 itself merged via PR #39 (2026-09-03) and now lives in `completed/`.
 
 ## In Review
 
-| # | Session | Thread | PR | One-line summary |
-|---|---------|--------|----|--------------------|
-| 19 | [session_19](in_review/session_19.md) | Line B: CMS v3.4.0 migration | [#54](https://github.com/icanbwell/cms-hte-patient-matching/pull/54) (open) | §C.7 twin/multiple-birth handling (4 new operational rules) built in full; §C.9 defensive relationship-data flagging explicitly deferred as a real API-surface question. Corrected a real aggregation-assumption bug before shipping (namespace_id anchor must apply inside tie-resolution, not rely on cross-rule union) - see doc's Execution notes. |
-| 18 | [session_18](in_review/session_18.md) | Line B: CMS v3.4.0 migration | [#53](https://github.com/icanbwell/cms-hte-patient-matching/pull/53) (open) | §VII audit record reconciliation: adds `query_initiator` (opaque, caller-supplied, per the project lead's decision) and a query-level `timestamp` (found missing for zero-rule-evaluation queries) to `MatchResult`/`MatchResponse`. Path B aggregate metrics explicitly out of scope. |
-| 17 | [session_17](in_review/session_17.md) | Line B: CMS v3.4.0 migration | [#52](https://github.com/icanbwell/cms-hte-patient-matching/pull/52) (open) | Relationship Linkage field (Table 3) + Rules `C2-39`/`C2-40` (guardian-verified minor / newborn-via-maternal-linkage), built best-effort with the spec's own unresolved caveats documented. Corrected a math error before shipping (guardian identity is a u=1.0 gate, not a near-zero field) and fixed a real confidence-scoring bug in `service.py` (see doc's Execution notes). |
-| 16 | [session_16](in_review/session_16.md) | Line B: CMS v3.4.0 migration | [#51](https://github.com/icanbwell/cms-hte-patient-matching/pull/51) (open) | Renumbers Category 1 rules to v3.4.0's clean 01-30 sequence; extends DOB +/-1 day fuzzy to rules 01/02/03/10; prefixes Category 2's rule_ids with `C2-` after finding v3.4.0's renumbering collides with their legacy IDs (see doc's Execution notes). |
-| 6 | [session_6](in_review/session_6.md) | Line B: CMS v3.3 migration | [#39](https://github.com/icanbwell/patient-matching/pull/39) (open) | Table 2 v3.3.0 base + v3.3.1/v3.3.3/v3.3.4/v3.3.6 addenda: 3 new fields, DOB +/-1 day fuzzy, Household/Individual two-step architecture (rules 13-16 amended, 34/35/37/38 new), 30 flat + 8 two-step = 38 rules total. Rules 39/40 and v3.3.6 institutional-address integration explicitly deferred. |
-| 13 | [session_13](in_review/session_13.md) | Phase 2: production candidate-retrieval scaling | [#46](https://github.com/icanbwell/cms-hte-patient-matching/pull/46) (merged 2026-09-06) | Publish `cms-hte-patient-matching` to PyPI via OIDC Trusted Publishing. Packaging fixes done and verified locally (`[build-system]` added, stale `setup.py`/`setup.cfg` and stray `patientmatching/` dir removed, Makefile `dist`/`testpackage`/`package` targets added); pypi.org Trusted Publisher registered. |
-| 14 | [session_14](in_review/session_14.md) | Phase 2: production candidate-retrieval scaling | [#48](https://github.com/icanbwell/cms-hte-patient-matching/pull/48) (open) | Converts `CacheBackend`/`MatchingBackend`/`MatchingEngine`/`CacheManager`/`PatientMatcherService`/`FhirClient`/`TokenVerifier`/`IAL2Extractor` to a uniform async interface so no I/O call blocks the event loop. `evaluate_pair()`/normalization stay sync (no I/O). 478 tests pass via `make tests`. |
-| 15 | [session_15](in_review/session_15.md) | Phase 2: production candidate-retrieval scaling | [#48](https://github.com/icanbwell/cms-hte-patient-matching/pull/48) (open) — same branch/PR as #14 | Removes the FastAPI HTTP layer entirely (`cms-hte-patient-matching-service` is the intended HTTP layer, confirmed with the project lead) and removes Docker/docker-compose entirely, matching `helix.personmatching`'s pure-`uv` pattern — `make tests` now runs `uv run pytest .` directly on the host, no container. |
+_(none currently — sessions 6, 13-19 all confirmed merged as of 2026-09-17; see Completed
+below and each session doc's Status line)_
 
 ## Completed (most recent 3)
 
 | # | Session | Thread | One-line summary |
 |---|---------|--------|-------------------|
-| 12 | [session_12](completed/session_12.md) | Phase 2: production candidate-retrieval scaling | `MongoAtlasCache`: a MongoDB Atlas Search-backed `CacheBackend`, for the sibling `cms-hte-patient-matching-service`'s shared-cache/scaling needs. Merged via [#45](https://github.com/icanbwell/cms-hte-patient-matching/pull/45) (squash, 2026-09-06). |
-| 4 | [session_4](completed/session_4.md) | Evaluation & Statistical Rigor | Real-world FHIR data source (`bronze.fhir_lake.patient_4_0_0` joined to `silver.fhir_lite.person_patient`) for `rule_eval.py`. Code merged via [#22](https://github.com/icanbwell/patient-matching/pull/22); live Databricks run completed 2026-08-18 (see session doc for full output/interpretation), after [#36](https://github.com/icanbwell/patient-matching/pull/36) fixed a real null-field crash the run surfaced. |
-| 9 | [session_9](https://github.com/icanbwell/cms-hte-patient-matching-test-set/blob/main/docs/sessions/completed/session_9.md) (moved) | Evaluation & Statistical Rigor | Synthetic CMS test-dataset generation: single-edit-distance fuzzy mutations (true matches) + mined real-record hard negatives (true non-matches), resolving session_8's test-data simulation methodology question. Merged via [#27](https://github.com/icanbwell/patient-matching/pull/27). |
+| 19 | [session_19](completed/session_19.md) | Line B: CMS v3.4.0 migration | §C.7 twin/multiple-birth handling (4 new operational rules) built in full; §C.9 defensive relationship-data flagging explicitly deferred as a real API-surface question. Corrected a real aggregation-assumption bug before shipping (namespace_id anchor must apply inside tie-resolution, not rely on cross-rule union). Merged via [#54](https://github.com/icanbwell/cms-hte-patient-matching/pull/54), 2026-09-16. |
+| 18 | [session_18](completed/session_18.md) | Line B: CMS v3.4.0 migration | §VII audit record reconciliation: adds `query_initiator` (opaque, caller-supplied, per the project lead's decision) and a query-level `timestamp` (found missing for zero-rule-evaluation queries) to `MatchResult`/`MatchResponse`. Path B aggregate metrics explicitly out of scope. Merged via [#53](https://github.com/icanbwell/cms-hte-patient-matching/pull/53), 2026-09-15. |
+| 17 | [session_17](completed/session_17.md) | Line B: CMS v3.4.0 migration | Relationship Linkage field (Table 3) + Rules `C2-39`/`C2-40` (guardian-verified minor / newborn-via-maternal-linkage), built best-effort with the spec's own unresolved caveats documented. Corrected a math error before shipping (guardian identity is a u=1.0 gate, not a near-zero field) and fixed a real confidence-scoring bug in `service.py`. Merged via [#52](https://github.com/icanbwell/cms-hte-patient-matching/pull/52), 2026-09-15. |
+
+Older completed sessions (16, 15, 14, 13, 12, 6, 4, 9, ...) stay in `completed/` but are no
+longer shown here per the trim-to-3 rule below — see that folder directly.
 
 ### Keeping this index current (do this when closing a session)
 1. If the session's PR merged immediately: move the row from *Up Next* to the **top** of
@@ -242,7 +251,7 @@ _(none yet — see `rejected/README.md`)_
   matters once actual `match()`/`match_batch()` calls need to scale against a large corpus
   (e.g. session 4 or eventual production-shaped batch runs).
 - **CMS v3.4.0 §C.9 defensive relationship-data flagging** (deferred by session 19, 2026-09-15
-  — see `in_review/session_19.md`'s Execution notes). A real API-surface question, not a quick
+  — see `completed/session_19.md`'s Execution notes). A real API-surface question, not a quick
   addition: `FieldExtractor.extract()` only ever sees a single FHIR `Patient` dict, but
   `RelatedPerson` is a separate resource type entirely, so this needs a decision on how a caller
   supplies relationship data to the engine at all (a new parameter? reuse session 17's
