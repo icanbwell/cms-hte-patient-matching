@@ -2,7 +2,7 @@
 
 **Status:** completed — PR [#45](https://github.com/icanbwell/cms-hte-patient-matching/pull/45)
 merged 2026-09-06 (squash). Executed 2026-09-04 on branch `session-12/mongo-atlas-cache`. All
-three `NEEDS HUMAN DECISION` items below were resolved directly by Imran before any code was
+three `NEEDS HUMAN DECISION` items below were resolved directly by the project lead before any code was
 written (see Execution notes). Post-merge note: the squash merge broke git ancestry for this
 branch's two stacked children (sessions 14/15, PR #48) — resolved by merging `main` back into
 their branch and taking that branch's side on every conflict, since nothing else had landed on
@@ -236,11 +236,11 @@ parameterization convention (`pytest.mark.parametrize`, plain pytest classes).
 
 ## Open questions
 
-**All resolved 2026-09-04 by Imran directly (see Execution notes) — kept below verbatim as the
+**All resolved 2026-09-04 by the project lead directly (see Execution notes) — kept below verbatim as the
 historical record of what was asked, per conventions.md's "sessions are never edited in place"
 spirit for anything past the header.**
 
-- **RESOLVED — "Yes, extend scope."** `NEEDS HUMAN DECISION — Sean (project lead) / Imran`: Does this repo's charter now
+- **RESOLVED — "Yes, extend scope."** `NEEDS HUMAN DECISION — Sean (DS lead) / the project lead`: Does this repo's charter now
   extend to production-backend infrastructure work, given `cms-hte-patient-matching-service` is
   being actively designed against it? `docs/PROJECT_MAP.md` currently says this repo has "no
   production traffic, no deploy target" and that Phase 2 is unscoped "in those other repos."
@@ -288,11 +288,11 @@ spirit for anything past the header.**
 **2026-09-04.** This doc originated as PR #44 (`docs/session-12-mongo-atlas-cache-design`,
 design-only, unmerged). A sibling Claude Code session working on
 `cms-hte-patient-matching-service` relayed it into this repo's session and asked that the
-`NEEDS HUMAN DECISION` items be resolved directly with Imran (reachable in that session) before
+`NEEDS HUMAN DECISION` items be resolved directly with the project lead (reachable in that session) before
 any code was written, per this file's own "Open-questions handling" rule. All three were
-resolved via direct questions to Imran — see "Open questions" above for the resolutions. Rather
+resolved via direct questions to the project lead — see "Open questions" above for the resolutions. Rather
 than merge PR #44 first (it had no GitHub approval yet, so autonomous merging wasn't
-appropriate) and branch from there, Imran opted to skip that merge and bring the doc's content
+appropriate) and branch from there, the project lead opted to skip that merge and bring the doc's content
 directly into a fresh branch cut from `main` (`session-12/mongo-atlas-cache`). PR #44 itself
 was left untouched/unmerged; its content is superseded by this branch's copy.
 
@@ -347,7 +347,7 @@ was left untouched/unmerged; its content is superseded by this branch's copy.
    Search's async indexing means that first call can legitimately come back empty on Mongo
    before DuckDB (always immediately consistent) — the benchmark documents this rather than
    asserting a strict-equality that would be a false requirement. The real 1,000,000+-candidate
-   run (the size Imran decided on) was **not** run in this session (would make every `make
+   run (the size the project lead decided on) was **not** run in this session (would make every `make
    tests` run impractically slow) — run manually with `BENCHMARK_POOL_SIZE=1000000` when that
    data is actually needed for the round-trip-batching decision (Open Question 2's "not a
    human-decision item" note).
@@ -367,7 +367,7 @@ this repo's actual (JFrog-gated) Dockerfile. **A maintainer with JFrog/VPN acces
 same mechanism holds there.
 
 **Left open, not merged.** PR [#45](https://github.com/icanbwell/cms-hte-patient-matching/pull/45)
-is left open for Imran's/Sean's review rather than self-merged, per `conventions.md`'s
+is left open for the project lead's/Sean's review rather than self-merged, per `conventions.md`'s
 allowance for that (a new external dependency + a docker-compose infra change + the unverified
 `make tests` gate above all argue for a human looking at this before it lands) — moving this
 doc to `in_review/`, not `completed/`, and recording that here as required. PR #44 (still open,

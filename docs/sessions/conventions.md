@@ -155,7 +155,7 @@ solo/two-person review model, not a technical one.
   `Comment Period Ends`/`Effective Date` are unfilled placeholders as of 2026-09-15):
   `https://docs.google.com/document/d/1NytpfZ05aokS-gD7uDIQE7gEyms9zMgoiaIah_w4VTE/edit`
   (file ID `1NytpfZ05aokS-gD7uDIQE7gEyms9zMgoiaIah_w4VTE`). Supersedes v3.3 as this repo's
-  active target (Imran, 2026-09-15). Same policy as v3.3 below: a live draft this repo doesn't
+  active target (the project lead, 2026-09-15). Same policy as v3.3 below: a live draft this repo doesn't
   own — sessions that need its content (16, 17, 18, 19) fetch it fresh via Google Drive access
   as their first task, rather than trusting a committed copy that could silently go stale while
   the comment period is open.

@@ -324,7 +324,7 @@ class TestSqlSafetyHelpers:
   legal_id                0.000000            0.000001
   namespace_id            0.000209            0.000000
   ```
-- **How to read this, for Sean/Imran:**
+- **How to read this, for Sean/the project lead:**
   - **Join-key check: passed.** 5000/5000 rows joined (100%) — this is the number the
     2026-08-06 Execution notes flagged as "not independently confirmed against real row data."
     A near-zero ratio would have meant `patient._uuid = person_patient.patient_uuid` is the
@@ -357,11 +357,11 @@ class TestSqlSafetyHelpers:
       purpose says needs a human read before relying on it for a rule decision** — it does not
       by itself mean any Table 2 rule is unsafe (rules combine multiple fields multiplicatively,
       and no single field's collision rate alone determines a rule's total P(collision)), but
-      Sean/Imran should look at whether `phone`/`email`/`street_line`'s real collision rates
+      Sean/the project lead should look at whether `phone`/`email`/`street_line`'s real collision rates
       change the math for any rule that leans on them alone or in a two-field combination.
     - **Caveat on all of the above**: `n=5000` from a single random sample is a small, unbiased
       but not-yet-repeated read. Treat this as a first data point, not a final verdict — re-run
       with a larger or differently-sampled batch before treating any of these deltas as settled.
-- **Sean/Imran's outstanding sign-off requirement (2026-08-11 EA review, Rule 13) is still
+- **Sean/the project lead's outstanding sign-off requirement (2026-08-11 EA review, Rule 13) is still
   open** — this run gives them real numbers to look at, but does not substitute for their
   explicit review of the collision-rate/agreement-rate methodology itself.

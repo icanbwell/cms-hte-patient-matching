@@ -30,7 +30,7 @@
 - Reviewer for all sessions: Sean (self-review during Zack Malone's PTO).
 - The CMS v3.3 spec is referenced by Google Doc link/file ID (`1ABHR6e4N-K9lEj1vc7DuzoAy8CuaAqwqAZSpJH9T4Yg`) — **never** re-introduce a committed copy of it. This was tried and reverted earlier in this project (see git log on this branch, commit "Reference the live v3.3 spec doc instead of committing a copy") — don't repeat it.
 - Every session that changes matching *rule behavior* (3, 5, 6) must carry the statistical-rigor gate language (Tier 1/2/3) — sessions 1 and 2 are explicitly exempt (audit plumbing and CMS-mandated tiering, not tunable rule behavior).
-- No placeholders in any session doc: every task names exact files, exact function/class names, and either exact code or an exact, complete data table. `NEEDS HUMAN DECISION` tags are allowed only where the design doc (`docs/superpowers/specs/2026-07-28-session-planning-playbook-design.md`) already identifies a genuine external dependency (Sean's real Databricks/Mongo table names for session 4; Imran's sign-off for the not-yet-authored per-value P(collision) idea).
+- No placeholders in any session doc: every task names exact files, exact function/class names, and either exact code or an exact, complete data table. `NEEDS HUMAN DECISION` tags are allowed only where the design doc (`docs/superpowers/specs/2026-07-28-session-planning-playbook-design.md`) already identifies a genuine external dependency (Sean's real Databricks/Mongo table names for session 4; the project lead's sign-off for the not-yet-authored per-value P(collision) idea).
 - Source of truth for scope/sequencing: `docs/superpowers/specs/2026-07-28-session-planning-playbook-design.md`. Where this plan and that spec seem to disagree, the spec wins — flag it during self-review rather than silently picking one.
 - **Every session ends with an opened PR into `claude/cms-matching-v1`, no exceptions** (added 2026-07-28, mid-execution, per Sean) — `conventions.md`'s protocol step 7 and Definition of Done must both state this as a hard requirement, not one option among several ("merged, or a PR is open" language is not acceptable — the PR is mandatory even when Sean is self-reviewing).
 
@@ -436,8 +436,8 @@ _(none yet — see `rejected/README.md`)_
 ## Candidate future sessions (not yet authored)
 
 - **P(collision) evaluator: per-value (name-frequency-conditioned) collision probability.**
-  `NEEDS HUMAN DECISION — Sean/Imran`: a genuine methodology deviation from the published CMS
-  approach (which uses static per-field constants), needs Imran's sign-off as domain lead
+  `NEEDS HUMAN DECISION — Sean/the project lead`: a genuine methodology deviation from the published CMS
+  approach (which uses static per-field constants), needs the project lead's sign-off as domain lead
   before implementation. Propose it to him alongside sessions 5/6's results.
 - **"Project US@" address format compliance.** Smaller gap in the otherwise-complete
   normalization layer; not blocked, just not yet scoped in detail.
@@ -1689,7 +1689,7 @@ literal floats, hand-typed against the CMS v3.2.2 spec — there's no code that 
 to be caught automatically, and there's no reusable evaluator for session 6 to score the 11
 new v3.3 combinations against. This session builds that evaluator directly from the CMS v3.3
 spec's own Table 3 and formula (`P(collision) ~= product of u_field` per field in a
-combination), matching Imran's own reference implementation (confirmed by fetching
+combination), matching the project lead's own reference implementation (confirmed by fetching
 `gist.github.com/imranq2/b5cc7a534a37dfa26922a83e69c686ee` on 2026-07-28: its `FIELD_U_PROBS`
 dict matches the spec's Table 3 exactly, and it implements the same joint-probability formula
 and 2e-12 threshold this session targets).
@@ -1737,7 +1737,7 @@ session's evaluator) rather than hand-typed, for every rule session 6 defines.
   Name + DOB + ZIP computes to 3e-12 under Table 3 (above the 2e-12 threshold) and must
   evaluate as **not approved**, regardless of the 3e-13 figure that appears in some prior,
   non-spec analyses.
-- Cross-checking this session's `FIELD_U_PROBS`/`p_collision` output against Imran's gist/Colab
+- Cross-checking this session's `FIELD_U_PROBS`/`p_collision` output against the project lead's gist/Colab
   directly, as a stretch-goal verification step (Task 4) — not required for this session's
   Definition of Done, since it's an external resource outside this repo's control and may not
   be reachable in every execution environment.
@@ -1747,7 +1747,7 @@ session's evaluator) rather than hand-typed, for every rule session 6 defines.
   depends on this session's evaluator.
 - The per-value (name-frequency-conditioned) collision-probability refinement Sean raised
   separately — that's a genuine methodology deviation from the published CMS approach (which
-  uses static per-field constants, as implemented here) and needs Imran's explicit sign-off;
+  uses static per-field constants, as implemented here) and needs the project lead's explicit sign-off;
   see `index.md`'s "Candidate future sessions".
 - Any change to `MatchingEngine`'s fuzzy-matching mechanics (Damerau-Levenshtein, min length)
   — this session only computes probabilities, it doesn't change how a match is decided.
@@ -1770,7 +1770,7 @@ session's evaluator) rather than hand-typed, for every rule session 6 defines.
 
    Three fields the spec defines but which are "dismissed due to observed data quality
    issues and low selectivity" (Middle Name, Suffix, Year of Birth) are intentionally
-   excluded here, matching Imran's reference script's 16-field FIELD_U_PROBS (confirmed
+   excluded here, matching the project lead's reference script's 16-field FIELD_U_PROBS (confirmed
    2026-07-28 via gist.github.com/imranq2/b5cc7a534a37dfa26922a83e69c686ee) - no Table 2
    rule uses any of the three.
    """
@@ -1876,7 +1876,7 @@ session's evaluator) rather than hand-typed, for every rule session 6 defines.
    than a rounding difference, stop and investigate before proceeding (it means either the
    evaluator or the original hand-entered constant was wrong).
 
-4. **(Stretch goal, not required for Definition of Done) Cross-check against Imran's
+4. **(Stretch goal, not required for Definition of Done) Cross-check against the project lead's
    reference script.** Fetch `https://gist.github.com/imranq2/b5cc7a534a37dfa26922a83e69c686ee`
    and compare its `FIELD_U_PROBS` values and any of its worked examples against this
    session's `collision.py`. If reachable and values differ, investigate and reconcile before
@@ -2014,7 +2014,7 @@ class TestExistingRulesMatchComputedValues:
   code change, not something requiring Sean's sign-off (these are CMS's own published numbers,
   not a judgment call this repo is making). If genuinely ambiguous (e.g. the spec's wording
   changed in a way that's unclear how to encode), that's when to ask Sean.
-- Task 4 (cross-check against Imran's gist) is explicitly a stretch goal — if unreachable,
+- Task 4 (cross-check against the project lead's gist) is explicitly a stretch goal — if unreachable,
   note it and move on; don't block the session on it.
 
 ## Execution notes
@@ -2081,7 +2081,7 @@ evaluator; this session cannot correctly score the 11 new combinations without i
 
 ## Downstream sessions (unblocked by this one)
 
-None currently authored. The (not-yet-authored) per-value P(collision) refinement, if Imran
+None currently authored. The (not-yet-authored) per-value P(collision) refinement, if the project lead
 signs off on it, would apply to this session's full 37-rule set once it exists.
 
 ## Upstream data/system dependencies
@@ -2152,14 +2152,14 @@ None new.
      family/household members sharing a landline and surname, with a documented real-world
      false-positive scenario (sensitive records released to the wrong family member). Passing
      the numeric threshold is explicitly "necessary but not sufficient" per the spec itself.
-     **`NEEDS HUMAN DECISION — Sean/Imran`**: whether to enable this cluster by default before
+     **`NEEDS HUMAN DECISION — Sean/the project lead`**: whether to enable this cluster by default before
      the spec's comment period resolves. Recommended default: off, matching the spec's own
      framing — implement the rules, gate them behind the flag, don't flip it on without
      explicit sign-off.
 
 ### Out of scope
 - The per-value (name-frequency-conditioned) collision-probability refinement — separate,
-  not-yet-authored candidate session needing Imran's sign-off.
+  not-yet-authored candidate session needing the project lead's sign-off.
 - Gender as a matching field — v3.3 drops it entirely; this repo's Table 2 rules never
   referenced gender in the first place (confirm by grep before assuming there's cleanup work
   here — `grep -rn gender patient_matching/matching/` and check whether any hits are
@@ -2305,7 +2305,7 @@ None new.
 3. **Add the `enable_household_risk_rules` flag and the 11 new rules.**
    File: `patient_matching/matching/table2_rules.py`. Add a module-level flag:
    ```python
-   # NEEDS HUMAN DECISION - Sean/Imran: whether to enable the household-risk rule
+   # NEEDS HUMAN DECISION - Sean/the project lead: whether to enable the household-risk rule
    # cluster (33-37) by default. Off by default per the CMS v3.3 spec's own open,
    # unresolved reviewer concern about family/household false-positive risk on
    # phone+ZIP/name-anchored combinations - see docs/sessions/pending/session_6.md.
@@ -2442,9 +2442,9 @@ class TestDobFuzzyMatch:
 
 ## Open questions
 
-- **`NEEDS HUMAN DECISION — Sean/Imran`** (stated in Scope above): whether to enable
+- **`NEEDS HUMAN DECISION — Sean/the project lead`** (stated in Scope above): whether to enable
   `ENABLE_HOUSEHOLD_RISK_RULES` by default before the CMS v3.3 comment period resolves.
-  Recommended default: leave it `False` until Sean/Imran explicitly say otherwise.
+  Recommended default: leave it `False` until Sean/the project lead explicitly say otherwise.
 - The exact FHIR identifier type codes for `insurance_member_id`/`insurance_subscriber_id`
   extraction (Task 1) were deliberately left for implementation time rather than guessed —
   this is a legitimate implementation detail the executing agent resolves by reading

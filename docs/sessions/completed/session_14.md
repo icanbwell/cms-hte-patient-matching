@@ -13,7 +13,7 @@ every test in all of those modules.
 
 ## Why this session exists
 
-Raised directly by Imran while reviewing PR #45: `MongoAtlasCache` uses plain synchronous
+Raised directly by the project lead while reviewing PR #45: `MongoAtlasCache` uses plain synchronous
 `pymongo.MongoClient`, called synchronously all the way up through
 `CacheMatchingBackend.search()` → `MatchingEngine.match()` → `PatientMatcherService.match_patient()`
 → FastAPI's `async def fhir_match()` handler — with no `await`, no
@@ -26,7 +26,7 @@ directly undercutting the feature's own motivation (a shared cache so multiple r
 duplicate load, when in practice each replica could still only serve one slow request at a
 time).
 
-**2026-09-06, same day, addendum.** Imran then asked directly: "are all the calls to this
+**2026-09-06, same day, addendum.** The project lead then asked directly: "are all the calls to this
 package now async?" — answer at that point was no. A repo-wide sweep for `httpx.`/`requests.`/
 `urlopen`/`socket.`/`urllib` found two more real network-I/O surfaces this first pass hadn't
 touched: `FhirClient` (synchronous `httpx.Client`, used by `CacheManager`'s ETL loop) and
@@ -39,7 +39,7 @@ second "What changed" block below. Everything else in the package (`Normalizatio
 `MatchingEngine.evaluate_pair()`) is pure in-memory computation with no I/O, confirmed by the
 same repo-wide grep — correctly left synchronous, since async wouldn't help there.
 
-## Design decisions (both made directly by Imran, no other options explored)
+## Design decisions (both made directly by the project lead, no other options explored)
 
 1. **Uniform async `CacheBackend` interface**, not a split sync/async interface. `DuckDBCache`
    implements the same `async def` methods as `MongoAtlasCache`, even though it has no real I/O

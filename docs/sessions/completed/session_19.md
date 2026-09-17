@@ -137,7 +137,7 @@ None new.
 None requiring a human decision - §C.7's four rules were specified concretely enough to
 implement directly, and no case arose needing new infrastructure beyond what this session
 already built. §C.9 (see Execution notes) is deferred, not blocked on a decision - resolving it
-is future scoping work, not something requiring Imran's input right now.
+is future scoping work, not something requiring the project lead's input right now.
 
 ## Execution notes
 
@@ -208,7 +208,7 @@ Validation:
 - Statistical rigor gate: see corrected checklist item above.
 
 Decision: PR opened from `claude/session-19-v340-twin-handling` into `main`, left **open**
-rather than merged - merging is Imran's call, same as every prior session in this repo. Doc
+rather than merged - merging is the project lead's call, same as every prior session in this repo. Doc
 moved to `in_review/` and `index.md` updated accordingly, in the same PR.
 
 ## Post-review fixes (adversarial review pass, 2026-09-15)

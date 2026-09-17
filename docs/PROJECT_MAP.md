@@ -26,7 +26,7 @@ repos.
 
 **2026-09-04 update:** Phase 2 is no longer *entirely* unscoped. A new sibling repo,
 `cms-hte-patient-matching-service`, is being built to wrap this package's
-`PatientMatcherService`/`MatchingEngine` as a production HTTP microservice. Imran decided this
+`PatientMatcherService`/`MatchingEngine` as a production HTTP microservice. The project lead decided this
 repo's charter now extends to the production-backend infrastructure work that sibling service's
 design surfaces (see `docs/sessions/pending/session_12.md`: a `MongoAtlasCache` `CacheBackend`,
 motivated by that service's scaling/shared-state needs rather than by the CMS spec itself).

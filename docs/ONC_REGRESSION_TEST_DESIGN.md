@@ -1,6 +1,6 @@
 # Design: ONC-Dataset Regression Test for the Table 2 Matching Engine
 
-**Status:** Implemented, all open questions resolved | **Date:** 2026-09-04 | **Author:** Imran Qureshi (with Claude) | **Reviewer:** project lead
+**Status:** Implemented, all open questions resolved | **Date:** 2026-09-04 | **Author:** the project lead (with Claude) | **Reviewer:** project lead
 
 ---
 
