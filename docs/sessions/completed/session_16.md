@@ -1,6 +1,7 @@
 # Session 16 — CMS v3.4.0: renumber Category 1 to spec IDs, extend DOB fuzzy
 
-**Status:** pending
+**Status:** completed ([PR #51](https://github.com/icanbwell/cms-hte-patient-matching/pull/51),
+merged 2026-09-15)
 **Thread:** Line B: CMS v3.4.0 migration
 **Estimated size:** M — a wide-blast-radius rename (touches every file/test that cites a
 Category 1 `rule_id`) plus one small, mechanical behavior extension (DOB fuzzy on 4 more

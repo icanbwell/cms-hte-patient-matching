@@ -1,6 +1,7 @@
 # Session 18 — CMS v3.4.0: §VII audit record reconciliation
 
-**Status:** pending
+**Status:** completed ([PR #53](https://github.com/icanbwell/cms-hte-patient-matching/pull/53),
+merged 2026-09-15)
 **Thread:** Line B: CMS v3.4.0 migration
 **Estimated size:** M — mostly additive to existing audit types
 (`RuleEvaluation`/`MatchResult`), plus one real API-surface question (query initiator) that
