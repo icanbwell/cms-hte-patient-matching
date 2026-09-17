@@ -3,7 +3,7 @@
 **Status:** in_review — executed 2026-09-04 on this same branch/PR (`session-13/pypi-publishing-design`,
 PR #46) as the design capture, since both blocking decisions resolved within the same
 conversation. All code tasks done and verified locally; the one remaining task (cutting a real
-GitHub Release to exercise `python-publish.yml` end-to-end) holds for Imran's explicit
+GitHub Release to exercise `python-publish.yml` end-to-end) holds for the project lead's explicit
 go-ahead — see Execution notes.
 **Thread:** `Phase 2: production candidate-retrieval scaling` (same thread as session 12 —
 distribution packaging for the sibling `cms-hte-patient-matching-service` to consume).
@@ -15,7 +15,7 @@ up too.
 
 ## Why this session exists
 
-Imran asked for a tech design for publishing this package to PyPI, specifically **the icanbwell
+The project lead asked for a tech design for publishing this package to PyPI, specifically **the icanbwell
 org's PyPI presence** (public pypi.org, not the internal JFrog Artifactory index this repo
 already uses as its default `uv` index for consuming dependencies — those are two different
 things; see "Two distinct 'PyPI' targets" below).
@@ -72,7 +72,7 @@ across these repos:
   repo's own `.github/workflows/python-publish.yml` implements): `permissions: id-token: write`,
   `environment: pypi`, `pypa/gh-action-pypi-publish`, no long-lived secret in GitHub at all. Also
   real and working (`language-model-common`'s last 5 releases via this exact mechanism all
-  succeeded in ~30s each). **This is Imran's explicit choice for this repo** — no long-lived PyPI
+  succeeded in ~30s each). **This is the project lead's explicit choice for this repo** — no long-lived PyPI
   token sitting in GitHub secrets to leak or rotate, and it's the mechanism GitHub/PyPI
   themselves now recommend as the default for new projects.
 - **Consequence: this repo's existing `python-publish.yml` needs no rewrite.** It already
@@ -159,7 +159,7 @@ into that service; it only makes the dependency possible.
 ## Upstream data/system dependencies
 
 - **A `cms-hte-patient-matching` pending Trusted Publisher on pypi.org**, naming this repo,
-  `python-publish.yml`, and the `pypi` environment. **Done** — Imran created it in the same
+  `python-publish.yml`, and the `pypi` environment. **Done** — the project lead created it in the same
   PyPI account/namespace ("imranq" space) that already owns `fhirschemapy`
   (`fhir-schema-py`'s published package), confirming this follows that exact precedent. See
   Open Question 2.
@@ -214,7 +214,7 @@ None. This does not touch any deployed system.
 
 ## Tasks
 
-1. ~~Register the pypi.org pending Trusted Publisher~~ — **done** (Imran, see Open Question 2).
+1. ~~Register the pypi.org pending Trusted Publisher~~ — **done** (the project lead, see Open Question 2).
 2. ~~`pyproject.toml`: rename `[project] name`...~~ — **done** (`9c6396d`/`810e621`). Also fixed
    a second latent bug found while doing this: a static `version = "0.1.0"` alongside
    `[tool.setuptools.dynamic] version` silently overrode the `VERSION`-file mechanism CI relies
@@ -223,7 +223,7 @@ None. This does not touch any deployed system.
 3. ~~Delete `setup.py`; trim `setup.cfg`~~ — **done**. All of `setup.cfg` turned out dead
    (`[flake8]` included — confirmed nothing invokes flake8 anywhere), so the whole file was
    removed, not just trimmed.
-4. ~~Resolve the `patientmatching/` stray directory~~ — **done**: deleted (Imran confirmed).
+4. ~~Resolve the `patientmatching/` stray directory~~ — **done**: deleted (the project lead confirmed).
 5. ~~`Makefile`: add `testpackage`/`package` targets~~ — **done**, plus a `dist` target
    (sibling repos call this `build`, but this repo's `build` already means "build the dev
    Docker image" — named it `dist` instead to avoid the collision).
@@ -237,7 +237,7 @@ None. This does not touch any deployed system.
    leaked in) — same artifact, without the network upload step.
 8. ~~Register the Trusted Publisher~~ — merged into task 1 above; done.
 9. **Not done — holds for explicit go-ahead.** Cutting a real GitHub Release publishes a real,
-   public package under Imran's PyPI identity; not done automatically as part of this session's
+   public package under the project lead's PyPI identity; not done automatically as part of this session's
    code changes.
 10. ~~Update `README.md`'s Installation section~~ — **done**, plus the same stale
     `patient-matching-reference-implementation` URL/name fixed in `CONTRIBUTING.md` and two more
@@ -264,7 +264,7 @@ TestPyPI install dry run (task 7), not a pytest addition.
 
 ## Open questions
 
-1. **Decided (Imran, 2026-09-04): package name is `cms-hte-patient-matching`.** Matches the repo
+1. **Decided (the project lead, 2026-09-04): package name is `cms-hte-patient-matching`.** Matches the repo
    name 1:1, avoids the generic-name squatting risk, and avoids confusion with the pre-existing,
    separate `icanbwell/patient-matching-reference-implementation` repo that `pyproject.toml`'s
    current name (`patient_matching`) and `setup.py`'s stale URL both accidentally point toward.
@@ -273,8 +273,8 @@ TestPyPI install dry run (task 7), not a pytest addition.
    distribution names and importable package names don't have to match, and changing the
    `patient_matching/` directory/import path is out of scope here since it would break every
    existing internal import in this repo).
-2. **Resolved (Imran, 2026-09-04): the pypi.org pending Trusted Publisher is registered.**
-   Confirms the git-blame-based prediction directly above this entry's prior text: Imran created
+2. **Resolved (the project lead, 2026-09-04): the pypi.org pending Trusted Publisher is registered.**
+   Confirms the git-blame-based prediction directly above this entry's prior text: the project lead created
    it in his own PyPI account/namespace ("imranq" space) — the same one that already owns
    `fhirschemapy` (`fhir-schema-py`'s published package) — matching that exact precedent rather
    than a separate EA/DevOps-owned account. No remaining action needed before this session can
@@ -287,7 +287,7 @@ TestPyPI install dry run (task 7), not a pytest addition.
    (i.e., does `cms-hte-patient-matching-service`'s design actually need `pip install` today), or
    is this purely preparatory ahead of that service's own build-out? Doesn't change the design,
    only the urgency.
-5. **Resolved (Imran, 2026-09-04): delete the stray `patientmatching/` directory.** Confirmed
+5. **Resolved (the project lead, 2026-09-04): delete the stray `patientmatching/` directory.** Confirmed
    the default recommendation; deleted as part of execution.
 
 ## Execution notes
@@ -321,5 +321,5 @@ in the same working directory) — flagging in case it recurs elsewhere.
 
 **Remaining before this can move to `completed/`**: task 9 (cut a real GitHub Release to
 exercise `python-publish.yml` end-to-end) — deliberately not done automatically, since it
-publishes a real public package under Imran's PyPI identity. Needs Imran's explicit go-ahead
+publishes a real public package under the project lead's PyPI identity. Needs the project lead's explicit go-ahead
 and a version/tag decision.

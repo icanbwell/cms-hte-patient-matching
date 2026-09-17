@@ -12,11 +12,11 @@ run whatever **Suggested Next Session** names below.
 
 ## Suggested Next Session
 
-> **2026-09-15 addendum (CMS v3.4.0 migration):** Imran shared the v3.4.0 spec diff and the
+> **2026-09-15 addendum (CMS v3.4.0 migration):** The project lead shared the v3.4.0 spec diff and the
 > full v3.4.0 doc directly, and asked for this repo to be brought into compliance. Four new
 > sessions are queued for this: 16 (renumber Category 1 rules to v3.4.0's clean 01-30
 > sequence + extend DOB fuzzy to rules 01/02/03/10), 17 (Relationship Linkage field + rules
-> 39/40, guardian-verified minor / newborn-via-maternal-linkage — Imran decided: implement
+> 39/40, guardian-verified minor / newborn-via-maternal-linkage — the project lead decided: implement
 > now, best-effort, with the spec's own unresolved caveats documented as known limitations),
 > 18 (§VII audit record reconciliation — one real `NEEDS HUMAN DECISION` on what "query
 > initiator" means for this repo), and 19 (§C.7 twin-handling + §C.9 defensive relationship-data
@@ -25,7 +25,7 @@ run whatever **Suggested Next Session** names below.
 >
 > **2026-09-15 addendum (session 16 done):** session 16 executed same-day — PR
 > [#51](https://github.com/icanbwell/cms-hte-patient-matching/pull/51), left open (merge is
-> Imran's call), moved to `in_review/`. Found and resolved one real issue not anticipated when
+> the project lead's call), moved to `in_review/`. Found and resolved one real issue not anticipated when
 > sessions 17-19 were scoped: v3.4.0's Category 1 renumbering collides with Category 2's
 > legacy `13-16/34/35/37/38` IDs; resolved via a `C2-` prefix (see session_16.md's Execution
 > notes) — sessions 17/19 should use the `C2-` form if they reference a Category 2 rule by ID.
@@ -38,14 +38,14 @@ run whatever **Suggested Next Session** names below.
 > suites, which bypass backend blocking entirely. Fixed with a new `MatchType.DOB_TOLERANCE`
 > that expands to an exact `{value-1day, value, value+1day}` lookup on every backend, which
 > also fixed a related Mongo Atlas token-explosion issue and a DuckDB full-scan issue the same
-> review found. One open question flagged for Imran, not resolved unilaterally: whether rules
+> review found. One open question flagged for the project lead, not resolved unilaterally: whether rules
 > 01/10's published `p_collision_fuzzy` figures should account for DOB*'s tolerance now that
 > it's extended to high-volume rules - see session_16.md's "Post-review fixes" section.
 >
 > **Session 17 is the new Suggested Next Session.**
 >
 > **2026-09-15 addendum (session 17 done):** session 17 executed same-day, on branch cut from
-> `main` before session 16/PR #51 merged (Imran's explicit go-ahead) — PR
+> `main` before session 16/PR #51 merged (the project lead's explicit go-ahead) — PR
 > [#52](https://github.com/icanbwell/cms-hte-patient-matching/pull/52), left open, moved to
 > `in_review/`. Found and corrected a real error before it shipped: this doc's original
 > Scope assumed "guardian's independently-matched identity" would be a near-zero-collision
@@ -59,7 +59,7 @@ run whatever **Suggested Next Session** names below.
 >
 > **2026-09-15 addendum (session 18 done):** session 18 executed same-day — PR
 > [#53](https://github.com/icanbwell/cms-hte-patient-matching/pull/53), left open, moved to
-> `in_review/`. Imran resolved the `NEEDS HUMAN DECISION` before coding: `query_initiator` is
+> `in_review/`. The project lead resolved the `NEEDS HUMAN DECISION` before coding: `query_initiator` is
 > an opaque, caller-supplied string, not derived from the IAL2 token. Found one more real gap
 > while doing the field-by-field mapping: `RuleEvaluation.timestamp` only exists per rule
 > evaluated, so a query matching zero rules (e.g. an empty patient) had no timestamp anywhere
@@ -99,13 +99,13 @@ run whatever **Suggested Next Session** names below.
 > to accept `query_initiator` at all, and that a query with too few fields for ANY rule to be
 > attempted was indistinguishable from a genuinely-evaluated no-match - both fixed, the latter
 > by finally producing `MatchOutcome.INSUFFICIENT_FIELDS`, which existed but was never
-> produced. Two more findings flagged for Imran rather than decided unilaterally: no audit
+> produced. Two more findings flagged for the project lead rather than decided unilaterally: no audit
 > record is produced at all when a query raises (backend error, IAL2 failure, normalization
 > failure) - is that the intended behavior for SS VII, or should failed queries also produce a
 > record? And `query_initiator` is unvalidated, caller-supplied input written verbatim into an
 > audit field (verified: control characters pass through unmodified) - this doc's own
 > `query_initiator` decision from earlier the same day already says "not validated," so
-> tightening that needs Imran's confirmation it was meant to include tolerating literal control
+> tightening that needs the project lead's confirmation it was meant to include tolerating literal control
 > characters, not a silent code change. See session_18.md's "Post-review fixes" section.
 >
 > **2026-09-15 addendum (session 19, post-review fixes):** an adversarial review of PR #54
@@ -173,13 +173,13 @@ satisfied; session 6 itself moved to `in_review/` below on 2026-08-18.
 | # | Session | Thread | PR | One-line summary |
 |---|---------|--------|----|--------------------|
 | 19 | [session_19](in_review/session_19.md) | Line B: CMS v3.4.0 migration | [#54](https://github.com/icanbwell/cms-hte-patient-matching/pull/54) (open) | §C.7 twin/multiple-birth handling (4 new operational rules) built in full; §C.9 defensive relationship-data flagging explicitly deferred as a real API-surface question. Corrected a real aggregation-assumption bug before shipping (namespace_id anchor must apply inside tie-resolution, not rely on cross-rule union) - see doc's Execution notes. |
-| 18 | [session_18](in_review/session_18.md) | Line B: CMS v3.4.0 migration | [#53](https://github.com/icanbwell/cms-hte-patient-matching/pull/53) (open) | §VII audit record reconciliation: adds `query_initiator` (opaque, caller-supplied, per Imran's decision) and a query-level `timestamp` (found missing for zero-rule-evaluation queries) to `MatchResult`/`MatchResponse`. Path B aggregate metrics explicitly out of scope. |
+| 18 | [session_18](in_review/session_18.md) | Line B: CMS v3.4.0 migration | [#53](https://github.com/icanbwell/cms-hte-patient-matching/pull/53) (open) | §VII audit record reconciliation: adds `query_initiator` (opaque, caller-supplied, per the project lead's decision) and a query-level `timestamp` (found missing for zero-rule-evaluation queries) to `MatchResult`/`MatchResponse`. Path B aggregate metrics explicitly out of scope. |
 | 17 | [session_17](in_review/session_17.md) | Line B: CMS v3.4.0 migration | [#52](https://github.com/icanbwell/cms-hte-patient-matching/pull/52) (open) | Relationship Linkage field (Table 3) + Rules `C2-39`/`C2-40` (guardian-verified minor / newborn-via-maternal-linkage), built best-effort with the spec's own unresolved caveats documented. Corrected a math error before shipping (guardian identity is a u=1.0 gate, not a near-zero field) and fixed a real confidence-scoring bug in `service.py` (see doc's Execution notes). |
 | 16 | [session_16](in_review/session_16.md) | Line B: CMS v3.4.0 migration | [#51](https://github.com/icanbwell/cms-hte-patient-matching/pull/51) (open) | Renumbers Category 1 rules to v3.4.0's clean 01-30 sequence; extends DOB +/-1 day fuzzy to rules 01/02/03/10; prefixes Category 2's rule_ids with `C2-` after finding v3.4.0's renumbering collides with their legacy IDs (see doc's Execution notes). |
 | 6 | [session_6](in_review/session_6.md) | Line B: CMS v3.3 migration | [#39](https://github.com/icanbwell/patient-matching/pull/39) (open) | Table 2 v3.3.0 base + v3.3.1/v3.3.3/v3.3.4/v3.3.6 addenda: 3 new fields, DOB +/-1 day fuzzy, Household/Individual two-step architecture (rules 13-16 amended, 34/35/37/38 new), 30 flat + 8 two-step = 38 rules total. Rules 39/40 and v3.3.6 institutional-address integration explicitly deferred. |
 | 13 | [session_13](in_review/session_13.md) | Phase 2: production candidate-retrieval scaling | [#46](https://github.com/icanbwell/cms-hte-patient-matching/pull/46) (merged 2026-09-06) | Publish `cms-hte-patient-matching` to PyPI via OIDC Trusted Publishing. Packaging fixes done and verified locally (`[build-system]` added, stale `setup.py`/`setup.cfg` and stray `patientmatching/` dir removed, Makefile `dist`/`testpackage`/`package` targets added); pypi.org Trusted Publisher registered. |
 | 14 | [session_14](in_review/session_14.md) | Phase 2: production candidate-retrieval scaling | [#48](https://github.com/icanbwell/cms-hte-patient-matching/pull/48) (open) | Converts `CacheBackend`/`MatchingBackend`/`MatchingEngine`/`CacheManager`/`PatientMatcherService`/`FhirClient`/`TokenVerifier`/`IAL2Extractor` to a uniform async interface so no I/O call blocks the event loop. `evaluate_pair()`/normalization stay sync (no I/O). 478 tests pass via `make tests`. |
-| 15 | [session_15](in_review/session_15.md) | Phase 2: production candidate-retrieval scaling | [#48](https://github.com/icanbwell/cms-hte-patient-matching/pull/48) (open) — same branch/PR as #14 | Removes the FastAPI HTTP layer entirely (`cms-hte-patient-matching-service` is the intended HTTP layer, confirmed with Imran) and removes Docker/docker-compose entirely, matching `helix.personmatching`'s pure-`uv` pattern — `make tests` now runs `uv run pytest .` directly on the host, no container. |
+| 15 | [session_15](in_review/session_15.md) | Phase 2: production candidate-retrieval scaling | [#48](https://github.com/icanbwell/cms-hte-patient-matching/pull/48) (open) — same branch/PR as #14 | Removes the FastAPI HTTP layer entirely (`cms-hte-patient-matching-service` is the intended HTTP layer, confirmed with the project lead) and removes Docker/docker-compose entirely, matching `helix.personmatching`'s pure-`uv` pattern — `make tests` now runs `uv run pytest .` directly on the host, no container. |
 
 ## Completed (most recent 3)
 
@@ -208,17 +208,17 @@ _(none yet — see `rejected/README.md`)_
 
 - **Parent/child delegated access** ([full draft: `pending/session_7.md`](pending/session_7.md)
   — written up despite the "not yet authored" heading here because Jira `SD-1416` and a Slack
-  design discussion with Imran/Alvin already exist and are worth capturing, but it is **not**
+  design discussion with the project lead/Alvin already exist and are worth capturing, but it is **not**
   in `Up Next` above and **confirmed not startable in this repo, period**). Prompted by
-  Citizen's parent-account-to-child-records connection failures. As of 2026-08-07, Imran
+  Citizen's parent-account-to-child-records connection failures. As of 2026-08-07, the project lead
   confirmed directly: **"Parent-guardian relationships are not patient matching. They are
   delegated access."** — a category rejection, not a qualification. There is no
-  matching-side component to this at all (an earlier 2026-08-04 hypothesis that Imran's own
+  matching-side component to this at all (an earlier 2026-08-04 hypothesis that the project lead's own
   proposed Rule 39 might partly answer this is now superseded — see `session_7.md`'s
   2026-08-07 update). The entire problem is authorizing a parent's account to access an
-  already-matched child's record, and per Imran that's **jurisdiction-dependent** ("this is
+  already-matched child's record, and per the project lead that's **jurisdiction-dependent** ("this is
   legal question and different in each state," "identity is different than control") — no
-  existing internal or external framework answers it (the Cambia doc Imran shared covers
+  existing internal or external framework answers it (the Cambia doc the project lead shared covers
   identity-proofing only, not authorization, and is itself still unresolved, targeting a
   re-draft 2026-08-14). Confirmed out of scope for `patient-matching`,
   `helix.personmatching`, and `helix.personmatching-service` alike — see `session_7.md` for

@@ -17,7 +17,7 @@ plus 8 Category 2 (household+individual) rules already using their final v3.4.0 
 (`13,14,15,16,34,35,37,38` — confirmed unchanged in v3.4.0, no work needed there). v3.4.0
 renumbers Category 1 into a clean, gapless `01`-`30` sequence (v3.4.0 §IV, Table 2) and
 expands the `*` (±1-day) DOB-fuzzy marker from rule 28 (old numbering) to four more rules
-(v3.4.0's new `01`, `02`, `03`, `10`). This session makes both changes. Imran decided
+(v3.4.0's new `01`, `02`, `03`, `10`). This session makes both changes. The project lead decided
 (2026-09-15): relabel `rule_id` to match the spec exactly, not maintain a separate internal-ID
 mapping layer — compliance/audit optics take priority over avoiding the rename's blast radius.
 
@@ -44,7 +44,7 @@ hasn't moved to `completed/` yet (see conventions.md step 3 — verify this befo
 ## Upstream data/system dependencies
 
 CMS Proposal v3.4.0, Table 2 (Google Doc, file ID `1NytpfZ05aokS-gD7uDIQE7gEyms9zMgoiaIah_w4VTE`
-— shared by Imran 2026-09-15; not yet added to `conventions.md`'s "Reference documents" list,
+— shared by the project lead 2026-09-15; not yet added to `conventions.md`'s "Reference documents" list,
 see Task 3 below). **Fetch it fresh at session-start** (via Google Drive access, same as this
 session's own research) — this is a live, unfinalized draft (Document Control shows
 `Comment Period Ends: [Date + 60 days]` and `Effective Date: [TBD after finalization]`
@@ -109,7 +109,7 @@ live ID of their own — it only describes them as Household-row + Individual-ro
 backward-reference to the legacy v3.3.1 addendum numbering `household_rules.py` was
 originally built against — not a v3.4.0 ID assignment. Left as-is, this collides with
 Category 1's new `13`-`16` in any audit record keyed on bare `rule_id` (the SS VII "Table 2
-combination evaluated" field can't tell the two apart). Imran decided (2026-09-15): prefix
+combination evaluated" field can't tell the two apart). The project lead decided (2026-09-15): prefix
 Category 2's `rule_id` values with `C2-` (`C2-13`, `C2-14`, `C2-15`, `C2-16`, `C2-34`,
 `C2-35`, `C2-37`, `C2-38`) — preserves the historically-meaningful numbers while making the
 collision structurally impossible. **This session now includes updating
@@ -225,10 +225,10 @@ New/extended tests:
 ## Open questions
 
 The two decisions this session originally depended on (relabel vs. map, and whether to
-proceed) were made by Imran before execution started (2026-09-15, this doc's Outcome purpose).
+proceed) were made by the project lead before execution started (2026-09-15, this doc's Outcome purpose).
 One more surfaced mid-execution, not anticipated when this doc was first drafted — see
 Execution notes: whether Category 2's legacy `13-16/34/35/37/38` labels should be relabeled
-once Category 1's renumbering claimed those same bare IDs. Resolved by Imran (2026-09-15):
+once Category 1's renumbering claimed those same bare IDs. Resolved by the project lead (2026-09-15):
 `C2-` prefix. No open items remain.
 
 ## Execution notes
@@ -245,7 +245,7 @@ backward-reference to the legacy v3.3.1 addendum numbering, not a v3.4.0 assignm
 a second, independent confirmation the doc's cross-references are stale: §C.7's persistent-ID
 anchoring text cites "Rule 26, ≈0 collision" for the namespace-ID rule, but v3.4.0's own master
 Table 2 assigns that rule ID `22` — i.e., prose sections weren't updated after Table 2's
-renumbering pass, a second instance of the same class of drafting gap. Flagged to Imran
+renumbering pass, a second instance of the same class of drafting gap. Flagged to the project lead
 mid-session rather than guessing; decided: `C2-` prefix (`C2-13` etc.) on Category 2's
 `rule_id` values. Updated `household_rules.py`, `test_household_rules.py`, and every
 `test_matching_engine.py` case referencing a Category 2 rule by its bare old ID.
@@ -309,7 +309,7 @@ Validation:
 
 Decision: PR opened from `claude/session-16-v340-renumber-dob-fuzzy` into `main`, left
 **open** rather than merged — per conventions.md's Definition of Done, merging is the project
-lead's (Imran's) call. Doc moved to `in_review/` and `index.md` updated accordingly, in the
+lead's call. Doc moved to `in_review/` and `index.md` updated accordingly, in the
 same PR.
 
 ## Post-review fixes (adversarial review pass, 2026-09-15)
@@ -365,7 +365,7 @@ starred field going fuzzy — see `_verify_fields`'s docstring). Re-deriving wha
 figure should be is a spec-interpretation question, not a code bug — computed today's actual
 values directly rather than guessing: all five DOB*-eligible rules (01, 02, 03, 10, 24) measure
 well under the 2e-12 threshold as currently priced (locked in by the new approval-threshold
-test above). Flagging for Imran rather than silently re-deriving new probability math: if CMS's
+test above). Flagging for the project lead rather than silently re-deriving new probability math: if CMS's
 Table 3 omission of a DOB fuzzy u-value is intentional (DOB* is "free" and shouldn't multiply
 the figure), no further action is needed; if it's a gap, rules 01/10's margin is thin enough
 that a correction could matter.

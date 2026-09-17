@@ -120,7 +120,7 @@ None new.
 
 ## Open questions
 
-- **`NEEDS HUMAN DECISION`, resolved by Imran (2026-09-15) before coding**: "query initiator"
+- **`NEEDS HUMAN DECISION`, resolved by the project lead (2026-09-15) before coding**: "query initiator"
   is an opaque, caller-supplied string with no validation or derivation by this library —
   deliberately *not* derived from the IAL2 token's issuer/CSP claim, since that identifies who
   verified the patient's identity, not who is asking for this match. See Execution notes for
@@ -132,7 +132,7 @@ None new.
   canonical fields (several of which are literally identifiers — SSN, ITIN, Legal ID, MBI,
   Namespace ID, Member ID, Subscriber ID) were compared and how. Documented as an
   interpretation in `match_result.py`'s module docstring, not silently assumed. Not escalated
-  to Imran as a second `NEEDS HUMAN DECISION` since it's a documentation/interpretation choice
+  to the project lead as a second `NEEDS HUMAN DECISION` since it's a documentation/interpretation choice
   with no material behavior difference either way, not a design decision with real stakes.
 
 ## Execution notes
@@ -185,14 +185,14 @@ Validation:
 - Not a rule-changing session - statistical rigor gate exempt, per conventions.md.
 
 Decision: PR opened from `claude/session-18-v340-audit-record-reconciliation` into `main`, left
-**open** rather than merged - merging is Imran's call, same as every prior session in this
+**open** rather than merged - merging is the project lead's call, same as every prior session in this
 repo. Doc moved to `in_review/` and `index.md` updated accordingly, in the same PR.
 
 ## Post-review fixes (adversarial review pass, 2026-09-15)
 
 An adversarial review of this PR (executed against a live worktree, reproductions run and
 verified, not by inspection) found two real defects, fixed here, and two real questions that
-need Imran's input rather than a unilateral code change:
+need the project lead's input rather than a unilateral code change:
 
 **Fixed: `MatchingManager` - the other public entry point besides `MatchingEngine.match()` -
 had no way to accept `query_initiator` at all.** `MatchingManager.match()`/`match_batch()`
@@ -225,7 +225,7 @@ Two more existing tests genuinely needed their expected outcome updated for the 
 (both configured zero evaluable rules on purpose). All confirmed via `git stash` to
 newly-fail/newly-pass correctly across the fix.
 
-**Not fixed, flagged for Imran instead of decided unilaterally:**
+**Not fixed, flagged for the project lead instead of decided unilaterally:**
 
 1. **No audit record is produced at all on error paths** (a raising backend, IAL2 token
    verification failure, or normalization failure all abort before any `MatchResult` is
@@ -240,7 +240,7 @@ newly-fail/newly-pass correctly across the fix.
    field.** Verified a forged value containing control characters/newlines passes through
    unmodified and gets persisted. `MatchResult.query_initiator`'s own docstring already
    documents "this library does not validate, derive, or require it" as an explicit decision
-   made with Imran on 2026-09-15 (the same day this session ran) - re-litigating that via a
+   made with the project lead on 2026-09-15 (the same day this session ran) - re-litigating that via a
    silent validation change would override a decision already made on this exact field without
    new authorization. Flagging instead: was "opaque, unvalidated" meant to include tolerating
    literal control characters (a log-injection vector once this record reaches any

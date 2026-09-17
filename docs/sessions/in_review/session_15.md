@@ -12,20 +12,20 @@ touching Makefile, pyproject.toml, README, CI comments, and the MongoDB testcont
 
 ## Why this session exists
 
-While reviewing session 14's async work, Imran asked whether the package's public entry points
+While reviewing session 14's async work, the project lead asked whether the package's public entry points
 were all async. Answering that required walking `patient_matching/api/__init__.py`'s exports,
 which surfaced `create_app()` — a full FastAPI application (`/Patient/$match`, `/match/ial2`,
-`/health`) that's been in this repo since its very first commit. Imran's reaction: **this repo
+`/health`) that's been in this repo since its very first commit. The project lead's reaction: **this repo
 is not supposed to implement a web service at all.** The sibling repo
 `cms-hte-patient-matching-service` (confirmed to exist at
 `~/git/cms-hte-patient-matching-service`, real GitHub remote
 `icanbwell/cms-hte-patient-matching-service`) is the FastAPI layer — it wraps this package's
 `PatientMatcherService`/`MatchingEngine` as a production HTTP microservice (per
-`docs/PROJECT_MAP.md`'s own Phase 2 description, and confirmed directly by Imran in this
+`docs/PROJECT_MAP.md`'s own Phase 2 description, and confirmed directly by the project lead in this
 session). This repo shipping its own parallel FastAPI app was true redundancy, not a reference
 implementation kept on purpose.
 
-Once the FastAPI removal was under way, Imran extended the direction further: **this project
+Once the FastAPI removal was under way, the project lead extended the direction further: **this project
 should be a pure Python project, like `~/git/helix.personmatching`.** Checked directly —
 `helix.personmatching` has no Dockerfile, no docker-compose.yml, and no Docker anywhere in its
 Makefile; `uv run pytest` runs directly on the host. Confirmed via `AskUserQuestion` before
@@ -109,5 +109,5 @@ Same reasoning and same stack as sessions 12/14 — left in `in_review/`, landed
 `session-14/async-cache-backend` branch (PR #48) rather than a new stacked branch, since it
 directly modifies files that PR already touches (`patient_matching/api/__init__.py`,
 `pyproject.toml`, `uv.lock`, `README.md`) and splitting it into yet another stacked PR layer
-would add review overhead without a clear benefit. Flagged to Imran that PR #48's title/scope
+would add review overhead without a clear benefit. Flagged to the project lead that PR #48's title/scope
 description needs updating to reflect this — it's no longer just "make things async."

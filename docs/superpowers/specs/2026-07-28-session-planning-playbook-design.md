@@ -51,7 +51,7 @@ partially-ordered gaps against the CMS spec — exactly the shape the playbook t
 - Sessions blocked on assets not present in this repo are **not** authored as full session
   docs — they go in `index.md`'s "Candidate future sessions" list with a `NEEDS HUMAN
   DECISION` note on where each asset comes from. (Two items originally blocked this way — the
-  v3.3 spec text and Imran's P(collision) reference script — were resolved mid-design when
+  v3.3 spec text and the project lead's P(collision) reference script — were resolved mid-design when
   Sean shared the spec doc directly; see "Back to Thread A — now unblocked" below. The ONC
   dataset was separately resolved once it was confirmed to be public, non-PHI data.)
 
@@ -70,7 +70,7 @@ docs/sessions/
 ## `conventions.md` — filled-in values for this repo
 
 - **Reviewer:** Sean (self-review during Zack's PTO; see handoff for the boundary of what
-  Sean can decide alone vs. what waits for Zack/Imran).
+  Sean can decide alone vs. what waits for Zack/the project lead).
 - **Test command:** `make tests` (runs `pytest tests` in the dev Docker container). Targeted
   run: `docker compose run --rm dev pytest patient_matching/matching/tests/<file>.py`.
 - **Gate command:** `make run-pre-commit` (ruff check --fix, ruff format, mypy, bandit via
@@ -240,7 +240,7 @@ code. Medium. Upstream: session 3 (shares the `rule_eval.py` wiring and report f
 Both items previously listed below as blocked candidates are now unblocked: Sean shared the
 CMS v3.3 spec (Google Doc, file ID `1ABHR6e4N-K9lEj1vc7DuzoAy8CuaAqwqAZSpJH9T4Yg` — see the
 reference-documents bullet above; not copied into this repo), and that document itself
-contains Imran's P(collision) reference script links (§IV.I:
+contains the project lead's P(collision) reference script links (§IV.I:
 `gist.github.com/imranq2/b5cc7a534a37dfa26922a83e69c686ee` and a companion Colab notebook) —
 fetched and confirmed directly: the gist's `FIELD_U_PROBS` dict matches the spec's Table 3
 exactly, implements the same `∏ u_field_k` joint-probability formula and 2e-12 threshold, and
@@ -255,7 +255,7 @@ CMS revises the draft before then).
 **pending/session_5.md — Table 3 u-probabilities + P(collision) evaluator**
 First task: fetch the current spec via Google Drive (file ID above) — do not assume a local
 copy exists or is current. Implement `FIELD_U_PROBS` (17 fields, exact/fuzzy values, per §IV.C
-as of this scoping) and a `p_collision()`/`evaluate_combination()` module, mirroring Imran's
+as of this scoping) and a `p_collision()`/`evaluate_combination()` module, mirroring the project lead's
 reference script's function shape for consistency with his established implementation. Replace
 `table2_rules.py`'s hardcoded `p_collision_exact`/`p_collision_fuzzy` floats with values
 computed by this evaluator (catches drift/typos against the spec automatically instead of
@@ -263,7 +263,7 @@ trusting hand-entered constants). Include the spec's own admitted inconsistency 
 test: First Name + Last Name + DOB + ZIP computed to 3e-12 (above threshold) under this
 scoping's Table 3 values and **must not** be approvable by this evaluator, regardless of the
 3e-13 figure that appears in some prior (non-spec) analyses — re-verify this against whatever
-Table 3 values the live doc has at execution time. Cross-checking output against Imran's
+Table 3 values the live doc has at execution time. Cross-checking output against the project lead's
 gist/Colab directly is a stretch goal, not a blocker, since it's an external resource outside
 this repo's control. Medium. Upstream: none — this is a rule-defining session, so it needs
 Thread B's Tier-1 report before `completed/`, per the gate above.
@@ -279,7 +279,7 @@ methodology; (2) the phone+ZIP+name-anchored cluster (rules in the 33-37 range a
 scoping) has open, unresolved reviewer concern about false positives among co-resident
 family/household members — implement them, but behind a distinct, default-off flag (e.g.
 `enable_household_risk_rules`) until Thread B's harness can run a dedicated adversarial
-family-sharing test case against them. `NEEDS HUMAN DECISION — Sean/Imran`: whether to enable
+family-sharing test case against them. `NEEDS HUMAN DECISION — Sean/the project lead`: whether to enable
 that cluster by default before the spec's comment period resolves — recommended default is to
 ship them off-by-default, matching the spec's own "necessary but not sufficient" framing for
 threshold-only approval. Medium-large. Upstream: session 5 (needs the evaluator); needs Thread
@@ -291,9 +291,9 @@ B's Tier-1 report before `completed/`.
   No longer blocked on a missing asset (session 5 has the reference script and spec values in
   hand) — what remains is a genuine **methodology deviation** from the published CMS approach,
   which uses static per-field constants, not per-value frequency weighting. `NEEDS HUMAN
-  DECISION — Sean/Imran`: this needs Imran's explicit sign-off as domain lead before
+  DECISION — Sean/the project lead`: this needs the project lead's explicit sign-off as domain lead before
   implementation, since it goes beyond what the spec itself prescribes, not just his reference
-  values. Recommended default: propose it to Imran alongside session 5/6's results once they
+  values. Recommended default: propose it to the project lead alongside session 5/6's results once they
   exist, as a concrete "here's what the spec says vs. what we think could be more precise."
 - **"Project US@" address format compliance.** Smaller gap in the otherwise-complete
   normalization layer; not blocked, just not yet scoped in detail. Candidate once Threads A/B's
@@ -306,16 +306,16 @@ B's Tier-1 report before `completed/`.
 doc's §4.4 framing of `patient-matching` as a "v1 demo" and `helix.personmatching` as the
 eventual build target — that framing is superseded. All future sessions build here.
 
-**Imran Qureshi is the domain lead** for the CMS proposal and the P(collision) methodology
+**The project lead is the domain lead** for the CMS proposal and the P(collision) methodology
 (confirmed: he authored commit `3abc37e`, the foundational normalization/matching/cache/
 fhir_client/ial2_extraction implementation — PR #2 `add-patient-matching-code` is that same
 commit, verified via `git merge-base --is-ancestor` to be a direct ancestor of
 `claude/cms-matching-v1`, not a divergent parallel design). Practical implications:
 - New code (sessions 1-6 and the still-blocked candidate session) should follow the
-  conventions Imran already established — `table2_rules.py`'s `RuleField`/`MatchingRule`
+  conventions the project lead already established — `table2_rules.py`'s `RuleField`/`MatchingRule`
   dataclass shape, docstrings citing exact CMS spec sections, the normalization module split —
   rather than introduce new patterns.
-- For the one remaining domain-specific open item (per-value collision probability), Imran is
+- For the one remaining domain-specific open item (per-value collision probability), the project lead is
   the specific person to consult, not a generic "ask around" — he authored the v3.3 proposal
   itself and the P(collision) reference script now confirmed at the spec doc's §IV.I (see the
   reference-documents bullet above for the link).

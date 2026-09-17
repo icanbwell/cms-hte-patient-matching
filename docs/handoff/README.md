@@ -33,7 +33,7 @@ _Separate area (batch LLM → FHIR CarePlan pipeline), off-domain for this repo.
 **Key links & contacts for this chapter**
 
 - 📓 Databricks notebook (prod workspace): (prod Databricks notebook — link in the internal handoff)
-- Repos (`github.com/icanbwell/…`): `helix.personmatching` (current scoring library, PyPI) · `person-matching-service` (FastAPI FHIR `$match`, **prod for WellSense**) · `patient-matching` (new CMS engine — PR #2 Imran, PR #3 v1 demo)
+- Repos (`github.com/icanbwell/…`): `helix.personmatching` (current scoring library, PyPI) · `person-matching-service` (FastAPI FHIR `$match`, **prod for WellSense**) · `patient-matching` (new CMS engine — PR #2 the project lead, PR #3 v1 demo)
 - Dashboard: **Sigma → "Connection Matching Error Research"** (base table `bronze.proa.metrics`; WellSense source feed `bronze.wellsense.ws_eligibility_all`)
 - Slack: **`#client-wellsense`** · **"WellSense Member Matching"** group DM
 - Jira: **BAI-188 / PAY-1940** (June-2026 scoring improvement) · **RA-4428** (raw value-vs-source reconciliation report)
@@ -42,7 +42,7 @@ _Separate area (batch LLM → FHIR CarePlan pipeline), off-domain for this repo.
 |---|---|---|
 | Zack Malone | DS owner — scoring algorithm & this handoff | (internal) |
 | **Sean** | **Interim lead while Zack is out**; BAI-188 code reviewer | (Slack) |
-| Imran Qureshi | Author of the CMS v3.3 proposal & P(collision) reference script | (internal) |
+| The project lead | Author of the CMS v3.3 proposal & P(collision) reference script | (internal) |
 | Anmol Godiyal | Engineering — matching investigation | (internal) |
 | Rohit Parihar | Added the "Matching Failure insight" log (PAY-1789/2038); ticket debugging | (Slack) |
 | Laurel Salvati | CX / WellSense project lead | (internal) |
@@ -233,7 +233,7 @@ There is **no existing code to reuse** — this is a new matching engine inside 
 
 **Component build list (in `helix.personmatching`):**
 1. **Normalization layer (§V)** — the shared groundwork from Line A, completed: consistent diacritic/whitespace/punctuation folding, E.164 phones, Project US@ addresses, **placeholder suppression** (currently missing), nickname tables (exist), name-component split (exists), DOB out-of-range suppression (>120y / >today+2d), historical-value handling.
-2. **Per-field u-probability table (Table 3)** and **P(collision) evaluator** — validate our numbers against the proposal's **reference script** (Imran's gist / Colab, linked in the doc §IV.I).
+2. **Per-field u-probability table (Table 3)** and **P(collision) evaluator** — validate our numbers against the proposal's **reference script** (the project lead's gist / Colab, linked in the doc §IV.I).
 3. **Table 2 combination engine** — evaluate a query against the 37 approved combinations; exact vs. fuzzy per the field's `*` flag; ≤1 fuzzy field; suffix veto.
 4. **Uniqueness + tiered-response logic** — 1 / 2 / 3+ candidate handling.
 5. **Audit record** (§VII) — combination evaluated, exact/fuzzy, uniqueness result, decision, timestamp, version.
@@ -283,7 +283,7 @@ CMS §VI **requires** validation on the **ONC patient-matching test dataset** an
 | **Sigma error dashboard** | Sigma "Connection Matching Error Research"; base table `bronze.proa.metrics` (Databricks) | 1 row / pipeline run (retries counted) | No | Volume & trend |
 | **Raw value reconciliation (RA-4428)** | Sigma "Member Match Fail Review" element (Custom SQL) + `bronze.wellsense.ws_eligibility_all` (source feed, join on `member_id`) | 1 row / reviewed run | Partial (analyst) | Line A diagnosis |
 | **ONC patient-matching test dataset** | `helix.personmatching/tests/cms_dataset/files/onc/*.csv` (from github.com/onc-healthit/patient-matching) | Labeled test records | **Yes** | **Line B validation (required by CMS §VI)** |
-| **P(collision) reference script** | Imran's gist / Colab (linked in proposal §IV.I) | — | — | Line B: validate Table 3 u-values |
+| **P(collision) reference script** | The project lead's gist / Colab (linked in proposal §IV.I) | — | — | Line B: validate Table 3 u-values |
 
 **Why this matters:**
 - **Line A / current state uses WellSense *production* data** — real and messy, but with **no ground-truth labels**. It tells you *how the system behaves in the wild* and *where the upstream data is broken*. It cannot, by itself, tell you precision/recall (we don't know the "right" answer for each record).
@@ -303,7 +303,7 @@ CMS §VI **requires** validation on the **ONC patient-matching test dataset** an
 - **Building the P(collision) evaluator + Table 2 engine + uniqueness/tiered logic** behind the feature flag, iterating against the ONC harness.
 - Everything stays **behind a feature flag; no production behavior changes** in Zack's absence.
 
-**Decisions to hold for Zack's return (Aug 4) or escalate to Imran:**
+**Decisions to hold for Zack's return (Aug 4) or escalate to the project lead:**
 - **Final threshold/operating-point acceptance** and any deviation from the 2e-12 framework bar.
 - **Prod cutover** decision (shadow → live).
 - Any change that would **alter current production matching behavior** before CMS is validated.

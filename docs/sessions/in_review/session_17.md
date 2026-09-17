@@ -6,7 +6,7 @@
 *already-resolved, external* identity rather than fields on the same record pair), not an
 extension of the existing flat or household/individual patterns. Both target rules carry
 caveats the spec flags as unresolved in its own text — this session builds them anyway
-(Imran, 2026-09-15: "implement now, best-effort"), with those caveats documented as known
+(the project lead, 2026-09-15: "implement now, best-effort"), with those caveats documented as known
 limitations rather than silently resolved.
 
 > Read `../conventions.md` first. Depends on session 16 landing first (see below) — don't
@@ -225,19 +225,19 @@ spec's own table.
 - **`NEEDS HUMAN DECISION`** (carried over from session 6, still open): is a genuinely
   per-encounter, namespace-bound birth-encounter identifier available anywhere in this
   system's real data? Affects whether rule `C2-40` is reachable in practice, not whether it
-  should be built (Imran already decided: build it regardless).
+  should be built (the project lead already decided: build it regardless).
 - **Resolved during execution, no longer open**: the exact FHIR shape for guardian/mother
   linked-identity and the Relationship Linkage claim (Task 2) - see Execution notes for the
   chosen representation (identifier entries with repo-defined type codes; a repo-defined
   Patient extension) and why no standard FHIR element fit either.
 - Whether rule `C2-39`'s Street Line correlation should eventually get a real discount factor
   is CMS's/the engineering lead's call, tracked as a future candidate session, not blocking
-  this one (per Imran's "implement now, best-effort" decision).
+  this one (per the project lead's "implement now, best-effort" decision).
 
 ## Execution notes
 
 Executed 2026-09-15 on branch `claude/session-17-v340-relationship-linkage-rules-39-40`, cut
-from `main` (per Imran's explicit go-ahead to proceed before session 16/PR #51 merges - see
+from `main` (per the project lead's explicit go-ahead to proceed before session 16/PR #51 merges - see
 this doc's original "don't start until session 16 is completed/" note, overridden by direct
 instruction). `docs/sessions/pending/session_{17,18,19}.md` and the updated `index.md`/
 `conventions.md` only existed on session 16's branch (never merged to `main`), so those files
@@ -322,7 +322,7 @@ Validation:
   `MatchingEngine()`'s default rule set, confirming no regression to the other 38 rules.
 
 Decision: PR opened from `claude/session-17-v340-relationship-linkage-rules-39-40` into
-`main`, left **open** rather than merged - merging is Imran's call, same as every prior
+`main`, left **open** rather than merged - merging is the project lead's call, same as every prior
 session in this repo. Doc moved to `in_review/` and `index.md` updated accordingly, in the
 same PR.
 
