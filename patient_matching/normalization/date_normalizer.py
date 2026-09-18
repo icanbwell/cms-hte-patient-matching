@@ -13,6 +13,7 @@ from datetime import date
 from typing import Optional
 
 from .placeholder_detector import PlaceholderDetector
+from .report import NormalizationReport
 
 _FULL_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _YEAR_MONTH_RE = re.compile(r"^\d{4}-\d{2}$")
@@ -33,24 +34,40 @@ class DateNormalizer:
     ) -> None:
         self._placeholders = placeholder_detector or PlaceholderDetector()
 
-    def normalize_birth_date(self, birth_date: str) -> Optional[str]:
+    def normalize_birth_date(
+        self,
+        birth_date: str,
+        *,
+        report: Optional[NormalizationReport] = None,
+    ) -> Optional[str]:
         """Normalize a birth date string.
 
         Args:
             birth_date: The raw date string from the FHIR Patient resource.
+            report: If given, records why a dropped value was dropped.
+                Reason codes: PlaceholderDetector.reason_for_date's codes
+                ("empty", "unknown_placeholder", "unparseable",
+                "out_of_range" -- reused here for the partial-date year-
+                range check too), plus "unrecognized_format" for a string
+                that matches none of YYYY-MM-DD/YYYY-MM/YYYY.
 
         Returns:
             A normalized date string (YYYY-MM-DD, YYYY-MM, or YYYY),
             or None if the date is a placeholder, invalid, or out of range.
         """
         if not birth_date:
+            if report is not None:
+                report.record("birthDate", birth_date, "empty")
             return None
 
         stripped = birth_date.strip()
 
         # Full date: YYYY-MM-DD
         if _FULL_DATE_RE.match(stripped):
-            if self._placeholders.is_placeholder_date(stripped):
+            reason = self._placeholders.reason_for_date(stripped)
+            if reason is not None:
+                if report is not None:
+                    report.record("birthDate", birth_date, reason)
                 return None
             return stripped
 
@@ -58,6 +75,8 @@ class DateNormalizer:
         if _YEAR_MONTH_RE.match(stripped):
             year = int(stripped[:4])
             if not self._is_valid_year(year):
+                if report is not None:
+                    report.record("birthDate", birth_date, "out_of_range")
                 return None
             return stripped
 
@@ -65,10 +84,14 @@ class DateNormalizer:
         if _YEAR_ONLY_RE.match(stripped):
             year = int(stripped)
             if not self._is_valid_year(year):
+                if report is not None:
+                    report.record("birthDate", birth_date, "out_of_range")
                 return None
             return stripped
 
         # Not a recognized format
+        if report is not None:
+            report.record("birthDate", birth_date, "unrecognized_format")
         return None
 
     @staticmethod

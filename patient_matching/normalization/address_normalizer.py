@@ -16,6 +16,7 @@ from scourgify.exceptions import (
 )
 
 from .placeholder_detector import PlaceholderDetector
+from .report import NormalizationReport
 from .text_utils import normalize_text
 
 logger = logging.getLogger(__name__)
@@ -36,27 +37,37 @@ class AddressNormalizer:
         self._placeholders = placeholder_detector or PlaceholderDetector()
 
     def normalize_patient_addresses(
-        self, patient: Dict[str, Any]
+        self,
+        patient: Dict[str, Any],
+        *,
+        report: Optional[NormalizationReport] = None,
     ) -> List[Dict[str, Any]]:
         """Normalize all address entries on a FHIR Patient resource.
 
         Returns a new list of FHIR Address dicts with standardized values.
-        Placeholder addresses are excluded. Per C.2, address type is
-        preserved but does not affect matching.
+        Placeholder addresses are excluded -- pass `report` to record why
+        (see PlaceholderDetector.reason_for_address). Per C.2, address
+        type is preserved but does not affect matching.
         """
         raw_addresses: List[Dict[str, Any]] = patient.get("address", [])
         if not raw_addresses:
             return []
 
         result: List[Dict[str, Any]] = []
-        for addr_entry in raw_addresses:
-            normalized = self._normalize_address(addr_entry)
+        for index, addr_entry in enumerate(raw_addresses):
+            normalized = self._normalize_address(addr_entry, index=index, report=report)
             if normalized is not None:
                 result.append(normalized)
 
         return result
 
-    def _normalize_address(self, addr: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def _normalize_address(
+        self,
+        addr: Dict[str, Any],
+        *,
+        index: int = 0,
+        report: Optional[NormalizationReport] = None,
+    ) -> Optional[Dict[str, Any]]:
         """Normalize a single FHIR Address dict using scourgify.
 
         Returns None if the address is a placeholder.
@@ -73,8 +84,12 @@ class AddressNormalizer:
         line2 = lines[1] if len(lines) > 1 else ""
 
         # Check for placeholder addresses (D.5)
-        if line1 and self._placeholders.is_placeholder_address(line1):
-            return None
+        if line1:
+            reason = self._placeholders.reason_for_address(line1)
+            if reason is not None:
+                if report is not None:
+                    report.record(f"address[{index}].line[0]", line1, reason)
+                return None
 
         # Attempt USPS standardization via scourgify
         normalized_line1, normalized_line2 = self._standardize_street(line1, line2)
@@ -87,6 +102,9 @@ class AddressNormalizer:
 
         # If everything is empty after normalization, skip
         if not any([normalized_line1, norm_city, norm_state, norm_postal]):
+            if report is not None:
+                raw = line1 or city or state or postal_code
+                report.record(f"address[{index}]", raw, "empty")
             return None
 
         result: Dict[str, Any] = {}

@@ -329,6 +329,147 @@ class TestMatchingEngineRuleEvaluations:
         assert evals[0].field_outcomes.get("namespace_id") == "exact"
 
 
+class TestFieldValues:
+    """RuleEvaluation.field_values -- the normalized values actually
+    compared per field, alongside field_outcomes' bare label. This module's
+    InMemoryBackend ignores criteria (returns every stored patient
+    unconditionally), so -- unlike the real blocking backend -- it can
+    surface a candidate missing one of a rule's fields, exercising the
+    "missing" branch this test targets."""
+
+    async def test_missing_field_records_both_sides(self) -> None:
+        """Rule 08: First Name + DOB + MBI. Candidate has no MBI at all."""
+        single_rule = (_rule_by_id("08"),)
+        candidate = _make_patient(mbi=None)
+        query = _make_patient(mbi="1EG4TE5MK73")
+        engine = MatchingEngine(
+            backend=InMemoryBackend([candidate]),
+            rules=single_rule,
+            household_individual_rules=(),
+        )
+        result = await engine.match(query)
+        evals = [e for e in result.rule_evaluations if e.rule_id == "08"]
+        assert len(evals) == 1
+        assert evals[0].field_outcomes["mbi"] == "missing"
+        assert evals[0].field_values["mbi"] == {
+            "query": ["1EG4TE5MK73"],
+            "candidate": [],
+        }
+
+
+class TestBlockingVisibility:
+    """RuleEvaluation.candidates_retrieved/.blocking_criteria -- lets a
+    caller tell "blocking found nothing at all" apart from "a candidate
+    was retrieved but failed field verification," and see exactly which
+    value blocking used."""
+
+    async def test_verified_candidate_records_retrieval_count_and_criteria(
+        self,
+    ) -> None:
+        single_rule = (_rule_by_id("22"),)  # namespace_id only
+        candidate = _make_patient(namespace_id="MRN001")
+        query = _make_patient(namespace_id="MRN001")
+        engine = MatchingEngine(
+            backend=InMemoryBackend([candidate]),
+            rules=single_rule,
+            household_individual_rules=(),
+        )
+        result = await engine.match(query)
+        evals = [e for e in result.rule_evaluations if e.rule_id == "22"]
+        assert len(evals) == 1
+        assert evals[0].candidates_retrieved == 1
+        assert "namespace_id" in evals[0].blocking_criteria
+
+    async def test_zero_candidates_records_a_distinct_evaluation(self) -> None:
+        """Blocking finding nothing must not look identical to "the query
+        was missing the field entirely" (which produces no evaluation at
+        all, per test_rule_skipped_when_query_missing_fields above)."""
+        single_rule = (_rule_by_id("22"),)
+        query = _make_patient(namespace_id="MRN001")
+        engine = MatchingEngine(
+            backend=EmptyBackend(),
+            rules=single_rule,
+            household_individual_rules=(),
+        )
+        result = await engine.match(query)
+        evals = [e for e in result.rule_evaluations if e.rule_id == "22"]
+        assert len(evals) == 1
+        assert evals[0].candidates_retrieved == 0
+        assert evals[0].field_outcomes == {}
+        assert evals[0].field_values == {}
+        assert "namespace_id" in evals[0].blocking_criteria
+        assert result.outcome == MatchOutcome.NO_MATCH
+
+
+class TestSuffixValuesRecorded:
+    """RuleEvaluation.suffix_values -- negated_by_suffix alone says a
+    conflict happened, not what the conflicting values were."""
+
+    async def test_conflicting_suffixes_are_recorded(self) -> None:
+        candidate = _make_patient(suffix="jr")
+        query = _make_patient(suffix="sr")
+        engine = MatchingEngine(backend=InMemoryBackend([candidate]))
+        result = await engine.match(query)
+        negated = next(ev for ev in result.rule_evaluations if ev.negated_by_suffix)
+        assert negated.suffix_values == {"query": ["sr"], "candidate": ["jr"]}
+
+    async def test_matching_suffixes_are_also_recorded(self) -> None:
+        candidate = _make_patient(suffix="jr")
+        query = _make_patient(suffix="jr")
+        engine = MatchingEngine(backend=InMemoryBackend([candidate]))
+        result = await engine.match(query)
+        matched = next(ev for ev in result.rule_evaluations if ev.matched)
+        assert matched.suffix_values == {"query": ["jr"], "candidate": ["jr"]}
+
+
+class TestFuzzyDetail:
+    """RuleEvaluation.field_fuzzy_detail -- fuzzy_match()/dob_fuzzy_match()
+    only say yes/no; this shows how close the pair actually was."""
+
+    async def test_string_fuzzy_field_records_edit_distance(self) -> None:
+        """'smtih' (transposition) vs 'smith': Damerau-Levenshtein distance 1."""
+        candidate = _make_patient(last="smtih")
+        query = _make_patient(last="smith")
+        engine = MatchingEngine(backend=InMemoryBackend([candidate]))
+        result = await engine.match(query)
+        matched = next(
+            ev
+            for ev in result.rule_evaluations
+            if ev.matched and "last_name" in ev.fuzzy_fields
+        )
+        assert matched.field_fuzzy_detail["last_name"] == {"distance": 1}
+
+    async def test_dob_fuzzy_field_records_day_offset(self) -> None:
+        candidate = _make_patient(dob="1990-01-15")
+        query = _make_patient(dob="1990-01-16")
+        engine = MatchingEngine(backend=InMemoryBackend([candidate]))
+        result = await engine.match(query)
+        matched = next(
+            ev for ev in result.rule_evaluations if ev.matched and "dob" in ev.fuzzy_fields
+        )
+        assert matched.field_fuzzy_detail["dob"] == {"day_offset": 1}
+
+
+class TestPCollisionOnEvaluation:
+    """RuleEvaluation.p_collision_exact/.p_collision_fuzzy -- copied from
+    the rule so a caller doesn't have to re-look the rule up by
+    (rule_id, version) to explain a MATCH's confidence."""
+
+    async def test_flat_rule_copies_its_p_collision(self) -> None:
+        rule_22 = _rule_by_id("22")
+        candidate = _make_patient(namespace_id="MRN001")
+        query = _make_patient(namespace_id="MRN001")
+        engine = MatchingEngine(
+            backend=InMemoryBackend([candidate]),
+            rules=(rule_22,),
+            household_individual_rules=(),
+        )
+        result = await engine.match(query)
+        evals = [e for e in result.rule_evaluations if e.rule_id == "22"]
+        assert evals[0].p_collision_exact == rule_22.p_collision_exact
+        assert evals[0].p_collision_fuzzy == rule_22.p_collision_fuzzy
+
+
 class TestAuditFields:
     """RuleEvaluation.timestamp/.version are populated per CMS Section VII."""
 
@@ -501,6 +642,74 @@ class TestHouseholdIndividualRules:
         # household, First Name/DOB individual - both share defaults).
         assert result.outcome == MatchOutcome.MATCH
         assert result.matched_rule_id == "C2-13"
+
+    async def test_failed_household_tier_is_recorded_not_discarded(self) -> None:
+        """Fix: a failed household-tier verification used to be computed
+        and then thrown away entirely -- indistinguishable from zero
+        candidates ever being retrieved. Uses this module's own permissive
+        InMemoryBackend (returns every stored patient regardless of
+        criteria) so a household-tier mismatch is still retrieved,
+        exercising the step="household" append path."""
+        rule_13 = _category2_rule_by_id("C2-13")
+        candidate = _make_patient(ssn_last4="0000")  # differs from query
+        query = _make_patient(ssn_last4="6789")
+        engine = MatchingEngine(
+            backend=InMemoryBackend([candidate]),
+            rules=(),
+            household_individual_rules=(rule_13,),
+        )
+        result = await engine.match(query)
+        household_evals = [
+            ev
+            for ev in result.rule_evaluations
+            if ev.rule_id == "C2-13" and ev.step == "household"
+        ]
+        assert len(household_evals) == 1
+        assert household_evals[0].matched is False
+        assert household_evals[0].candidates_retrieved == 1
+        assert household_evals[0].field_outcomes.get("ssn_last4") == "no_match"
+
+    async def test_household_zero_candidates_is_recorded(self) -> None:
+        rule_13 = _category2_rule_by_id("C2-13")
+        query = _make_patient(ssn_last4="6789")
+        engine = MatchingEngine(
+            backend=EmptyBackend(),
+            rules=(),
+            household_individual_rules=(rule_13,),
+        )
+        result = await engine.match(query)
+        household_evals = [
+            ev
+            for ev in result.rule_evaluations
+            if ev.rule_id == "C2-13" and ev.step == "household"
+        ]
+        assert len(household_evals) == 1
+        assert household_evals[0].candidates_retrieved == 0
+        assert household_evals[0].field_outcomes == {}
+
+    async def test_individual_step_is_tagged_and_records_pool_size(self) -> None:
+        the_person = _make_patient(
+            first="john", last="smith", dob="1990-01-15", ssn_last4="6789"
+        )
+        query = _make_patient(
+            first="john", last="smith", dob="1990-01-15", ssn_last4="6789"
+        )
+        rule_13 = _category2_rule_by_id("C2-13")
+        engine = MatchingEngine(
+            backend=InMemoryBackend([the_person]),
+            rules=(),
+            household_individual_rules=(rule_13,),
+        )
+        result = await engine.match(query)
+        individual_evals = [
+            ev
+            for ev in result.rule_evaluations
+            if ev.rule_id == "C2-13" and ev.step == "individual"
+        ]
+        assert len(individual_evals) == 1
+        assert individual_evals[0].matched is True
+        assert individual_evals[0].candidates_retrieved == 1
+        assert individual_evals[0].p_collision_exact == rule_13.p_collision_exact
 
 
 class TestDobFuzzyDispatch:

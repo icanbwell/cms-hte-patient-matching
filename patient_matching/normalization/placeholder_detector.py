@@ -11,7 +11,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from datetime import date, timedelta
-from typing import FrozenSet, List, Pattern
+from typing import FrozenSet, List, Optional, Pattern
 
 TABLE_VERSION = "1.0.0"
 
@@ -167,23 +167,32 @@ class PlaceholderDetector:
 
     def is_placeholder_name(self, name: str) -> bool:
         """Check if a name value is a placeholder (D.4)."""
+        return self.reason_for_name(name) is not None
+
+    def reason_for_name(self, name: str) -> Optional[str]:
+        """Why a name value would be treated as a placeholder (D.4), or
+        None if it isn't one.
+
+        Reason codes: "empty", "newborn_temp_name", "unidentified_name",
+        "test_name", "placeholder_pattern".
+        """
         if not name:
-            return True
+            return "empty"
 
         stripped = re.sub(r"[\s\-\'\.]+", "", name).lower()
 
         if stripped in _NEWBORN_NAMES:
-            return True
+            return "newborn_temp_name"
         if stripped in _UNIDENTIFIED_NAMES:
-            return True
+            return "unidentified_name"
         if stripped in _TEST_NAMES:
-            return True
+            return "test_name"
 
         for pattern in _PLACEHOLDER_NAME_PATTERNS:
             if pattern.search(name):
-                return True
+                return "placeholder_pattern"
 
-        return False
+        return None
 
     def is_placeholder_date(self, date_str: str) -> bool:
         """Check if a date of birth is placeholder or out of valid range.
@@ -191,94 +200,156 @@ class PlaceholderDetector:
         Per requirement D.6: dates before (current_year - 120) or after
         (current_date + 2 days) are treated as unavailable.
         """
+        return self.reason_for_date(date_str) is not None
+
+    def reason_for_date(self, date_str: str) -> Optional[str]:
+        """Why a date of birth would be treated as unavailable (D.6), or
+        None if it's usable.
+
+        Reason codes: "empty", "unknown_placeholder", "unparseable",
+        "out_of_range".
+        """
         if not date_str:
-            return True
+            return "empty"
 
         if date_str.lower() in _UNKNOWN_PLACEHOLDERS:
-            return True
+            return "unknown_placeholder"
 
         try:
             parsed = date.fromisoformat(date_str)
         except ValueError:
-            return True
+            return "unparseable"
 
         today = date.today()
         min_date = date(today.year - 120, 1, 1)
         max_date = today + timedelta(days=2)
 
         if parsed < min_date or parsed > max_date:
-            return True
+            return "out_of_range"
 
-        return False
+        return None
 
     def is_placeholder_phone(self, phone: str) -> bool:
         """Check if a phone number is a placeholder value."""
+        return self.reason_for_phone(phone) is not None
+
+    def reason_for_phone(self, phone: str) -> Optional[str]:
+        """Why a phone number would be treated as a placeholder, or None
+        if it isn't one.
+
+        Reason codes: "empty", "no_digits", "placeholder_pattern". Does
+        not cover format/validity rejections (unparseable, not a valid
+        number) -- those are PhoneNormalizer's responsibility, since they
+        depend on the `phonenumbers` library, not this placeholder table.
+        """
         if not phone:
-            return True
+            return "empty"
 
         digits = re.sub(r"\D", "", phone)
         if not digits:
-            return True
+            return "no_digits"
 
         for pattern in _PLACEHOLDER_PHONE_PATTERNS:
             if pattern.match(digits):
-                return True
+                return "placeholder_pattern"
 
-        return False
+        return None
 
     def is_placeholder_address(self, address_line: str) -> bool:
         """Check if an address value is a placeholder."""
+        return self.reason_for_address(address_line) is not None
+
+    def reason_for_address(self, address_line: str) -> Optional[str]:
+        """Why an address line would be treated as a placeholder, or None
+        if it isn't one.
+
+        Reason codes: "empty", "unknown_placeholder", "placeholder_pattern".
+        """
         if not address_line:
-            return True
+            return "empty"
 
         stripped = address_line.strip()
         if stripped.lower() in _UNKNOWN_PLACEHOLDERS:
-            return True
+            return "unknown_placeholder"
 
         for pattern in _PLACEHOLDER_ADDRESS_PATTERNS:
             if pattern.search(stripped):
-                return True
+                return "placeholder_pattern"
 
-        return False
+        return None
 
     def is_placeholder_email(self, email: str) -> bool:
         """Check if an email address is a placeholder."""
+        return self.reason_for_email(email) is not None
+
+    def reason_for_email(self, email: str) -> Optional[str]:
+        """Why an email address would be treated as a placeholder, or
+        None if it isn't one.
+
+        Reason codes: "empty", "placeholder_pattern".
+        """
         if not email:
-            return True
+            return "empty"
 
         for pattern in _PLACEHOLDER_EMAIL_PATTERNS:
             if pattern.search(email):
-                return True
+                return "placeholder_pattern"
 
-        return False
+        return None
 
     def is_placeholder_ssn(self, ssn: str) -> bool:
         """Check if an SSN is a placeholder value."""
+        return self.reason_for_ssn(ssn) is not None
+
+    def reason_for_ssn(self, ssn: str) -> Optional[str]:
+        """Why an SSN would be treated as a placeholder, or None if it
+        isn't one.
+
+        Reason codes: "empty", "placeholder_pattern".
+        """
         if not ssn:
-            return True
+            return "empty"
 
         for pattern in _PLACEHOLDER_SSN_PATTERNS:
             if pattern.match(ssn):
-                return True
+                return "placeholder_pattern"
 
-        return False
+        return None
 
     def is_placeholder_subscriber_id(self, value: str) -> bool:
         """Check if a Subscriber/Member ID is a placeholder value (v3.3.4)."""
+        return self.reason_for_subscriber_id(value) is not None
+
+    def reason_for_subscriber_id(self, value: str) -> Optional[str]:
+        """Why a Subscriber/Member ID would be treated as a placeholder
+        (v3.3.4), or None if it isn't one.
+
+        Reason codes: "empty", "placeholder_pattern".
+        """
         if not value:
-            return True
+            return "empty"
 
         stripped = value.strip()
         for pattern in _PLACEHOLDER_SUBSCRIBER_ID_PATTERNS:
             if pattern.match(stripped):
-                return True
+                return "placeholder_pattern"
 
-        return False
+        return None
 
     def is_placeholder_general(self, value: str) -> bool:
         """Check if any string value is a generic placeholder."""
+        return self.reason_for_general(value) is not None
+
+    def reason_for_general(self, value: str) -> Optional[str]:
+        """Why a generic string value would be treated as a placeholder,
+        or None if it isn't one.
+
+        Reason codes: "empty", "unknown_placeholder".
+        """
         if not value:
-            return True
+            return "empty"
 
         stripped = re.sub(r"[\s\-\'\.]+", "", value).lower()
-        return stripped in _UNKNOWN_PLACEHOLDERS
+        if stripped in _UNKNOWN_PLACEHOLDERS:
+            return "unknown_placeholder"
+        return None

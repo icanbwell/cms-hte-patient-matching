@@ -71,6 +71,70 @@ class RuleEvaluation:
             canonical field names, several of which are literally
             identifiers in the HL7 sense (ssn_last4, itin_last4, legal_id,
             mbi, namespace_id, insurance_member_id, insurance_subscriber_id).
+        field_values: The normalized value set actually compared for each
+            field considered, keyed the same as field_outcomes, each mapping
+            to {"query": [...], "candidate": [...]} (sorted for a stable
+            diff). Populated for every field `_verify_fields` looks at,
+            including ones that ended up "missing" (one side's list is then
+            empty) - this is what a human troubleshooting a no_match/
+            fuzzy-vs-exact result needs to see (e.g. why "Jon"/"John" came
+            back fuzzy, not exact), and field_outcomes' bare label alone
+            doesn't show.
+        field_fuzzy_detail: How fuzzy a fuzzy field_outcomes entry actually
+            was, keyed by field name. Generic string fields get
+            {"distance": <Damerau-Levenshtein edit distance, 0 or 1>}; DOB
+            gets {"day_offset": <absolute day difference, 0 or 1>} instead,
+            since its tolerance is a calendar-day window, not an edit
+            distance (see _verify_fields' DOB branch). Only present for
+            fields whose field_outcomes value is "fuzzy" - an "exact" match
+            has zero distance by definition, and "no_match"/"missing" have
+            no meaningful distance to report.
+        step: Which tier of a Table 2 rule this evaluation covers - "flat"
+            for an ordinary Category 1 rule, or "household"/"individual"
+            for the two tiers of a Category 2 rule (see
+            MatchingEngine._evaluate_household_individual_rule). Before
+            this field existed, a Category 2 rule's household-tier
+            verification was computed but discarded entirely if it didn't
+            produce a match - making a failed household tier
+            indistinguishable from "no candidates were ever retrieved."
+        candidates_retrieved: How many candidates the backend's blocking
+            search() returned for this rule/step, *before* per-candidate
+            verification. 0 here (with field_outcomes/field_values/
+            suffix_values all empty, since there was no candidate to
+            compare against) means blocking itself found nothing - a
+            distinct failure mode from a retrieved candidate that then
+            failed field verification, which a caller troubleshooting a
+            no_match needs to be able to tell apart (e.g. "my data isn't
+            in the backend at all" vs. "it's there, but a field doesn't
+            match").
+            **Exception for step="individual":** the individual tier
+            doesn't call backend.search() itself - it verifies within the
+            household tier's own survivors (see
+            MatchingEngine._evaluate_household_individual_rule). This
+            field is that survivor-pool size for those evaluations, not a
+            second blocking retrieval count.
+        blocking_criteria: The field->value pairs backend.search() was
+            actually called with for this rule/step. A multi-valued query
+            field (e.g. two known phone numbers) is blocked on only one
+            arbitrarily-chosen value (see
+            MatchingEngine._build_criteria_for_fields) - this shows exactly
+            which one, so a caller can tell whether blocking picked a value
+            that doesn't align with the candidate's data.
+        suffix_values: The generational-suffix sets actually compared for
+            the B.5 suffix-conflict check, as {"query": [...],
+            "candidate": [...]} - populated whenever that check ran
+            (i.e. whenever every other field in `fields` matched),
+            regardless of whether it found a conflict. negated_by_suffix
+            alone says a conflict happened, not what the conflicting
+            values were.
+        p_collision_exact: The rule's published P(collision) for an exact
+            match (MatchingRule.p_collision_exact /
+            HouseholdIndividualRule's combined figure), copied onto the
+            evaluation so a caller doesn't have to re-look-up the rule by
+            (rule_id, version) to explain a MATCH's confidence or an
+            AMBIGUOUS/ESCALATE outcome's stakes. None if the rule type
+            doesn't carry one.
+        p_collision_fuzzy: As p_collision_exact, for a fuzzy match.
         timestamp: ISO 8601 UTC timestamp of when this evaluation ran.
         version: The patient_matching package version that produced this
             evaluation, from VERSION.
@@ -82,6 +146,14 @@ class RuleEvaluation:
     fuzzy_fields: List[str] = field(default_factory=list)
     negated_by_suffix: bool = False
     field_outcomes: Dict[str, str] = field(default_factory=dict)
+    field_values: Dict[str, Dict[str, List[str]]] = field(default_factory=dict)
+    field_fuzzy_detail: Dict[str, Dict[str, int]] = field(default_factory=dict)
+    step: str = "flat"
+    candidates_retrieved: int = 0
+    blocking_criteria: Dict[str, str] = field(default_factory=dict)
+    suffix_values: Dict[str, List[str]] = field(default_factory=dict)
+    p_collision_exact: Optional[float] = None
+    p_collision_fuzzy: Optional[float] = None
     timestamp: str = ""
     version: str = ""
 

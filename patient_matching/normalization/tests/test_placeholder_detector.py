@@ -43,6 +43,18 @@ class TestPlaceholderNames:
         assert self.detector.is_placeholder_name("")
         assert self.detector.is_placeholder_name(cast(str, None))
 
+    def test_reason_for_name_codes(self) -> None:
+        """is_placeholder_name()'s bool now delegates to reason_for_name() --
+        assert the actual reason string per category, not just the bool,
+        so a miscategorization (e.g. a newborn pattern mislabeled
+        "unidentified_name") would be caught."""
+        assert self.detector.reason_for_name("") == "empty"
+        assert self.detector.reason_for_name("Baby Boy") == "newborn_temp_name"
+        assert self.detector.reason_for_name("Jane Doe") == "unidentified_name"
+        assert self.detector.reason_for_name("TestPatient") == "test_name"
+        assert self.detector.reason_for_name("zzztestrecord") == "placeholder_pattern"
+        assert self.detector.reason_for_name("James") is None
+
 
 class TestPlaceholderDates:
     def setup_method(self) -> None:
@@ -66,6 +78,14 @@ class TestPlaceholderDates:
         assert self.detector.is_placeholder_date("unknown")
         assert self.detector.is_placeholder_date("N/A")
 
+    def test_reason_for_date_codes(self) -> None:
+        assert self.detector.reason_for_date("") == "empty"
+        assert self.detector.reason_for_date("unknown") == "unknown_placeholder"
+        assert self.detector.reason_for_date("not-a-date") == "unparseable"
+        assert self.detector.reason_for_date("1800-01-01") == "out_of_range"
+        assert self.detector.reason_for_date("2099-01-01") == "out_of_range"
+        assert self.detector.reason_for_date("1990-01-15") is None
+
 
 class TestPlaceholderPhone:
     def setup_method(self) -> None:
@@ -85,6 +105,15 @@ class TestPlaceholderPhone:
         assert not self.detector.is_placeholder_phone("+15551234567")
         assert not self.detector.is_placeholder_phone("503-555-1234")
 
+    def test_reason_for_phone_codes(self) -> None:
+        """Detector-level reasons only -- format/validity rejections
+        (unparseable, invalid_number) are PhoneNormalizer's, not this
+        detector's, since they depend on the `phonenumbers` library."""
+        assert self.detector.reason_for_phone("") == "empty"
+        assert self.detector.reason_for_phone("abc") == "no_digits"
+        assert self.detector.reason_for_phone("0000000000") == "placeholder_pattern"
+        assert self.detector.reason_for_phone("+15037654321") is None
+
 
 class TestPlaceholderAddress:
     def setup_method(self) -> None:
@@ -99,6 +128,33 @@ class TestPlaceholderAddress:
     def test_real_address_not_placeholder(self) -> None:
         assert not self.detector.is_placeholder_address("123 Main St")
         assert not self.detector.is_placeholder_address("456 Oak Ave Apt 2B")
+
+    def test_reason_for_address_codes(self) -> None:
+        assert self.detector.reason_for_address("") == "empty"
+        assert self.detector.reason_for_address("Unknown") == "unknown_placeholder"
+        assert self.detector.reason_for_address("Homeless") == "placeholder_pattern"
+        assert self.detector.reason_for_address("123 Main St") is None
+
+
+class TestPlaceholderEmail:
+    """Email placeholder detection had no dedicated test class at all
+    before this -- is_placeholder_email()/reason_for_email() were only
+    exercised transitively via PhoneNormalizer's telecom tests."""
+
+    def setup_method(self) -> None:
+        self.detector = PlaceholderDetector()
+
+    def test_placeholder_emails(self) -> None:
+        assert self.detector.is_placeholder_email("test@example.com")
+        assert self.detector.is_placeholder_email("noreply@gmail.com")
+
+    def test_real_email_not_placeholder(self) -> None:
+        assert not self.detector.is_placeholder_email("maria@gmail.com")
+
+    def test_reason_for_email_codes(self) -> None:
+        assert self.detector.reason_for_email("") == "empty"
+        assert self.detector.reason_for_email("test@example.com") == "placeholder_pattern"
+        assert self.detector.reason_for_email("maria@gmail.com") is None
 
 
 class TestPlaceholderSSN:
@@ -116,6 +172,11 @@ class TestPlaceholderSSN:
 
     def test_real_ssn_not_placeholder(self) -> None:
         assert not self.detector.is_placeholder_ssn("123-45-6789")
+
+    def test_reason_for_ssn_codes(self) -> None:
+        assert self.detector.reason_for_ssn("") == "empty"
+        assert self.detector.reason_for_ssn("000-00-0000") == "placeholder_pattern"
+        assert self.detector.reason_for_ssn("123-45-6789") is None
 
 
 class TestPlaceholderSubscriberId:
@@ -146,3 +207,18 @@ class TestPlaceholderSubscriberId:
     def test_real_looking_id_not_placeholder(self) -> None:
         assert not self.detector.is_placeholder_subscriber_id("M123456789")
         assert not self.detector.is_placeholder_subscriber_id("W900123456")
+
+    def test_reason_for_subscriber_id_codes(self) -> None:
+        assert self.detector.reason_for_subscriber_id("") == "empty"
+        assert self.detector.reason_for_subscriber_id("PENDING") == "placeholder_pattern"
+        assert self.detector.reason_for_subscriber_id("W900123456") is None
+
+
+class TestPlaceholderGeneral:
+    def setup_method(self) -> None:
+        self.detector = PlaceholderDetector()
+
+    def test_reason_for_general_codes(self) -> None:
+        assert self.detector.reason_for_general("") == "empty"
+        assert self.detector.reason_for_general("n/a") == "unknown_placeholder"
+        assert self.detector.reason_for_general("W900123456") is None

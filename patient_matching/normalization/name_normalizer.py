@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Optional, Set
 from nicknames import NickNamer
 
 from .placeholder_detector import PlaceholderDetector
+from .report import NormalizationReport
 from .text_utils import normalize_text
 
 logger = logging.getLogger(__name__)
@@ -106,19 +107,27 @@ class NameNormalizer:
     def suffix_table_version(self) -> str:
         return SUFFIX_TABLE_VERSION
 
-    def normalize_patient_names(self, patient: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def normalize_patient_names(
+        self,
+        patient: Dict[str, Any],
+        *,
+        report: Optional[NormalizationReport] = None,
+    ) -> List[Dict[str, Any]]:
         """Normalize all name entries on a FHIR Patient resource.
 
         Returns a new list of FHIR HumanName dicts with normalized values
-        and nickname expansions added. Placeholder names are excluded.
+        and nickname expansions added. Placeholder names are excluded --
+        pass `report` to record why (see PlaceholderDetector.reason_for_name).
         """
         raw_names: List[Dict[str, Any]] = patient.get("name", [])
         if not raw_names:
             return []
 
         result: List[Dict[str, Any]] = []
-        for name_entry in raw_names:
-            normalized = self._normalize_human_name(name_entry)
+        for index, name_entry in enumerate(raw_names):
+            normalized = self._normalize_human_name(
+                name_entry, index=index, report=report
+            )
             if normalized is not None:
                 result.append(normalized)
 
@@ -172,7 +181,11 @@ class NameNormalizer:
         return canon_a != canon_b
 
     def _normalize_human_name(
-        self, name_entry: Dict[str, Any]
+        self,
+        name_entry: Dict[str, Any],
+        *,
+        index: int = 0,
+        report: Optional[NormalizationReport] = None,
     ) -> Optional[Dict[str, Any]]:
         """Normalize a single FHIR HumanName dict.
 
@@ -195,12 +208,21 @@ class NameNormalizer:
         primary_given = norm_given[0] if norm_given else ""
         full_name = f"{primary_given}{norm_family}"
 
-        if self._placeholders.is_placeholder_name(
-            primary_given
-        ) and self._placeholders.is_placeholder_name(norm_family):
+        given_reason = self._placeholders.reason_for_name(primary_given)
+        family_reason = self._placeholders.reason_for_name(norm_family)
+        if given_reason is not None and family_reason is not None:
+            if report is not None:
+                raw = f"{given_list[0] if given_list else ''} {family}".strip()
+                report.record(f"name[{index}]", raw, family_reason)
             return None
 
-        if full_name and self._placeholders.is_placeholder_name(full_name):
+        full_name_reason = (
+            self._placeholders.reason_for_name(full_name) if full_name else None
+        )
+        if full_name_reason is not None:
+            if report is not None:
+                raw = f"{given_list[0] if given_list else ''} {family}".strip()
+                report.record(f"name[{index}]", raw, full_name_reason)
             return None
 
         # Build normalized FHIR HumanName

@@ -115,6 +115,25 @@ class TestIdentifiersOfRecordsMatched:
         assert matched_eval.field_outcomes.get("mbi") == "exact"
 
 
+class TestFieldValues:
+    """RuleEvaluation.field_values -- the normalized values actually
+    compared for each field, so a caller troubleshooting a result can see
+    *why* a field came back exact/fuzzy/no_match/missing, not just the
+    label. See TestFieldValues in test_matching_engine.py for the
+    missing-field-value case (needs a blocking-agnostic backend)."""
+
+    async def test_records_normalized_values_for_a_matched_field(self) -> None:
+        candidate = _mbi_patient(mbi="1eg4te5mk73")
+        query = _mbi_patient(mbi="1eg4te5mk73")
+        engine = MatchingEngine(backend=InMemoryBackend([candidate]))
+        result = await engine.match(query)
+        matched_eval = next(ev for ev in result.rule_evaluations if ev.matched)
+        assert matched_eval.field_values["mbi"] == {
+            "query": ["1eg4te5mk73"],
+            "candidate": ["1eg4te5mk73"],
+        }
+
+
 class TestUniquenessCheckResult:
     async def test_is_unique_true_for_single_candidate(self) -> None:
         candidate = _mbi_patient()

@@ -17,6 +17,7 @@ from .name_normalizer import NameNormalizer
 from .normalizer import PatientNormalizer
 from .phone_normalizer import PhoneNormalizer
 from .placeholder_detector import PlaceholderDetector
+from .report import NormalizationReport
 
 logger = logging.getLogger(__name__)
 
@@ -87,6 +88,29 @@ class NormalizationManager:
             and placeholder values removed.
         """
         return self._normalizer.normalize(patient)
+
+    def normalize_with_report(
+        self, patient: Dict[str, Any]
+    ) -> tuple[Dict[str, Any], NormalizationReport]:
+        """Normalize a single FHIR Patient resource, plus a troubleshooting
+        report of every value normalization dropped and why.
+
+        Use this over normalize() when you need to explain a match/
+        no-match outcome to a human -- e.g. an empty "phones" list in the
+        normalized output alone doesn't say whether the source Patient had
+        no phone at all, or had one that got silently dropped (placeholder,
+        unparseable, invalid). NormalizationReport.dropped answers that.
+
+        Args:
+            patient: A FHIR R4 Patient resource dictionary.
+
+        Returns:
+            (normalized_patient, report) -- same normalized dict normalize()
+            would return, plus the report.
+        """
+        report = NormalizationReport()
+        normalized = self._normalizer.normalize(patient, report=report)
+        return normalized, report
 
     def normalize_batch(self, patients: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Normalize a list of FHIR Patient resources.

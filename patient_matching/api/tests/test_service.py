@@ -86,6 +86,42 @@ class TestPatientMatcherService:
         assert "p1" in result.matched_patient_ids
         assert result.confidence_score > 0.99
 
+    async def test_match_patient_rule_evaluations_summary_carries_field_detail(
+        self, cache: DuckDBCache
+    ) -> None:
+        """Fix: rule_evaluations_summary used to drop field_outcomes/
+        field_values/etc. entirely, even though RuleEvaluation carries
+        them -- the production $match path's SS VII audit trail was
+        missing exactly the per-field detail its own module docstring
+        (match_result.py) says it satisfies."""
+        await _populate_cache(cache, [_make_cached("p1")])
+        service = PatientMatcherService(cache=cache)
+
+        query = {
+            "resourceType": "Patient",
+            "name": [{"family": "smith", "given": ["john"]}],
+            "birthDate": "1990-01-15",
+            "telecom": [
+                {"system": "phone", "value": "+12125551234"},
+                {"system": "email", "value": "john@gmail.com"},
+            ],
+            "address": [{"line": ["123 main st"]}],
+            "identifier": [
+                {"system": "http://hl7.org/fhir/sid/us-ssn", "value": "xxx-xx-6789"},
+            ],
+        }
+        result = await service.match_patient(query)
+
+        matched_summary = next(
+            s for s in result.rule_evaluations_summary if s["matched"]
+        )
+        assert matched_summary["field_outcomes"]
+        assert matched_summary["field_values"]
+        assert matched_summary["step"] == "flat"
+        assert matched_summary["candidates_retrieved"] >= 1
+        assert matched_summary["blocking_criteria"]
+        assert matched_summary["p_collision_exact"] is not None
+
     async def test_match_patient_no_match(self, cache: DuckDBCache) -> None:
         await _populate_cache(cache, [_make_cached("p1")])
         service = PatientMatcherService(cache=cache)

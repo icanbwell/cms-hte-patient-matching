@@ -11,7 +11,7 @@ Fuzzy matching constraints:
 from __future__ import annotations
 
 from datetime import date
-from typing import Set
+from typing import Optional, Set
 
 from rapidfuzz.distance import DamerauLevenshtein
 
@@ -75,6 +75,58 @@ class FieldComparator:
                 if abs((q - c).days) <= DOB_FUZZY_TOLERANCE_DAYS:
                     return True
         return False
+
+    @staticmethod
+    def fuzzy_distance(
+        query_values: Set[str], candidate_values: Set[str]
+    ) -> Optional[int]:
+        """Minimum Damerau-Levenshtein distance among value pairs that
+        qualify for fuzzy matching (both sides >= MIN_FUZZY_LENGTH chars,
+        distance <= MAX_DAMERAU_LEVENSHTEIN_DISTANCE).
+
+        For troubleshooting a "fuzzy" field_outcomes entry -- fuzzy_match()
+        only says yes/no, not how close the pair actually was. Returns
+        None if no qualifying pair exists (including an exact match,
+        which has no meaningful "distance" to report).
+        """
+        best: Optional[int] = None
+        for q_val in query_values:
+            if len(q_val) < MIN_FUZZY_LENGTH:
+                continue
+            for c_val in candidate_values:
+                if len(c_val) < MIN_FUZZY_LENGTH:
+                    continue
+                dist = DamerauLevenshtein.distance(q_val, c_val)
+                if dist <= MAX_DAMERAU_LEVENSHTEIN_DISTANCE and (
+                    best is None or dist < best
+                ):
+                    best = dist
+        return best
+
+    @staticmethod
+    def dob_fuzzy_offset_days(
+        query_values: Set[str], candidate_values: Set[str]
+    ) -> Optional[int]:
+        """Minimum day offset among DOB pairs within the +/-1 day tolerance.
+
+        Companion to dob_fuzzy_match, for troubleshooting -- shows the
+        actual offset (0 or 1 day) rather than just whether it passed.
+        Returns None if unparseable or no pair is within tolerance.
+        """
+        try:
+            q_dates = {date.fromisoformat(v) for v in query_values}
+            c_dates = {date.fromisoformat(v) for v in candidate_values}
+        except ValueError:
+            return None
+        best: Optional[int] = None
+        for q in q_dates:
+            for c in c_dates:
+                offset = abs((q - c).days)
+                if offset <= DOB_FUZZY_TOLERANCE_DAYS and (
+                    best is None or offset < best
+                ):
+                    best = offset
+        return best
 
     @staticmethod
     def is_fuzzy_only(query_values: Set[str], candidate_values: Set[str]) -> bool:

@@ -42,7 +42,20 @@ class MatchResponse:
         match_type: "exact" or "fuzzy".
         confidence_score: Estimated match confidence (0.0 - 1.0).
         candidate_count: Total number of candidates found.
-        rule_evaluations_summary: Summary of rules evaluated.
+        rule_evaluations_summary: Per-rule audit/troubleshooting detail,
+            one dict per RuleEvaluation the engine produced (see
+            match_result.RuleEvaluation for what each key means -- this
+            carries the same field-by-field/blocking detail, not just
+            rule_id/matched/match_type/fuzzy_fields/negated_by_suffix).
+            **Sizing note:** as of the field_values/candidates_retrieved
+            work, a genuine no_match against a large/empty candidate pool
+            now produces one entry per rule the query has fields for
+            (previously it produced none at all, since only rules whose
+            blocking search() returned >=1 candidate got an entry) --
+            measured at 13 entries / ~5KB for a demographically-complete
+            query against an empty cache. This is the intended SS VII
+            audit detail, not a bug, but any caller persisting/logging the
+            full MatchResponse should budget for it.
         query_initiator: SS VII audit field (session 18) - the caller-
             supplied identifier passed to match_patient(), echoed back
             here. None if the caller didn't supply one.
@@ -175,6 +188,20 @@ class PatientMatcherService:
                     "match_type": ev.match_type,
                     "fuzzy_fields": ev.fuzzy_fields,
                     "negated_by_suffix": ev.negated_by_suffix,
+                    # Everything below was previously dropped here, even
+                    # though RuleEvaluation carries it -- silently
+                    # stripping the field-by-field/blocking detail this
+                    # SS VII audit record's own module docstring
+                    # (match_result.py) says it satisfies.
+                    "step": ev.step,
+                    "field_outcomes": ev.field_outcomes,
+                    "field_values": ev.field_values,
+                    "field_fuzzy_detail": ev.field_fuzzy_detail,
+                    "candidates_retrieved": ev.candidates_retrieved,
+                    "blocking_criteria": ev.blocking_criteria,
+                    "suffix_values": ev.suffix_values,
+                    "p_collision_exact": ev.p_collision_exact,
+                    "p_collision_fuzzy": ev.p_collision_fuzzy,
                 }
             )
 
