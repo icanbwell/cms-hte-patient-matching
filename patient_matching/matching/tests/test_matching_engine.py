@@ -329,6 +329,34 @@ class TestMatchingEngineRuleEvaluations:
         assert evals[0].field_outcomes.get("namespace_id") == "exact"
 
 
+class TestFieldValues:
+    """RuleEvaluation.field_values -- the normalized values actually
+    compared per field, alongside field_outcomes' bare label. This module's
+    InMemoryBackend ignores criteria (returns every stored patient
+    unconditionally), so -- unlike the real blocking backend -- it can
+    surface a candidate missing one of a rule's fields, exercising the
+    "missing" branch this test targets."""
+
+    async def test_missing_field_records_both_sides(self) -> None:
+        """Rule 08: First Name + DOB + MBI. Candidate has no MBI at all."""
+        single_rule = (_rule_by_id("08"),)
+        candidate = _make_patient(mbi=None)
+        query = _make_patient(mbi="1EG4TE5MK73")
+        engine = MatchingEngine(
+            backend=InMemoryBackend([candidate]),
+            rules=single_rule,
+            household_individual_rules=(),
+        )
+        result = await engine.match(query)
+        evals = [e for e in result.rule_evaluations if e.rule_id == "08"]
+        assert len(evals) == 1
+        assert evals[0].field_outcomes["mbi"] == "missing"
+        assert evals[0].field_values["mbi"] == {
+            "query": ["1EG4TE5MK73"],
+            "candidate": [],
+        }
+
+
 class TestAuditFields:
     """RuleEvaluation.timestamp/.version are populated per CMS Section VII."""
 

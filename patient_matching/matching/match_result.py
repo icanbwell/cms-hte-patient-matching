@@ -71,6 +71,15 @@ class RuleEvaluation:
             canonical field names, several of which are literally
             identifiers in the HL7 sense (ssn_last4, itin_last4, legal_id,
             mbi, namespace_id, insurance_member_id, insurance_subscriber_id).
+        field_values: The normalized value set actually compared for each
+            field considered, keyed the same as field_outcomes, each mapping
+            to {"query": [...], "candidate": [...]} (sorted for a stable
+            diff). Populated for every field `_verify_fields` looks at,
+            including ones that ended up "missing" (one side's list is then
+            empty) - this is what a human troubleshooting a no_match/
+            fuzzy-vs-exact result needs to see (e.g. why "Jon"/"John" came
+            back fuzzy, not exact), and field_outcomes' bare label alone
+            doesn't show.
         timestamp: ISO 8601 UTC timestamp of when this evaluation ran.
         version: The patient_matching package version that produced this
             evaluation, from VERSION.
@@ -82,6 +91,7 @@ class RuleEvaluation:
     fuzzy_fields: List[str] = field(default_factory=list)
     negated_by_suffix: bool = False
     field_outcomes: Dict[str, str] = field(default_factory=dict)
+    field_values: Dict[str, Dict[str, List[str]]] = field(default_factory=dict)
     timestamp: str = ""
     version: str = ""
 

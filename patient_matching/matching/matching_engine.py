@@ -346,6 +346,10 @@ class MatchingEngine:
         for rf in fields:
             q_values = query_fields.get_values(rf.name)
             c_values = cand_fields.get_values(rf.name)
+            evaluation.field_values[rf.name] = {
+                "query": sorted(q_values),
+                "candidate": sorted(c_values),
+            }
 
             if not q_values or not c_values:
                 evaluation.field_outcomes[rf.name] = "missing"
