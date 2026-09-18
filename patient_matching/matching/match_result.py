@@ -107,6 +107,12 @@ class RuleEvaluation:
             no_match needs to be able to tell apart (e.g. "my data isn't
             in the backend at all" vs. "it's there, but a field doesn't
             match").
+            **Exception for step="individual":** the individual tier
+            doesn't call backend.search() itself - it verifies within the
+            household tier's own survivors (see
+            MatchingEngine._evaluate_household_individual_rule). This
+            field is that survivor-pool size for those evaluations, not a
+            second blocking retrieval count.
         blocking_criteria: The field->value pairs backend.search() was
             actually called with for this rule/step. A multi-valued query
             field (e.g. two known phone numbers) is blocked on only one

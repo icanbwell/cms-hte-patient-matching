@@ -47,6 +47,15 @@ class MatchResponse:
             match_result.RuleEvaluation for what each key means -- this
             carries the same field-by-field/blocking detail, not just
             rule_id/matched/match_type/fuzzy_fields/negated_by_suffix).
+            **Sizing note:** as of the field_values/candidates_retrieved
+            work, a genuine no_match against a large/empty candidate pool
+            now produces one entry per rule the query has fields for
+            (previously it produced none at all, since only rules whose
+            blocking search() returned >=1 candidate got an entry) --
+            measured at 13 entries / ~5KB for a demographically-complete
+            query against an empty cache. This is the intended SS VII
+            audit detail, not a bug, but any caller persisting/logging the
+            full MatchResponse should budget for it.
         query_initiator: SS VII audit field (session 18) - the caller-
             supplied identifier passed to match_patient(), echoed back
             here. None if the caller didn't supply one.
