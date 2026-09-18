@@ -13,14 +13,17 @@ from .address_normalizer import AddressNormalizer
 from .phone_normalizer import PhoneNormalizer
 from .date_normalizer import DateNormalizer
 from .placeholder_detector import PlaceholderDetector
+from .report import DroppedValue, NormalizationReport
 from .text_utils import normalize_text, fold_diacritics
 
 __all__ = [
     "AddressNormalizer",
     "DateNormalizer",
+    "DroppedValue",
     "fold_diacritics",
     "NameNormalizer",
     "NormalizationManager",
+    "NormalizationReport",
     "normalize_text",
     "PatientNormalizer",
     "PhoneNormalizer",

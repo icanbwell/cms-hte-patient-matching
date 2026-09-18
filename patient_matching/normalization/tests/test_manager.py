@@ -3,6 +3,7 @@
 from typing import Any, Dict
 
 from patient_matching.normalization.manager import NormalizationManager
+from patient_matching.normalization.report import DroppedValue
 
 
 class TestNormalizationManager:
@@ -258,3 +259,67 @@ class TestNormalizationManager:
         }
         result = self.manager.normalize(patient)
         assert "identifier" not in result
+
+
+class TestNormalizeWithReport:
+    """normalize_with_report -- the troubleshooting entry point that says
+    *why* a value is missing from the normalized output, not just that
+    it's missing."""
+
+    def setup_method(self) -> None:
+        self.manager = NormalizationManager()
+
+    def test_matches_normalize_for_the_patient_itself(self) -> None:
+        patient = {
+            "resourceType": "Patient",
+            "name": [{"family": "Martinez", "given": ["Alicia"]}],
+        }
+        normalized, report = self.manager.normalize_with_report(patient)
+        assert normalized == self.manager.normalize(patient)
+        assert report.dropped == []
+
+    def test_placeholder_name_is_recorded_with_reason(self) -> None:
+        patient = {
+            "resourceType": "Patient",
+            "name": [{"family": "Doe", "given": ["Jane"]}],
+        }
+        normalized, report = self.manager.normalize_with_report(patient)
+        assert "name" not in normalized
+        assert len(report.dropped) == 1
+        assert report.dropped[0].path == "name[0]"
+        assert report.dropped[0].reason == "unidentified_name"
+
+    def test_invalid_phone_is_recorded_with_reason(self) -> None:
+        """A fictional NANP "555" exchange number: parses fine, but
+        phonenumbers.is_valid_number() rejects it."""
+        patient = {
+            "resourceType": "Patient",
+            "telecom": [{"system": "phone", "value": "+15551234567"}],
+        }
+        normalized, report = self.manager.normalize_with_report(patient)
+        assert "telecom" not in normalized
+        assert report.dropped == [
+            DroppedValue(
+                path="telecom[0].value",
+                raw_value="+15551234567",
+                reason="invalid_number",
+            )
+        ]
+
+    def test_multiple_drops_across_fields_are_all_recorded(self) -> None:
+        patient = {
+            "resourceType": "Patient",
+            "name": [{"family": "Doe", "given": ["John"]}],
+            "birthDate": "not-a-date",
+            "telecom": [{"system": "phone", "value": "+15551234567"}],
+        }
+        _, report = self.manager.normalize_with_report(patient)
+        paths = {d.path for d in report.dropped}
+        assert paths == {"name[0]", "birthDate", "telecom[0].value"}
+
+    def test_missing_field_is_not_reported_as_dropped(self) -> None:
+        """A field the source Patient never had at all isn't a "drop" --
+        only report on values normalization actually rejected."""
+        patient = {"resourceType": "Patient"}
+        _, report = self.manager.normalize_with_report(patient)
+        assert report.dropped == []

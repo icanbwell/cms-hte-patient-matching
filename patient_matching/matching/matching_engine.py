@@ -140,19 +140,36 @@ class MatchingEngine:
 
             # Build criteria and search backend
             criteria = self._build_criteria_for_fields(query_fields, rule.fields)
+            blocking_criteria = {c.field_name: c.value for c in criteria}
             candidates = await self._backend.search(criteria)
+
+            if not candidates:
+                # Blocking found nothing at all -- distinct from a
+                # retrieved candidate that then failed field verification
+                # (see RuleEvaluation.candidates_retrieved's docstring).
+                all_evaluations.append(
+                    self._no_candidates_evaluation(
+                        rule.rule_id,
+                        step="flat",
+                        blocking_criteria=blocking_criteria,
+                        p_collision_exact=rule.p_collision_exact,
+                        p_collision_fuzzy=rule.p_collision_fuzzy,
+                    )
+                )
 
             # Evaluate each candidate against this rule
             rule_matches: List[Dict[str, Any]] = []
             for candidate in candidates:
                 cand_fields = self._extractor.extract(candidate)
                 evaluation = self._evaluate_rule(rule, query_fields, cand_fields)
+                evaluation.candidates_retrieved = len(candidates)
+                evaluation.blocking_criteria = blocking_criteria
                 all_evaluations.append(evaluation)
 
                 if evaluation.matched:
                     # Check suffix conflict (B.5)
-                    if self._suffix_conflict(
-                        query_fields.suffixes, cand_fields.suffixes
+                    if self._check_suffix_conflict(
+                        evaluation, query_fields.suffixes, cand_fields.suffixes
                     ):
                         evaluation.matched = False
                         evaluation.negated_by_suffix = True
@@ -293,6 +310,32 @@ class MatchingEngine:
                 )
         return criteria
 
+    @staticmethod
+    def _no_candidates_evaluation(
+        rule_id: str,
+        *,
+        step: str,
+        blocking_criteria: Dict[str, str],
+        p_collision_exact: Optional[float] = None,
+        p_collision_fuzzy: Optional[float] = None,
+    ) -> RuleEvaluation:
+        """A RuleEvaluation for a rule/step whose blocking search() found
+        zero candidates -- so there's nothing to run field verification
+        against, but the attempt itself (and what it blocked on) is still
+        worth recording. field_outcomes/field_values/suffix_values stay
+        empty; that emptiness combined with candidates_retrieved=0 is what
+        distinguishes this from a verified-but-failed evaluation."""
+        return RuleEvaluation(
+            rule_id=rule_id,
+            step=step,
+            candidates_retrieved=0,
+            blocking_criteria=blocking_criteria,
+            p_collision_exact=p_collision_exact,
+            p_collision_fuzzy=p_collision_fuzzy,
+            timestamp=datetime.now(timezone.utc).isoformat(),
+            version=_PACKAGE_VERSION,
+        )
+
     def _evaluate_rule(
         self,
         rule: MatchingRule,
@@ -306,6 +349,8 @@ class MatchingEngine:
             max_fuzzy_fields=rule.max_fuzzy_fields,
             query_fields=query_fields,
             cand_fields=cand_fields,
+            p_collision_exact=rule.p_collision_exact,
+            p_collision_fuzzy=rule.p_collision_fuzzy,
         )
 
     def _verify_fields(
@@ -316,6 +361,9 @@ class MatchingEngine:
         max_fuzzy_fields: int,
         query_fields: PatientFields,
         cand_fields: PatientFields,
+        step: str = "flat",
+        p_collision_exact: Optional[float] = None,
+        p_collision_fuzzy: Optional[float] = None,
     ) -> RuleEvaluation:
         """Field-by-field verification shared by flat rules and each step of
         a household/individual two-step rule.
@@ -337,6 +385,9 @@ class MatchingEngine:
         """
         evaluation = RuleEvaluation(
             rule_id=rule_id,
+            step=step,
+            p_collision_exact=p_collision_exact,
+            p_collision_fuzzy=p_collision_fuzzy,
             timestamp=datetime.now(timezone.utc).isoformat(),
             version=_PACKAGE_VERSION,
         )
@@ -370,6 +421,13 @@ class MatchingEngine:
                 if self._comparator.dob_fuzzy_match(q_values, c_values):
                     evaluation.field_outcomes[rf.name] = "fuzzy"
                     evaluation.fuzzy_fields.append(rf.name)
+                    offset = self._comparator.dob_fuzzy_offset_days(
+                        q_values, c_values
+                    )
+                    if offset is not None:
+                        evaluation.field_fuzzy_detail[rf.name] = {
+                            "day_offset": offset
+                        }
                 else:
                     evaluation.field_outcomes[rf.name] = "no_match"
                     all_matched = False
@@ -383,6 +441,11 @@ class MatchingEngine:
                 if fuzzy_count <= max_fuzzy_fields:
                     evaluation.field_outcomes[rf.name] = "fuzzy"
                     evaluation.fuzzy_fields.append(rf.name)
+                    distance = self._comparator.fuzzy_distance(q_values, c_values)
+                    if distance is not None:
+                        evaluation.field_fuzzy_detail[rf.name] = {
+                            "distance": distance
+                        }
                 else:
                     evaluation.field_outcomes[rf.name] = "fuzzy_exceeded"
                     all_matched = False
@@ -450,7 +513,21 @@ class MatchingEngine:
         household_criteria = self._build_criteria_for_fields(
             query_fields, household_fields
         )
+        household_blocking_criteria = {
+            c.field_name: c.value for c in household_criteria
+        }
         household_candidates = await self._backend.search(household_criteria)
+
+        if not household_candidates:
+            evaluations.append(
+                self._no_candidates_evaluation(
+                    rule.rule_id,
+                    step="household",
+                    blocking_criteria=household_blocking_criteria,
+                    p_collision_exact=rule.household_row.p_collision,
+                    p_collision_fuzzy=rule.household_row.p_collision,
+                )
+            )
 
         household_matches: List[Dict[str, Any]] = []
         for candidate in household_candidates:
@@ -461,7 +538,17 @@ class MatchingEngine:
                 max_fuzzy_fields=0,
                 query_fields=query_fields,
                 cand_fields=cand_fields,
+                step="household",
+                p_collision_exact=rule.household_row.p_collision,
+                p_collision_fuzzy=rule.household_row.p_collision,
             )
+            verification.candidates_retrieved = len(household_candidates)
+            verification.blocking_criteria = household_blocking_criteria
+            # Unlike a flat rule, a failed household-tier verification isn't
+            # discarded (adversarial-review finding): without it, a failed
+            # Category 2 rule was indistinguishable from "no candidates were
+            # ever retrieved" -- see RuleEvaluation.step's docstring.
+            evaluations.append(verification)
             if verification.matched:
                 household_matches.append(candidate)
 
@@ -498,12 +585,24 @@ class MatchingEngine:
                 max_fuzzy_fields=1,
                 query_fields=query_fields,
                 cand_fields=cand_fields,
+                step="individual",
+                p_collision_exact=rule.p_collision_exact,
+                p_collision_fuzzy=rule.p_collision_fuzzy,
             )
+            # Not a fresh backend.search() -- the individual tier verifies
+            # within the household tier's own survivors, so this is that
+            # pool's size, not a second blocking retrieval.
+            evaluation.candidates_retrieved = len(household_matches)
             evaluations.append(evaluation)
 
-            if evaluation.matched and not self._suffix_conflict(
-                query_fields.suffixes, cand_fields.suffixes
-            ):
+            suffix_conflict = (
+                self._check_suffix_conflict(
+                    evaluation, query_fields.suffixes, cand_fields.suffixes
+                )
+                if evaluation.matched
+                else False
+            )
+            if evaluation.matched and not suffix_conflict:
                 resolved.append(candidate)
             elif evaluation.matched:
                 evaluation.matched = False
@@ -673,6 +772,22 @@ class MatchingEngine:
         if not query_suffixes or not cand_suffixes:
             return False
         return not bool(query_suffixes & cand_suffixes)
+
+    @classmethod
+    def _check_suffix_conflict(
+        cls,
+        evaluation: RuleEvaluation,
+        query_suffixes: Set[str],
+        cand_suffixes: Set[str],
+    ) -> bool:
+        """_suffix_conflict, plus recording what was actually compared onto
+        `evaluation` -- negated_by_suffix alone says a conflict happened,
+        not the conflicting values themselves."""
+        evaluation.suffix_values = {
+            "query": sorted(query_suffixes),
+            "candidate": sorted(cand_suffixes),
+        }
+        return cls._suffix_conflict(query_suffixes, cand_suffixes)
 
     @staticmethod
     def _build_result(

@@ -42,7 +42,11 @@ class MatchResponse:
         match_type: "exact" or "fuzzy".
         confidence_score: Estimated match confidence (0.0 - 1.0).
         candidate_count: Total number of candidates found.
-        rule_evaluations_summary: Summary of rules evaluated.
+        rule_evaluations_summary: Per-rule audit/troubleshooting detail,
+            one dict per RuleEvaluation the engine produced (see
+            match_result.RuleEvaluation for what each key means -- this
+            carries the same field-by-field/blocking detail, not just
+            rule_id/matched/match_type/fuzzy_fields/negated_by_suffix).
         query_initiator: SS VII audit field (session 18) - the caller-
             supplied identifier passed to match_patient(), echoed back
             here. None if the caller didn't supply one.
@@ -175,6 +179,20 @@ class PatientMatcherService:
                     "match_type": ev.match_type,
                     "fuzzy_fields": ev.fuzzy_fields,
                     "negated_by_suffix": ev.negated_by_suffix,
+                    # Everything below was previously dropped here, even
+                    # though RuleEvaluation carries it -- silently
+                    # stripping the field-by-field/blocking detail this
+                    # SS VII audit record's own module docstring
+                    # (match_result.py) says it satisfies.
+                    "step": ev.step,
+                    "field_outcomes": ev.field_outcomes,
+                    "field_values": ev.field_values,
+                    "field_fuzzy_detail": ev.field_fuzzy_detail,
+                    "candidates_retrieved": ev.candidates_retrieved,
+                    "blocking_criteria": ev.blocking_criteria,
+                    "suffix_values": ev.suffix_values,
+                    "p_collision_exact": ev.p_collision_exact,
+                    "p_collision_fuzzy": ev.p_collision_fuzzy,
                 }
             )
 
