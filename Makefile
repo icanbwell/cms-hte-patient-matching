@@ -34,6 +34,10 @@ fetch-onc-data: ## Download the ONC-derived test data the ONC regression tests r
 tests: ## Runs all the tests
 	uv run pytest .
 
+.PHONY: onc-tests
+onc-tests: fetch-onc-data ## Fetch the ONC test data and run the ONC regression tests (they skip, not fail, without this)
+	uv run pytest tests/test_onc_regression.py tests/test_onc_population_regression.py
+
 .PHONY: clean-pre-commit
 clean-pre-commit: ## removes pre-commit hook
 	uv run pre-commit uninstall
