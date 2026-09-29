@@ -396,6 +396,21 @@ make tests         # uv run pytest .
 
 Tests cover all modules including matching rules, normalization, caching, FHIR client, and fuzzy backends.
 
+`make tests` alone **skips** (not fails) the ONC regression tests
+(`tests/test_onc_regression.py`, `tests/test_onc_population_regression.py`)
+because their fixture data isn't fetched by default. Run:
+
+```bash
+make onc-tests      # fetch-onc-data + pytest on the ONC regression tests
+```
+
+These run every labeled pair from the ONC 2017 Patient Matching Algorithm
+Challenge dataset (public, synthetic, non-PHI) through the matching engine
+and gate on recall/false-positive rate regressions. The data is pulled from a
+pinned tag of the sibling `cms-hte-patient-matching-test-set` repo — see
+`tests/fixtures/onc/README.md` and `scripts/fetch_onc_test_data.py` for how
+the pin works and how to bump it.
+
 ### Code Quality
 
 ```bash
