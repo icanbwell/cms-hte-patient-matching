@@ -155,8 +155,14 @@ def test_name_fuzzy_u_blends_short_and_long_names():
     result = compute.name_fuzzy_u(listed, "last_name", "fixture.csv", min_len=5)
     total = 100
     p_smith, p_smyth, p_al = 50 / total, 30 / total, 20 / total
-    expected_simple = p_smith * p_smyth + p_smyth * p_smith + p_al**2
+    # Fuzzy match = exact match (p_v^2) + distance-1 near-miss mass, for eligible names.
+    expected_simple = (
+        p_smith * (p_smith + p_smyth) + p_smyth * (p_smyth + p_smith) + p_al**2
+    )
     assert result.u_simple == pytest.approx(expected_simple)
+    # Sanity: fuzzy match is a superset of exact match, so u_fuzzy >= u_exact.
+    expected_exact_simple = p_smith**2 + p_smyth**2 + p_al**2
+    assert result.u_simple >= expected_exact_simple
 
 
 # ---------------------------------------------------------------------------

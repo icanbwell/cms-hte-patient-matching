@@ -290,6 +290,34 @@ def build_fuzzy_ball_mass(
     return ball_mass
 
 
+def fuzzy_u_from_ball_mass(
+    counts: np.ndarray, probs: np.ndarray, ball_mass: np.ndarray, eligible: np.ndarray
+) -> tuple[float, float]:
+    """Combine per-name fuzzy-neighbor ball mass into (u_unbiased, u_simple).
+
+    "Fuzzy match" is a superset of exact match (edit distance 0 or 1), so the
+    eligible-name term needs both the exact-match mass (p_v^2) and the
+    near-miss mass (ball_mass, which build_fuzzy_ball_mass deliberately
+    excludes self/distance-0 from) -- omitting p_v^2 here would make fuzzy u
+    come out *lower* than exact-match u, which is definitionally impossible.
+    Short (ineligible) names fall back to exact-match probability only.
+    """
+    u_simple = float(
+        np.sum(probs[eligible] * (probs[eligible] + ball_mass[eligible]))
+        + np.sum(probs[~eligible] ** 2)
+    )
+
+    n_total = counts.sum()
+    pair_denom = n_total * (n_total - 1) if n_total > 1 else 1.0
+    exact_pairs = np.sum(counts[eligible] * (counts[eligible] - 1))
+    near_miss_pairs = np.sum(counts[eligible] * (ball_mass[eligible] * n_total))
+    short_pairs = np.sum(counts[~eligible] * (counts[~eligible] - 1))
+    u_unbiased = (
+        float((exact_pairs + near_miss_pairs + short_pairs) / pair_denom) if pair_denom else 0.0
+    )
+    return u_unbiased, u_simple
+
+
 def name_fuzzy_u(
     listed: pd.DataFrame, field: str, source_file: str, min_len: int = 5
 ) -> FieldResult:
@@ -302,24 +330,17 @@ def name_fuzzy_u(
     lengths = np.array([len(nm) for nm in names])
     eligible = lengths >= min_len
 
-    # Fuzzy contribution for eligible names; exact (p_v^2) for short names.
-    u_simple = float(np.sum(probs[eligible] * ball_mass[eligible]) + np.sum(probs[~eligible] ** 2))
-
-    # Unbiased version: same idea but on counts/pairs rather than probabilities.
-    n_total = total
-    pair_denom = n_total * (n_total - 1) if n_total > 1 else 1.0
-    fuzzy_pairs = np.sum(counts[eligible] * (ball_mass[eligible] * n_total))
-    short_pairs = np.sum(counts[~eligible] * (counts[~eligible] - 1))
-    u_unbiased = float((fuzzy_pairs + short_pairs) / pair_denom) if pair_denom else 0.0
+    u_unbiased, u_simple = fuzzy_u_from_ball_mass(counts, probs, ball_mass, eligible)
 
     notes = (
         f"Ball = names within Damerau-OSA edit distance 1 (insert/delete/substitute/"
         f"adjacent-transposition), found via a SymSpell-style deletion-neighborhood "
         f"index over the {len(names):,} listed names (>= {min_len} chars eligible: "
         f"{int(eligible.sum()):,}); verified exactly with rapidfuzz, not approximated. "
-        f"Names < {min_len} chars fall back to exact-match probability (p_v^2). "
-        f"Restricted to listed (>=100-occurrence) names -- same coverage caveat as the "
-        f"exact-match calculation applies."
+        f"Fuzzy match is edit distance <= 1, i.e. exact match (p_v^2) plus the "
+        f"distance-1 near-miss ball mass. Names < {min_len} chars fall back to "
+        f"exact-match probability (p_v^2) only. Restricted to listed (>=100-occurrence) "
+        f"names -- same coverage caveat as the exact-match calculation applies."
     )
     top10 = top_n_by_count(names, counts, 10)
     return FieldResult(field, "fuzzy", u_unbiased, u_simple, source_file, notes, top10)

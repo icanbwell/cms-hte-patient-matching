@@ -55,20 +55,17 @@ def name_fuzzy_u_cached(listed: pd.DataFrame, field: str, source_file: str, cach
     lengths = np.array([len(nm) for nm in names])
     eligible = lengths >= min_len
 
-    u_simple = float(np.sum(probs[eligible] * ball_mass[eligible]) + np.sum(probs[~eligible] ** 2))
-    n_total = total
-    pair_denom = n_total * (n_total - 1) if n_total > 1 else 1.0
-    fuzzy_pairs = np.sum(counts[eligible] * (ball_mass[eligible] * n_total))
-    short_pairs = np.sum(counts[~eligible] * (counts[~eligible] - 1))
-    u_unbiased = float((fuzzy_pairs + short_pairs) / pair_denom) if pair_denom else 0.0
+    u_unbiased, u_simple = compute.fuzzy_u_from_ball_mass(counts, probs, ball_mass, eligible)
 
     notes = (
         f"Ball = names within Damerau-OSA edit distance 1 (insert/delete/substitute/"
         f"adjacent-transposition), found via a SymSpell-style deletion-neighborhood "
         f"index over the {len(names):,} listed names (>= {min_len} chars eligible: "
-        f"{int(eligible.sum()):,}); verified exactly with rapidfuzz. Names < {min_len} "
-        f"chars fall back to exact-match probability (p_v^2). Restricted to listed "
-        f"(>=100-occurrence) names -- same coverage caveat as the exact-match calculation."
+        f"{int(eligible.sum()):,}); verified exactly with rapidfuzz. Fuzzy match is edit "
+        f"distance <= 1, i.e. exact match (p_v^2) plus the distance-1 near-miss ball mass. "
+        f"Names < {min_len} chars fall back to exact-match probability (p_v^2) only. "
+        f"Restricted to listed (>=100-occurrence) names -- same coverage caveat as the "
+        f"exact-match calculation."
     )
     top10 = compute.top_n_by_count(names, counts, 10)
     return compute.FieldResult(field, "fuzzy", u_unbiased, u_simple, source_file, notes, top10)
