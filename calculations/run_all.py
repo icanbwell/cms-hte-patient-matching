@@ -215,6 +215,13 @@ def _write_markdown(
     u_adult_unbiased: float,
     u_adult_simple: float,
 ) -> None:
+    # path is always config.OUTPUTS / "u_probabilities.md" (see call site), never
+    # user/remote input, but this keeps that invariant enforced rather than assumed.
+    resolved = path.resolve()
+    outputs_dir = config.OUTPUTS.resolve()
+    if outputs_dir not in resolved.parents and resolved != outputs_dir:
+        raise ValueError(f"Refusing to write outside OUTPUTS: {resolved}")
+
     today = dt.date.today().isoformat()
     lines: list[str] = []
     lines.append("# Empirical u-probabilities vs. conservative model values\n")
@@ -348,7 +355,7 @@ def _write_markdown(
         "(see per-field notes).\n"
     )
 
-    path.write_text("\n".join(lines))
+    resolved.write_text("\n".join(lines))
 
 
 def _parse_args() -> argparse.Namespace:

@@ -76,7 +76,7 @@ def _download_file(url: str, dest: Path, session: requests.Session | None = None
         log.info("SKIP (exists, %d bytes): %s", dest.stat().st_size, dest.name)
         return
 
-    dest = _require_within_data_raw(dest)
+    safe_dest = _require_within_data_raw(dest)
     sess = session or _session()
     cache_bust = f"{'&' if '?' in url else '?'}_dl={int(time.time())}"
     full_url = url + cache_bust
@@ -93,10 +93,10 @@ def _download_file(url: str, dest: Path, session: requests.Session | None = None
                     f"FAILED: server returned HTML (likely a WAF block page) instead of "
                     f"the file, for {url}. Manual download may be required."
                 )
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            tmp = dest.with_suffix(dest.suffix + ".part")
+            safe_dest.parent.mkdir(parents=True, exist_ok=True)
+            tmp = safe_dest.with_suffix(safe_dest.suffix + ".part")
             with open(tmp, "wb") as f, tqdm(
-                total=total or None, unit="B", unit_scale=True, desc=dest.name
+                total=total or None, unit="B", unit_scale=True, desc=safe_dest.name
             ) as bar:
                 for chunk in resp.iter_content(chunk_size=1 << 16):
                     if chunk:
@@ -106,8 +106,8 @@ def _download_file(url: str, dest: Path, session: requests.Session | None = None
             if size == 0:
                 tmp.unlink(missing_ok=True)
                 raise DownloadError(f"FAILED: zero-byte download for {url}")
-            tmp.rename(dest)
-            log.info("OK: %s (%d bytes)", dest.name, size)
+            tmp.rename(safe_dest)
+            log.info("OK: %s (%d bytes)", safe_dest.name, size)
     except requests.RequestException as exc:
         raise DownloadError(f"FAILED ({exc}): {url}") from exc
 
@@ -162,7 +162,7 @@ def _census_api_get(variables: list[str], for_clause: str, dest: Path) -> Path:
     if dest.exists() and dest.stat().st_size > 0:
         log.info("SKIP (exists, %d bytes): %s", dest.stat().st_size, dest.name)
         return dest
-    dest = _require_within_data_raw(dest)
+    safe_dest = _require_within_data_raw(dest)
     params = {"get": ",".join(variables), "for": for_clause}
     if config.CENSUS_API_KEY:
         params["key"] = config.CENSUS_API_KEY
@@ -184,16 +184,18 @@ def _census_api_get(variables: list[str], for_clause: str, dest: Path) -> Path:
             )
             resp.raise_for_status()
             data = resp.json()
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            dest.write_text(json.dumps(data))
-            log.info("OK: %s (%d rows)", dest.name, len(data) - 1)
-            return dest
+            safe_dest.parent.mkdir(parents=True, exist_ok=True)
+            safe_dest.write_text(json.dumps(data))
+            log.info("OK: %s (%d rows)", safe_dest.name, len(data) - 1)
+            return safe_dest
         except (requests.RequestException, json.JSONDecodeError) as exc:
             last_exc = exc
-            log.warning("Attempt %d failed (%s) fetching %s; retrying...", attempt, exc, dest.name)
+            log.warning(
+                "Attempt %d failed (%s) fetching %s; retrying...", attempt, exc, safe_dest.name
+            )
             time.sleep(config.BACKOFF_FACTOR * attempt)
     raise DownloadError(
-        f"FAILED ({last_exc}) fetching {dest.name} after {config.MAX_RETRIES} attempts"
+        f"FAILED ({last_exc}) fetching {safe_dest.name} after {config.MAX_RETRIES} attempts"
     )
 
 
