@@ -30,6 +30,9 @@ def _log(msg: str) -> None:
 
 
 def _cached_ball_mass(cache_name: str, names: list[str], probs: np.ndarray, min_len: int) -> np.ndarray:
+    """Load `build_fuzzy_ball_mass`'s output from disk if a same-size cache exists,
+    else compute it and save it. Invalidated by a name-count mismatch (e.g. a
+    re-downloaded source file with a different row count), not by content changes."""
     cache_path = config.DATA_PROCESSED / f"{cache_name}_ball_mass.npy"
     if cache_path.exists():
         arr = np.load(cache_path)
@@ -46,6 +49,9 @@ def _cached_ball_mass(cache_name: str, names: list[str], probs: np.ndarray, min_
 
 
 def name_fuzzy_u_cached(listed: pd.DataFrame, field: str, source_file: str, cache_name: str, min_len: int = 5) -> compute.FieldResult:
+    """Same computation as `compute.name_fuzzy_u`, but routed through `_cached_ball_mass`
+    instead of always recomputing the ball mass -- kept separate (rather than adding a
+    cache seam to name_fuzzy_u itself) so compute.py stays pure/IO-free and unit-testable."""
     names = listed["name"].astype(str).tolist()
     counts = listed["count"].to_numpy(dtype=np.float64)
     total = counts.sum()

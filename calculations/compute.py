@@ -155,6 +155,9 @@ def load_state_pop() -> pd.DataFrame:
     nst = pd.read_excel(config.DATA_RAW / "NST-EST2025-POP.xlsx", header=None, skiprows=4)
     nst.columns = ["area", "base2020", "y2020", "y2021", "y2022", "y2023", "y2024", "y2025"]
     nst = nst.dropna(subset=["area"])
+    # Census's raw layout prefixes every real state/DC/PR row with a leading
+    # "." (e.g. ".Alabama") to distinguish it from the workbook's title,
+    # region/division subtotal, and footnote rows, none of which get a ".".
     nst = nst[nst["area"].astype(str).str.startswith(".")]
     nst["area"] = nst["area"].str.lstrip(".")
     nst = nst[pd.to_numeric(nst["y2025"], errors="coerce").notna()]
@@ -175,6 +178,8 @@ def load_zcta_population() -> pd.DataFrame:
     """Return ZCTA-level population (ACS5 B01003) as [zcta, population], population > 0 only."""
     with open(config.DATA_RAW / "acs5_zcta_population.json") as f:
         data = json.load(f)
+    # The Census API returns a JSON array of rows, not objects: data[0] is the
+    # header row (variable names), data[1:] are the actual value rows.
     df = pd.DataFrame(data[1:], columns=data[0])
     df["B01003_001E"] = pd.to_numeric(df["B01003_001E"], errors="coerce").fillna(0)
     df = df[df["B01003_001E"] > 0]
@@ -198,6 +203,7 @@ def load_zcta_household_size() -> pd.DataFrame:
     """Return ZCTA-level household-size distribution + avg household size (ACS5 B11016/B25010)."""
     with open(config.DATA_RAW / "acs5_zcta_household_size.json") as f:
         data = json.load(f)
+    # Same header-row-then-data-rows shape as load_zcta_population(); see its comment.
     df = pd.DataFrame(data[1:], columns=data[0])
     num_cols = [c for c in df.columns if c.startswith("B")]
     for c in num_cols:
@@ -424,6 +430,7 @@ def year_of_birth_u(agesex: pd.DataFrame, reference_year: int = 2025) -> dict[st
 
 
 def dob_full_u(u_yob_unbiased: float, u_yob_simple: float) -> FieldResult:
+    """Derive full-DOB u from year-of-birth u, assuming a uniform day-within-year spread."""
     days_per_year = 365.25
     notes = (
         "Assumes birthdates are uniformly distributed within a birth year: "
@@ -448,6 +455,7 @@ def dob_full_u(u_yob_unbiased: float, u_yob_simple: float) -> FieldResult:
 
 
 def zip_u(zcta_pop: pd.DataFrame) -> FieldResult:
+    """u for 5-digit ZIP, using ZCTA population as a proxy (see notes for the caveat)."""
     counts = zcta_pop["population"].to_numpy(dtype=np.float64)
     u_unbiased, u_simple = u_from_counts(counts)
     top10 = top_n_by_count(zcta_pop["zcta"].tolist(), counts, 10)
@@ -468,6 +476,8 @@ def zip_u(zcta_pop: pd.DataFrame) -> FieldResult:
 
 
 def state_u(state_pop: pd.DataFrame) -> dict[str, FieldResult]:
+    """u for state of residence. Headline = 50 states + DC; the with-Puerto-Rico variant
+    is computed too and reported in notes for reference."""
     no_pr = state_pop[state_pop["area"] != "Puerto Rico"]
     counts_no_pr = no_pr["y2025"].to_numpy(dtype=np.float64)
     u_unbiased_no_pr, u_simple_no_pr = u_from_counts(counts_no_pr)
@@ -558,6 +568,10 @@ def street_line_and_zip_u(
 
     # --- Household-size-distribution version, from B11016: for each ZCTA,
     # Σ_s households_of_size_s * s(s-1), summed nationally, over P(P-1). ---
+    # B11016 splits households into "family" and "nonfamily" tables with
+    # separate column codes per size; both get summed together below since a
+    # co-resident pair doesn't care whether the household is a "family" in
+    # the Census sense.
     size_cols = {
         1: ["B11016_010E"],
         2: ["B11016_003E", "B11016_011E"],
