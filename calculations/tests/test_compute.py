@@ -161,6 +161,36 @@ def test_name_exact_u_bounds_and_coverage():
     assert "bound (b)" in result.notes.lower() or "Bound (b)" in result.notes
 
 
+def test_year_of_birth_u_headlines_all_ages_not_just_adults():
+    # This tool covers the whole population to be matched (newborns and
+    # minors are real patients too), so the headline must include ages 0-17,
+    # not just adults. Two children (ages 0, 1) are added as large,
+    # evenly-sized extra buckets on top of a concentrated adult population
+    # (one age with most of the mass): children dilute concentration, so the
+    # all-ages headline must come out lower than the adults-only reference
+    # figure.
+    agesex = pd.DataFrame(
+        {
+            "SEX": [0, 0, 0, 0, 0],
+            "AGE": [0, 1, 18, 19, 999],
+            "POPESTIMATE2025": [50, 50, 90, 10, 200],
+        }
+    )
+    result = compute.year_of_birth_u(agesex)
+    headline = result["all_ages"]
+    adult_unbiased, adult_simple = result["adults_18plus"]
+
+    assert headline.field == "year_of_birth"
+    # Headline = all ages: children (50, 50) plus adults (90, 10).
+    expected_all_unbiased, _ = compute.u_from_counts(np.array([50.0, 50.0, 90.0, 10.0]))
+    assert headline.u_unbiased == pytest.approx(expected_all_unbiased)
+    # Adults-only (for reference only) excludes the two even child buckets.
+    expected_adult_unbiased, _ = compute.u_from_counts(np.array([90.0, 10.0]))
+    assert adult_unbiased == pytest.approx(expected_adult_unbiased)
+    assert adult_unbiased > headline.u_unbiased
+    assert "all-ages" in headline.notes.lower()
+
+
 def test_city_u_uses_national_total_not_places_only_total():
     # Places/CDPs cover only part of the national population (people outside
     # any place/CDP are excluded from the places table entirely). Renormalizing
@@ -232,6 +262,16 @@ def test_sanity_check_passes_in_range_values():
     ok_yob = compute.FieldResult("year_of_birth", "exact", 0.014, 0.014, "fixture", "")
     ok_last = compute.FieldResult("last_name", "exact", 0.003, 0.003, "fixture", "")
     warnings = compute.sanity_check([ok_state, ok_yob, ok_last])
+    assert warnings == []
+
+
+def test_sanity_check_passes_real_all_ages_year_of_birth_value():
+    # Regression guard: the real all-ages NC-EST2025 headline (~0.0118) must
+    # not trip the sanity check. An earlier, un-derived range (0.012-0.016)
+    # was calibrated against an adults-only population and false-flagged this
+    # correct value -- see docs/LEARNINGS.md.
+    real_all_ages_yob = compute.FieldResult("year_of_birth", "exact", 0.01178, 0.01178, "fixture", "")
+    warnings = compute.sanity_check([real_all_ages_yob])
     assert warnings == []
 
 

@@ -384,6 +384,11 @@ def name_fuzzy_u(
 
 
 def year_of_birth_u(agesex: pd.DataFrame, reference_year: int = 2025) -> dict[str, FieldResult]:
+    """Headline = all ages (0-100) -- this tool covers the whole population to
+    be matched, not just adults; newborns and minors are real patients too.
+    The adults-18+ variant is still computed and reported in `notes` as a
+    reference point, since it's a commonly-cited alternative population cut.
+    """
     both = agesex[(agesex["SEX"] == 0) & (agesex["AGE"] != 999)].copy()
     pop_col = f"POPESTIMATE{reference_year}"
     both["birth_year"] = reference_year - both["AGE"]
@@ -399,10 +404,12 @@ def year_of_birth_u(agesex: pd.DataFrame, reference_year: int = 2025) -> dict[st
         f"Single year of age (0-100, where AGE=100 is a '100 and over' open-ended top "
         f"bucket) from NC-EST{reference_year}-AGESEX-RES, both sexes, converted to "
         f"birth year = {reference_year} - age (as of July 1, {reference_year}). "
-        f"Adults-only (18+) variant: u_unbiased={u_unbiased_adult:.3e}, "
-        f"u_simple={u_simple_adult:.3e}. National population, not a specific payer's "
-        f"member population -- true u could differ for an age-skewed membership "
-        f"(e.g. Medicare Advantage)."
+        f"Adults-only (18+) variant, for reference: u_unbiased={u_unbiased_adult:.3e}, "
+        f"u_simple={u_simple_adult:.3e} -- higher than the all-ages headline because "
+        f"excluding ages 0-17 removes birth years with a flatter, less-concentrated "
+        f"distribution than the adult population's age pyramid. National population, "
+        f"not a specific payer's member population -- true u could differ for an "
+        f"age-skewed membership (e.g. Medicare Advantage)."
     )
     main = FieldResult(
         "year_of_birth",

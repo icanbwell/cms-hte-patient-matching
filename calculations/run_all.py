@@ -123,7 +123,7 @@ def main(*, do_download: bool = True, do_compute: bool = True) -> None:
     r = compute.middle_name_proxy_u(first2020, first2020_unlisted, "Names2020_FirstNames_Sex.xlsx")
     results.append(r)
 
-    # Year of birth / DOB
+    # Year of birth / DOB (headline = all ages; see compute.year_of_birth_u docstring)
     _log("Year of birth...")
     agesex = compute.load_agesex()
     yob = compute.year_of_birth_u(agesex)
@@ -265,10 +265,15 @@ def _write_markdown(
         for w in warnings:
             lines.append(f"- WARNING: {w}")
     else:
-        lines.append("- All sanity checks passed (state u in [0.03, 0.05], year-of-birth u "
-                      "in [0.012, 0.016], exact last-name u well below 0.01).")
+        state_lo, state_hi = config.SANITY_RANGES["state"]
+        yob_lo, yob_hi = config.SANITY_RANGES["year_of_birth"]
+        last_hi = config.SANITY_RANGES["last_name_exact"][1]
+        lines.append(
+            f"- All sanity checks passed (state u in [{state_lo}, {state_hi}], "
+            f"year-of-birth u in [{yob_lo}, {yob_hi}], exact last-name u below {last_hi})."
+        )
     lines.append(
-        f"- Year-of-birth, adults 18+ variant: u_unbiased={u_adult_unbiased:.4g}, "
+        f"- Year-of-birth, adults 18+ variant, for reference: u_unbiased={u_adult_unbiased:.4g}, "
         f"u_simple={u_adult_simple:.4g}."
     )
     lines.append("")

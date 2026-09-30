@@ -186,8 +186,18 @@ CONSERVATIVE_U = {
 }
 
 # --- Sanity-check ranges (compute.py prints warnings if outside these) ------
+# year_of_birth is calibrated against the all-ages (0-100) headline, not the
+# adults-18+ reference figure (see compute.year_of_birth_u). An earlier,
+# un-derived guess here (0.012-0.016) was apparently calibrated against an
+# adults-only population instead and false-flagged the correct all-ages
+# number (~0.0118) as out of range -- see docs/LEARNINGS.md. This range is
+# bounded below by the fully-uniform-distribution floor for the 101
+# single-year-of-age buckets AGE 0-100 (1/101 = 0.0099, i.e. "no concentration
+# at all" -- a real population pyramid should always clear this) and above by
+# the adults-only figure (~0.0149, i.e. "as concentrated as if no one under 18
+# existed" -- the true all-ages number should stay below that).
 SANITY_RANGES = {
     "state": (0.03, 0.05),
-    "year_of_birth": (0.012, 0.016),
+    "year_of_birth": (0.0100, 0.0149),
     "last_name_exact": (0.0, 0.01),  # "well below 0.01"
 }

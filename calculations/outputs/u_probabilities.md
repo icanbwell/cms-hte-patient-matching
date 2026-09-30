@@ -141,7 +141,7 @@ JOSEPH: 0.5651%
 
 ### year_of_birth (exact)
 
-Single year of age (0-100, where AGE=100 is a '100 and over' open-ended top bucket) from NC-EST2025-AGESEX-RES, both sexes, converted to birth year = 2025 - age (as of July 1, 2025). Adults-only (18+) variant: u_unbiased=1.494e-02, u_simple=1.494e-02. National population, not a specific payer's member population -- true u could differ for an age-skewed membership (e.g. Medicare Advantage).
+Single year of age (0-100, where AGE=100 is a '100 and over' open-ended top bucket) from NC-EST2025-AGESEX-RES, both sexes, converted to birth year = 2025 - age (as of July 1, 2025). Adults-only (18+) variant, for reference: u_unbiased=1.494e-02, u_simple=1.494e-02 -- higher than the all-ages headline because excluding ages 0-17 removes birth years with a flatter, less-concentrated distribution than the adult population's age pyramid. National population, not a specific payer's member population -- true u could differ for an age-skewed membership (e.g. Medicare Advantage).
 
 Top 10 by frequency (value, share of listed population):
 
@@ -241,8 +241,8 @@ Namespace-size floor, not a frequency distribution: u = 1 / N where N = 67,994,9
 
 ## Sanity checks
 
-- WARNING: Year-of-birth u_unbiased=0.0118 is outside the expected [0.012, 0.016] range -- investigate before reporting.
-- Year-of-birth, adults 18+ variant: u_unbiased=0.01494, u_simple=0.01494.
+- All sanity checks passed (state u in [0.03, 0.05], year-of-birth u in [0.01, 0.0149], exact last-name u below 0.01).
+- Year-of-birth, adults 18+ variant, for reference: u_unbiased=0.01494, u_simple=0.01494.
 
 ## Methods
 

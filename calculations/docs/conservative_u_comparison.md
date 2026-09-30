@@ -68,18 +68,27 @@ restricts that candidate path to eligible names only. Both fixes are one-directi
 are now lower (last name) / lower (first name) than the immediately-preceding run, but still
 higher than the original, doubly-buggy pre-exact-match-term run.
 
-### Year of birth: thin margin, flagged by the tool's own sanity check
+### Year of birth: thin margin, and a sanity-check range fixed to match
 
-Year of birth has the tightest margin of any computed field (1.27x), and `make calculate`
-itself emits a warning on this run:
+Year of birth has the tightest margin of any computed field (1.27x). An earlier run of this tool
+also flagged its own sanity check on this number:
 
 ```
 WARNING: Year-of-birth u_unbiased=0.0118 is outside the expected [0.012, 0.016] range -- investigate before reporting.
 ```
 
-The conservative value (0.015) and the empirical value (0.01178) are close enough that this row
-has little headroom. Worth investigating why the empirical estimate fell outside the tool's own
-expected range before treating 0.015 as comfortably conservative.
+That wasn't a computation bug, and 0.01178 is the correct number for this tool's intended
+population: this tool covers everyone who could be matched (newborns and minors included, not
+just adults), and the `[0.012, 0.016]` range had no documented derivation — it turns out to have
+been calibrated against an adults-only cut of the population (the adults-18+ reference figure,
+0.01494, *does* fall inside that old range), not the all-ages headline this tool actually reports.
+`SANITY_RANGES["year_of_birth"]` in `config.py` has been corrected to `(0.0100, 0.0149)`, bounded
+below by the fully-uniform-distribution floor for 101 single-year-of-age buckets (1/101 = 0.0099 —
+a real population pyramid should always clear this) and above by the adults-only figure (a true
+all-ages number should always be more diluted, i.e. lower, than that). The conservative value
+(0.015) and the empirical value (0.01178) remain close enough that this row has little headroom —
+worth revisiting whether 0.015 is still the right conservative assumption, independent of the
+sanity-check fix.
 
 ### City: headline is bound (a), same coverage caveat as the name fields — now disclosed
 
@@ -185,8 +194,10 @@ nothing in the right-hand column.
 Most computed fields carry a comfortable margin (3x–68x) between the conservative value and the
 empirical estimate. Five items warrant follow-up:
 
-1. Year of birth's margin is thin (1.27x) and the tool's own sanity check flags the empirical
-   value as unexpected — investigate before relying on the 0.015 conservative value.
+1. Year of birth's margin is thin (1.27x). The tool's sanity-check range has been fixed to
+   correctly reflect the all-ages headline it actually reports (see note above), so the warning
+   is gone, but the underlying margin itself is unchanged — still worth deciding whether 0.015
+   is the right conservative value.
 2. City's table margin (3.20x) is against bound (a), which excludes the ~37% of the population
    outside any Census place/CDP; the coverage-adjusted margin is closer to 8x. Use bound (b)
    (1.243e-03, in the field's notes) if the question is "how conservative is 0.01, really?"

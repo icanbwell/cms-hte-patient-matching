@@ -103,3 +103,25 @@ only (`compute.py`'s `build_fuzzy_ball_mass`).
 that's implemented as "X doesn't compute its own contribution" rather than "X can't appear on
 either side of the relationship" — the former is easy to get right for X's own row and silently
 wrong for everyone else's.
+
+## A sanity-check range must be calibrated against the same population it checks
+
+`SANITY_RANGES["year_of_birth"]` (`config.py`) was `(0.012, 0.016)` with no documented
+derivation, and `make calculate` flagged the correct, real all-ages (AGE 0-100) headline
+(~0.0118, from `year_of_birth_u()`) as out of range on every run. It turns out `(0.012, 0.016)`
+brackets the tool's *adults-18+* reference figure (~0.0149) instead — this tool intentionally
+covers the whole population (newborns and minors are real patients, not excluded), and an
+all-ages number is always lower than an adults-only number computed from the same data (adding
+ages 0-17 adds birth years with a flatter, less-concentrated distribution than the adult age
+pyramid, pulling u down). The range was checking the wrong population's expected shape against
+the right population's real number.
+
+Fixed by recalibrating the range to `(0.0100, 0.0149)`: the lower bound is the
+fully-uniform-distribution floor for 101 single-year-of-age buckets (1/101 = 0.0099 — a real
+population pyramid should always be at least this concentrated), and the upper bound is the
+adults-only reference figure itself (an all-ages number should always be more diluted than
+adults-only, computed from the same source data).
+
+**Where this could still bite:** any sanity range added to `SANITY_RANGES` without writing down
+*how* it was derived and *which* population/variant it assumes — the check silently drifts out of
+sync the moment someone changes which variant is headlined, exactly as happened here.
