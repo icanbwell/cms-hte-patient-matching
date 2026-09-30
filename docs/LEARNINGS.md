@@ -125,3 +125,42 @@ adults-only, computed from the same source data).
 **Where this could still bite:** any sanity range added to `SANITY_RANGES` without writing down
 *how* it was derived and *which* population/variant it assumes — the check silently drifts out of
 sync the moment someone changes which variant is headlined, exactly as happened here.
+
+## Fetching CDC/NCHS PDFs directly can hit an Akamai WAF block, even with a browser User-Agent
+
+`https://www.cdc.gov/nchs/data/nhis/earlyrelease/wireless202506.pdf` (used for `phone_u()`'s
+landline-household-share input) returns an Akamai "Access Denied" HTML page instead of the PDF,
+even with a full browser `User-Agent` and `Accept`/`Accept-Language` headers set (same family of
+issue as the Cloudflare WAF-caching problem already documented for `www2.census.gov` in
+`config.py`, different vendor). The same document is mirrored at
+`https://stacks.cdc.gov/view/cdc/<id>/cdc_<id>_DS1.pdf` (CDC's document-stacks archive), which is
+not behind the same WAF and served the real PDF on the first request.
+
+**Where this could still bite:** any future source added from `www.cdc.gov/nchs/...` directly —
+check `stacks.cdc.gov` for a mirrored copy first, or expect to need the same
+cache-busting-query-param workaround `download.py` already uses for `www2.census.gov`.
+
+## Phone/email agreement is a sharing-rate question, not a namespace-collision question
+
+Every other field `compute.py` estimates (names, DOB, ZIP, state, city, street line) models the
+probability two *unrelated* people coincidentally share a value, from a population frequency
+table. Phone (and, if ever added, email) is structurally different: personal mobile numbers are
+effectively unique per person, so the only way two distinct patients legitimately share one is
+through deliberate or household *sharing* (a landline, a family-plan "contact" number, a joint
+account) — a behavioral-survey question, not a Census-frequency-table question.
+
+`phone_u()` handles this by reusing an existing floor (`street_line_and_zip_u`'s co-resident
+probability) and scaling it by a survey-sourced household-landline share (CDC NCHS's Wireless
+Substitution survey, see `config.NCHS_ADULT_DUAL_USER_HOUSEHOLD_PCT`/
+`NCHS_ADULT_LANDLINE_ONLY_HOUSEHOLD_PCT`), rather than trying to build a new namespace/frequency
+model from scratch. The household-vs-per-person distinction in that survey matters: landline
+status is a property of the *household* (if one resident has one, every co-resident does too),
+not an independent per-person rate, so it multiplies the co-resident probability directly rather
+than being squared.
+
+**Where this could still bite:** this floor only captures co-resident landline sharing. It has no
+data-backed way to model non-co-resident sharing (e.g. a family member's number listed for
+someone who lives elsewhere) or mobile number reassignment/recycling after disconnection, so the
+resulting ~763x margin against the conservative value should not be read as "the conservative
+assumption is overly cautious" — see `docs/conservative_u_comparison.md`'s Phone section. The same
+caution will apply to email if a similar sharing-rate estimate is ever wired in.

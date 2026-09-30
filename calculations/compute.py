@@ -634,7 +634,67 @@ def street_line_and_zip_u(
 
 
 # ---------------------------------------------------------------------------
-# 10. Middle name (proxy: reuses the first-name distribution)
+# 10. Phone (co-resident landline-sharing floor, using NCHS survey data)
+# ---------------------------------------------------------------------------
+
+
+def phone_u(street_and_zip_result: FieldResult) -> FieldResult:
+    """Co-resident landline-sharing FLOOR for phone-number agreement.
+
+    Unlike names/DOB/ZIP, phone agreement isn't a namespace-collision question
+    -- personal mobile numbers are effectively unique per person (no public
+    data models two strangers randomly being assigned the same number). The
+    only quantifiable sharing mechanism from public data is a landline shared
+    by co-resident household members: u_phone ~= P(two distinct people are
+    co-resident) * P(their shared household has a landline), using NCHS's
+    household-level (not per-person) telephone-status survey for the second
+    factor and `street_and_zip_result` (co-residents are, trivially, also
+    same-ZIP, so that FieldResult already IS an estimate of P(co-resident))
+    for the first.
+
+    This deliberately excludes every other real-world phone-sharing
+    mechanism this tool has no public data for -- a parent's mobile number
+    listed for a non-co-resident child or elderly parent, a shared
+    family-plan "contact" number, mobile number reassignment/recycling after
+    disconnection -- so treat this as a lower bound, not a point estimate,
+    same as the street-line floor it's built on.
+    """
+    p_landline_household = (
+        config.NCHS_ADULT_DUAL_USER_HOUSEHOLD_PCT + config.NCHS_ADULT_LANDLINE_ONLY_HOUSEHOLD_PCT
+    ) / 100.0
+    u_unbiased = street_and_zip_result.u_unbiased * p_landline_household
+    u_simple = street_and_zip_result.u_simple * p_landline_household
+
+    notes = (
+        f"Co-resident landline-sharing FLOOR, not a point estimate: "
+        f"u_phone = P(co-resident) * P(shared household has a landline). "
+        f"P(co-resident) = street_line_with_zip's u ({street_and_zip_result.u_unbiased:.3e} "
+        f"unbiased / {street_and_zip_result.u_simple:.3e} simple), since co-residents are "
+        f"trivially also same-ZIP. P(household has a landline) = {p_landline_household:.3f} "
+        f"({config.NCHS_ADULT_DUAL_USER_HOUSEHOLD_PCT}% dual-user + "
+        f"{config.NCHS_ADULT_LANDLINE_ONLY_HOUSEHOLD_PCT}% landline-only households among "
+        f"adults, {config.NCHS_WIRELESS_SUBSTITUTION_REPORT_PERIOD}, NCHS National Health "
+        f"Interview Survey Table 1, {config.NCHS_WIRELESS_SUBSTITUTION_DOI}) -- a household "
+        f"property (if one resident has a landline, so does every co-resident), not an "
+        f"independent per-person rate, which is why it multiplies P(co-resident) directly "
+        f"rather than being squared. The remaining ~79% of adults have a personal mobile "
+        f"number, effectively unique per person -- this floor has no data-backed way to "
+        f"model non-co-resident sharing (e.g. a family member's number listed for someone "
+        f"living elsewhere) or mobile number reassignment/recycling after disconnection, "
+        f"both of which would push the true value higher than this floor."
+    )
+    return FieldResult(
+        "phone",
+        "exact",
+        u_unbiased,
+        u_simple,
+        "NCHS Wireless Substitution survey (no data file) + street_line_with_zip",
+        notes,
+    )
+
+
+# ---------------------------------------------------------------------------
+# 11. Middle name (proxy: reuses the first-name distribution)
 # ---------------------------------------------------------------------------
 
 
@@ -660,7 +720,7 @@ def middle_name_proxy_u(listed: pd.DataFrame, unlisted_count: int, source_file: 
 
 
 # ---------------------------------------------------------------------------
-# 11. SSN / ITIN last 4 digits (closed-form; no Census data involved)
+# 12. SSN / ITIN last 4 digits (closed-form; no Census data involved)
 # ---------------------------------------------------------------------------
 
 
@@ -717,7 +777,7 @@ def ssn_itin_last4_u() -> dict[str, FieldResult]:
 
 
 # ---------------------------------------------------------------------------
-# 12. MBI (namespace-size floor using CMS Medicare enrollment)
+# 13. MBI (namespace-size floor using CMS Medicare enrollment)
 # ---------------------------------------------------------------------------
 
 

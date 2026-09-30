@@ -167,6 +167,10 @@ def main(*, do_download: bool = True, do_compute: bool = True) -> None:
     results.append(street["given_zip"])
     results.append(street["and_zip"])
 
+    # Phone (co-resident landline floor via NCHS; see compute.phone_u docstring)
+    _log("Phone (co-resident landline-sharing floor, NCHS survey data)...")
+    results.append(compute.phone_u(street["and_zip"]))
+
     # SSN / ITIN last 4 (closed-form; see compute.ssn_itin_last4_u docstring
     # for the pre-2011-randomization limitation)
     _log("SSN / ITIN last 4 (closed-form, post-2011-randomization cohort only)...")
@@ -310,6 +314,10 @@ def _write_markdown(
         "P(same ZIP) from the ZCTA population distribution. This is a FLOOR: it ignores "
         "street-name collisions between unrelated households in the same ZIP, so true "
         "street-line agreement is >= this estimate.\n"
+        "- **Phone**: co-resident landline-sharing FLOOR -- P(co-resident) (from "
+        "street_line_with_zip) times P(shared household has a landline) (NCHS Wireless "
+        "Substitution survey, household-level). Excludes non-co-resident sharing and "
+        "mobile number reassignment/recycling; see caveat below.\n"
         "- **Middle name**: PROXY -- reuses the 2020 first-name distribution (Census "
         "publishes no middle-name table); see caveat below.\n"
         "- **SSN/ITIN last 4**: closed-form 1/9999, not Census-derived; valid only for "
@@ -342,6 +350,11 @@ def _write_markdown(
         "- SSA SSN Randomization policy (used for the SSN/ITIN last-4 closed form, "
         "no data file downloaded): https://www.ssa.gov/employer/randomization.html\n"
     )
+    lines.append(
+        f"- NCHS Wireless Substitution survey ({config.NCHS_WIRELESS_SUBSTITUTION_REPORT_PERIOD}, "
+        f"used for the phone co-resident-landline floor, no data file downloaded): "
+        f"{config.NCHS_WIRELESS_SUBSTITUTION_DOI}\n"
+    )
 
     lines.append("## Caveats\n")
     lines.append(
@@ -355,6 +368,8 @@ def _write_markdown(
         "population estimates, not a specific payer/provider's member population, "
         "which may have different age/geographic distributions.\n"
         "- **Street line + ZIP is a floor**: see street-line notes above.\n"
+        "- **Phone is a floor**: see phone notes above -- only quantifies co-resident "
+        "landline sharing, not the full universe of real-world phone-sharing scenarios.\n"
         "- **Middle name is a proxy**, not a direct measurement (see per-field notes); "
         "true middle-name concentration could be higher or lower than the first-name "
         "distribution used here.\n"

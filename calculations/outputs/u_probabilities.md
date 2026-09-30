@@ -19,6 +19,7 @@ u = probability two randomly chosen, distinct people agree on a field. `u_unbias
 | city | exact | 0.003121 | 0.003121 | 0.01 | 3.20x | sub-est2025.csv |
 | street_line_given_zip | exact | 6.527e-05 | 0.0001444 | n/a | n/a | acs5_zcta_household_size.json + acs5_zcta_population.json |
 | street_line_with_zip | exact | 6.33e-09 | 1.4e-08 | 3e-05 | 4739.45x | acs5_zcta_household_size.json + acs5_zcta_population.json |
+| phone | exact | 1.31e-09 | 2.898e-09 | 1e-06 | 763.20x | NCHS Wireless Substitution survey (no data file) + street_line_with_zip |
 | ssn_last4 | exact | 0.0001 | 0.0001 | 0.0001 | 1.00x | SSA SSN Randomization policy (no data file) |
 | itin_last4 | exact | 0.0001 | 0.0001 | 0.0001 | 1.00x | assumed uniform by analogy to SSN (no data file) |
 | mbi | exact | 1.471e-08 | 1.471e-08 | 1e-06 | 67.99x | MDCR ENROLL AB 1-8_CPS_02ENR_2024.xlsx |
@@ -227,6 +228,10 @@ Same floor logic, but using the full household-size distribution (ACS B11016) in
 
 Co-resident FLOOR only: models P(two distinct people share a street address | same ZCTA) as (avg_household_size - 1) / (population - 1) via ACS B25010, population-weighted across ZCTAs, times P(same ZIP) from the ZCTA u-value. This ignores street-name collisions across different households within the same ZIP (e.g. two unrelated households both on '1st St'), so it UNDERSTATES true street-line agreement probability; treat as a lower bound, not a point estimate. u_street_given_zip (avg-size method) reported as u_simple; u_street_and_zip = u_street_given_zip * u_zip.
 
+### phone (exact)
+
+Co-resident landline-sharing FLOOR, not a point estimate: u_phone = P(co-resident) * P(shared household has a landline). P(co-resident) = street_line_with_zip's u (6.330e-09 unbiased / 1.400e-08 simple), since co-residents are trivially also same-ZIP. P(household has a landline) = 0.207 (19.8% dual-user + 0.9% landline-only households among adults, July-December 2024, NCHS National Health Interview Survey Table 1, https://doi.org/10.15620/cdc/174608) -- a household property (if one resident has a landline, so does every co-resident), not an independent per-person rate, which is why it multiplies P(co-resident) directly rather than being squared. The remaining ~79% of adults have a personal mobile number, effectively unique per person -- this floor has no data-backed way to model non-co-resident sharing (e.g. a family member's number listed for someone living elsewhere) or mobile number reassignment/recycling after disconnection, both of which would push the true value higher than this floor.
+
 ### ssn_last4 (exact)
 
 Closed-form, not Census-derived: SSA's SSN Randomization policy (effective 2011-06-25, https://www.ssa.gov/employer/randomization.html) made the last 4 digits fully random over 9999 possible values (0001-9999; 0000 never issued) for SSNs issued on or after that date. NOT valid for pre-2011 SSNs, which used sequential (non-random) serial assignment within area/group blocks and likely have a somewhat higher true u -- see docs/LEARNINGS.md for why this tool does not attempt to quantify that cohort without SSA's historical High Group List data.
@@ -254,6 +259,7 @@ Namespace-size floor, not a frequency distribution: u = 1 / N where N = 67,994,9
 - **State**: NST-EST2025-POP, July 1, 2025 estimate, 50 states + DC headline (Puerto Rico variant also computed).
 - **City**: SUB-EST2025 incorporated places + CDPs.
 - **Street line + ZIP**: co-resident floor, P(share an address | same ZCTA) estimated two ways -- (avg household size - 1)/(population - 1) from B25010, and the full household-size distribution from B11016 -- combined with P(same ZIP) from the ZCTA population distribution. This is a FLOOR: it ignores street-name collisions between unrelated households in the same ZIP, so true street-line agreement is >= this estimate.
+- **Phone**: co-resident landline-sharing FLOOR -- P(co-resident) (from street_line_with_zip) times P(shared household has a landline) (NCHS Wireless Substitution survey, household-level). Excludes non-co-resident sharing and mobile number reassignment/recycling; see caveat below.
 - **Middle name**: PROXY -- reuses the 2020 first-name distribution (Census publishes no middle-name table); see caveat below.
 - **SSN/ITIN last 4**: closed-form 1/9999, not Census-derived; valid only for the post-2011-randomization cohort (see caveat below).
 - **MBI**: namespace-size floor u = 1/N using CMS's total Medicare enrollment (N), not a frequency distribution.
@@ -275,6 +281,8 @@ All data downloaded/re-verified on 2026-09-30.
 
 - SSA SSN Randomization policy (used for the SSN/ITIN last-4 closed form, no data file downloaded): https://www.ssa.gov/employer/randomization.html
 
+- NCHS Wireless Substitution survey (July-December 2024, used for the phone co-resident-landline floor, no data file downloaded): https://doi.org/10.15620/cdc/174608
+
 ## Caveats
 
 - **Suppression**: Census name files only list names above an occurrence threshold; unlisted names are a long tail of rare names. Two bounds are given per name field (see per-field notes).
@@ -282,6 +290,7 @@ All data downloaded/re-verified on 2026-09-30.
 - **Uniform-DOB assumption**: real birth dates are not perfectly uniform within a year (seasonal effects), so u_dob is a slight underestimate.
 - **National vs. member population**: all inputs are U.S. national population estimates, not a specific payer/provider's member population, which may have different age/geographic distributions.
 - **Street line + ZIP is a floor**: see street-line notes above.
+- **Phone is a floor**: see phone notes above -- only quantifies co-resident landline sharing, not the full universe of real-world phone-sharing scenarios.
 - **Middle name is a proxy**, not a direct measurement (see per-field notes); true middle-name concentration could be higher or lower than the first-name distribution used here.
 - **SSN/ITIN last-4 closed form covers only the post-2011-randomization cohort**: most currently-insured adults have a pre-2011 SSN, for which the last 4 digits were assigned sequentially (not randomly) within area/group blocks, and the true population-wide u is likely somewhat higher than 1/9999 (see per-field notes and docs/LEARNINGS.md).
 - **MBI is a namespace-size floor**, not an empirical frequency distribution, and ignores duplicate-issuance/reissuance/transcription-error collisions (see per-field notes).

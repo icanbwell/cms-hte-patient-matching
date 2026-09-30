@@ -166,6 +166,27 @@ MDCR_ENROLLMENT_ZIP_URL = (
 MDCR_ENROLLMENT_XLSX_NAME = "MDCR ENROLL AB 1-8_CPS_02ENR_2024.xlsx"
 MDCR_ENROLLMENT_YEAR = 2024
 
+# --- Phone: NCHS household landline prevalence (closed-form, no data file needed) ---
+# Phone-number agreement isn't a namespace-collision question like names/DOB/ZIP --
+# personal mobile numbers are effectively unique per person, so the only
+# quantifiable sharing mechanism is a landline shared by co-resident household
+# members (same mechanism as the street-line co-resident floor in compute.py's
+# street_line_and_zip_u). NCHS's National Health Interview Survey tracks
+# *household* (not per-person) telephone status; Table 1 of the July-Dec 2024
+# Early Release gives, among adults: 78.7% wireless-only household, 19.8%
+# landline-with-wireless (dual), 0.9% landline-only, 0.5% phoneless (rows don't
+# sum to exactly 100 due to a small "unknown" residual). Household is a binary,
+# shared property -- if one resident has a landline, so does every co-resident --
+# so the dual + landline-only share is the fraction of adults for whom a
+# co-resident phone-number match is even physically possible.
+# Source: Blumberg SJ, Luke JV. "Wireless substitution: Early release of
+# estimates from the National Health Interview Survey, July-December 2024."
+# NCHS, released June 2025. Table 1. DOI: https://doi.org/10.15620/cdc/174608
+NCHS_WIRELESS_SUBSTITUTION_REPORT_PERIOD = "July-December 2024"
+NCHS_WIRELESS_SUBSTITUTION_DOI = "https://doi.org/10.15620/cdc/174608"
+NCHS_ADULT_LANDLINE_ONLY_HOUSEHOLD_PCT = 0.9
+NCHS_ADULT_DUAL_USER_HOUSEHOLD_PCT = 19.8
+
 # --- Conservative baseline u-values (from the patient-matching model) -------
 CONSERVATIVE_U = {
     ("first_name", "exact"): 0.02,
@@ -183,6 +204,7 @@ CONSERVATIVE_U = {
     ("ssn_last4", "exact"): 0.0001,
     ("itin_last4", "exact"): 0.0001,
     ("mbi", "exact"): 0.000001,
+    ("phone", "exact"): 0.000001,
 }
 
 # --- Sanity-check ranges (compute.py prints warnings if outside these) ------

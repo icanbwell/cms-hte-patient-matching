@@ -39,6 +39,7 @@ The "Margin" column is just Conservative ÷ Empirical — it is not itself sourc
 | State | exact | 0.06 | 0.04455 | 1.35x |
 | City | exact | 0.01 | 0.003121 (bound a; see note below) | 3.20x |
 | Street line | exact / fuzzy | 0.00003 / 0.00006 | see note below | see note below |
+| Phone Number | exact | 0.000001 | 1.31e-09 (co-resident-landline floor; see note below) | see note below |
 | SSN Last 4 | exact | 0.0001 | 0.0001 (1/9999, closed-form) | **1.00x** |
 | ITIN Last 4 | exact | 0.0001 | 0.0001 (1/9999, assumed by analogy) | **1.00x** |
 | MBI | exact | 0.000001 | 1.471e-08 (1/N, N = 2024 Medicare enrollment) | 67.99x |
@@ -127,6 +128,32 @@ Comparing the table's 0.00003 against `street_line_given_zip` (6.5e-05) is the a
 read, and on that basis the conservative value is actually *smaller* than the empirical estimate
 for this field — worth a closer look.
 
+### Phone: a partial floor, not a full point estimate — don't read the 763x margin as "way over-conservative"
+
+Phone is structurally different from every other computed field: it's not a namespace-collision
+question (public data can't model two strangers being randomly assigned the same number), it's a
+*sharing* question. The only sharing mechanism this tool can quantify from public data is a
+landline shared by co-resident household members — the same mechanism as the street-line floor,
+scaled down by the fraction of households that still have a landline at all.
+
+`phone_u()` computes `u = P(co-resident) * P(shared household has a landline)`:
+- `P(co-resident)` reuses `street_line_with_zip`'s u (6.33e-09) — co-residents are trivially also
+  same-ZIP, so that FieldResult already *is* an estimate of P(co-resident).
+- `P(shared household has a landline)` = 20.7% of adults, from CDC NCHS's National Health
+  Interview Survey (Wireless Substitution: Early Release of Estimates, July-December 2024,
+  released June 2025, https://doi.org/10.15620/cdc/174608, Table 1: 19.8% dual-user + 0.9%
+  landline-only households). The other ~79% of adults have a personal mobile number, effectively
+  unique per person.
+
+This gives `u_unbiased = 1.31e-09`, a **763x** margin against the conservative value (0.000001).
+**That margin is not evidence the conservative assumption is overly cautious** — this floor
+deliberately excludes every other real-world phone-sharing mechanism there's no public data for:
+a family member's mobile number listed for someone who doesn't live with them (common for elderly
+patients or children with divorced parents), a shared "family contact" number, and mobile number
+reassignment/recycling after disconnection. The conservative value is very likely pricing in those
+mechanisms; this tool's floor structurally cannot. Treat 1.31e-09 as "here's the one mechanism we
+can prove from public survey data," not as "phone has 763x more headroom than it needs."
+
 ### Middle name: proxy via the first-name distribution, not a direct measurement
 
 Census publishes no middle-name frequency table, so `middle_name_proxy_u()` reuses the 2020
@@ -180,8 +207,7 @@ nothing in the right-hand column.
 |---|---|---|
 | Suffix | 0.2 | Dismissed in the spec (data quality/selectivity); no public suffix frequency table. |
 | Year of Birth (dismissed variant) | 0.015 | Dismissed in the spec separately from the exact variant already computed above. |
-| Phone Number | 0.000001 | Driven by household/family sharing, not collision — needs survey data (e.g. Pew), not a population-frequency table. |
-| Email Address | 0.000001 | Same shape as Phone — no public sharing-rate survey wired in. |
+| Email Address | 0.000001 | Same shape as Phone — no public sharing-rate survey wired in yet (see note below for a candidate approach). |
 | Legal ID | 0.000001 | Namespace-specific per issuing authority (each state DMV, State Dept); no single public count spans all issuers. |
 | Namespace-bound unique IDs (EMPI, FHIR Patient Identifier, CSP UUID) | ≈0 | Namespace size = your own organization's patient count — internal data, not public. |
 | Insurance Member ID | 0.000001 | Payer-specific enrollment count; no single public per-payer figure. |
@@ -192,7 +218,7 @@ nothing in the right-hand column.
 ## Summary
 
 Most computed fields carry a comfortable margin (3x–68x) between the conservative value and the
-empirical estimate. Five items warrant follow-up:
+empirical estimate. Six items warrant follow-up:
 
 1. Year of birth's margin is thin (1.27x). The tool's sanity-check range has been fixed to
    correctly reflect the all-ages headline it actually reports (see note above), so the warning
@@ -204,8 +230,11 @@ empirical estimate. Five items warrant follow-up:
 3. Street line's conservative value should be compared against `street_line_given_zip`
    (conditional on ZIP match), not `street_line_with_zip` (joint) — on that basis the
    conservative value is close to, or below, the empirical estimate.
-4. SSN/ITIN last-4's 1.00x "margin" is not independent verification — it's the same closed-form
+4. Phone's 763x margin is the widest of any field, and specifically should **not** be read as
+   "over-conservative" — it's a partial co-resident-landline floor, not a full point estimate;
+   see the Phone section above for why the gap is expected, not a finding.
+5. SSN/ITIN last-4's 1.00x "margin" is not independent verification — it's the same closed-form
    calculation as the conservative value, and it's unverified for the pre-2011 majority of the
    population (see the SSN/ITIN section above and `docs/LEARNINGS.md`).
-5. Middle name's margin (5.58x) rests on a proxy distribution (first names), not a direct
+6. Middle name's margin (5.58x) rests on a proxy distribution (first names), not a direct
    measurement — treat it as indicative only.

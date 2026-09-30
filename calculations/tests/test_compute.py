@@ -7,6 +7,7 @@ import pandas as pd
 import pytest
 
 import compute
+import config
 
 
 # ---------------------------------------------------------------------------
@@ -314,3 +315,26 @@ def test_mbi_u_is_one_over_total_enrollment():
     assert result.field == "mbi"
     assert result.u_unbiased == pytest.approx(1 / 50_000_000.0)
     assert "2024" in result.notes
+
+
+# ---------------------------------------------------------------------------
+# phone_u
+# ---------------------------------------------------------------------------
+
+
+def test_phone_u_scales_co_resident_probability_by_landline_household_share():
+    street_and_zip = compute.FieldResult(
+        "street_line_with_zip", "exact", u_unbiased=4.0e-9, u_simple=8.0e-9, source_file="fixture"
+    )
+    result = compute.phone_u(street_and_zip)
+    expected_landline_share = (
+        config.NCHS_ADULT_DUAL_USER_HOUSEHOLD_PCT + config.NCHS_ADULT_LANDLINE_ONLY_HOUSEHOLD_PCT
+    ) / 100.0
+    assert result.field == "phone"
+    assert result.u_unbiased == pytest.approx(4.0e-9 * expected_landline_share)
+    assert result.u_simple == pytest.approx(8.0e-9 * expected_landline_share)
+    # Sanity: this is a floor on a floor, so it must be strictly smaller than
+    # the co-resident probability it's derived from (landline share < 1).
+    assert result.u_unbiased < street_and_zip.u_unbiased
+    assert "NCHS" in result.notes
+    assert "floor" in result.notes.lower()
