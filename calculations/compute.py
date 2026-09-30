@@ -58,13 +58,15 @@ def u_from_probabilities(probs: np.ndarray) -> float:
 
 @dataclass
 class FieldResult:
+    """One field's (e.g. last_name/exact) computed u-probabilities plus reporting metadata."""
+
     field: str
     variant: str  # "exact" | "fuzzy"
     u_unbiased: float
     u_simple: float
     source_file: str
     notes: str = ""
-    top10: list[tuple[str, float]] = field(default_factory=list)
+    top10: tuple[tuple[str, float], ...] = field(default_factory=tuple)
 
     @property
     def current_conservative_u(self) -> float | None:
@@ -90,10 +92,11 @@ class FieldResult:
         }
 
 
-def top_n_by_count(names: list[str], counts: np.ndarray, n: int = 10) -> list[tuple[str, float]]:
+def top_n_by_count(names: list[str], counts: np.ndarray, n: int = 10) -> tuple[tuple[str, float], ...]:
+    """Return the top-`n` (name, share_of_total) pairs, ordered by descending count."""
     total = counts.sum()
     order = np.argsort(-counts)[:n]
-    return [(names[i], float(counts[i] / total)) for i in order]
+    return tuple((names[i], float(counts[i] / total)) for i in order)
 
 
 # ---------------------------------------------------------------------------
@@ -116,6 +119,7 @@ def load_surnames_2010() -> tuple[pd.DataFrame, int]:
 
 
 def load_lastnames_2020() -> tuple[pd.DataFrame, int]:
+    """Return (listed_df[name, count], unlisted_count) for the 2020 last-names file."""
     xpath = config.DATA_RAW / "Names2020_LastNames_RaceHispanic.xlsx"
     df = pd.read_excel(xpath, header=2)
     df = df.rename(columns={"LAST NAME": "name", "FREQUENCY (COUNT)": "count"})
@@ -128,6 +132,7 @@ def load_lastnames_2020() -> tuple[pd.DataFrame, int]:
 
 
 def load_firstnames_2020() -> tuple[pd.DataFrame, int]:
+    """Return (listed_df[name, count], unlisted_count) for the 2020 first-names file."""
     xpath = config.DATA_RAW / "Names2020_FirstNames_Sex.xlsx"
     df = pd.read_excel(xpath, header=2)
     df = df.rename(columns={"FIRST NAME": "name"})
@@ -141,10 +146,12 @@ def load_firstnames_2020() -> tuple[pd.DataFrame, int]:
 
 
 def load_agesex() -> pd.DataFrame:
+    """Return the national single-year-of-age-by-sex population estimates file."""
     return pd.read_csv(config.DATA_RAW / "nc-est2025-agesex-res.csv")
 
 
 def load_state_pop() -> pd.DataFrame:
+    """Return per-state population estimates (NST-EST2025-POP), tidied to area/y2025."""
     nst = pd.read_excel(config.DATA_RAW / "NST-EST2025-POP.xlsx", header=None, skiprows=4)
     nst.columns = ["area", "base2020", "y2020", "y2021", "y2022", "y2023", "y2024", "y2025"]
     nst = nst.dropna(subset=["area"])
@@ -156,6 +163,7 @@ def load_state_pop() -> pd.DataFrame:
 
 
 def load_places() -> pd.DataFrame:
+    """Return incorporated places + CDPs (SUB-EST2025) as [NAME, STNAME, FUNCSTAT, POPESTIMATE2025]."""
     df = pd.read_csv(config.DATA_RAW / "sub-est2025.csv", encoding="latin1")
     # SUMLEV 162 = incorporated place or Census Designated Place (CDP);
     # FUNCSTAT distinguishes active government (A) vs statistical/CDP (S).
@@ -164,6 +172,7 @@ def load_places() -> pd.DataFrame:
 
 
 def load_zcta_population() -> pd.DataFrame:
+    """Return ZCTA-level population (ACS5 B01003) as [zcta, population], population > 0 only."""
     with open(config.DATA_RAW / "acs5_zcta_population.json") as f:
         data = json.load(f)
     df = pd.DataFrame(data[1:], columns=data[0])
@@ -173,6 +182,7 @@ def load_zcta_population() -> pd.DataFrame:
 
 
 def load_zcta_household_size() -> pd.DataFrame:
+    """Return ZCTA-level household-size distribution + avg household size (ACS5 B11016/B25010)."""
     with open(config.DATA_RAW / "acs5_zcta_household_size.json") as f:
         data = json.load(f)
     df = pd.DataFrame(data[1:], columns=data[0])

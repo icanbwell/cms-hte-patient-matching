@@ -276,13 +276,6 @@ def download_hud_crosswalk() -> Path | None:
         return None
 
 
-def download_ssa_babynames() -> Path:
-    """Download the SSA baby-names file (first-names fallback source); return its path."""
-    dest = config.DATA_RAW / "ssa_babynames.zip"
-    _download_file(config.SSA_BABYNAMES_ZIP_URL, dest)
-    return dest
-
-
 def download_all() -> None:
     """Download every required raw source into config.DATA_RAW, in sequence."""
     log.info("=== Downloading all sources into %s ===", config.DATA_RAW)
@@ -296,10 +289,6 @@ def download_all() -> None:
     download_zcta_household_size()
     download_zcta_housing_units()
     download_hud_crosswalk()
-    # SSA baby names is only needed as a fallback; 2020 Census does have
-    # first names, so we do not download it by default. compute.py will
-    # call download_ssa_babynames() itself if it detects the fallback is
-    # needed.
     log.info("=== Download pass complete ===")
 
 

@@ -138,9 +138,6 @@ HUD_CROSSWALK_API_URL = "https://www.huduser.gov/hudapi/public/usps"
 # without a dedicated ZIP-to-city HUD product); see download.py for handling
 # when HUD_TOKEN is unset (skip with an explicit message, no fabricated data).
 
-# --- SSA baby names (fallback for first names if needed) --------------------
-SSA_BABYNAMES_ZIP_URL = "https://www.ssa.gov/oact/babynames/names.zip"
-
 # --- Conservative baseline u-values (from the patient-matching model) -------
 CONSERVATIVE_U = {
     ("first_name", "exact"): 0.02,

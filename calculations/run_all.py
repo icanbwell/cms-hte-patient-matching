@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import sys
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -194,7 +195,7 @@ def _print_headline_table(results: list[compute.FieldResult]) -> None:
 
 
 def _write_markdown(
-    path,
+    path: Path,
     results: list[compute.FieldResult],
     warnings: list[str],
     u_adult_unbiased: float,
