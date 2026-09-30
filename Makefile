@@ -35,8 +35,12 @@ tests: ## Runs all the tests
 	uv run pytest .
 
 .PHONY: onc-tests
-onc-tests: fetch-onc-data ## Fetch the ONC test data and run the ONC regression tests (they skip, not fail, without this)
-	uv run pytest tests/test_onc_regression.py tests/test_onc_population_regression.py
+onc-tests: fetch-onc-data ## Fetch the ONC test data, run the ONC regression tests, and print accuracy metrics
+	mkdir -p reports
+	uv run pytest tests/test_onc_regression.py tests/test_onc_population_regression.py; \
+	status=$$?; \
+	uv run python scripts/summarize_onc_metrics.py; \
+	exit $$status
 
 .PHONY: clean-pre-commit
 clean-pre-commit: ## removes pre-commit hook
