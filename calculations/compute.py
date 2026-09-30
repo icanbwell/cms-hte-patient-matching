@@ -279,7 +279,14 @@ def build_fuzzy_ball_mass(
         for d in _deletions(names[i]):
             deletion_index.setdefault(d, []).append(i)
 
-    name_set = set(names)
+    # Deliberately built from eligible names ONLY: a name below min_len must
+    # get zero ball mass (see docstring), which requires the exclusion to be
+    # symmetric. Matching against the full name set here would let an
+    # eligible name's ball silently absorb an ineligible name's probability
+    # mass (e.g. real Census data: "CHENG" would inherit all of "CHEN"'s
+    # mass) without "CHEN" ever reciprocating, since ineligible names never
+    # get their own ball computed -- a one-directional, inflation-only leak.
+    eligible_name_set = {names[i] for i in eligible_idx}
 
     for i in eligible_idx:
         v = names[i]
@@ -289,8 +296,9 @@ def build_fuzzy_ball_mass(
         # Case: same-length substitution/transposition (shared deletion).
         for d in _deletions(v):
             candidates.update(deletion_index.get(d, ()))
-            # Case: v's own deletion is itself a listed (shorter) name.
-            if d in name_set:
+            # Case: v's own deletion is itself a listed (shorter) name --
+            # only counts if that shorter name is itself eligible.
+            if d in eligible_name_set:
                 candidates.add(name_to_idx[d])
         candidates.discard(i)
 
@@ -315,14 +323,25 @@ def fuzzy_u_from_ball_mass(
     come out *lower* than exact-match u, which is definitionally impossible.
     Short (ineligible) names fall back to exact-match probability only.
     """
+    # u_simple = Sigma_v p_v * q_v, where q_v is "probability a second random
+    # draw is within fuzzy distance of v": p_v (self) + ball_mass_v (others)
+    # for eligible v, or just p_v (self only, no fuzzy neighbors) for short v.
     u_simple = float(
         np.sum(probs[eligible] * (probs[eligible] + ball_mass[eligible]))
         + np.sum(probs[~eligible] ** 2)
     )
 
+    # u_unbiased is the same three-term split, but as ordered-pair counts of
+    # distinct PEOPLE (not probability mass) over all N*(N-1) ordered pairs --
+    # same finite-population correction as u_from_counts, just with "same
+    # value" widened to "same value OR a fuzzy neighbor" for eligible names.
     n_total = counts.sum()
     pair_denom = n_total * (n_total - 1) if n_total > 1 else 1.0
     exact_pairs = np.sum(counts[eligible] * (counts[eligible] - 1))
+    # ball_mass_v * n_total recovers the neighbor headcount Sigma_{w in ball(v)} n_w
+    # from the neighbor probability mass; summing over every eligible v (not
+    # just v < w) double-counts each unordered {v, w} pair once per direction,
+    # which is exactly what "ordered pairs of distinct people" requires.
     near_miss_pairs = np.sum(counts[eligible] * (ball_mass[eligible] * n_total))
     short_pairs = np.sum(counts[~eligible] * (counts[~eligible] - 1))
     u_unbiased = (
@@ -467,21 +486,47 @@ def state_u(state_pop: pd.DataFrame) -> dict[str, FieldResult]:
 # ---------------------------------------------------------------------------
 
 
-def city_u(places: pd.DataFrame) -> FieldResult:
+def city_u(places: pd.DataFrame, national_total: float) -> FieldResult:
+    """Bound (a): places/CDPs renormalized to their own total -- headline.
+    Bound (b) is reported in `notes` as a lower bound (places/CDPs + the
+    population outside any place/CDP, as unique singletons) -- same pattern
+    as `name_exact_u`'s listed/unlisted split, needed here because places +
+    CDPs (SUMLEV 162) cover only a fraction of the national population (many
+    people live in unincorporated areas belonging to neither); renormalizing
+    to the places-only total like bound (a) does would otherwise silently
+    inflate concentration by treating that smaller population as if it were
+    everyone.
+    """
     counts = places["POPESTIMATE2025"].to_numpy(dtype=np.float64)
-    u_unbiased, u_simple = u_from_counts(counts)
+    places_total = counts.sum()
+    coverage = places_total / national_total if national_total else float("nan")
+
+    u_unbiased_a, u_simple_a = u_from_counts(counts)
+
+    outside_places = national_total - places_total
+    if outside_places > 0:
+        counts_b = np.concatenate([counts, np.ones(int(round(outside_places)), dtype=np.float64)])
+        u_unbiased_b, u_simple_b = u_from_counts(counts_b)
+    else:
+        u_unbiased_b, u_simple_b = u_unbiased_a, u_simple_a
+
     labels = (places["NAME"] + ", " + places["STNAME"]).tolist()
     top10 = top_n_by_count(labels, counts, 10)
     notes = (
-        f"SUB-EST2025 incorporated places + Census Designated Places (SUMLEV 162), "
-        f"{len(places):,} places nationwide, July 1, 2025 estimate. Caveat: this is "
-        f"Census place geography, not USPS mailing city -- many mailing addresses use "
-        f"a ZIP's default USPS city name that differs from (or spans multiple) Census "
-        f"places, so this likely understates true mailing-city concentration somewhat. "
-        f"No HUD_TOKEN was configured, so the alternate USPS-city-via-ZIP-crosswalk "
-        f"calculation was skipped (see download.py's printed manual-setup instructions)."
+        f"Headline = bound (a): places/CDPs ({len(places):,}) renormalized to their own "
+        f"total, ignoring the population outside any place/CDP. Coverage = places/national "
+        f"= {coverage:.4f} ({places_total:,.0f} / {national_total:,.0f}). Bound (b) lower "
+        f"bound, treating everyone outside any place/CDP as unique singleton residents: "
+        f"u_unbiased={u_unbiased_b:.3e}, u_simple={u_simple_b:.3e}. SUB-EST2025 incorporated "
+        f"places + Census Designated Places (SUMLEV 162), July 1, 2025 estimate. Separate "
+        f"caveat: this is Census place geography, not USPS mailing city -- many mailing "
+        f"addresses use a ZIP's default USPS city name that differs from (or spans "
+        f"multiple) Census places, which pulls in the opposite direction from the coverage "
+        f"gap above (understates concentration, rather than overstating it). No HUD_TOKEN "
+        f"was configured, so the alternate USPS-city-via-ZIP-crosswalk calculation was "
+        f"skipped (see download.py's printed manual-setup instructions)."
     )
-    return FieldResult("city", "exact", u_unbiased, u_simple, "sub-est2025.csv", notes, top10)
+    return FieldResult("city", "exact", u_unbiased_a, u_simple_a, "sub-est2025.csv", notes, top10)
 
 
 # ---------------------------------------------------------------------------

@@ -29,15 +29,15 @@ The "Margin" column is just Conservative ÷ Empirical — it is not itself sourc
 | Field | Variant | Conservative u (spec, input) | Empirical u (this tool, calculated) | Margin (spec ÷ tool) |
 |---|---|---|---|---|
 | Last Name | exact | 0.005 | 0.0006779 | 7.38x |
-| Last Name | fuzzy | 0.01 | 0.0008427 | 11.87x |
+| Last Name | fuzzy | 0.01 | 0.0008325 | 12.01x |
 | First Name | exact | 0.02 | 0.001793 | 11.16x |
-| First Name | fuzzy | 0.03 | 0.002307 | 13.00x |
+| First Name | fuzzy | 0.03 | 0.002257 | 13.29x |
 | Middle Name | exact | 0.01 | 0.001793 (proxy) | 5.58x |
 | Year of Birth | exact | 0.015 | 0.01178 | **1.27x** |
 | Date of Birth (full) | exact | 0.0001 | 3.226e-05 | 3.10x |
 | ZIP Code (5-digit) | exact | 0.0003 | 9.698e-05 | 3.09x |
 | State | exact | 0.06 | 0.04455 | 1.35x |
-| City | exact | 0.01 | 0.003121 | 3.20x |
+| City | exact | 0.01 | 0.003121 (bound a; see note below) | 3.20x |
 | Street line | exact / fuzzy | 0.00003 / 0.00006 | see note below | see note below |
 | SSN Last 4 | exact | 0.0001 | 0.0001 (1/9999, closed-form) | **1.00x** |
 | ITIN Last 4 | exact | 0.0001 | 0.0001 (1/9999, assumed by analogy) | **1.00x** |
@@ -47,14 +47,26 @@ Every number in the "Conservative u" column above came from the spec and is repr
 (not recomputed). Every number in the "Empirical u" column was produced by running
 `make calculate` in `calculations/` against the sources cited per-field below.
 
-### Fuzzy name-match values were revised after a bug fix
+### Fuzzy name-match values were revised after two bug fixes
 
 An earlier run of this tool understated fuzzy-match u for last/first name (0.0002143 and
 0.0008324 respectively) because `name_fuzzy_u` omitted the exact-match term (p_v²) for eligible
 names — since fuzzy match (edit distance ≤ 1) is a superset of exact match (edit distance 0),
 that omission made "fuzzy u" come out *lower* than "exact u," which is definitionally impossible.
-The fix adds the exact-match term back in; fuzzy u for both fields is now correctly ≥ exact u,
-and the resulting margins (11.87x / 13.00x) are the ones in the table above.
+That fix added the exact-match term back in, producing 0.0008427 / 0.002307 (11.87x / 13.00x).
+
+A second, smaller bug was found and fixed after that: `build_fuzzy_ball_mass`'s min_len
+exclusion (names shorter than 5 characters are supposed to be entirely excluded from fuzzy
+matching, falling back to exact-match probability only) wasn't symmetric. An eligible name's
+deletion-neighborhood candidate search could match a real, listed *short* (ineligible) name and
+pull in that short name's full probability mass — even though the short name itself never got a
+ball computed and so never contributed this back. On the real 2020 Census last-name file this
+fired for ~14% of eligible names (e.g. `CHENG` absorbing all of `CHEN`'s mass) and inflated
+last-name fuzzy u by about 1.2% (0.0008427 → the corrected 0.0008325 in the table above). The fix
+restricts that candidate path to eligible names only. Both fixes are one-directional corrections
+(each bug always inflated or deflated the number the same way), so the values in the table above
+are now lower (last name) / lower (first name) than the immediately-preceding run, but still
+higher than the original, doubly-buggy pre-exact-match-term run.
 
 ### Year of birth: thin margin, flagged by the tool's own sanity check
 
@@ -68,6 +80,26 @@ WARNING: Year-of-birth u_unbiased=0.0118 is outside the expected [0.012, 0.016] 
 The conservative value (0.015) and the empirical value (0.01178) are close enough that this row
 has little headroom. Worth investigating why the empirical estimate fell outside the tool's own
 expected range before treating 0.015 as comfortably conservative.
+
+### City: headline is bound (a), same coverage caveat as the name fields — now disclosed
+
+`city_u()` renormalizes places + Census Designated Places (SUMLEV 162) to their own total for
+the headline number (bound (a), 0.003121 above) — the same pattern `name_exact_u` uses for
+listed names. That pattern needs a coverage disclosure to be safe, because places/CDPs cover
+only **63.1%** of the national population (215.7M of 341.8M people; many people live in
+unincorporated areas that belong to no place or CDP). An earlier version of this tool computed
+bound (a) for city without ever computing or disclosing a bound (b) the way every name field
+does, and its only caveat pointed the reader in the *opposite* direction (Census-place-vs-USPS-
+mailing-city geography mismatch, which understates concentration) — giving no hint that the
+uncomputed coverage gap overstates it, and by more.
+
+Now fixed: `city_u()` also computes bound (b) — places/CDPs plus everyone outside any place/CDP
+treated as unique singleton residents — and reports it in the field's notes:
+`u_unbiased=1.243e-03`, vs. bound (a)'s `0.003121`, a **2.51x** difference. The headline number in
+the table above is unchanged (bound (a), for consistency with how every other listed/unlisted
+field in this tool reports its headline), but the true margin against the conservative value
+(0.01) is closer to **8x** (0.01 / 0.001243) than the 3.20x the bound-(a)-only number implies.
+See `outputs/u_probabilities.md`'s `city` notes for the full coverage figure.
 
 ### Street line: table and tool aren't asking the same question
 
@@ -151,15 +183,18 @@ nothing in the right-hand column.
 ## Summary
 
 Most computed fields carry a comfortable margin (3x–68x) between the conservative value and the
-empirical estimate. Four items warrant follow-up:
+empirical estimate. Five items warrant follow-up:
 
 1. Year of birth's margin is thin (1.27x) and the tool's own sanity check flags the empirical
    value as unexpected — investigate before relying on the 0.015 conservative value.
-2. Street line's conservative value should be compared against `street_line_given_zip`
+2. City's table margin (3.20x) is against bound (a), which excludes the ~37% of the population
+   outside any Census place/CDP; the coverage-adjusted margin is closer to 8x. Use bound (b)
+   (1.243e-03, in the field's notes) if the question is "how conservative is 0.01, really?"
+3. Street line's conservative value should be compared against `street_line_given_zip`
    (conditional on ZIP match), not `street_line_with_zip` (joint) — on that basis the
    conservative value is close to, or below, the empirical estimate.
-3. SSN/ITIN last-4's 1.00x "margin" is not independent verification — it's the same closed-form
+4. SSN/ITIN last-4's 1.00x "margin" is not independent verification — it's the same closed-form
    calculation as the conservative value, and it's unverified for the pre-2011 majority of the
    population (see the SSN/ITIN section above and `docs/LEARNINGS.md`).
-4. Middle name's margin (5.58x) rests on a proxy distribution (first names), not a direct
+5. Middle name's margin (5.58x) rests on a proxy distribution (first names), not a direct
    measurement — treat it as indicative only.

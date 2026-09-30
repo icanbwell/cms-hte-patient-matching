@@ -72,10 +72,11 @@ FIRSTNAMES_2020_SEX_XLSX_URL = (
 LASTNAMES_2020_RACEHISPANIC_XLSX_URL = (
     "https://www2.census.gov/topics/genealogy/2020surnames/Names2020_LastNames_RaceHispanic.xlsx"
 )
-# Note: the 2020 release only publishes last names broken out by race/Hispanic
-# origin category (no single "all races combined" last-name-only file the way
-# 2010 had). We sum across the race/ethnicity columns to reconstruct national
-# counts; see LEARNINGS-style note in compute.py's surname loader.
+# Note: this file also breaks last names out by race/Hispanic origin category,
+# but it publishes a "FREQUENCY (COUNT)" column that is already the national
+# total across all categories (verified: it equals the sum of the per-category
+# columns) -- compute.py's load_lastnames_2020() uses that column directly, no
+# re-summation needed.
 
 # --- National single-year-of-age by sex ------------------------------------
 # Landing page: https://www.census.gov/data/datasets/time-series/demo/popest/2020s-national-detail.html

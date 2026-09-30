@@ -146,10 +146,12 @@ def main(*, do_download: bool = True, do_compute: bool = True) -> None:
     sresult = compute.state_u(state_pop)
     results.append(sresult["no_pr"])
 
-    # City
+    # City (national_total from the State step above, needed for the
+    # places/CDPs coverage bound -- see compute.city_u docstring)
     _log("City (places)...")
     places = compute.load_places()
-    cresult = compute.city_u(places)
+    national_total = float(state_pop.loc[state_pop["area"] != "Puerto Rico", "y2025"].sum())
+    cresult = compute.city_u(places, national_total)
     results.append(cresult)
 
     # Street line + ZIP

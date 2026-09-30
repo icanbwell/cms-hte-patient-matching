@@ -130,6 +130,21 @@ def test_fuzzy_ball_mass_respects_min_len():
     assert mass[1] == pytest.approx(0.0)
 
 
+def test_fuzzy_ball_mass_excludes_ineligible_names_from_eligible_balls():
+    # "SMIT" (4 chars, below min_len=5) is one deletion away from "SMITH" (5
+    # chars, eligible). Per the min_len contract, "SMIT" must get zero mass
+    # -- but that exclusion has to be symmetric: "SMITH"'s ball must not
+    # silently absorb "SMIT"'s probability either, or a name below min_len
+    # would still contaminate a fuzzy-match estimate it was supposed to be
+    # fully excluded from.
+    names = ["SMITH", "SMIT", "JONES"]
+    probs = np.array([0.5, 0.3, 0.2])
+    mass = compute.build_fuzzy_ball_mass(names, probs, min_len=5)
+    assert mass[0] == pytest.approx(0.0)  # SMITH's ball excludes ineligible SMIT
+    assert mass[1] == pytest.approx(0.0)  # SMIT itself: no ball at all
+    assert mass[2] == pytest.approx(0.0)
+
+
 # ---------------------------------------------------------------------------
 # name_exact_u and name_fuzzy_u end-to-end on tiny fixtures
 # ---------------------------------------------------------------------------
@@ -144,6 +159,28 @@ def test_name_exact_u_bounds_and_coverage():
     assert result.u_simple == pytest.approx(expected_a_simple)
     assert "coverage" in result.notes.lower() or "Coverage" in result.notes
     assert "bound (b)" in result.notes.lower() or "Bound (b)" in result.notes
+
+
+def test_city_u_uses_national_total_not_places_only_total():
+    # Places/CDPs cover only part of the national population (people outside
+    # any place/CDP are excluded from the places table entirely). Renormalizing
+    # to the places-only total (as if it were everyone) instead of the true
+    # national total overstates city concentration -- same failure mode
+    # name_exact_u's bound (a)/(b) split exists to avoid for names.
+    places = pd.DataFrame(
+        {"NAME": ["Springfield", "Shelbyville"], "STNAME": ["Ohio", "Ohio"], "POPESTIMATE2025": [60, 40]}
+    )
+    national_total = 200  # 100 more people live outside any place/CDP.
+    result = compute.city_u(places, national_total)
+    # Headline (bound a) is unchanged: renormalized to the places-only total.
+    expected_a_simple = (60 / 100) ** 2 + (40 / 100) ** 2
+    assert result.u_simple == pytest.approx(expected_a_simple)
+    # But bound (b), padding the other 100 people in as singletons, must be
+    # reported and must be lower than bound (a).
+    assert "coverage" in result.notes.lower()
+    assert "bound (b)" in result.notes.lower()
+    unbiased_a, _ = compute.u_from_counts(np.array([60.0, 40.0]))
+    assert result.u_unbiased == pytest.approx(unbiased_a)
 
 
 def test_name_fuzzy_u_blends_short_and_long_names():

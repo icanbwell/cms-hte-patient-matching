@@ -8,9 +8,9 @@ u = probability two randomly chosen, distinct people agree on a field. `u_unbias
 |---|---|---|---|---|---|---|
 | last_name | exact | 0.0006779 | 0.0006779 | 0.005 | 7.38x | Names2020_LastNames_RaceHispanic.xlsx |
 | last_name_2010_comparison | exact | 0.0006946 | 0.0006946 | n/a | n/a | names_2010census.zip |
-| last_name | fuzzy | 0.0008427 | 0.0008427 | 0.01 | 11.87x | Names2020_LastNames_RaceHispanic.xlsx |
+| last_name | fuzzy | 0.0008325 | 0.0008325 | 0.01 | 12.01x | Names2020_LastNames_RaceHispanic.xlsx |
 | first_name | exact | 0.001793 | 0.001793 | 0.02 | 11.16x | Names2020_FirstNames_Sex.xlsx |
-| first_name | fuzzy | 0.002307 | 0.002307 | 0.03 | 13.00x | Names2020_FirstNames_Sex.xlsx |
+| first_name | fuzzy | 0.002257 | 0.002257 | 0.03 | 13.29x | Names2020_FirstNames_Sex.xlsx |
 | middle_name | exact | 0.001793 | 0.001793 | 0.01 | 5.58x | Names2020_FirstNames_Sex.xlsx |
 | year_of_birth | exact | 0.01178 | 0.01178 | 0.015 | 1.27x | nc-est2025-agesex-res.csv |
 | dob_full | exact | 3.226e-05 | 3.226e-05 | 0.0001 | 3.10x | derived from year_of_birth |
@@ -202,7 +202,7 @@ Michigan: 2.9632%
 
 ### city (exact)
 
-SUB-EST2025 incorporated places + Census Designated Places (SUMLEV 162), 19,483 places nationwide, July 1, 2025 estimate. Caveat: this is Census place geography, not USPS mailing city -- many mailing addresses use a ZIP's default USPS city name that differs from (or spans multiple) Census places, so this likely understates true mailing-city concentration somewhat. No HUD_TOKEN was configured, so the alternate USPS-city-via-ZIP-crosswalk calculation was skipped (see download.py's printed manual-setup instructions).
+Headline = bound (a): places/CDPs (19,483) renormalized to their own total, ignoring the population outside any place/CDP. Coverage = places/national = 0.6310 (215,662,427 / 341,784,857). Bound (b) lower bound, treating everyone outside any place/CDP as unique singleton residents: u_unbiased=1.243e-03, u_simple=1.243e-03. SUB-EST2025 incorporated places + Census Designated Places (SUMLEV 162), July 1, 2025 estimate. Separate caveat: this is Census place geography, not USPS mailing city -- many mailing addresses use a ZIP's default USPS city name that differs from (or spans multiple) Census places, which pulls in the opposite direction from the coverage gap above (understates concentration, rather than overstating it). No HUD_TOKEN was configured, so the alternate USPS-city-via-ZIP-crosswalk calculation was skipped (see download.py's printed manual-setup instructions).
 
 Top 10 by frequency (value, share of listed population):
 
