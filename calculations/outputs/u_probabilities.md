@@ -8,9 +8,10 @@ u = probability two randomly chosen, distinct people agree on a field. `u_unbias
 |---|---|---|---|---|---|---|
 | last_name | exact | 0.0006779 | 0.0006779 | 0.005 | 7.38x | Names2020_LastNames_RaceHispanic.xlsx |
 | last_name_2010_comparison | exact | 0.0006946 | 0.0006946 | n/a | n/a | names_2010census.zip |
-| last_name | fuzzy | 0.0002143 | 0.0002143 | 0.01 | 46.67x | Names2020_LastNames_RaceHispanic.xlsx |
+| last_name | fuzzy | 0.0008427 | 0.0008427 | 0.01 | 11.87x | Names2020_LastNames_RaceHispanic.xlsx |
 | first_name | exact | 0.001793 | 0.001793 | 0.02 | 11.16x | Names2020_FirstNames_Sex.xlsx |
-| first_name | fuzzy | 0.0008324 | 0.0008324 | 0.03 | 36.04x | Names2020_FirstNames_Sex.xlsx |
+| first_name | fuzzy | 0.002307 | 0.002307 | 0.03 | 13.00x | Names2020_FirstNames_Sex.xlsx |
+| middle_name | exact | 0.001793 | 0.001793 | 0.01 | 5.58x | Names2020_FirstNames_Sex.xlsx |
 | year_of_birth | exact | 0.01178 | 0.01178 | 0.015 | 1.27x | nc-est2025-agesex-res.csv |
 | dob_full | exact | 3.226e-05 | 3.226e-05 | 0.0001 | 3.10x | derived from year_of_birth |
 | zip5 | exact | 9.698e-05 | 9.698e-05 | 0.0003 | 3.09x | acs5_zcta_population.json |
@@ -18,6 +19,9 @@ u = probability two randomly chosen, distinct people agree on a field. `u_unbias
 | city | exact | 0.003121 | 0.003121 | 0.01 | 3.20x | sub-est2025.csv |
 | street_line_given_zip | exact | 6.527e-05 | 0.0001444 | n/a | n/a | acs5_zcta_household_size.json + acs5_zcta_population.json |
 | street_line_with_zip | exact | 6.33e-09 | 1.4e-08 | 3e-05 | 4739.45x | acs5_zcta_household_size.json + acs5_zcta_population.json |
+| ssn_last4 | exact | 0.0001 | 0.0001 | 0.0001 | 1.00x | SSA SSN Randomization policy (no data file) |
+| itin_last4 | exact | 0.0001 | 0.0001 | 0.0001 | 1.00x | assumed uniform by analogy to SSN (no data file) |
+| mbi | exact | 1.471e-08 | 1.471e-08 | 1e-06 | 67.99x | MDCR ENROLL AB 1-8_CPS_02ENR_2024.xlsx |
 
 ## Per-field notes and caveats
 
@@ -61,7 +65,7 @@ MARTINEZ: 0.3991%
 
 ### last_name (fuzzy)
 
-Ball = names within Damerau-OSA edit distance 1 (insert/delete/substitute/adjacent-transposition), found via a SymSpell-style deletion-neighborhood index over the 156,619 listed names (>= 5 chars eligible: 145,708); verified exactly with rapidfuzz. Names < 5 chars fall back to exact-match probability (p_v^2). Restricted to listed (>=100-occurrence) names -- same coverage caveat as the exact-match calculation.
+Ball = names within Damerau-OSA edit distance 1 (insert/delete/substitute/adjacent-transposition), found via a SymSpell-style deletion-neighborhood index over the 156,619 listed names (>= 5 chars eligible: 145,708); verified exactly with rapidfuzz. Fuzzy match is edit distance <= 1, i.e. exact match (p_v^2) plus the distance-1 near-miss ball mass. Names < 5 chars fall back to exact-match probability (p_v^2) only. Restricted to listed (>=100-occurrence) names -- same coverage caveat as the exact-match calculation.
 
 Top 10 by frequency (value, share of listed population):
 
@@ -99,7 +103,26 @@ JOSEPH: 0.5651%
 
 ### first_name (fuzzy)
 
-Ball = names within Damerau-OSA edit distance 1 (insert/delete/substitute/adjacent-transposition), found via a SymSpell-style deletion-neighborhood index over the 53,615 listed names (>= 5 chars eligible: 47,556); verified exactly with rapidfuzz. Names < 5 chars fall back to exact-match probability (p_v^2). Restricted to listed (>=100-occurrence) names -- same coverage caveat as the exact-match calculation.
+Ball = names within Damerau-OSA edit distance 1 (insert/delete/substitute/adjacent-transposition), found via a SymSpell-style deletion-neighborhood index over the 53,615 listed names (>= 5 chars eligible: 47,556); verified exactly with rapidfuzz. Fuzzy match is edit distance <= 1, i.e. exact match (p_v^2) plus the distance-1 near-miss ball mass. Names < 5 chars fall back to exact-match probability (p_v^2) only. Restricted to listed (>=100-occurrence) names -- same coverage caveat as the exact-match calculation.
+
+Top 10 by frequency (value, share of listed population):
+
+```
+MICHAEL: 1.2275%
+JOHN: 1.1034%
+JAMES: 1.0579%
+DAVID: 0.9932%
+ROBERT: 0.9742%
+WILLIAM: 0.7909%
+MARY: 0.6243%
+MARIA: 0.5836%
+DANIEL: 0.5674%
+JOSEPH: 0.5651%
+```
+
+### middle_name (exact)
+
+PROXY, not a direct measurement: Census publishes no middle-name frequency table, so this reuses the first-name distribution (same source file) under the assumption that middle names are drawn from a similar cultural name pool as first names. True middle-name concentration could differ in either direction -- e.g. parents may deliberately pick a less-common middle name (lowering u), or lean on a smaller set of family/traditional names (raising u) -- and this tool cannot distinguish those effects. Headline = bound (a): listed names (53,615) renormalized to their own total, ignoring the unlisted remainder. Coverage = listed/total population = 0.9378 (283,236,830 / 302,031,536). Bound (b) lower bound, treating all unlisted individuals as unique singleton names: u_unbiased=1.576e-03, u_simple=1.576e-03. Names below the Census suppression threshold (<100 occurrences, or <11 for race/ethnicity cross-tabs) are not separately listed; this is the standard disclosure-avoidance suppression, not missing data.
 
 Top 10 by frequency (value, share of listed population):
 
@@ -204,6 +227,18 @@ Same floor logic, but using the full household-size distribution (ACS B11016) in
 
 Co-resident FLOOR only: models P(two distinct people share a street address | same ZCTA) as (avg_household_size - 1) / (population - 1) via ACS B25010, population-weighted across ZCTAs, times P(same ZIP) from the ZCTA u-value. This ignores street-name collisions across different households within the same ZIP (e.g. two unrelated households both on '1st St'), so it UNDERSTATES true street-line agreement probability; treat as a lower bound, not a point estimate. u_street_given_zip (avg-size method) reported as u_simple; u_street_and_zip = u_street_given_zip * u_zip.
 
+### ssn_last4 (exact)
+
+Closed-form, not Census-derived: SSA's SSN Randomization policy (effective 2011-06-25, https://www.ssa.gov/employer/randomization.html) made the last 4 digits fully random over 9999 possible values (0001-9999; 0000 never issued) for SSNs issued on or after that date. NOT valid for pre-2011 SSNs, which used sequential (non-random) serial assignment within area/group blocks and likely have a somewhat higher true u -- see docs/LEARNINGS.md for why this tool does not attempt to quantify that cohort without SSA's historical High Group List data.
+
+### itin_last4 (exact)
+
+Same closed-form math as SSN last-4 (0.0001 = 1/9999), applied by analogy. Unlike SSA's SSN Randomization, the IRS has not published an equivalent policy statement confirming ITIN serial numbers are drawn uniformly at random, so treat this as an unverified assumption, not a policy-backed closed form.
+
+### mbi (exact)
+
+Namespace-size floor, not a frequency distribution: u = 1 / N where N = 67,994,979, the CMS-reported total Medicare enrollment (person-year count) for 2024 (MDCR ENROLL AB 1, CMS Program Statistics). This assumes perfectly unique MBI issuance; it ignores real-world duplicate-issuance, reissuance (e.g. after an MBI is compromised), and transcription-error collisions, which is why the conservative floor (1e-6) is set far above this theoretical value rather than matching it -- the floor is pricing in those operational failure modes, not birthday-paradox-style random collision. 'Total enrollment' is a person-year count (each beneficiary counted once per year enrolled), which approximates but is not exactly the distinct-beneficiary count for the year.
+
 ## Sanity checks
 
 - WARNING: Year-of-birth u_unbiased=0.0118 is outside the expected [0.012, 0.016] range -- investigate before reporting.
@@ -219,6 +254,9 @@ Co-resident FLOOR only: models P(two distinct people share a street address | sa
 - **State**: NST-EST2025-POP, July 1, 2025 estimate, 50 states + DC headline (Puerto Rico variant also computed).
 - **City**: SUB-EST2025 incorporated places + CDPs.
 - **Street line + ZIP**: co-resident floor, P(share an address | same ZCTA) estimated two ways -- (avg household size - 1)/(population - 1) from B25010, and the full household-size distribution from B11016 -- combined with P(same ZIP) from the ZCTA population distribution. This is a FLOOR: it ignores street-name collisions between unrelated households in the same ZIP, so true street-line agreement is >= this estimate.
+- **Middle name**: PROXY -- reuses the 2020 first-name distribution (Census publishes no middle-name table); see caveat below.
+- **SSN/ITIN last 4**: closed-form 1/9999, not Census-derived; valid only for the post-2011-randomization cohort (see caveat below).
+- **MBI**: namespace-size floor u = 1/N using CMS's total Medicare enrollment (N), not a frequency distribution.
 
 ## Sources and download dates
 
@@ -233,6 +271,10 @@ All data downloaded/re-verified on 2026-09-30.
 - ACS 2024 5-year, ZCTA level (population B01003, household size B11016/B25010, housing units B25001): https://api.census.gov/data/2024/acs/acs5
 - HUD USPS ZIP crosswalk: skipped (no HUD_TOKEN configured); see download.py for manual setup instructions.
 
+- CMS Medicare total enrollment (2024), used for the MBI namespace-size floor: https://data.cms.gov/sites/default/files/2026-09/0a06b80d-bccb-4634-b062-7e53acdae289/MDCR%20ENROLL%20AB%201-8_CPS_02ENR_2024.zip
+
+- SSA SSN Randomization policy (used for the SSN/ITIN last-4 closed form, no data file downloaded): https://www.ssa.gov/employer/randomization.html
+
 ## Caveats
 
 - **Suppression**: Census name files only list names above an occurrence threshold; unlisted names are a long tail of rare names. Two bounds are given per name field (see per-field notes).
@@ -240,3 +282,6 @@ All data downloaded/re-verified on 2026-09-30.
 - **Uniform-DOB assumption**: real birth dates are not perfectly uniform within a year (seasonal effects), so u_dob is a slight underestimate.
 - **National vs. member population**: all inputs are U.S. national population estimates, not a specific payer/provider's member population, which may have different age/geographic distributions.
 - **Street line + ZIP is a floor**: see street-line notes above.
+- **Middle name is a proxy**, not a direct measurement (see per-field notes); true middle-name concentration could be higher or lower than the first-name distribution used here.
+- **SSN/ITIN last-4 closed form covers only the post-2011-randomization cohort**: most currently-insured adults have a pre-2011 SSN, for which the last 4 digits were assigned sequentially (not randomly) within area/group blocks, and the true population-wide u is likely somewhat higher than 1/9999 (see per-field notes and docs/LEARNINGS.md).
+- **MBI is a namespace-size floor**, not an empirical frequency distribution, and ignores duplicate-issuance/reissuance/transcription-error collisions (see per-field notes).

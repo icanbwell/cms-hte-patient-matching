@@ -181,6 +181,19 @@ def load_zcta_population() -> pd.DataFrame:
     return df.rename(columns={"zip code tabulation area": "zcta", "B01003_001E": "population"})
 
 
+def load_mdcr_enrollment_total(year: int = config.MDCR_ENROLLMENT_YEAR) -> float:
+    """Return total Medicare enrollment (person-year count) for `year` from the
+    downloaded CMS Program Statistics workbook."""
+    zpath = config.DATA_RAW / "mdcr_enrollment.zip"
+    with zipfile.ZipFile(zpath) as z:
+        with z.open(config.MDCR_ENROLLMENT_XLSX_NAME) as f:
+            df = pd.read_excel(f, sheet_name="MDCR ENROLL AB 1_CPS_02ENR", header=3)
+    row = df[df["Year"] == year]
+    if row.empty:
+        raise ValueError(f"No Medicare enrollment row found for year {year}")
+    return float(row["Total Enrollment"].iloc[0])
+
+
 def load_zcta_household_size() -> pd.DataFrame:
     """Return ZCTA-level household-size distribution + avg household size (ACS5 B11016/B25010)."""
     with open(config.DATA_RAW / "acs5_zcta_household_size.json") as f:
@@ -552,6 +565,117 @@ def street_line_and_zip_u(
         notes_floor,
     )
     return {"given_zip": given_zip, "and_zip": and_zip}
+
+
+# ---------------------------------------------------------------------------
+# 10. Middle name (proxy: reuses the first-name distribution)
+# ---------------------------------------------------------------------------
+
+
+def middle_name_proxy_u(listed: pd.DataFrame, unlisted_count: int, source_file: str) -> FieldResult:
+    """Census publishes no middle-name frequency table. As a proxy, reuse the
+    2020 first-name distribution (`listed`/`unlisted_count` from
+    `load_firstnames_2020()`) under the assumption that middle names are
+    drawn from roughly the same cultural name pool as first names. This is an
+    approximation, not a direct measurement -- see notes.
+    """
+    result = name_exact_u(listed, unlisted_count, "middle_name", source_file)
+    result.notes = (
+        "PROXY, not a direct measurement: Census publishes no middle-name frequency "
+        "table, so this reuses the first-name distribution (same source file) under "
+        "the assumption that middle names are drawn from a similar cultural name pool "
+        "as first names. True middle-name concentration could differ in either "
+        "direction -- e.g. parents may deliberately pick a less-common middle name "
+        "(lowering u), or lean on a smaller set of family/traditional names "
+        "(raising u) -- and this tool cannot distinguish those effects. "
+        + result.notes
+    )
+    return result
+
+
+# ---------------------------------------------------------------------------
+# 11. SSN / ITIN last 4 digits (closed-form; no Census data involved)
+# ---------------------------------------------------------------------------
+
+
+def ssn_itin_last4_u() -> dict[str, FieldResult]:
+    """Closed-form u for the last 4 digits of an SSN or ITIN, valid only for
+    the post-randomization (2011-06-25 onward) issuance scheme.
+
+    SSA's SSN Randomization policy made all 9 digits (including the last-4
+    "serial number") fully random over 0001-9999 (0000 is never issued) for
+    SSNs issued on or after that date -- see config.SSN_RANDOMIZATION_START_DATE.
+    u = 1 / 9999 under that policy.
+
+    LIMITATION (see docs/LEARNINGS.md): before 2011-06-25, the last 4 digits
+    were assigned *sequentially* within each area/group block, not randomly.
+    Since most currently-insured adults were issued their SSN before that
+    date, this closed-form value is only directly applicable to the
+    post-2011 cohort (people issued an SSN at birth/immigration since then).
+    Pooled across the full population, the true u for pre-2011 SSNs is
+    likely somewhat *higher* than 1/9999, because low serial numbers
+    (0001, 0002, ...) occur in every area/group block ever opened, while
+    high serial numbers (9998, 9999) occur only in blocks issued to
+    exhaustion -- this skews the aggregate distribution toward low values.
+    Quantifying that skew would require SSA's historical "High Group List"
+    cross-referenced with population-by-state/year data (the approach used
+    by Acquisti & Gross, "Predicting Social Security Numbers from Public
+    Data", PNAS 2009), which is out of scope for this Census/ACS-only tool.
+    This function deliberately does not fabricate a blended pre/post-2011
+    estimate; treat the value below as a floor for the randomized cohort
+    only, not a population-wide point estimate.
+    """
+    u = 1.0 / config.SSN_ITIN_LAST4_VALID_VALUES
+    ssn_notes = (
+        f"Closed-form, not Census-derived: SSA's SSN Randomization policy "
+        f"(effective {config.SSN_RANDOMIZATION_START_DATE}, "
+        f"https://www.ssa.gov/employer/randomization.html) made the last 4 digits "
+        f"fully random over {config.SSN_ITIN_LAST4_VALID_VALUES} possible values "
+        f"(0001-9999; 0000 never issued) for SSNs issued on or after that date. "
+        f"NOT valid for pre-2011 SSNs, which used sequential (non-random) serial "
+        f"assignment within area/group blocks and likely have a somewhat higher "
+        f"true u -- see docs/LEARNINGS.md for why this tool does not attempt to "
+        f"quantify that cohort without SSA's historical High Group List data."
+    )
+    itin_notes = (
+        f"Same closed-form math as SSN last-4 ({u:.4g} = 1/{config.SSN_ITIN_LAST4_VALID_VALUES}), "
+        f"applied by analogy. Unlike SSA's SSN Randomization, the IRS has not published "
+        f"an equivalent policy statement confirming ITIN serial numbers are drawn "
+        f"uniformly at random, so treat this as an unverified assumption, not a "
+        f"policy-backed closed form."
+    )
+    return {
+        "ssn_last4": FieldResult("ssn_last4", "exact", u, u, "SSA SSN Randomization policy (no data file)", ssn_notes),
+        "itin_last4": FieldResult("itin_last4", "exact", u, u, "assumed uniform by analogy to SSN (no data file)", itin_notes),
+    }
+
+
+# ---------------------------------------------------------------------------
+# 12. MBI (namespace-size floor using CMS Medicare enrollment)
+# ---------------------------------------------------------------------------
+
+
+def mbi_u(total_enrollment: float, year: int = config.MDCR_ENROLLMENT_YEAR) -> FieldResult:
+    """Namespace-size floor: u = 1 / (total Medicare enrollment), i.e. the
+    probability two randomly chosen Medicare beneficiaries happen to hold the
+    same MBI, assuming perfectly unique issuance (no duplicates/typos/reissues).
+    """
+    u = 1.0 / total_enrollment
+    notes = (
+        f"Namespace-size floor, not a frequency distribution: u = 1 / N where "
+        f"N = {total_enrollment:,.0f}, the CMS-reported total Medicare enrollment "
+        f"(person-year count) for {year} (MDCR ENROLL AB 1, "
+        f"CMS Program Statistics). This assumes perfectly unique MBI issuance; it "
+        f"ignores real-world duplicate-issuance, reissuance (e.g. after an MBI is "
+        f"compromised), and transcription-error collisions, which is why the "
+        f"conservative floor (1e-6) is set far above this theoretical value rather "
+        f"than matching it -- the floor is pricing in those operational failure "
+        f"modes, not birthday-paradox-style random collision. 'Total enrollment' is "
+        f"a person-year count (each beneficiary counted once per year enrolled), "
+        f"which approximates but is not exactly the distinct-beneficiary count for "
+        f"the year."
+    )
+    return FieldResult("mbi", "exact", u, u, f"MDCR ENROLL AB 1-8_CPS_02ENR_{year}.xlsx", notes)
 
 
 # ---------------------------------------------------------------------------

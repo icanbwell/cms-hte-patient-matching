@@ -118,6 +118,11 @@ def main(*, do_download: bool = True, do_compute: bool = True) -> None:
     r = name_fuzzy_u_cached(first2020, "first_name", "Names2020_FirstNames_Sex.xlsx", "firstname_2020")
     results.append(r)
 
+    # Middle name (proxy: reuses the first-name distribution just loaded above)
+    _log("Middle name (proxy via first-name distribution)...")
+    r = compute.middle_name_proxy_u(first2020, first2020_unlisted, "Names2020_FirstNames_Sex.xlsx")
+    results.append(r)
+
     # Year of birth / DOB
     _log("Year of birth...")
     agesex = compute.load_agesex()
@@ -153,6 +158,18 @@ def main(*, do_download: bool = True, do_compute: bool = True) -> None:
     street = compute.street_line_and_zip_u(zcta_pop, zcta_hh, zresult)
     results.append(street["given_zip"])
     results.append(street["and_zip"])
+
+    # SSN / ITIN last 4 (closed-form; see compute.ssn_itin_last4_u docstring
+    # for the pre-2011-randomization limitation)
+    _log("SSN / ITIN last 4 (closed-form, post-2011-randomization cohort only)...")
+    ssn_itin = compute.ssn_itin_last4_u()
+    results.append(ssn_itin["ssn_last4"])
+    results.append(ssn_itin["itin_last4"])
+
+    # MBI (namespace-size floor via CMS total Medicare enrollment)
+    _log("MBI (namespace-size floor via CMS Medicare enrollment)...")
+    mdcr_total = compute.load_mdcr_enrollment_total()
+    results.append(compute.mbi_u(mdcr_total))
 
     _log("\n--- Step 3: sanity checks ---")
     warnings = compute.sanity_check(results)
@@ -273,6 +290,12 @@ def _write_markdown(
         "P(same ZIP) from the ZCTA population distribution. This is a FLOOR: it ignores "
         "street-name collisions between unrelated households in the same ZIP, so true "
         "street-line agreement is >= this estimate.\n"
+        "- **Middle name**: PROXY -- reuses the 2020 first-name distribution (Census "
+        "publishes no middle-name table); see caveat below.\n"
+        "- **SSN/ITIN last 4**: closed-form 1/9999, not Census-derived; valid only for "
+        "the post-2011-randomization cohort (see caveat below).\n"
+        "- **MBI**: namespace-size floor u = 1/N using CMS's total Medicare enrollment "
+        "(N), not a frequency distribution.\n"
     )
 
     lines.append("## Sources and download dates\n")
@@ -291,6 +314,14 @@ def _write_markdown(
         "- HUD USPS ZIP crosswalk: skipped (no HUD_TOKEN configured); see download.py "
         "for manual setup instructions.\n"
     )
+    lines.append(
+        f"- CMS Medicare total enrollment ({config.MDCR_ENROLLMENT_YEAR}), used for "
+        f"the MBI namespace-size floor: {config.MDCR_ENROLLMENT_ZIP_URL}\n"
+    )
+    lines.append(
+        "- SSA SSN Randomization policy (used for the SSN/ITIN last-4 closed form, "
+        "no data file downloaded): https://www.ssa.gov/employer/randomization.html\n"
+    )
 
     lines.append("## Caveats\n")
     lines.append(
@@ -304,6 +335,17 @@ def _write_markdown(
         "population estimates, not a specific payer/provider's member population, "
         "which may have different age/geographic distributions.\n"
         "- **Street line + ZIP is a floor**: see street-line notes above.\n"
+        "- **Middle name is a proxy**, not a direct measurement (see per-field notes); "
+        "true middle-name concentration could be higher or lower than the first-name "
+        "distribution used here.\n"
+        "- **SSN/ITIN last-4 closed form covers only the post-2011-randomization "
+        "cohort**: most currently-insured adults have a pre-2011 SSN, for which the "
+        "last 4 digits were assigned sequentially (not randomly) within area/group "
+        "blocks, and the true population-wide u is likely somewhat higher than 1/9999 "
+        "(see per-field notes and docs/LEARNINGS.md).\n"
+        "- **MBI is a namespace-size floor**, not an empirical frequency distribution, "
+        "and ignores duplicate-issuance/reissuance/transcription-error collisions "
+        "(see per-field notes).\n"
     )
 
     path.write_text("\n".join(lines))

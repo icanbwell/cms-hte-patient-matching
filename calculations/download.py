@@ -224,6 +224,18 @@ def download_zcta_housing_units() -> Path:
     )
 
 
+def download_mdcr_enrollment() -> Path:
+    """Download the CMS Medicare total-enrollment workbook (ZIP); return its path.
+
+    Used as the namespace-size input for the MBI u-probability floor: u = 1/N
+    where N = total Medicare enrollment, a public proxy for "how many people
+    could plausibly hold a distinct MBI."
+    """
+    dest = config.DATA_RAW / "mdcr_enrollment.zip"
+    _download_file(config.MDCR_ENROLLMENT_ZIP_URL, dest)
+    return dest
+
+
 def download_hud_crosswalk() -> Path | None:
     """Fetch the HUD USPS ZIP-tract crosswalk; return its path, or None if skipped/failed.
 
@@ -288,6 +300,7 @@ def download_all() -> None:
     download_zcta_population()
     download_zcta_household_size()
     download_zcta_housing_units()
+    download_mdcr_enrollment()
     download_hud_crosswalk()
     log.info("=== Download pass complete ===")
 

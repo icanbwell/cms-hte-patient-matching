@@ -36,3 +36,33 @@ from the organization's JFrog Artifactory PyPI virtual repository — confirmed 
 `pyproject.toml`'s `usaddress-scourgify>=0.6.0` already resolves to an approved version through
 the lockfile. (A local `.venv` may lag behind `uv.lock` — e.g. it had 0.6.0 installed instead of
 the locked 0.7.1 — that's a stale local sync, not a registry/compliance issue; run `uv sync`.)
+
+## Pre-2011 SSNs are not uniformly random in the last 4 digits
+
+SSA's SSN Randomization policy (effective 2011-06-25,
+https://www.ssa.gov/employer/randomization.html) made all 9 digits of a newly-issued SSN
+random, including the last-4 "serial number." Before that date, SSNs used the area-group-serial
+scheme (AAA-GG-SSSS), and the serial number was assigned *sequentially* (0001, 0002, ...) within
+each area/group block — not drawn at random. Since most currently-insured adults were issued
+their SSN before 2011, `calculations/compute.py`'s `ssn_itin_last4_u()` closed-form value
+(`1/9999`) is only directly valid for the post-2011-randomization cohort, not the population as
+a whole.
+
+**Why this matters for u-probability estimation:** pooled across the many area/group blocks
+issued over ~75 years, low serial numbers (0001, 0002...) occur in every block ever opened, while
+high serial numbers (9998, 9999) occur only in blocks issued to exhaustion. This structurally
+skews the population-wide last-4-digit distribution toward low values, meaning the true u for
+pre-2011 SSNs is likely *higher* than 1/9999, not lower — `1/9999` is not a conservative
+(over-)estimate here, it's probably an underestimate for the majority pre-2011 cohort.
+
+**Why this tool doesn't quantify the pre-2011 cohort:** doing so would require SSA's historical
+"High Group List" (tracking highest group number issued per area over time) cross-referenced
+with population-by-state/birth-year data — the method used in Acquisti & Gross, "Predicting
+Social Security Numbers from Public Data" (PNAS, 2009). That's a genealogy/demographic
+reconstruction exercise, not something derivable from the Census/ACS/CMS sources this tool
+already downloads, so `ssn_itin_last4_u()` deliberately only returns the post-2011 closed form
+and documents the gap in its docstring/notes rather than fabricating a blended estimate.
+
+**Where this could still bite:** if someone later tries to compute a population-wide (not
+cohort-specific) SSN-last-4 u-value and cites `1/9999` as the finished number instead of a
+post-2011-only floor.

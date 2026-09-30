@@ -1,10 +1,12 @@
 # u-probability sanity-check tool
 
-A standalone tool that downloads public US Census (and ACS) data and computes
-empirical "u-probabilities" -- the probability that two randomly chosen,
-distinct people agree on a given field (first name, last name, date of
-birth, ZIP, city, state, street line) -- to sanity-check the hand-picked
-conservative u-values used by a probabilistic patient-matching model.
+A standalone tool that downloads public US Census, ACS, and CMS data (plus a
+couple of closed-form calculations backed by public policy documentation) and
+computes empirical "u-probabilities" -- the probability that two randomly
+chosen, distinct people agree on a given field (first name, middle name,
+last name, date of birth, ZIP, city, state, street line, SSN/ITIN last 4,
+MBI) -- to sanity-check the hand-picked conservative u-values used by a
+probabilistic patient-matching model.
 
 This tool is **not part of** and does **not import from** the
 `patient_matching` package elsewhere in this repository. It is a separate,
@@ -85,10 +87,28 @@ Two versions are reported:
   probability two *distinct* people, sampled without replacement, share a
   value) -- this is the headline number.
 
-Fields computed: last name (exact + fuzzy), first name (exact + fuzzy), year
-of birth, full date of birth (derived), ZIP (via ZCTA proxy), state, city,
-and street-line-given-ZIP / street-line-and-ZIP (a co-resident floor, not a
-point estimate -- see `outputs/u_probabilities.md` for why).
+Fields computed: last name (exact + fuzzy), first name (exact + fuzzy),
+middle name (proxy -- see below), year of birth, full date of birth
+(derived), ZIP (via ZCTA proxy), state, city, street-line-given-ZIP /
+street-line-and-ZIP (a co-resident floor, not a point estimate -- see
+`outputs/u_probabilities.md` for why), SSN/ITIN last 4 digits (closed-form,
+post-2011-randomization cohort only), and MBI (namespace-size floor via CMS
+total Medicare enrollment).
+
+Three of these aren't Census-frequency-table measurements and are flagged as
+such in the output:
+
+- **Middle name** has no Census table at all, so it's computed as a PROXY by
+  reusing the first-name distribution.
+- **SSN/ITIN last 4** is a closed-form `1/9999`, backed by SSA's SSN
+  Randomization policy -- but that policy only applies to SSNs issued on or
+  after 2011-06-25. Most currently-insured adults have a pre-2011 SSN, whose
+  last 4 digits were assigned *sequentially* within area/group blocks, not
+  randomly; this tool does not attempt to quantify that cohort (would need
+  SSA's historical "High Group List"). See `docs/LEARNINGS.md`.
+- **MBI** is a namespace-size floor (`1/N` where N = CMS's reported total
+  Medicare enrollment), not a frequency distribution -- it ignores
+  duplicate-issuance/reissuance/transcription-error collisions by design.
 
 See `outputs/u_probabilities.md` for the full results table, per-field
 methodology notes, suppression/coverage caveats, and source URLs with

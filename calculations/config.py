@@ -130,6 +130,16 @@ ACS5_ZCTA_HOUSEHOLD_SIZE_VARS = [
 ]
 ACS5_ZCTA_HOUSING_UNITS_VARS = ["NAME", "B25001_001E"]
 
+# --- SSN/ITIN randomization policy (closed-form, no data file needed) -------
+# SSA switched to full randomization of all 9 SSN digits on 2011-06-25 ("SSN
+# Randomization"): https://www.ssa.gov/employer/randomization.html. Before
+# that date, the last 4 digits ("serial number") were assigned sequentially
+# (0001, 0002, ...) within each area/group block, not drawn at random -- see
+# docs/LEARNINGS.md for why this means SSN_ITIN_LAST4_VALID_VALUES is only a
+# valid uniform-distribution model for SSNs issued *after* that date.
+SSN_RANDOMIZATION_START_DATE = "2011-06-25"
+SSN_ITIN_LAST4_VALID_VALUES = 9999  # 0001-9999; 0000 is never issued.
+
 # --- HUD USPS ZIP crosswalk (optional; requires HUD_TOKEN) ------------------
 # https://www.huduser.gov/portal/datasets/usps_crosswalk.html — API documented at
 # https://www.huduser.gov/portal/dataset/uspszip-api.html
@@ -138,10 +148,28 @@ HUD_CROSSWALK_API_URL = "https://www.huduser.gov/hudapi/public/usps"
 # without a dedicated ZIP-to-city HUD product); see download.py for handling
 # when HUD_TOKEN is unset (skip with an explicit message, no fabricated data).
 
+# --- CMS Medicare total enrollment (namespace-size proxy for MBI) -----------
+# Found via https://data.cms.gov/data.json (the CMS open-data catalog): the
+# "CMS Program Statistics - Medicare Total Enrollment : 2024-01-01" dataset
+# entry's distribution[0].downloadURL. This dataset has no data-api/v1 access
+# (confirmed by calling .../data and getting "does not contain any
+# interactive versions"); the catalog-listed ZIP is the only way to get it.
+# Table "MDCR ENROLL AB 1" inside gives total enrollment (person-year count)
+# by calendar year; we use the 2024 row, the latest available at the time of
+# writing (see compute.py's mbi_u for exactly which cell).
+MDCR_ENROLLMENT_ZIP_URL = (
+    "https://data.cms.gov/sites/default/files/2026-09/"
+    "0a06b80d-bccb-4634-b062-7e53acdae289/"
+    "MDCR%20ENROLL%20AB%201-8_CPS_02ENR_2024.zip"
+)
+MDCR_ENROLLMENT_XLSX_NAME = "MDCR ENROLL AB 1-8_CPS_02ENR_2024.xlsx"
+MDCR_ENROLLMENT_YEAR = 2024
+
 # --- Conservative baseline u-values (from the patient-matching model) -------
 CONSERVATIVE_U = {
     ("first_name", "exact"): 0.02,
     ("first_name", "fuzzy"): 0.03,
+    ("middle_name", "exact"): 0.01,
     ("last_name", "exact"): 0.005,
     ("last_name", "fuzzy"): 0.01,
     ("dob_full", "exact"): 0.0001,
@@ -151,6 +179,9 @@ CONSERVATIVE_U = {
     ("state", "exact"): 0.06,
     ("street_line_with_zip", "exact"): 0.00003,
     ("street_line_with_zip", "fuzzy"): 0.00006,
+    ("ssn_last4", "exact"): 0.0001,
+    ("itin_last4", "exact"): 0.0001,
+    ("mbi", "exact"): 0.000001,
 }
 
 # --- Sanity-check ranges (compute.py prints warnings if outside these) ------

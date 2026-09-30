@@ -196,3 +196,44 @@ def test_sanity_check_passes_in_range_values():
     ok_last = compute.FieldResult("last_name", "exact", 0.003, 0.003, "fixture", "")
     warnings = compute.sanity_check([ok_state, ok_yob, ok_last])
     assert warnings == []
+
+
+# ---------------------------------------------------------------------------
+# middle_name_proxy_u
+# ---------------------------------------------------------------------------
+
+
+def test_middle_name_proxy_u_reuses_first_name_math_but_relabels_field():
+    listed = pd.DataFrame({"name": ["JAMES", "MARY"], "count": [60, 40]})
+    direct = compute.name_exact_u(listed, 10, "first_name", "fixture.xlsx")
+    proxy = compute.middle_name_proxy_u(listed, 10, "fixture.xlsx")
+    assert proxy.field == "middle_name"
+    assert proxy.u_unbiased == pytest.approx(direct.u_unbiased)
+    assert proxy.u_simple == pytest.approx(direct.u_simple)
+    assert "PROXY" in proxy.notes
+
+
+# ---------------------------------------------------------------------------
+# ssn_itin_last4_u
+# ---------------------------------------------------------------------------
+
+
+def test_ssn_itin_last4_u_is_uniform_over_9999_values():
+    result = compute.ssn_itin_last4_u()
+    expected = 1.0 / 9999
+    assert result["ssn_last4"].u_unbiased == pytest.approx(expected)
+    assert result["itin_last4"].u_unbiased == pytest.approx(expected)
+    assert "2011" in result["ssn_last4"].notes
+    assert "unverified" in result["itin_last4"].notes.lower()
+
+
+# ---------------------------------------------------------------------------
+# mbi_u
+# ---------------------------------------------------------------------------
+
+
+def test_mbi_u_is_one_over_total_enrollment():
+    result = compute.mbi_u(total_enrollment=50_000_000.0, year=2024)
+    assert result.field == "mbi"
+    assert result.u_unbiased == pytest.approx(1 / 50_000_000.0)
+    assert "2024" in result.notes
