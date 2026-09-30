@@ -8,9 +8,25 @@ u is the probability that two randomly chosen, distinct people agree on a given 
 conservative value relative to the empirical estimate means more margin (the model is being
 deliberately pessimistic); a ratio close to 1x means little to no margin.
 
+## Where each column comes from
+
+Every table in this doc has exactly two kinds of numbers — don't mix them up:
+
+- **"Conservative u" (INPUT, not calculated here)**: the hand-picked assumptions from the
+  patient-matching model's own spec (the CMS HTE Patient Matching u-probability table). This
+  tool does not produce these numbers; they are the values being checked *against*.
+- **"Empirical u" (CALCULATED by this tool)**: the output of `make calculate` in this
+  `calculations/` directory, derived from public Census/ACS/CMS data or (for SSN/ITIN) a
+  closed-form calculation backed by public SSA policy — see `outputs/u_probabilities.md` for
+  full per-field methodology and `compute.py` for the source code. Anywhere you see a citation
+  like "1/9999, closed-form" or "N = 2024 Medicare enrollment," that's this tool's math, not the
+  spec's.
+
+The "Margin" column is just Conservative ÷ Empirical — it is not itself sourced from either side.
+
 ## Fields the tool computes
 
-| Field | Variant | Conservative u | Empirical u (`u_unbiased`) | Margin (conservative / empirical) |
+| Field | Variant | Conservative u (spec, input) | Empirical u (this tool, calculated) | Margin (spec ÷ tool) |
 |---|---|---|---|---|
 | Last Name | exact | 0.005 | 0.0006779 | 7.38x |
 | Last Name | fuzzy | 0.01 | 0.0008427 | 11.87x |
@@ -26,6 +42,10 @@ deliberately pessimistic); a ratio close to 1x means little to no margin.
 | SSN Last 4 | exact | 0.0001 | 0.0001 (1/9999, closed-form) | **1.00x** |
 | ITIN Last 4 | exact | 0.0001 | 0.0001 (1/9999, assumed by analogy) | **1.00x** |
 | MBI | exact | 0.000001 | 1.471e-08 (1/N, N = 2024 Medicare enrollment) | 67.99x |
+
+Every number in the "Conservative u" column above came from the spec and is reproduced verbatim
+(not recomputed). Every number in the "Empirical u" column was produced by running
+`make calculate` in `calculations/` against the sources cited per-field below.
 
 ### Fuzzy name-match values were revised after a bug fix
 
@@ -110,20 +130,23 @@ theoretical floor.
 
 ## Fields not computed by this tool
 
-The tool only derives u from Census/ACS/CMS population data or public, citable policy
-documentation, so anything not estimable that way is out of scope, not a discrepancy:
+For these, only the spec's "Conservative u" number exists — this tool has no "Empirical u" to
+put next to it, because no public Census/ACS/CMS dataset (or citable policy document) can
+estimate them the way it does for the fields above. These are not discrepancies; there is simply
+nothing in the right-hand column.
 
-- Suffix, Year of Birth (dismissed variant) — dismissed fields in the conservative table, not
-  modeled here.
-- Phone Number, Email Address — no public dataset quantifies household/family phone- or
-  email-sharing rates in the way needed here (survey data, not population-frequency data).
-- Legal ID, namespace-bound unique identifiers (EMPI/FHIR Patient Identifier/CSP UUID), Insurance
-  Member ID, Insurance Subscriber ID — namespace-specific (per state DMV, per organization, per
-  payer); no single public population count applies across all issuers the way CMS's Medicare
-  enrollment count does for MBI.
-- Relationship Linkage (clinical source / self-reported) — an error-rate question, not a
-  frequency-distribution question; would need an internal accuracy study against ground truth,
-  not population data.
+| Field | Conservative u (spec, input) | Why this tool can't calculate an empirical u |
+|---|---|---|
+| Suffix | 0.2 | Dismissed in the spec (data quality/selectivity); no public suffix frequency table. |
+| Year of Birth (dismissed variant) | 0.015 | Dismissed in the spec separately from the exact variant already computed above. |
+| Phone Number | 0.000001 | Driven by household/family sharing, not collision — needs survey data (e.g. Pew), not a population-frequency table. |
+| Email Address | 0.000001 | Same shape as Phone — no public sharing-rate survey wired in. |
+| Legal ID | 0.000001 | Namespace-specific per issuing authority (each state DMV, State Dept); no single public count spans all issuers. |
+| Namespace-bound unique IDs (EMPI, FHIR Patient Identifier, CSP UUID) | ≈0 | Namespace size = your own organization's patient count — internal data, not public. |
+| Insurance Member ID | 0.000001 | Payer-specific enrollment count; no single public per-payer figure. |
+| Insurance Subscriber ID | 0.0001 | Same as Member ID, plus the ~40% dependent-sharing assumption isn't validated against public data (KFF/Census CPS could, but isn't wired in). |
+| Relationship Linkage — clinical source | 0.01 | An error-rate question, not a frequency-distribution question; needs an internal accuracy study against ground truth. |
+| Relationship Linkage — self-reported/intake | 0.05 | Same as above. |
 
 ## Summary
 
