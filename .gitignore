@@ -144,3 +144,4 @@ dmypy.json
 # `scripts/fetch_onc_test_data.py` / `make fetch-onc-data` and
 # `tests/fixtures/onc/README.md`.
 /tests/fixtures/onc/*.jsonl
+calculations/.env
