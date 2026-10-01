@@ -95,6 +95,16 @@ these paths periodically):
   between unrelated households in the same ZIP, so its huge ratio against the conservative value
   (see `outputs/u_probabilities.md`) should not be read as evidence the conservative value is
   wrong by that much — it's a known-loose lower bound by design.
+- **Phone is a sharing-rate question, not a namespace-collision question**, unlike every other
+  field. Personal mobile numbers are effectively unique per person, so the only mechanism public
+  data can quantify is a landline shared by co-resident household members: `phone_u()` reuses the
+  street-line co-resident floor and scales it by a CDC NCHS survey percentage for "household has
+  a landline," rather than building a new frequency model from scratch. It names, but doesn't
+  quantify, two further gaps (non-co-resident sharing, and mobile number reassignment — ~35M
+  US numbers/year per FCC 18-31) rather than guessing at them; see `docs/LEARNINGS.md` for why
+  the latter can't be turned into a u-value from public data. If email agreement is ever added,
+  expect the same shape of problem — see `docs/LEARNINGS.md`'s note on the Pew Research email-
+  sharing survey being too dated/narrow to use with the same confidence as the NCHS phone data.
 
 ## How to reproduce
 

@@ -283,6 +283,8 @@ All data downloaded/re-verified on 2026-09-30.
 
 - NCHS Wireless Substitution survey (July-December 2024, used for the phone co-resident-landline floor, no data file downloaded): https://doi.org/10.15620/cdc/174608
 
+- FCC 18-31, CG Docket No. 17-59, para. 3 (2018-03-22) (cited in the phone floor's notes as a named but deliberately unquantified gap -- mobile number reassignment -- not used in the computed value; no data file downloaded)
+
 ## Caveats
 
 - **Suppression**: Census name files only list names above an occurrence threshold; unlisted names are a long tail of rare names. Two bounds are given per name field (see per-field notes).

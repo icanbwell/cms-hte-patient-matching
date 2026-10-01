@@ -186,3 +186,25 @@ finding *the* number the formula needs. Before wiring a newly-found statistic in
 check that its unit/denominator actually matches what the formula multiplies it by — here, an
 annual rate over the whole numbering pool isn't a per-person or per-record probability without an
 unavailable extra assumption.
+
+## Email agreement has the same shape as phone, but no comparably current data source
+
+Looked for a phone-style sharing-rate survey to compute `email_u()` the way `phone_u()` already
+works for phone (co-resident-style floor scaled by a survey percentage). The only public data
+point found: Pew Research's 2013 "Couples, the Internet, and Social Media" survey (n=2,252,
+MOE ±2.3pp) — 27% of internet users in a marriage/committed relationship share an email account
+with their partner (12% for ages 18-29 up to 47% for 65+). No newer replication of this specific
+question was found; current password-manager-vendor surveys (LastPass, NordPass) measure a
+different thing (knowing someone else's password, not two people's records listing the *same*
+email address as their own contact info).
+
+Unlike NCHS's 2024 phone data, this would rest entirely on one pre-smartphone/pre-2FA-era survey
+question with no modern replication — a materially weaker foundation than every other source
+this tool cites (NCHS, Census, ACS, CMS, SSA policy are all current and methodologically rigorous
+by comparison). Not implemented as of this writing; `email` remains in
+`docs/conservative_u_comparison.md`'s "fields not computed" table pending a decision on whether a
+12-year-old, narrow-population survey question meets this tool's bar, or a fresher source turns up.
+
+**Where this could still bite:** if a newer email-sharing survey is found later, check whether it
+asks the same question (shared *account/identity*, not shared *password knowledge* or shared
+*access*) before treating it as a drop-in replacement for the 2013 Pew number.

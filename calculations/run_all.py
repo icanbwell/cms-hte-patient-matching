@@ -355,6 +355,11 @@ def _write_markdown(
         f"used for the phone co-resident-landline floor, no data file downloaded): "
         f"{config.NCHS_WIRELESS_SUBSTITUTION_DOI}\n"
     )
+    lines.append(
+        f"- {config.FCC_REASSIGNMENT_ORDER_CITATION} (cited in the phone floor's notes as a "
+        f"named but deliberately unquantified gap -- mobile number reassignment -- not used "
+        f"in the computed value; no data file downloaded)\n"
+    )
 
     lines.append("## Caveats\n")
     lines.append(

@@ -4,9 +4,9 @@ A standalone tool that downloads public US Census, ACS, and CMS data (plus a
 couple of closed-form calculations backed by public policy documentation) and
 computes empirical "u-probabilities" -- the probability that two randomly
 chosen, distinct people agree on a given field (first name, middle name,
-last name, date of birth, ZIP, city, state, street line, SSN/ITIN last 4,
-MBI) -- to sanity-check the hand-picked conservative u-values used by a
-probabilistic patient-matching model.
+last name, date of birth, ZIP, city, state, street line, phone, SSN/ITIN
+last 4, MBI) -- to sanity-check the hand-picked conservative u-values used
+by a probabilistic patient-matching model.
 
 This tool is **not part of** and does **not import from** the
 `patient_matching` package elsewhere in this repository. It is a separate,
@@ -91,15 +91,23 @@ Fields computed: last name (exact + fuzzy), first name (exact + fuzzy),
 middle name (proxy -- see below), year of birth, full date of birth
 (derived), ZIP (via ZCTA proxy), state, city, street-line-given-ZIP /
 street-line-and-ZIP (a co-resident floor, not a point estimate -- see
-`outputs/u_probabilities.md` for why), SSN/ITIN last 4 digits (closed-form,
+`outputs/u_probabilities.md` for why), phone (a co-resident landline-sharing
+floor -- see below), SSN/ITIN last 4 digits (closed-form,
 post-2011-randomization cohort only), and MBI (namespace-size floor via CMS
 total Medicare enrollment).
 
-Three of these aren't Census-frequency-table measurements and are flagged as
+Four of these aren't Census-frequency-table measurements and are flagged as
 such in the output:
 
 - **Middle name** has no Census table at all, so it's computed as a PROXY by
   reusing the first-name distribution.
+- **Phone** isn't a namespace-collision question like the fields above --
+  personal mobile numbers are effectively unique per person, so the only
+  quantifiable sharing mechanism is a landline shared by co-resident
+  household members. It's computed as `P(co-resident) * P(shared household
+  has a landline)`, reusing the street-line co-resident floor and a CDC NCHS
+  survey percentage for the second factor; see `docs/LEARNINGS.md` for why
+  this is deliberately a partial floor, not a full point estimate.
 - **SSN/ITIN last 4** is a closed-form `1/9999`, backed by SSA's SSN
   Randomization policy -- but that policy only applies to SSNs issued on or
   after 2011-06-25. Most currently-insured adults have a pre-2011 SSN, whose
@@ -129,5 +137,9 @@ name matching and checkpointing, and how to reproduce or extend it.
   the "share a household" effect and ignores street-name collisions between
   unrelated households in the same ZIP, so real street-line agreement is
   higher than this estimate.
+- The phone calculation is also an explicit floor: it captures only
+  co-resident landline sharing, not non-co-resident sharing (e.g. a family
+  member's number listed for someone living elsewhere) or mobile number
+  reassignment, so real phone agreement is higher than this estimate.
 - All inputs are national population estimates, not any specific payer's or
   provider's member population.
