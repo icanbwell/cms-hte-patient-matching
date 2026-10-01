@@ -36,3 +36,175 @@ from the organization's JFrog Artifactory PyPI virtual repository — confirmed 
 `pyproject.toml`'s `usaddress-scourgify>=0.6.0` already resolves to an approved version through
 the lockfile. (A local `.venv` may lag behind `uv.lock` — e.g. it had 0.6.0 installed instead of
 the locked 0.7.1 — that's a stale local sync, not a registry/compliance issue; run `uv sync`.)
+
+## Pre-2011 SSNs are not uniformly random in the last 4 digits
+
+SSA's SSN Randomization policy (effective 2011-06-25,
+https://www.ssa.gov/employer/randomization.html) made all 9 digits of a newly-issued SSN
+random, including the last-4 "serial number." Before that date, SSNs used the area-group-serial
+scheme (AAA-GG-SSSS), and the serial number was assigned *sequentially* (0001, 0002, ...) within
+each area/group block — not drawn at random. Since most currently-insured adults were issued
+their SSN before 2011, `calculations/compute.py`'s `ssn_itin_last4_u()` closed-form value
+(`1/9999`) is only directly valid for the post-2011-randomization cohort, not the population as
+a whole.
+
+**Why this matters for u-probability estimation:** pooled across the many area/group blocks
+issued over ~75 years, low serial numbers (0001, 0002...) occur in every block ever opened, while
+high serial numbers (9998, 9999) occur only in blocks issued to exhaustion. This structurally
+skews the population-wide last-4-digit distribution toward low values, meaning the true u for
+pre-2011 SSNs is likely *higher* than 1/9999, not lower — `1/9999` is not a conservative
+(over-)estimate here, it's probably an underestimate for the majority pre-2011 cohort.
+
+**Why this tool doesn't quantify the pre-2011 cohort:** doing so would require SSA's historical
+"High Group List" (tracking highest group number issued per area over time) cross-referenced
+with population-by-state/birth-year data — the method used in Acquisti & Gross, "Predicting
+Social Security Numbers from Public Data" (PNAS, 2009). That's a genealogy/demographic
+reconstruction exercise, not something derivable from the Census/ACS/CMS sources this tool
+already downloads, so `ssn_itin_last4_u()` deliberately only returns the post-2011 closed form
+and documents the gap in its docstring/notes rather than fabricating a blended estimate.
+
+**Where this could still bite:** if someone later tries to compute a population-wide (not
+cohort-specific) SSN-last-4 u-value and cites `1/9999` as the finished number instead of a
+post-2011-only floor.
+
+## Renormalizing to a listed/covered-only total needs an explicit coverage check, every time
+
+`name_exact_u()` (last/first/middle name) already handles the "Census only lists names above an
+occurrence threshold" problem correctly: it renormalizes the listed names to their own total for
+the headline (bound a), but *also* computes and discloses a bound (b) that treats the unlisted
+remainder as singletons, so a reader can see how much the renormalization could be hiding.
+`city_u()` did the renormalization step (places + CDPs, SUMLEV 162, to their own total) without
+the matching bound (b)/coverage disclosure — an oversight, not a deliberate scope decision, since
+places/CDPs cover only ~63% of the national population (many people live in unincorporated areas
+belonging to no place or CDP). That silently inflated the headline `city` u by ~2.5x relative to
+the coverage-adjusted lower bound. Fixed by giving `city_u()` the same bound (a)/(b) treatment,
+parameterized on the national population total (from `load_state_pop()`).
+
+**Where this could still bite:** any *new* field added to `compute.py` that renormalizes a
+listed/covered subset to its own total (rather than the true population) needs this same
+bound (a)/(b) pair, not just a prose caveat about definitional mismatches (ZCTA-vs-ZIP,
+Census-place-vs-USPS-city, etc.) — those are a *different* kind of bias and can point in the
+opposite direction, as they do for `city`.
+
+## Symmetric exclusions need to be enforced on both sides of the relation
+
+`build_fuzzy_ball_mass()`'s `min_len` cutoff is supposed to fully exclude short names from fuzzy
+matching (they fall back to exact-match probability only — see its docstring and
+`test_fuzzy_ball_mass_respects_min_len`). The exclusion was only enforced one-directionally: a
+short (ineligible) name never got its own ball computed, but its probability mass could still be
+pulled into an *eligible* name's ball if the eligible name's single-character deletion happened
+to equal that short, listed name (e.g. `CHENG` deleting the `G` produces `CHEN`, a real, common,
+listed 4-character surname). On the real 2020 Census last-name file this fired for ~14% of
+eligible names and inflated last-name fuzzy u by ~1.2% — always in the inflating direction, since
+ball mass is only ever added. Fixed by restricting that candidate-matching path to eligible names
+only (`compute.py`'s `build_fuzzy_ball_mass`).
+
+**Where this could still bite:** any future "X is excluded/capped/floored" rule in this codebase
+that's implemented as "X doesn't compute its own contribution" rather than "X can't appear on
+either side of the relationship" — the former is easy to get right for X's own row and silently
+wrong for everyone else's.
+
+## A sanity-check range must be calibrated against the same population it checks
+
+`SANITY_RANGES["year_of_birth"]` (`config.py`) was `(0.012, 0.016)` with no documented
+derivation, and `make calculate` flagged the correct, real all-ages (AGE 0-100) headline
+(~0.0118, from `year_of_birth_u()`) as out of range on every run. It turns out `(0.012, 0.016)`
+brackets the tool's *adults-18+* reference figure (~0.0149) instead — this tool intentionally
+covers the whole population (newborns and minors are real patients, not excluded), and an
+all-ages number is always lower than an adults-only number computed from the same data (adding
+ages 0-17 adds birth years with a flatter, less-concentrated distribution than the adult age
+pyramid, pulling u down). The range was checking the wrong population's expected shape against
+the right population's real number.
+
+Fixed by recalibrating the range to `(0.0100, 0.0149)`: the lower bound is the
+fully-uniform-distribution floor for 101 single-year-of-age buckets (1/101 = 0.0099 — a real
+population pyramid should always be at least this concentrated), and the upper bound is the
+adults-only reference figure itself (an all-ages number should always be more diluted than
+adults-only, computed from the same source data).
+
+**Where this could still bite:** any sanity range added to `SANITY_RANGES` without writing down
+*how* it was derived and *which* population/variant it assumes — the check silently drifts out of
+sync the moment someone changes which variant is headlined, exactly as happened here.
+
+## Fetching CDC/NCHS PDFs directly can hit an Akamai WAF block, even with a browser User-Agent
+
+`https://www.cdc.gov/nchs/data/nhis/earlyrelease/wireless202506.pdf` (used for `phone_u()`'s
+landline-household-share input) returns an Akamai "Access Denied" HTML page instead of the PDF,
+even with a full browser `User-Agent` and `Accept`/`Accept-Language` headers set (same family of
+issue as the Cloudflare WAF-caching problem already documented for `www2.census.gov` in
+`config.py`, different vendor). The same document is mirrored at
+`https://stacks.cdc.gov/view/cdc/<id>/cdc_<id>_DS1.pdf` (CDC's document-stacks archive), which is
+not behind the same WAF and served the real PDF on the first request.
+
+**Where this could still bite:** any future source added from `www.cdc.gov/nchs/...` directly —
+check `stacks.cdc.gov` for a mirrored copy first, or expect to need the same
+cache-busting-query-param workaround `download.py` already uses for `www2.census.gov`.
+
+## Phone/email agreement is a sharing-rate question, not a namespace-collision question
+
+Every other field `compute.py` estimates (names, DOB, ZIP, state, city, street line) models the
+probability two *unrelated* people coincidentally share a value, from a population frequency
+table. Phone (and, if ever added, email) is structurally different: personal mobile numbers are
+effectively unique per person, so the only way two distinct patients legitimately share one is
+through deliberate or household *sharing* (a landline, a family-plan "contact" number, a joint
+account) — a behavioral-survey question, not a Census-frequency-table question.
+
+`phone_u()` handles this by reusing an existing floor (`street_line_and_zip_u`'s co-resident
+probability) and scaling it by a survey-sourced household-landline share (CDC NCHS's Wireless
+Substitution survey, see `config.NCHS_ADULT_DUAL_USER_HOUSEHOLD_PCT`/
+`NCHS_ADULT_LANDLINE_ONLY_HOUSEHOLD_PCT`), rather than trying to build a new namespace/frequency
+model from scratch. The household-vs-per-person distinction in that survey matters: landline
+status is a property of the *household* (if one resident has one, every co-resident does too),
+not an independent per-person rate, so it multiplies the co-resident probability directly rather
+than being squared.
+
+**Where this could still bite:** this floor only captures co-resident landline sharing. It has no
+data-backed way to model non-co-resident sharing (e.g. a family member's number listed for
+someone who lives elsewhere) or mobile number reassignment (see the next entry for why that one
+is a named, cited, but deliberately unquantified gap), so the resulting ~763x margin against the
+conservative value should not be read as "the conservative
+assumption is overly cautious" — see `docs/conservative_u_comparison.md`'s Phone section. The same
+caution will apply to email if a similar sharing-rate estimate is ever wired in.
+
+## A real, cited statistic can still be the wrong shape to turn into a u-value
+
+Looked for public data to quantify mobile-number-reassignment collisions (a named gap in
+`phone_u()`, above) and found a solid, citable number: FCC 18-31 (CG Docket No. 17-59, para. 3,
+2018-03-22), sourced from NANPA's own utilization reports, states ~35 million US phone numbers are
+disconnected and reassigned to a new subscriber every year (`config.FCC_ANNUAL_NUMBER_REASSIGNMENT_COUNT`),
+and 47 CFR 52.15(f)(2) caps the mandatory pre-reassignment hold at 90 days for residential numbers.
+
+That number measures the wrong thing for this tool's purposes: it's the numbering pool's annual
+*churn rate*, not the probability that two people's *records* currently show the same
+(recently-reassigned) number. Converting one into the other requires a second number this tool
+has no source for — how long a record system typically goes without refreshing a patient's phone
+number after it changes, which is a record-keeping-practice question, not a phone-network
+question. Deliberately left unquantified in `phone_u()`'s notes rather than guessed at.
+
+**Where this could still bite:** finding *a* number related to a question isn't the same as
+finding *the* number the formula needs. Before wiring a newly-found statistic into a u-value,
+check that its unit/denominator actually matches what the formula multiplies it by — here, an
+annual rate over the whole numbering pool isn't a per-person or per-record probability without an
+unavailable extra assumption.
+
+## Email agreement has the same shape as phone, but no comparably current data source
+
+Looked for a phone-style sharing-rate survey to compute `email_u()` the way `phone_u()` already
+works for phone (co-resident-style floor scaled by a survey percentage). The only public data
+point found: Pew Research's 2013 "Couples, the Internet, and Social Media" survey (n=2,252,
+MOE ±2.3pp) — 27% of internet users in a marriage/committed relationship share an email account
+with their partner (12% for ages 18-29 up to 47% for 65+). No newer replication of this specific
+question was found; current password-manager-vendor surveys (LastPass, NordPass) measure a
+different thing (knowing someone else's password, not two people's records listing the *same*
+email address as their own contact info).
+
+Unlike NCHS's 2024 phone data, this would rest entirely on one pre-smartphone/pre-2FA-era survey
+question with no modern replication — a materially weaker foundation than every other source
+this tool cites (NCHS, Census, ACS, CMS, SSA policy are all current and methodologically rigorous
+by comparison). Not implemented as of this writing; `email` remains in
+`docs/conservative_u_comparison.md`'s "fields not computed" table pending a decision on whether a
+12-year-old, narrow-population survey question meets this tool's bar, or a fresher source turns up.
+
+**Where this could still bite:** if a newer email-sharing survey is found later, check whether it
+asks the same question (shared *account/identity*, not shared *password knowledge* or shared
+*access*) before treating it as a drop-in replacement for the 2013 Pew number.
