@@ -160,7 +160,29 @@ than being squared.
 
 **Where this could still bite:** this floor only captures co-resident landline sharing. It has no
 data-backed way to model non-co-resident sharing (e.g. a family member's number listed for
-someone who lives elsewhere) or mobile number reassignment/recycling after disconnection, so the
-resulting ~763x margin against the conservative value should not be read as "the conservative
+someone who lives elsewhere) or mobile number reassignment (see the next entry for why that one
+is a named, cited, but deliberately unquantified gap), so the resulting ~763x margin against the
+conservative value should not be read as "the conservative
 assumption is overly cautious" — see `docs/conservative_u_comparison.md`'s Phone section. The same
 caution will apply to email if a similar sharing-rate estimate is ever wired in.
+
+## A real, cited statistic can still be the wrong shape to turn into a u-value
+
+Looked for public data to quantify mobile-number-reassignment collisions (a named gap in
+`phone_u()`, above) and found a solid, citable number: FCC 18-31 (CG Docket No. 17-59, para. 3,
+2018-03-22), sourced from NANPA's own utilization reports, states ~35 million US phone numbers are
+disconnected and reassigned to a new subscriber every year (`config.FCC_ANNUAL_NUMBER_REASSIGNMENT_COUNT`),
+and 47 CFR 52.15(f)(2) caps the mandatory pre-reassignment hold at 90 days for residential numbers.
+
+That number measures the wrong thing for this tool's purposes: it's the numbering pool's annual
+*churn rate*, not the probability that two people's *records* currently show the same
+(recently-reassigned) number. Converting one into the other requires a second number this tool
+has no source for — how long a record system typically goes without refreshing a patient's phone
+number after it changes, which is a record-keeping-practice question, not a phone-network
+question. Deliberately left unquantified in `phone_u()`'s notes rather than guessed at.
+
+**Where this could still bite:** finding *a* number related to a question isn't the same as
+finding *the* number the formula needs. Before wiring a newly-found statistic into a u-value,
+check that its unit/denominator actually matches what the formula multiplies it by — here, an
+annual rate over the whole numbering pool isn't a per-person or per-record probability without an
+unavailable extra assumption.

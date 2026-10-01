@@ -147,12 +147,23 @@ scaled down by the fraction of households that still have a landline at all.
 
 This gives `u_unbiased = 1.31e-09`, a **763x** margin against the conservative value (0.000001).
 **That margin is not evidence the conservative assumption is overly cautious** — this floor
-deliberately excludes every other real-world phone-sharing mechanism there's no public data for:
-a family member's mobile number listed for someone who doesn't live with them (common for elderly
-patients or children with divorced parents), a shared "family contact" number, and mobile number
-reassignment/recycling after disconnection. The conservative value is very likely pricing in those
-mechanisms; this tool's floor structurally cannot. Treat 1.31e-09 as "here's the one mechanism we
-can prove from public survey data," not as "phone has 763x more headroom than it needs."
+deliberately excludes every other real-world phone-sharing mechanism, two of which are named but
+not quantified:
+- A family member's mobile number listed for someone who doesn't live with them (common for
+  elderly patients or children with divorced parents), or a shared "family contact" number — no
+  public data found for either.
+- Mobile number **reassignment**: FCC 18-31 (CG Docket No. 17-59, para. 3, 2018) cites ~35 million
+  US phone numbers disconnected and reassigned to a new subscriber every year (sourced from
+  NANPA's own utilization reports), and 47 CFR 52.15(f)(2) caps the mandatory hold period before
+  reassignment at 90 days for residential numbers. That's a real, citable churn rate for the
+  numbering pool — but turning it into a u-value would require knowing how long a record system
+  typically goes without refreshing a patient's phone number after it changes, which is a
+  record-keeping-practice question with no public data source, not a phone-network question.
+  Deliberately left unquantified rather than guessed (see `docs/LEARNINGS.md`).
+
+The conservative value is very likely pricing in these mechanisms; this tool's floor structurally
+cannot. Treat 1.31e-09 as "here's the one mechanism we can prove from public survey data," not as
+"phone has 763x more headroom than it needs."
 
 ### Middle name: proxy via the first-name distribution, not a direct measurement
 

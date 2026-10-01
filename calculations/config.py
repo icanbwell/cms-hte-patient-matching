@@ -187,6 +187,25 @@ NCHS_WIRELESS_SUBSTITUTION_DOI = "https://doi.org/10.15620/cdc/174608"
 NCHS_ADULT_LANDLINE_ONLY_HOUSEHOLD_PCT = 0.9
 NCHS_ADULT_DUAL_USER_HOUSEHOLD_PCT = 19.8
 
+# --- Phone: FCC mobile-number-reassignment rate (named gap, not quantified) ------
+# Known, real, and NOT modeled by phone_u()'s co-resident-landline floor: a mobile
+# number can be reassigned to a new subscriber after its previous holder
+# disconnects it, and anyone whose records weren't updated in time would still
+# show the old (now-reassigned) number. FCC 18-31 (Second Further Notice of
+# Proposed Rulemaking, CG Docket No. 17-59, adopted 2018-03-22, para. 3, citing
+# NANPA's Number Resource Utilization/Forecast reports, 2013-2016 average):
+# "Approximately 35 million numbers are disconnected and made available for
+# reassignment to new consumers each year." 47 CFR 52.15(f)(2) caps the
+# mandatory "aging" hold before reassignment at 90 days for residential numbers.
+# This is a real, cited annual CHURN rate for the numbering pool, not a
+# probability this tool can turn into a u-value: doing so would require knowing
+# how long a given record system typically goes without refreshing a patient's
+# phone number after it changes -- a property of record-keeping practice, not
+# of the phone network, for which no public data source was found. Deliberately
+# left unquantified rather than guessed; see docs/LEARNINGS.md.
+FCC_ANNUAL_NUMBER_REASSIGNMENT_COUNT = 35_000_000
+FCC_REASSIGNMENT_ORDER_CITATION = "FCC 18-31, CG Docket No. 17-59, para. 3 (2018-03-22)"
+
 # --- Conservative baseline u-values (from the patient-matching model) -------
 CONSERVATIVE_U = {
     ("first_name", "exact"): 0.02,

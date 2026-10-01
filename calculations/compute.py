@@ -655,9 +655,10 @@ def phone_u(street_and_zip_result: FieldResult) -> FieldResult:
     This deliberately excludes every other real-world phone-sharing
     mechanism this tool has no public data for -- a parent's mobile number
     listed for a non-co-resident child or elderly parent, a shared
-    family-plan "contact" number, mobile number reassignment/recycling after
-    disconnection -- so treat this as a lower bound, not a point estimate,
-    same as the street-line floor it's built on.
+    family-plan "contact" number, and mobile number reassignment (~35
+    million US numbers/year per FCC 18-31, see config.py) -- so treat this
+    as a lower bound, not a point estimate, same as the street-line floor
+    it's built on.
     """
     p_landline_household = (
         config.NCHS_ADULT_DUAL_USER_HOUSEHOLD_PCT + config.NCHS_ADULT_LANDLINE_ONLY_HOUSEHOLD_PCT
@@ -680,8 +681,15 @@ def phone_u(street_and_zip_result: FieldResult) -> FieldResult:
         f"rather than being squared. The remaining ~79% of adults have a personal mobile "
         f"number, effectively unique per person -- this floor has no data-backed way to "
         f"model non-co-resident sharing (e.g. a family member's number listed for someone "
-        f"living elsewhere) or mobile number reassignment/recycling after disconnection, "
-        f"both of which would push the true value higher than this floor."
+        f"living elsewhere), which would push the true value higher than this floor. It also "
+        f"doesn't model mobile number reassignment: {config.FCC_ANNUAL_NUMBER_REASSIGNMENT_COUNT:,} "
+        f"US numbers/year are disconnected and reassigned to a new subscriber "
+        f"({config.FCC_REASSIGNMENT_ORDER_CITATION}) -- a real, cited churn rate for the "
+        f"numbering pool, but turning it into a u-value would require knowing how long a "
+        f"record system typically goes without refreshing a patient's phone number after it "
+        f"changes, which is a record-keeping-practice question with no public data source, "
+        f"not a phone-network question; deliberately left unquantified rather than guessed "
+        f"(see docs/LEARNINGS.md)."
     )
     return FieldResult(
         "phone",
