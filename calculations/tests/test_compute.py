@@ -199,7 +199,11 @@ def test_city_u_uses_national_total_not_places_only_total():
     # national total overstates city concentration -- same failure mode
     # name_exact_u's bound (a)/(b) split exists to avoid for names.
     places = pd.DataFrame(
-        {"NAME": ["Springfield", "Shelbyville"], "STNAME": ["Ohio", "Ohio"], "POPESTIMATE2025": [60, 40]}
+        {
+            "NAME": ["Springfield", "Shelbyville"],
+            "STNAME": ["Ohio", "Ohio"],
+            "POPESTIMATE2025": [60, 40],
+        }
     )
     national_total = 200  # 100 more people live outside any place/CDP.
     result = compute.city_u(places, national_total)
@@ -217,9 +221,7 @@ def test_city_u_uses_national_total_not_places_only_total():
 def test_name_fuzzy_u_blends_short_and_long_names():
     # "AL" (2 chars, below min_len) should contribute p^2; "SMITH"/"SMYTH"
     # (5 chars) should contribute fuzzy ball mass.
-    listed = pd.DataFrame(
-        {"name": ["SMITH", "SMYTH", "AL"], "count": [50, 30, 20]}
-    )
+    listed = pd.DataFrame({"name": ["SMITH", "SMYTH", "AL"], "count": [50, 30, 20]})
     result = compute.name_fuzzy_u(listed, "last_name", "fixture.csv", min_len=5)
     total = 100
     p_smith, p_smyth, p_al = 50 / total, 30 / total, 20 / total
@@ -271,7 +273,9 @@ def test_sanity_check_passes_real_all_ages_year_of_birth_value():
     # not trip the sanity check. An earlier, un-derived range (0.012-0.016)
     # was calibrated against an adults-only population and false-flagged this
     # correct value -- see docs/LEARNINGS.md.
-    real_all_ages_yob = compute.FieldResult("year_of_birth", "exact", 0.01178, 0.01178, "fixture", "")
+    real_all_ages_yob = compute.FieldResult(
+        "year_of_birth", "exact", 0.01178, 0.01178, "fixture", ""
+    )
     warnings = compute.sanity_check([real_all_ages_yob])
     assert warnings == []
 
@@ -324,11 +328,16 @@ def test_mbi_u_is_one_over_total_enrollment():
 
 def test_phone_u_scales_co_resident_probability_by_landline_household_share():
     street_and_zip = compute.FieldResult(
-        "street_line_with_zip", "exact", u_unbiased=4.0e-9, u_simple=8.0e-9, source_file="fixture"
+        "street_line_with_zip",
+        "exact",
+        u_unbiased=4.0e-9,
+        u_simple=8.0e-9,
+        source_file="fixture",
     )
     result = compute.phone_u(street_and_zip)
     expected_landline_share = (
-        config.NCHS_ADULT_DUAL_USER_HOUSEHOLD_PCT + config.NCHS_ADULT_LANDLINE_ONLY_HOUSEHOLD_PCT
+        config.NCHS_ADULT_DUAL_USER_HOUSEHOLD_PCT
+        + config.NCHS_ADULT_LANDLINE_ONLY_HOUSEHOLD_PCT
     ) / 100.0
     assert result.field == "phone"
     assert result.u_unbiased == pytest.approx(4.0e-9 * expected_landline_share)

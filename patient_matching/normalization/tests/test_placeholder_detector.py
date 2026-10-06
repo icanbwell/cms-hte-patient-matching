@@ -153,7 +153,9 @@ class TestPlaceholderEmail:
 
     def test_reason_for_email_codes(self) -> None:
         assert self.detector.reason_for_email("") == "empty"
-        assert self.detector.reason_for_email("test@example.com") == "placeholder_pattern"
+        assert (
+            self.detector.reason_for_email("test@example.com") == "placeholder_pattern"
+        )
         assert self.detector.reason_for_email("maria@gmail.com") is None
 
 
@@ -210,7 +212,9 @@ class TestPlaceholderSubscriberId:
 
     def test_reason_for_subscriber_id_codes(self) -> None:
         assert self.detector.reason_for_subscriber_id("") == "empty"
-        assert self.detector.reason_for_subscriber_id("PENDING") == "placeholder_pattern"
+        assert (
+            self.detector.reason_for_subscriber_id("PENDING") == "placeholder_pattern"
+        )
         assert self.detector.reason_for_subscriber_id("W900123456") is None
 
 

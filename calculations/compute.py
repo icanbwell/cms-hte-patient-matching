@@ -21,7 +21,6 @@ from __future__ import annotations
 import json
 import zipfile
 from dataclasses import dataclass, field
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -92,7 +91,9 @@ class FieldResult:
         }
 
 
-def top_n_by_count(names: list[str], counts: np.ndarray, n: int = 10) -> tuple[tuple[str, float], ...]:
+def top_n_by_count(
+    names: list[str], counts: np.ndarray, n: int = 10
+) -> tuple[tuple[str, float], ...]:
     """Return the top-`n` (name, share_of_total) pairs, ordered by descending count."""
     total = counts.sum()
     order = np.argsort(-counts)[:n]
@@ -152,8 +153,19 @@ def load_agesex() -> pd.DataFrame:
 
 def load_state_pop() -> pd.DataFrame:
     """Return per-state population estimates (NST-EST2025-POP), tidied to area/y2025."""
-    nst = pd.read_excel(config.DATA_RAW / "NST-EST2025-POP.xlsx", header=None, skiprows=4)
-    nst.columns = ["area", "base2020", "y2020", "y2021", "y2022", "y2023", "y2024", "y2025"]
+    nst = pd.read_excel(
+        config.DATA_RAW / "NST-EST2025-POP.xlsx", header=None, skiprows=4
+    )
+    nst.columns = [
+        "area",
+        "base2020",
+        "y2020",
+        "y2021",
+        "y2022",
+        "y2023",
+        "y2024",
+        "y2025",
+    ]
     nst = nst.dropna(subset=["area"])
     # Census's raw layout prefixes every real state/DC/PR row with a leading
     # "." (e.g. ".Alabama") to distinguish it from the workbook's title,
@@ -183,7 +195,9 @@ def load_zcta_population() -> pd.DataFrame:
     df = pd.DataFrame(data[1:], columns=data[0])
     df["B01003_001E"] = pd.to_numeric(df["B01003_001E"], errors="coerce").fillna(0)
     df = df[df["B01003_001E"] > 0]
-    return df.rename(columns={"zip code tabulation area": "zcta", "B01003_001E": "population"})
+    return df.rename(
+        columns={"zip code tabulation area": "zcta", "B01003_001E": "population"}
+    )
 
 
 def load_mdcr_enrollment_total(year: int = config.MDCR_ENROLLMENT_YEAR) -> float:
@@ -247,7 +261,9 @@ def name_exact_u(
         f"race/ethnicity cross-tabs) are not separately listed; this is the standard "
         f"disclosure-avoidance suppression, not missing data."
     )
-    return FieldResult(field, "exact", u_unbiased_a, u_simple_a, source_file, notes, top10)
+    return FieldResult(
+        field, "exact", u_unbiased_a, u_simple_a, source_file, notes, top10
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -351,7 +367,9 @@ def fuzzy_u_from_ball_mass(
     near_miss_pairs = np.sum(counts[eligible] * (ball_mass[eligible] * n_total))
     short_pairs = np.sum(counts[~eligible] * (counts[~eligible] - 1))
     u_unbiased = (
-        float((exact_pairs + near_miss_pairs + short_pairs) / pair_denom) if pair_denom else 0.0
+        float((exact_pairs + near_miss_pairs + short_pairs) / pair_denom)
+        if pair_denom
+        else 0.0
     )
     return u_unbiased, u_simple
 
@@ -389,7 +407,9 @@ def name_fuzzy_u(
 # ---------------------------------------------------------------------------
 
 
-def year_of_birth_u(agesex: pd.DataFrame, reference_year: int = 2025) -> dict[str, FieldResult]:
+def year_of_birth_u(
+    agesex: pd.DataFrame, reference_year: int = 2025
+) -> dict[str, FieldResult]:
     """Headline = all ages (0-100) -- this tool covers the whole population to
     be matched, not just adults; newborns and minors are real patients too.
     The adults-18+ variant is still computed and reported in `notes` as a
@@ -467,7 +487,9 @@ def zip_u(zcta_pop: pd.DataFrame) -> FieldResult:
         f"or unique-organization ZIPs, so this slightly misestimates true ZIP-code "
         f"concentration. {len(zcta_pop):,} ZCTAs with population > 0."
     )
-    return FieldResult("zip5", "exact", u_unbiased, u_simple, "acs5_zcta_population.json", notes, top10)
+    return FieldResult(
+        "zip5", "exact", u_unbiased, u_simple, "acs5_zcta_population.json", notes, top10
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -493,7 +515,13 @@ def state_u(state_pop: pd.DataFrame) -> dict[str, FieldResult]:
     )
     return {
         "no_pr": FieldResult(
-            "state", "exact", u_unbiased_no_pr, u_simple_no_pr, "NST-EST2025-POP.xlsx", notes, top10
+            "state",
+            "exact",
+            u_unbiased_no_pr,
+            u_simple_no_pr,
+            "NST-EST2025-POP.xlsx",
+            notes,
+            top10,
         ),
     }
 
@@ -522,7 +550,9 @@ def city_u(places: pd.DataFrame, national_total: float) -> FieldResult:
 
     outside_places = national_total - places_total
     if outside_places > 0:
-        counts_b = np.concatenate([counts, np.ones(int(round(outside_places)), dtype=np.float64)])
+        counts_b = np.concatenate(
+            [counts, np.ones(int(round(outside_places)), dtype=np.float64)]
+        )
         u_unbiased_b, u_simple_b = u_from_counts(counts_b)
     else:
         u_unbiased_b, u_simple_b = u_unbiased_a, u_simple_a
@@ -543,7 +573,9 @@ def city_u(places: pd.DataFrame, national_total: float) -> FieldResult:
         f"was configured, so the alternate USPS-city-via-ZIP-crosswalk calculation was "
         f"skipped (see download.py's printed manual-setup instructions)."
     )
-    return FieldResult("city", "exact", u_unbiased_a, u_simple_a, "sub-est2025.csv", notes, top10)
+    return FieldResult(
+        "city", "exact", u_unbiased_a, u_simple_a, "sub-est2025.csv", notes, top10
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -579,7 +611,10 @@ def street_line_and_zip_u(
         4: ["B11016_005E", "B11016_013E"],
         5: ["B11016_006E", "B11016_014E"],
         6: ["B11016_007E", "B11016_015E"],
-        7: ["B11016_008E", "B11016_016E"],  # "7 or more" treated as exactly 7 (undercounts s(s-1))
+        7: [
+            "B11016_008E",
+            "B11016_016E",
+        ],  # "7 or more" treated as exactly 7 (undercounts s(s-1))
     }
     total_pairs = 0.0
     total_people_pairs_denom = 0.0
@@ -593,7 +628,9 @@ def street_line_and_zip_u(
             s_pairs += households_of_size_s * s * (s - 1)
         total_pairs += s_pairs
         total_people_pairs_denom += P * (P - 1)
-    u_given_zip_hhdist = total_pairs / total_people_pairs_denom if total_people_pairs_denom else 0.0
+    u_given_zip_hhdist = (
+        total_pairs / total_people_pairs_denom if total_people_pairs_denom else 0.0
+    )
     u_and_zip_hhdist = u_given_zip_hhdist * zip_result.u_unbiased
 
     notes_floor = (
@@ -661,7 +698,8 @@ def phone_u(street_and_zip_result: FieldResult) -> FieldResult:
     it's built on.
     """
     p_landline_household = (
-        config.NCHS_ADULT_DUAL_USER_HOUSEHOLD_PCT + config.NCHS_ADULT_LANDLINE_ONLY_HOUSEHOLD_PCT
+        config.NCHS_ADULT_DUAL_USER_HOUSEHOLD_PCT
+        + config.NCHS_ADULT_LANDLINE_ONLY_HOUSEHOLD_PCT
     ) / 100.0
     u_unbiased = street_and_zip_result.u_unbiased * p_landline_household
     u_simple = street_and_zip_result.u_simple * p_landline_household
@@ -706,7 +744,9 @@ def phone_u(street_and_zip_result: FieldResult) -> FieldResult:
 # ---------------------------------------------------------------------------
 
 
-def middle_name_proxy_u(listed: pd.DataFrame, unlisted_count: int, source_file: str) -> FieldResult:
+def middle_name_proxy_u(
+    listed: pd.DataFrame, unlisted_count: int, source_file: str
+) -> FieldResult:
     """Census publishes no middle-name frequency table. As a proxy, reuse the
     2020 first-name distribution (`listed`/`unlisted_count` from
     `load_firstnames_2020()`) under the assumption that middle names are
@@ -721,8 +761,7 @@ def middle_name_proxy_u(listed: pd.DataFrame, unlisted_count: int, source_file: 
         "as first names. True middle-name concentration could differ in either "
         "direction -- e.g. parents may deliberately pick a less-common middle name "
         "(lowering u), or lean on a smaller set of family/traditional names "
-        "(raising u) -- and this tool cannot distinguish those effects. "
-        + result.notes
+        "(raising u) -- and this tool cannot distinguish those effects. " + result.notes
     )
     return result
 
@@ -779,8 +818,22 @@ def ssn_itin_last4_u() -> dict[str, FieldResult]:
         f"policy-backed closed form."
     )
     return {
-        "ssn_last4": FieldResult("ssn_last4", "exact", u, u, "SSA SSN Randomization policy (no data file)", ssn_notes),
-        "itin_last4": FieldResult("itin_last4", "exact", u, u, "assumed uniform by analogy to SSN (no data file)", itin_notes),
+        "ssn_last4": FieldResult(
+            "ssn_last4",
+            "exact",
+            u,
+            u,
+            "SSA SSN Randomization policy (no data file)",
+            ssn_notes,
+        ),
+        "itin_last4": FieldResult(
+            "itin_last4",
+            "exact",
+            u,
+            u,
+            "assumed uniform by analogy to SSN (no data file)",
+            itin_notes,
+        ),
     }
 
 
@@ -789,7 +842,9 @@ def ssn_itin_last4_u() -> dict[str, FieldResult]:
 # ---------------------------------------------------------------------------
 
 
-def mbi_u(total_enrollment: float, year: int = config.MDCR_ENROLLMENT_YEAR) -> FieldResult:
+def mbi_u(
+    total_enrollment: float, year: int = config.MDCR_ENROLLMENT_YEAR
+) -> FieldResult:
     """Namespace-size floor: u = 1 / (total Medicare enrollment), i.e. the
     probability two randomly chosen Medicare beneficiaries happen to hold the
     same MBI, assuming perfectly unique issuance (no duplicates/typos/reissues).
@@ -809,7 +864,9 @@ def mbi_u(total_enrollment: float, year: int = config.MDCR_ENROLLMENT_YEAR) -> F
         f"which approximates but is not exactly the distinct-beneficiary count for "
         f"the year."
     )
-    return FieldResult("mbi", "exact", u, u, f"MDCR ENROLL AB 1-8_CPS_02ENR_{year}.xlsx", notes)
+    return FieldResult(
+        "mbi", "exact", u, u, f"MDCR ENROLL AB 1-8_CPS_02ENR_{year}.xlsx", notes
+    )
 
 
 # ---------------------------------------------------------------------------

@@ -62,12 +62,17 @@ def _require_within_data_raw(path: Path) -> Path:
     enforced rather than assumed.
     """
     resolved = path.resolve()
-    if config.DATA_RAW.resolve() not in resolved.parents and resolved != config.DATA_RAW.resolve():
+    if (
+        config.DATA_RAW.resolve() not in resolved.parents
+        and resolved != config.DATA_RAW.resolve()
+    ):
         raise DownloadError(f"Refusing to write outside DATA_RAW: {resolved}")
     return resolved
 
 
-def _download_file(url: str, dest: Path, session: requests.Session | None = None) -> None:
+def _download_file(
+    url: str, dest: Path, session: requests.Session | None = None
+) -> None:
     """Stream `url` to `dest`. Skip if dest already exists and is non-empty.
 
     Raises DownloadError if the file cannot be downloaded.
@@ -85,7 +90,9 @@ def _download_file(url: str, dest: Path, session: requests.Session | None = None
             status = resp.status_code
             ctype = resp.headers.get("Content-Type", "")
             total = int(resp.headers.get("Content-Length", 0))
-            log.info("GET %s -> %d, content-type=%s, length=%s", url, status, ctype, total)
+            log.info(
+                "GET %s -> %d, content-type=%s, length=%s", url, status, ctype, total
+            )
             if status != 200:
                 raise DownloadError(f"FAILED ({status}): {url}")
             if "text/html" in ctype:
@@ -95,9 +102,12 @@ def _download_file(url: str, dest: Path, session: requests.Session | None = None
                 )
             safe_dest.parent.mkdir(parents=True, exist_ok=True)
             tmp = safe_dest.with_suffix(safe_dest.suffix + ".part")
-            with open(tmp, "wb") as f, tqdm(
-                total=total or None, unit="B", unit_scale=True, desc=safe_dest.name
-            ) as bar:
+            with (
+                open(tmp, "wb") as f,
+                tqdm(
+                    total=total or None, unit="B", unit_scale=True, desc=safe_dest.name
+                ) as bar,
+            ):
                 for chunk in resp.iter_content(chunk_size=1 << 16):
                     if chunk:
                         f.write(chunk)
@@ -177,10 +187,15 @@ def _census_api_get(variables: list[str], for_clause: str, dest: Path) -> Path:
     for attempt in range(1, config.MAX_RETRIES + 1):
         try:
             resp = sess.get(
-                config.CENSUS_API_BASE, params=params, timeout=config.REQUEST_TIMEOUT * 2
+                config.CENSUS_API_BASE,
+                params=params,
+                timeout=config.REQUEST_TIMEOUT * 2,
             )
             log.info(
-                "GET %s -> %d (attempt %d)", resp.url.split("&key=")[0], resp.status_code, attempt
+                "GET %s -> %d (attempt %d)",
+                resp.url.split("&key=")[0],
+                resp.status_code,
+                attempt,
             )
             resp.raise_for_status()
             data = resp.json()
@@ -191,7 +206,10 @@ def _census_api_get(variables: list[str], for_clause: str, dest: Path) -> Path:
         except (requests.RequestException, json.JSONDecodeError) as exc:
             last_exc = exc
             log.warning(
-                "Attempt %d failed (%s) fetching %s; retrying...", attempt, exc, safe_dest.name
+                "Attempt %d failed (%s) fetching %s; retrying...",
+                attempt,
+                exc,
+                safe_dest.name,
             )
             time.sleep(config.BACKOFF_FACTOR * attempt)
     raise DownloadError(

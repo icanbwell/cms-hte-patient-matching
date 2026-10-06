@@ -421,13 +421,9 @@ class MatchingEngine:
                 if self._comparator.dob_fuzzy_match(q_values, c_values):
                     evaluation.field_outcomes[rf.name] = "fuzzy"
                     evaluation.fuzzy_fields.append(rf.name)
-                    offset = self._comparator.dob_fuzzy_offset_days(
-                        q_values, c_values
-                    )
+                    offset = self._comparator.dob_fuzzy_offset_days(q_values, c_values)
                     if offset is not None:
-                        evaluation.field_fuzzy_detail[rf.name] = {
-                            "day_offset": offset
-                        }
+                        evaluation.field_fuzzy_detail[rf.name] = {"day_offset": offset}
                 else:
                     evaluation.field_outcomes[rf.name] = "no_match"
                     all_matched = False
@@ -443,9 +439,7 @@ class MatchingEngine:
                     evaluation.fuzzy_fields.append(rf.name)
                     distance = self._comparator.fuzzy_distance(q_values, c_values)
                     if distance is not None:
-                        evaluation.field_fuzzy_detail[rf.name] = {
-                            "distance": distance
-                        }
+                        evaluation.field_fuzzy_detail[rf.name] = {"distance": distance}
                 else:
                     evaluation.field_outcomes[rf.name] = "fuzzy_exceeded"
                     all_matched = False
