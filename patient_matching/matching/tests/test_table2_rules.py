@@ -13,8 +13,9 @@ from patient_matching.matching.table2_rules import (
 class TestApprovedRules:
     """Verify the integrity of the flat (Category 1) rule definitions.
 
-    30 rules, numbered 01-30 with no gaps per CMS v3.4.0's renumbering
-    (session 16). Pre-v3.4.0, this set used the v3.2.2/v3.3 numbering
+    29 rules, numbered 01-28 and 30 per CMS v3.4.0's renumbering
+    (session 16); rule 29 was later removed by CMS and its ID is left
+    unassigned. Pre-v3.4.0, this set used the v3.2.2/v3.3 numbering
     (01-12, 17-33, 36, with 13-16 removed to Category 2). v3.4.0's clean
     renumbering reassigns bare 13-16 to brand-new flat content (First
     Name+Phone/Email+SSN/ITIN Last4) - unrelated to Category 2's rules,
@@ -24,19 +25,20 @@ class TestApprovedRules:
     """
 
     def test_total_count(self) -> None:
-        assert len(APPROVED_RULES) == 30
+        assert len(APPROVED_RULES) == 29
 
     def test_unique_rule_ids(self) -> None:
         ids = [r.rule_id for r in APPROVED_RULES]
         assert len(ids) == len(set(ids))
 
     def test_ids_are_the_expected_v340_category1_set(self) -> None:
-        """v3.4.0 renumbers Category 1 into a clean, gapless 01-30 sequence -
+        """v3.4.0 renumbers Category 1 into a clean 01-30 sequence, minus the
+        since-removed rule 29 (ID left unassigned) -
         no gaps left for 13-16 (which live in household_rules.CATEGORY_2_RULES
         under `C2-`-prefixed IDs, e.g. `C2-13`, to avoid colliding with
         Category 1's brand-new bare 13-16 - see test_rule_ids_disjoint_from_category_2
         below)."""
-        expected = {f"{i:02d}" for i in range(1, 31)}
+        expected = {f"{i:02d}" for i in range(1, 31)} - {"29"}
         actual = {r.rule_id for r in APPROVED_RULES}
         assert actual == expected
 
@@ -109,7 +111,7 @@ class TestApprovedRules:
     def test_field_composition_matches_the_v340_renumbering_table(self) -> None:
         """Locks each rule_id to its exact field/role composition, not just
         set membership - adversarial-review finding: the prior tests only
-        checked that the *set* of IDs equals {01..30}
+        checked that the *set* of IDs equals {01..28, 30}
         (test_ids_are_the_expected_v340_category1_set) and spot-checked two
         rules (01, 22). A transposition during the manual renumbering (e.g.
         swapping two adjacent rules' bodies, or misassigning a field role)
@@ -210,12 +212,6 @@ class TestApprovedRules:
                 ("first_name", "exact"),
                 ("insurance_subscriber_id", "exact"),
                 ("last_name", "fuzzy_eligible"),
-            },
-            "29": {
-                ("first_name", "fuzzy_eligible"),
-                ("last_name", "fuzzy_eligible"),
-                ("phone", "exact"),
-                ("zip_code", "exact"),
             },
             "30": {
                 ("dob", "exact"),

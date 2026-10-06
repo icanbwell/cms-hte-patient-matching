@@ -248,7 +248,7 @@ class TestPersistentIdentifierAnchor:
 
 class TestTiebreakSurvivesDefaultRuleSet:
     """Regression guard for an adversarial-review finding: every test above
-    uses `rules=()`, which disables all 30 Category 1 flat rules. Under the
+    uses `rules=()`, which disables all 29 Category 1 flat rules. Under the
     production default (`rules=APPROVED_RULES`), a flat rule matching on a
     name alias the twins happen to share (e.g. rule 11: First Name + DOB +
     Phone, exact-match via set intersection) independently re-matches BOTH
