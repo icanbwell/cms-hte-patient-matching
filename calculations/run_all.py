@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
-import sys
 from pathlib import Path
 
 import numpy as np
@@ -29,7 +28,9 @@ def _log(msg: str) -> None:
     log_lines.append(msg)
 
 
-def _cached_ball_mass(cache_name: str, names: list[str], probs: np.ndarray, min_len: int) -> np.ndarray:
+def _cached_ball_mass(
+    cache_name: str, names: list[str], probs: np.ndarray, min_len: int
+) -> np.ndarray:
     """Load `build_fuzzy_ball_mass`'s output from disk if a same-size cache exists,
     else compute it and save it. Invalidated by a name-count mismatch (e.g. a
     re-downloaded source file with a different row count), not by content changes."""
@@ -48,7 +49,13 @@ def _cached_ball_mass(cache_name: str, names: list[str], probs: np.ndarray, min_
     return arr
 
 
-def name_fuzzy_u_cached(listed: pd.DataFrame, field: str, source_file: str, cache_name: str, min_len: int = 5) -> compute.FieldResult:
+def name_fuzzy_u_cached(
+    listed: pd.DataFrame,
+    field: str,
+    source_file: str,
+    cache_name: str,
+    min_len: int = 5,
+) -> compute.FieldResult:
     """Same computation as `compute.name_fuzzy_u`, but routed through `_cached_ball_mass`
     instead of always recomputing the ball mass -- kept separate (rather than adding a
     cache seam to name_fuzzy_u itself) so compute.py stays pure/IO-free and unit-testable."""
@@ -61,7 +68,9 @@ def name_fuzzy_u_cached(listed: pd.DataFrame, field: str, source_file: str, cach
     lengths = np.array([len(nm) for nm in names])
     eligible = lengths >= min_len
 
-    u_unbiased, u_simple = compute.fuzzy_u_from_ball_mass(counts, probs, ball_mass, eligible)
+    u_unbiased, u_simple = compute.fuzzy_u_from_ball_mass(
+        counts, probs, ball_mass, eligible
+    )
 
     notes = (
         f"Ball = names within Damerau-OSA edit distance 1 (insert/delete/substitute/"
@@ -74,7 +83,9 @@ def name_fuzzy_u_cached(listed: pd.DataFrame, field: str, source_file: str, cach
         f"exact-match calculation."
     )
     top10 = compute.top_n_by_count(names, counts, 10)
-    return compute.FieldResult(field, "fuzzy", u_unbiased, u_simple, source_file, notes, top10)
+    return compute.FieldResult(
+        field, "fuzzy", u_unbiased, u_simple, source_file, notes, top10
+    )
 
 
 def main(*, do_download: bool = True, do_compute: bool = True) -> None:
@@ -91,7 +102,9 @@ def main(*, do_download: bool = True, do_compute: bool = True) -> None:
         _log("\n--- Step 1: download skipped (--compute-only) ---")
 
     if not do_compute:
-        _log(f"\n=== Pipeline run finished {dt.datetime.now().isoformat()} (download only) ===")
+        _log(
+            f"\n=== Pipeline run finished {dt.datetime.now().isoformat()} (download only) ==="
+        )
         return
 
     _log("\n--- Step 2: compute ---")
@@ -103,14 +116,23 @@ def main(*, do_download: bool = True, do_compute: bool = True) -> None:
     last2010, last2010_unlisted = compute.load_surnames_2010()
 
     _log("Last name exact (2020)...")
-    r = compute.name_exact_u(last2020, last2020_unlisted, "last_name", "Names2020_LastNames_RaceHispanic.xlsx")
+    r = compute.name_exact_u(
+        last2020,
+        last2020_unlisted,
+        "last_name",
+        "Names2020_LastNames_RaceHispanic.xlsx",
+    )
     results.append(r)
     _log("Last name exact (2010, comparison)...")
-    r2010 = compute.name_exact_u(last2010, last2010_unlisted, "last_name_2010_comparison", "names_2010census.zip")
+    r2010 = compute.name_exact_u(
+        last2010, last2010_unlisted, "last_name_2010_comparison", "names_2010census.zip"
+    )
     results.append(r2010)
 
     _log("Last name fuzzy (2020)... (checkpointed)")
-    r = name_fuzzy_u_cached(last2020, "last_name", "Names2020_LastNames_RaceHispanic.xlsx", "lastname_2020")
+    r = name_fuzzy_u_cached(
+        last2020, "last_name", "Names2020_LastNames_RaceHispanic.xlsx", "lastname_2020"
+    )
     results.append(r)
 
     # First name, exact + fuzzy (2020 Census; SSA fallback not needed since
@@ -118,15 +140,21 @@ def main(*, do_download: bool = True, do_compute: bool = True) -> None:
     _log("Loading first names (2020)...")
     first2020, first2020_unlisted = compute.load_firstnames_2020()
     _log("First name exact (2020)...")
-    r = compute.name_exact_u(first2020, first2020_unlisted, "first_name", "Names2020_FirstNames_Sex.xlsx")
+    r = compute.name_exact_u(
+        first2020, first2020_unlisted, "first_name", "Names2020_FirstNames_Sex.xlsx"
+    )
     results.append(r)
     _log("First name fuzzy (2020)... (checkpointed)")
-    r = name_fuzzy_u_cached(first2020, "first_name", "Names2020_FirstNames_Sex.xlsx", "firstname_2020")
+    r = name_fuzzy_u_cached(
+        first2020, "first_name", "Names2020_FirstNames_Sex.xlsx", "firstname_2020"
+    )
     results.append(r)
 
     # Middle name (proxy: reuses the first-name distribution just loaded above)
     _log("Middle name (proxy via first-name distribution)...")
-    r = compute.middle_name_proxy_u(first2020, first2020_unlisted, "Names2020_FirstNames_Sex.xlsx")
+    r = compute.middle_name_proxy_u(
+        first2020, first2020_unlisted, "Names2020_FirstNames_Sex.xlsx"
+    )
     results.append(r)
 
     # Year of birth / DOB (headline = all ages; see compute.year_of_birth_u docstring)
@@ -156,7 +184,9 @@ def main(*, do_download: bool = True, do_compute: bool = True) -> None:
     # places/CDPs coverage bound -- see compute.city_u docstring)
     _log("City (places)...")
     places = compute.load_places()
-    national_total = float(state_pop.loc[state_pop["area"] != "Puerto Rico", "y2025"].sum())
+    national_total = float(
+        state_pop.loc[state_pop["area"] != "Puerto Rico", "y2025"].sum()
+    )
     cresult = compute.city_u(places, national_total)
     results.append(cresult)
 
@@ -215,9 +245,19 @@ def _print_headline_table(results: list[compute.FieldResult]) -> None:
     print("-" * len(header))
     for r in results:
         row = r.as_row()
-        cons = f"{row['current_conservative_u']:.4g}" if row["current_conservative_u"] is not None else "n/a"
-        ratio = f"{row['ratio_current_to_empirical']:.2f}x" if row["ratio_current_to_empirical"] is not None else "n/a"
-        print(f"{row['field']:<24} {row['variant']:<8} {row['u_unbiased']:>12.4g} {cons:>12} {ratio:>10}")
+        cons = (
+            f"{row['current_conservative_u']:.4g}"
+            if row["current_conservative_u"] is not None
+            else "n/a"
+        )
+        ratio = (
+            f"{row['ratio_current_to_empirical']:.2f}x"
+            if row["ratio_current_to_empirical"] is not None
+            else "n/a"
+        )
+        print(
+            f"{row['field']:<24} {row['variant']:<8} {row['u_unbiased']:>12.4g} {cons:>12} {ratio:>10}"
+        )
 
 
 def _write_markdown(
@@ -251,8 +291,16 @@ def _write_markdown(
     lines.append("|---|---|---|---|---|---|---|")
     for r in results:
         row = r.as_row()
-        cons = f"{row['current_conservative_u']:.5g}" if row["current_conservative_u"] is not None else "n/a"
-        ratio = f"{row['ratio_current_to_empirical']:.2f}x" if row["ratio_current_to_empirical"] is not None else "n/a"
+        cons = (
+            f"{row['current_conservative_u']:.5g}"
+            if row["current_conservative_u"] is not None
+            else "n/a"
+        )
+        ratio = (
+            f"{row['ratio_current_to_empirical']:.2f}x"
+            if row["ratio_current_to_empirical"] is not None
+            else "n/a"
+        )
         lines.append(
             f"| {row['field']} | {row['variant']} | {row['u_unbiased']:.4g} | "
             f"{row['u_simple']:.4g} | {cons} | {ratio} | {row['source_file']} |"
@@ -303,7 +351,9 @@ def _write_markdown(
         "converted to birth year assuming the July 1, 2025 reference date.\n"
         "- **Full DOB**: u_yob / 365.25, assuming uniform distribution of birthdates "
         "within a birth year (see caveat below).\n"
-        "- **ZIP**: ACS 5-year (" + str(config.ACS5_YEAR) + ") table B01003 at the ZCTA "
+        "- **ZIP**: ACS 5-year ("
+        + str(config.ACS5_YEAR)
+        + ") table B01003 at the ZCTA "
         "level, used as a proxy for USPS ZIP code.\n"
         "- **State**: NST-EST2025-POP, July 1, 2025 estimate, 50 states + DC headline "
         "(Puerto Rico variant also computed).\n"
@@ -330,8 +380,12 @@ def _write_markdown(
     lines.append(f"All data downloaded/re-verified on {today}.\n")
     lines.append(f"- 2010 Census surnames: {config.SURNAMES_2010_ZIP_URL}")
     lines.append(f"- 2020 Census first names: {config.FIRSTNAMES_2020_SEX_XLSX_URL}")
-    lines.append(f"- 2020 Census last names: {config.LASTNAMES_2020_RACEHISPANIC_XLSX_URL}")
-    lines.append(f"- National single-year-of-age/sex estimates: {config.NC_EST2025_AGESEX_RES_URL}")
+    lines.append(
+        f"- 2020 Census last names: {config.LASTNAMES_2020_RACEHISPANIC_XLSX_URL}"
+    )
+    lines.append(
+        f"- National single-year-of-age/sex estimates: {config.NC_EST2025_AGESEX_RES_URL}"
+    )
     lines.append(f"- State population totals: {config.NST_EST2025_POP_XLSX_URL}")
     lines.append(f"- Places (SUB-EST2025): {config.SUB_EST2025_CSV_URL}")
     lines.append(

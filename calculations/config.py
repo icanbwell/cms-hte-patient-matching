@@ -60,18 +60,16 @@ BACKOFF_FACTOR = 1.5
 # --- Surnames --------------------------------------------------------------
 # Landing page: https://www.census.gov/topics/population/genealogy/data/2010_surnames.html
 # The page's "File B - Complete Surnames (Zip with Excel/CSV)" link resolves to:
-SURNAMES_2010_ZIP_URL = "https://www2.census.gov/topics/genealogy/2010surnames/names.zip"
+SURNAMES_2010_ZIP_URL = (
+    "https://www2.census.gov/topics/genealogy/2010surnames/names.zip"
+)
 # Contains Names_2010Census.csv: name,rank,count,prop100k,cum_prop100k,pct<race>...
 
 # Landing page: https://www.census.gov/topics/population/genealogy/data.html links to
 # https://www.census.gov/topics/population/genealogy/data/2020_names.html, which lists
 # the 2020 Census names files. We use the complete (non-top-1000) files:
-FIRSTNAMES_2020_SEX_XLSX_URL = (
-    "https://www2.census.gov/topics/genealogy/2020surnames/Names2020_FirstNames_Sex.xlsx"
-)
-LASTNAMES_2020_RACEHISPANIC_XLSX_URL = (
-    "https://www2.census.gov/topics/genealogy/2020surnames/Names2020_LastNames_RaceHispanic.xlsx"
-)
+FIRSTNAMES_2020_SEX_XLSX_URL = "https://www2.census.gov/topics/genealogy/2020surnames/Names2020_FirstNames_Sex.xlsx"
+LASTNAMES_2020_RACEHISPANIC_XLSX_URL = "https://www2.census.gov/topics/genealogy/2020surnames/Names2020_LastNames_RaceHispanic.xlsx"
 # Note: this file also breaks last names out by race/Hispanic origin category,
 # but it publishes a "FREQUENCY (COUNT)" column that is already the national
 # total across all categories (verified: it equals the sum of the per-category
@@ -145,7 +143,7 @@ SSN_ITIN_LAST4_VALID_VALUES = 9999  # 0001-9999; 0000 is never issued.
 # https://www.huduser.gov/portal/datasets/usps_crosswalk.html — API documented at
 # https://www.huduser.gov/portal/dataset/uspszip-api.html
 HUD_CROSSWALK_API_URL = "https://www.huduser.gov/hudapi/public/usps"
-# type=2 => ZIP-TRACT crosswalk (closest available to ZIP<->city allocation
+# crosswalk type 2 => ZIP-TRACT crosswalk (closest available to ZIP<->city allocation
 # without a dedicated ZIP-to-city HUD product); see download.py for handling
 # when HUD_TOKEN is unset (skip with an explicit message, no fabricated data).
 

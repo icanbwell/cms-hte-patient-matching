@@ -445,7 +445,9 @@ class TestFuzzyDetail:
         engine = MatchingEngine(backend=InMemoryBackend([candidate]))
         result = await engine.match(query)
         matched = next(
-            ev for ev in result.rule_evaluations if ev.matched and "dob" in ev.fuzzy_fields
+            ev
+            for ev in result.rule_evaluations
+            if ev.matched and "dob" in ev.fuzzy_fields
         )
         assert matched.field_fuzzy_detail["dob"] == {"day_offset": 1}
 
