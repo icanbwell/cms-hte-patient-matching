@@ -29,8 +29,8 @@ What runs, once the data is present:
 
 - **`test_onc_regression.py`** (pairs tier) — every `(source, target, expected_match)` triple in
   `tests/fixtures/onc/sample_labeled_pairs.jsonl` through `NormalizationManager().normalize()` →
-  `FieldExtractor().extract()` → `MatchingEngine.evaluate_pair()`. Asserts recall ≥ 0.95 and
-  FPR ≤ 0.01. Precision is computed and printed in the failure summary but **not** asserted — this
+  `FieldExtractor().extract()` → `MatchingEngine.evaluate_pair()`. Asserts recall ≥ 0.92 and
+  FPR ≤ 0.10 (temporarily relaxed from 0.95 / 0.01; see `ONC_REGRESSION_TEST_DESIGN.md`). Precision is computed and printed in the failure summary but **not** asserted — this
   tier deliberately over-samples rare/high-risk categories, so precision has no real-world
   interpretation here (see `evaluation/cases/README.md` in the sibling repo, "Frequency and
   real-world representativeness").
