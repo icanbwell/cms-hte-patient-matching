@@ -57,10 +57,6 @@ jobs:
       - name: Fetch ONC test data
         run: make fetch-onc-data
 
-      - name: TEMP diagnostic (BAI-1062)
-        if: always()
-        run: make fetch-onc-data >/dev/null; uv run --frozen --no-sync python scripts/diag_onc.py > diag.txt; grep -v 'DIAG pair' diag.txt; grep -c 'DIAG pair' diag.txt
-
       - name: tests
         run: uv run --frozen --no-sync pytest . --tb=auto --junitxml=${{ github.workspace }}/reports/test-results.xml
 
