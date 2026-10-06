@@ -54,7 +54,7 @@ nothing connects them.
 
 **This repo no longer commits a copy of the ONC-derived test data.** `scripts/fetch_onc_test_data.py`
 (`make fetch-onc-data`) downloads it from a pinned commit of `cms-hte-patient-matching-test-set`
-(tag `0.0.1` as of this writing, resolved to a commit SHA at fetch time — see the script's
+(tag `0.0.2` as of this writing, resolved to a commit SHA at fetch time — see the script's
 `SOURCE_TAG`/`SOURCE_COMMIT` constants, which are the authoritative pin, not this doc) into
 `tests/fixtures/onc/`, which is now gitignored.
 

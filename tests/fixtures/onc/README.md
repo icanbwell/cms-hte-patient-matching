@@ -37,8 +37,8 @@ hasn't been run yet — see `tests/_onc_test_set.py`.
 | `population_queries.jsonl` | `cms-hte-patient-matching-test-set` @ `evaluation/cases/population_queries.jsonl` |
 | `population_candidates.jsonl` | `cms-hte-patient-matching-test-set` @ `evaluation/cases/population_candidates.jsonl` |
 
-Fetched from `https://github.com/icanbwell/cms-hte-patient-matching-test-set`, tag `0.0.1`
-(commit `c2454c54be9d18155996dcc10d4fa259800236e1`) — see `SOURCE_TAG`/`SOURCE_COMMIT` in
+Fetched from `https://github.com/icanbwell/cms-hte-patient-matching-test-set`, tag `0.0.2`
+(commit `cf5aaa17e3ebab8ec27f587e087b70650f7b4f21`) — see `SOURCE_TAG`/`SOURCE_COMMIT` in
 `scripts/fetch_onc_test_data.py` for the current pin, which is the authoritative version, not this
 note (update this note if you bump the pin, but the script is what actually governs it).
 
