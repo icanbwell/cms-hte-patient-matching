@@ -31,18 +31,14 @@ jobs:
         with:
           version: "0.11.6"
 
-      # This repo has no Dockerfile/Docker dev workflow (pure Python package, consumed by
-      # cms-hte-patient-matching-service) -- runs directly on the runner via uv.
-      #
-      # pyproject.toml's "jfrog" index is now the default (all packages resolve through
-      # it), so this sync needs JFrog auth to succeed at all. Uses the real
-      # JFROG_READ_USER, not an empty string -- Artifactory's virtual-pypi rejects an
-      # empty username with 403 even given a valid token as the password.
+      # This repo is public and the JFROG_READ_* org secrets are not available to it
+      # (they arrive empty -> 401), so CI resolves from public PyPI. UV_DEFAULT_INDEX
+      # overrides pyproject's JFrog index, and the sync is not --frozen so uv re-resolves
+      # instead of using the JFrog URLs in uv.lock. Later steps use --frozen --no-sync.
       - name: Sync dependencies
         env:
-          UV_INDEX_JFROG_USERNAME: ${{ secrets.JFROG_READ_USER }}
-          UV_INDEX_JFROG_PASSWORD: ${{ secrets.JFROG_READ_TOKEN }}
-        run: uv sync --frozen --all-extras --group dev
+          UV_DEFAULT_INDEX: https://pypi.org/simple
+        run: uv sync --all-extras --group dev
 
       # Lint gate - runs before tests. If any check fails, the job stops here and
       # the test step never runs.
