@@ -226,3 +226,38 @@ household (Category 2) rules were already in both engines, so they can't be what
 baseline the same way; check which labeled cases flipped before touching a floor/ceiling. Also,
 the fixture data is fetched from a pinned commit of the test-set repo — the pin has to be bumped
 for a data fix there to reach this repo.
+
+## 40 of the 43 `sibling_negative` false positives are labels the next test-set fixes
+
+On test-set `0.0.2` the engine links 43 of 81 `sibling_negative` pairs (FPR 0.0964 overall).
+Test-set PR #15 (label validity) adds a same-person guard (shared real SSN, or normalized
+first + family + DOB) and drops every sibling pair it flags. Running the engine over both files with
+`scripts/sibling_fp_overlap.py`:
+
+| | count |
+|---|---|
+| Pairs the guard flags as possibly the same person | 44 (all removed by #15) |
+| ...of which the engine links (false positives) | 40 |
+| Extra pair #15 removes (new "different first names" sibling rule) | 1 |
+| False positives #15 keeps as non-matches | **3** |
+
+Pairs-tier FPR on #15's file: **0.0106** (3 / 282 non-matches), down from 0.0964. Recall is
+unchanged at 0.9265 (#15 does not touch positives), so the recall floor is still bound by
+`compound_variant` (see above).
+
+**The 3 that survive are twins with different first names, linked under approved rules:**
+
+- `15631358::15845294`, `15651130::15817119` — rule 30 (`Last* + DOB + Phone`, no first name).
+  Same household phone, so the rule fires by design.
+- `15660144::15986843` — rules 01/02/11/30/C2-34. First name is `exact` because one twin's first
+  given name is the other's middle name, and first name is compared against all given names.
+
+None is an engine bug against the spec. All three are the twin ambiguity the spec leaves
+unresolved (§IV.G). Note that `docs/TESTING_AGAINST_TEST_SET.md` §4 ("literal twins are absent
+from every tier by design") predates session 14: the `sibling_negative` pairs with
+`age_gap_years=0` are twins.
+
+**Where this could still bite:** restoring the 0.01 FPR ceiling after #15 still fails by these 3
+pairs (0.0106 > 0.01). Either decide what twins with no distinguishing data should expect, or
+set the ceiling just above 0.0106 with a note. Re-run the script before each pin bump; it keys
+pairs by `case_id`, which is only stable for pairs a release keeps.
