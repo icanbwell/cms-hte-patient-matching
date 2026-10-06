@@ -31,8 +31,8 @@ from pathlib import Path
 # tests/fixtures/onc/README.md), SOURCE_COMMIT - the tag's resolved commit -
 # for the actual fetch, since only a commit SHA is truly immutable.
 SOURCE_REPO = "icanbwell/cms-hte-patient-matching-test-set"
-SOURCE_TAG = "0.0.1"
-SOURCE_COMMIT = "c2454c54be9d18155996dcc10d4fa259800236e1"  # pragma: allowlist secret
+SOURCE_TAG = "0.0.2"
+SOURCE_COMMIT = "cf5aaa17e3ebab8ec27f587e087b70650f7b4f21"  # pragma: allowlist secret
 
 BASE_URL = (
     f"https://raw.githubusercontent.com/{SOURCE_REPO}/{SOURCE_COMMIT}/evaluation/cases"
