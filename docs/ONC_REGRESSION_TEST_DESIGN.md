@@ -17,17 +17,16 @@ The data itself is **vendored into this repo** at `tests/fixtures/onc/` (copied 
 `cms-hte-patient-matching-test-set` repo — see "Vendoring decision" below) — this repo is
 standalone and does not require a second repo checked out to run these tests, including in CI.
 
-Both are written, passing, and clean under ruff/mypy. Measured live: pairs tier — recall 0.9717,
-FPR 0.0069, 0 extraction errors on 6,290 pairs; population tier — precision 0.9990, recall 0.9717,
-FPR 0.0001, accuracy 0.9978, F1 0.9851, 0 extraction errors on 80,000 query-candidate evaluations
-(2,000 queries × ~40-candidate pools, 8,016 unique candidates).
+Both are written, passing, and clean under ruff/mypy. Measured live: pairs tier — recall 0.9709,
+FPR 0.0000, 0 extraction errors on 6,138 pairs; population tier — precision 0.9993, recall 0.9709,
+FPR 0.0001, accuracy 0.9978, F1 0.9849, 0 extraction errors on 79,848 query-candidate evaluations
+(2,000 queries × ~40-candidate pools, 8,016 unique candidates). Measured against the data
+*after* the Rule 29 removal — see "Rule 29 removal (2026-10-06)" below.
 
-No practitioner/NPPES *compliance* test was built — see "Alternatives Considered" for why that's
-not a gap. A narrower, valid NPPES-based test was added instead: `tests/test_nppes_matching.py`,
-checking both directions of the one approved rule that *can* evaluate against NPPES-shaped data
-(rule 29) — recall 1.0000 on exact-duplicate/single-edit true-match cases, FPR 0.0000 on 307
-real distinct-provider collisions — data vendored at `tests/fixtures/nppes/`. See the "Update
-(2026-09-04)" note under "Alternatives Considered" for the full rationale.
+No practitioner/NPPES test exists. A narrow NPPES-based test of Rule 29 once existed
+(`tests/test_nppes_matching.py`); it was deleted along with its vendored data when CMS removed
+Rule 29, since no other approved rule can evaluate against NPPES-shaped data (see "Rule 29
+removal (2026-10-06)" below).
 
 ## Problem
 
@@ -102,7 +101,7 @@ produces them).
 
 ### Data source (pairs tier)
 
-`tests/fixtures/onc/sample_labeled_pairs.jsonl` — 6,290 labeled `(source, target, expected_match,
+`tests/fixtures/onc/sample_labeled_pairs.jsonl` — 6,138 labeled `(source, target, expected_match,
 rationale)` records, each an ONC 2017 Patient Matching Algorithm Challenge record (public,
 synthetic, non-PHI) or a same-record mutation/mined hard-negative of one. Categories:
 `fuzzy_variant` (single-edit typo/nickname/transposition variants), `normalization_edge_case`
@@ -114,7 +113,7 @@ institutional-address collisions).
 
 For each pair: `NormalizationManager().normalize()` → `FieldExtractor().extract()` →
 `MatchingEngine.evaluate_pair(source_fields, target_fields)`. `evaluate_pair` is a pure decision
-over two `PatientFields` objects (all 30 Category 1 rules + all 8 Category 2 household/individual
+over two `PatientFields` objects (all 29 Category 1 rules + all 8 Category 2 household/individual
 rules), no backend search involved — exactly the shape the engine's own docstring says it was
 factored out for.
 
@@ -138,37 +137,38 @@ separate population-query tier (`population_queries.jsonl` + `population_candida
 query against a realistic 40-candidate pool per query) is designed for exactly that, and is **not**
 wired up by this test. See "Limitations."
 
-The test also asserts **zero extraction errors** across all 6,290 pairs (raises are tallied and
+The test also asserts **zero extraction errors** across all 6,138 pairs (raises are tallied and
 fail the test, not silently dropped) — per the sibling repo's own Option A guidance: an algorithm
 that silently skips its hardest cases and reports metrics only over what it attempted can look
 stronger than one that honestly attempted everything.
 
 ### Measured values and thresholds
 
-Run against the current engine (30 Category 1 rules + 8 household rules):
+Run against the current engine (29 Category 1 rules + 8 household rules):
 
 | Metric | Measured | Threshold | Headroom |
 |---|---|---|---|
-| Recall | 0.9717 (tp=5830, fn=170) | ≥ 0.95 | ~2 points below measured; still above the historical 26-rule baseline (0.9508) |
-| FPR | 0.0069 (fp=2, tn=288) | ≤ 0.01 | ~0.3 points above measured — deliberately tight; a false positive here is a wrong-patient record link, the error this whole engine exists to prevent |
+| Recall | 0.9709 (tp=5678, fn=170) | ≥ 0.95 | ~2 points below measured; still above the historical 26-rule baseline (0.9508) |
+| FPR | 0.0000 (fp=0, tn=290) | ≤ 0.01 | 1 point above measured; kept at the pre-removal value (the two former false positives came from Rule 29) — a false positive here is a wrong-patient record link, the error this whole engine exists to prevent |
 | Extraction errors | 0 | must be 0 | none — any error is a bug, not a case to skip |
 
-Both false positives are in the `special_population` category (mined/constructed institutional
-and household collisions) — the category built specifically to stress-test this exact risk.
+Before Rule 29's removal there were two false positives, both in the `special_population`
+category (mined/constructed institutional and household collisions — the category built
+specifically to stress-test this exact risk); both matched via Rule 29 and are gone with it.
 
 Per-category breakdown (for diagnosability, not separately asserted):
 
 | Category | tp | fp | tn | fn | recall | fpr |
 |---|---|---|---|---|---|---|
-| fuzzy_variant | 1852 | 0 | 0 | 148 | 0.9260 | n/a |
-| normalization_edge_case | 3978 | 0 | 0 | 22 | 0.9945 | n/a |
+| fuzzy_variant | 1708 | 0 | 0 | 148 | 0.9203 | n/a |
+| normalization_edge_case | 3970 | 0 | 0 | 22 | 0.9945 | n/a |
 | hard_negative | 0 | 0 | 4 | 0 | n/a | 0.0000 |
-| special_population | 0 | 2 | 284 | 0 | n/a | 0.0070 |
+| special_population | 0 | 0 | 286 | 0 | n/a | 0.0000 |
 
 These thresholds are **regression guards with headroom**, not a re-derivation of the sibling
 repo's checked-in `evaluation/baselines/v3_2_2_onc_baseline.txt` (26 rules, ~2,000,936 pairs from
 a much larger, uncommitted generated set) — that file isn't a valid direct comparison point for a
-30-rule engine evaluated on the smaller, committed 6,290-pair file.
+29-rule engine evaluated on the smaller 6,138-pair file.
 
 ### Population tier (`tests/test_onc_population_regression.py`)
 
@@ -184,7 +184,7 @@ documented only in that repo — not duplicated here, see "Vendoring decision" a
 Same pipeline as the pairs tier, with one efficiency difference: each of the 8,016 candidates is
 normalized/extracted **once** (candidates are shared across many queries' pools) rather than
 once per query-candidate pair, then every `(query, candidate_id)` in every pool is flattened into
-one confusion matrix — 80,000 evaluations total, ~10-20s locally.
+one confusion matrix — 79,848 evaluations total, ~10-20s locally.
 
 This roughly mirrors what `helix.personmatching`'s `tests/cms_dataset/test_cms_performance.py`
 does for the legacy engine (a query patient matched against the rest of a population), but uses
@@ -197,10 +197,10 @@ than helix's file-based tracking.
 
 | Metric | Measured | Threshold | Headroom |
 |---|---|---|---|
-| Precision | 0.9990 (tp=5830, fp=6) | ≥ 0.99 | matches the pairs-tier tp/fn since true matches are counted the same way; fp differs (6 vs. 2) because the population tier's much larger candidate pool surfaces more near-miss distractors |
-| Recall | 0.9717 | ≥ 0.95 | same as pairs tier |
-| FPR | 0.0001 (fp=6, tn=73,994) | ≤ 0.001 | 10x headroom; naturally tiny here because tn dominates the pool, but still a tight absolute ceiling — same false-positive-is-critical reasoning as the pairs tier |
-| F1 | 0.9851 | ≥ 0.97 | ~1.5 points below measured |
+| Precision | 0.9993 (tp=5678, fp=4) | ≥ 0.99 | matches the pairs-tier tp/fn since true matches are counted the same way; fp differs (4 vs. 0) because the population tier's much larger candidate pool surfaces more near-miss distractors |
+| Recall | 0.9709 | ≥ 0.95 | same as pairs tier |
+| FPR | 0.0001 (fp=4, tn=73,996) | ≤ 0.001 | 10x headroom; naturally tiny here because tn dominates the pool, but still a tight absolute ceiling — same false-positive-is-critical reasoning as the pairs tier |
+| F1 | 0.9849 | ≥ 0.97 | ~1.5 points below measured |
 | Accuracy | 0.9978 | not asserted | reported in the failure-message summary only; dominated by the huge tn count so less sensitive to a real regression than the other four metrics |
 
 ### Skip behavior
@@ -239,28 +239,12 @@ this repo has "no code path into `helix.personmatching`/`person-matching-service
 Practitioner/provider matching is already owned by those two repos. **No practitioner
 *compliance* test was built, and none should be, in this repo** — that conclusion still holds.
 
-**Update (2026-09-04): a narrower, valid NPPES-based test was added anyway** —
-`tests/test_nppes_matching.py`, data vendored at `tests/fixtures/nppes/` (copied from
-`helix.personmatching`'s own NPPES sample, provenance in that directory's README). It is **not** a
-reversal of the conclusion above: it doesn't claim this engine matches practitioners in general.
-Exactly one approved Table 2 rule can evaluate at all against NPPES-shaped data — Rule 29, `First
-Name* + Last Name* + Phone Number + ZIP Code`, the only approved rule requiring none of
-DOB/SSN/MBI/email — and the test checks that rule both directions, the same way the ONC pairs test
-checks recall and FPR for patients:
-
-- **Recall:** exact duplicates and single-edit (Damerau-Levenshtein ≤1) typo variants of a
-  provider's name should all still match (phone/ZIP held fixed) — measured **1.0000** (17,299/
-  17,299 true-match cases, 0 false negatives), gated at ≥ 0.99. 27 of 4,943 providers are excluded
-  from this measurement (tracked, not hidden) because their practice phone didn't survive
-  normalization at all (a placeholder like `000-000-0000`, or a non-US/APO number) — rule 29 can't
-  evaluate without phone present, even against an identical copy of itself.
-- **FPR:** real group practices commonly share one practice phone+ZIP across multiple distinct
-  providers (130 such (phone, ZIP) collisions found in the vendored sample, 307 distinct-NPI pairs
-  evaluated, several sharing a last name too — likely colleagues or family). Measured **0.0000**
-  (0/307), gated at an exact zero — a cross-provider false positive is a wrong-person record link,
-  not a rate to tolerate any of.
-
-See that test's own module docstring for the full rationale — not duplicated here.
+**Update (2026-10-06): the narrower NPPES-based test was removed.** It existed only to exercise
+Rule 29, `First Name* + Last Name* + Phone Number + ZIP Code` — the one approved rule requiring
+none of DOB/SSN/MBI/email, and so the only one that could evaluate against NPPES-shaped data.
+CMS removed Rule 29 from Table 2, so `tests/test_nppes_matching.py` and its vendored data at
+`tests/fixtures/nppes/` were deleted. The original conclusion above still holds: this repo has no
+practitioner-matching test, and none should be added.
 
 ### Exact tp/fp/tn/fn pinning instead of floor/ceiling — rejected
 
@@ -275,8 +259,34 @@ thresholds let genuine improvements pass silently while still catching regressio
 ### Asserting against the sibling repo's committed baseline file — rejected
 
 `evaluation/baselines/v3_2_2_onc_baseline.txt` reports 26-rule metrics over a ~2,000,936-pair
-generated set, not the 6,290-pair file this test reads. Different rule count, different sample
+generated set, not the 6,138-pair file this test reads. Different rule count, different sample
 size — not a valid comparison basis. This test establishes its own thresholds instead (see above).
+
+## Rule 29 removal (2026-10-06)
+
+CMS removed Rule 29 (`First Name* + Last Name* + Phone Number + ZIP Code`, no DOB) from Table 2.
+Its ID is left unassigned in `table2_rules.py` (Category 1 is 01-28 and 30) rather than
+renumbering Rule 30.
+
+**Effect on recall.** Removing the rule alone dropped both tiers' recall from 0.9717 to 0.9463 —
+below the 0.95 floor — because 152 true-match cases matched *only* via Rule 29: 143 `fuzzy_variant`
+DOB mutations (year/month/day/typo/swap beyond the ±1-day tolerance of rules 01/02/03/10/24) and 9
+name-variant cases. No other rule matches them: every Category 1 rule that could has a DOB field,
+and every Category 2 household rule's individual row (`I-01`: `First Name* + DOB`) requires an
+exact DOB — including `C2-34` (Phone + ZIP household), the closest remaining rule. CMS's intent is
+that a pair with a wrong DOB should *not* match on phone + ZIP + name alone, so these cases were
+labeled true matches under a rule set that no longer exists.
+
+**Fix.** The 152 cases were removed from the test data rather than lowering `RECALL_FLOOR`
+(still 0.95): pairs tier 6,290 → 6,138, population tier 80,000 → 79,848 evaluations. The same
+removal also eliminated the pairs tier's two false positives (both matched via Rule 29). The
+remaining 170 false negatives (148 `fuzzy_variant`, 22 `normalization_edge_case`) are unchanged.
+The data lives in the sibling `cms-hte-patient-matching-test-set` repo, so the change was made
+there (branch `drop-rule-29-only-cases`); this repo's pin in `scripts/fetch_onc_test_data.py`
+must be bumped to the resulting tag before `make fetch-onc-data` returns the filtered data.
+
+The sections below compare against `helix.personmatching` using this repo's numbers *before* this
+removal (6,290 pairs, 30 Category 1 rules); they have not been re-run.
 
 ## Comparison to `helix.personmatching` (2026-09-04)
 
@@ -305,7 +315,7 @@ validating a copy with empty-string fields stripped (FHIR's `string` type requir
 non-whitespace character; a handful of ONC-derived records have an empty city/state/given value) -
 523/12,580 patients needed that fallback on the pairs tier; zero raised after that.
 
-| Metric | This repo (Table 2, 30+8 rules) | `helix.personmatching` (legacy weighted score, threshold 0.955) |
+| Metric | This repo (Table 2, 30+8 rules, pre-Rule-29-removal) | `helix.personmatching` (legacy weighted score, threshold 0.955) |
 |---|---|---|
 | **Pairs tier** (6,290 pairs) | | |
 | Recall | 0.9717 (tp=5,830, fn=170) | **1.0000** (tp=6,000, fn=0) |
@@ -314,7 +324,7 @@ non-whitespace character; a handful of ONC-derived records have an empty city/st
 | **Population tier** (80,000 query-candidate evals) | | |
 | Recall | 0.9717 | **1.0000** |
 | Precision | 0.9990 | 0.9993 |
-| FPR | 0.0001 (fp=6, tn=73,994) | 0.0001 (fp=4, tn=73,996) |
+| FPR | 0.0001 (fp=4, tn=73,996) | 0.0001 (fp=4, tn=73,996) |
 | F1 | 0.9851 | **0.9997** |
 | Accuracy | 0.9978 | 1.0000 |
 

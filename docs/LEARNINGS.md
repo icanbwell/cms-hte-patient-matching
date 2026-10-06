@@ -208,3 +208,21 @@ by comparison). Not implemented as of this writing; `email` remains in
 **Where this could still bite:** if a newer email-sharing survey is found later, check whether it
 asks the same question (shared *account/identity*, not shared *password knowledge* or shared
 *access*) before treating it as a drop-in replacement for the 2013 Pew number.
+
+## Removing a rule can orphan test cases labeled "true match" under the old rule set
+
+CMS removed Table 2 rule 29 (`First Name* + Last Name* + Phone + ZIP`, no DOB). Deleting it from
+`table2_rules.py` dropped ONC-regression recall (both tiers) from 0.9717 to 0.9463, below the 0.95
+floor. 152 true-match cases — mostly DOB mutations outside the ±1-day tolerance — matched *only*
+via rule 29; no other Category 1 or Category 2 rule matches them, because every one requires an
+exact (or ±1-day) DOB. Those cases encode the old rule's behavior, not a bug in the engine, so the
+fix was to drop them from the test data (in the sibling test-set repo), not to lower the floor.
+
+**How it was diagnosed:** evaluate every true-match pair with the rule set before/after (rebuild
+the removed `MatchingRule` by hand for the "before" engine) and diff the per-pair outcomes. The
+household (Category 2) rules were already in both engines, so they can't be what rescues these.
+
+**Where this could still bite:** any future rule removal/addition shifts the ONC recall/FPR
+baseline the same way; check which labeled cases flipped before touching a floor/ceiling. Also,
+the fixture data is fetched from a pinned commit of the test-set repo — the pin has to be bumped
+for a data fix there to reach this repo.
