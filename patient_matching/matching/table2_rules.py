@@ -3,8 +3,9 @@ Proposal v3.4.0.
 
 Each rule defines the required fields, which fields allow fuzzy matching
 (marked with * in the spec), and the maximum number of simultaneously
-fuzzy fields. `rule_id` values match v3.4.0's clean 01-30 Category 1
-numbering (session 16). Category 2 (household+individual) rules live in
+fuzzy fields. `rule_id` values match v3.4.0's Category 1 numbering
+(session 16), minus rule 29, which CMS has since removed; its ID is left
+unassigned (01-28 and 30) rather than renumbering rule 30. Category 2 (household+individual) rules live in
 household_rules.py under a `C2-` prefix (`C2-13`, `C2-14`, ..., `C2-38`) -
 v3.4.0's renumbering happens to reassign bare 13-16 to unrelated new flat
 rules here, so Category 2 keeps its historically-meaningful numbers but
@@ -535,24 +536,6 @@ APPROVED_RULES: tuple[MatchingRule, ...] = (
                 _rf(INSURANCE_SUBSCRIBER_ID),
             ),
             fuzzy_fields=frozenset({LAST_NAME}),
-        ),
-    ),
-    MatchingRule(
-        rule_id="29",
-        description="First Name* + Last Name* + Phone Number + ZIP Code",
-        fields=(
-            _rf(FIRST_NAME, _F),
-            _rf(LAST_NAME, _F),
-            _rf(PHONE),
-            _rf(ZIP_CODE),
-        ),
-        max_fuzzy_fields=2,
-        p_collision_exact=p_collision(
-            (_rf(FIRST_NAME, _F), _rf(LAST_NAME, _F), _rf(PHONE), _rf(ZIP_CODE))
-        ),
-        p_collision_fuzzy=p_collision(
-            (_rf(FIRST_NAME, _F), _rf(LAST_NAME, _F), _rf(PHONE), _rf(ZIP_CODE)),
-            fuzzy_fields=frozenset({FIRST_NAME, LAST_NAME}),
         ),
     ),
     # --- v3.3.1 SS3.6: confirmed unaffected, retained as a flat "legacy exception"

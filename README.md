@@ -1,12 +1,12 @@
 # patient_matching
 
-An open-source Python implementation of the [CMS Patient Matching Proposal v3.4.0](https://confluence.hl7.org/display/PA/Patient+Matching), providing deterministic patient matching using 30 approved Category 1 (flat) Table 2 field combination rules plus 10 Category 2 (household/individual two-step, plus guardian/newborn relationship-linkage) rules, over FHIR R4 Patient resources, with configurable fuzzy matching.
+An open-source Python implementation of the [CMS Patient Matching Proposal v3.4.0](https://confluence.hl7.org/display/PA/Patient+Matching), providing deterministic patient matching using 29 approved Category 1 (flat) Table 2 field combination rules plus 10 Category 2 (household/individual two-step, plus guardian/newborn relationship-linkage) rules, over FHIR R4 Patient resources, with configurable fuzzy matching.
 
 ## Overview
 
 The CMS Patient Matching Proposal defines a standardized approach to matching patients across healthcare systems. This library implements:
 
-- **40 Table 2 matching rules** (30 Category 1 flat + 10 Category 2: 8 household/individual two-step + 2 guardian/newborn relationship-linkage) with exact and fuzzy field comparisons, plus multiple-birth (twin) tie-resolution handling
+- **39 Table 2 matching rules** (29 Category 1 flat + 10 Category 2: 8 household/individual two-step + 2 guardian/newborn relationship-linkage) with exact and fuzzy field comparisons, plus multiple-birth (twin) tie-resolution handling
 - **Demographic normalization** — text normalization, nickname expansion, E.164 phone formatting, USPS address standardization, placeholder detection
 - **FHIR R4 integration** — fetch patients from FHIR servers with OAuth2, paginate through Bundles
 - **Patient cache** — pluggable backend (in-process DuckDB, or MongoDB Atlas Search for shared/multi-replica deployments) with field-level indexing and fuzzy search
@@ -229,8 +229,8 @@ No HTTP layer ships in this package — [`cms-hte-patient-matching-service`](htt
 
 ## Table 2 Matching Rules
 
-The Category 1 (flat) rule set defines 30 approved field combinations, numbered 01-30 with no
-gaps (CMS v3.4.0's renumbering). Each rule specifies which fields must match, whether fuzzy
+The Category 1 (flat) rule set defines 29 approved field combinations, numbered 01-28 and 30
+(CMS v3.4.0's renumbering; rule 29 was later removed by CMS and its ID is left unassigned). Each rule specifies which fields must match, whether fuzzy
 matching is allowed (marked with `*`), and the collision probability:
 
 | Rule | Fields | P(collision) exact | P(collision) fuzzy |
@@ -263,7 +263,6 @@ matching is allowed (marked with `*`), and the collision probability:
 | 26 | Email + Insurance Member ID | 1.00e-12 | — |
 | 27 | First Name\* + Last Name + DOB + Insurance Subscriber ID | 1.00e-12 | 1.50e-12 |
 | 28 | First Name + Last Name\* + DOB + Insurance Subscriber ID | 1.00e-12 | 2.00e-12 |
-| 29 | First Name\* + Last Name\* + Phone + ZIP Code | 3.00e-14 | 9.00e-14 |
 | 30 | Last Name\* + DOB + Phone | 5.00e-13 | 1.00e-12 |
 
 Fields marked with `*` are fuzzy-eligible. Fuzzy matching uses **Damerau-Levenshtein distance <= 1** for strings of **5 or more characters** (per CMS Appendix E.3), except DOB\*, which uses a **+/-1 calendar day** tolerance instead — implemented as an exact `{value-1day, value, value+1day}` lookup rather than string edit distance, since a date string's edit distance has no relationship to its calendar distance. Extended to rules 01, 02, 03, and 10 as part of the v3.4.0 renumbering.
@@ -315,7 +314,7 @@ Before matching, patient demographics are normalized following the CMS proposal 
 
 ### `patient_matching.matching`
 
-Core matching engine implementing the 40 Table 2 rules (30 Category 1 + 10 Category 2).
+Core matching engine implementing the 39 Table 2 rules (29 Category 1 + 10 Category 2).
 
 - **`MatchingEngine`** — evaluates all rules against a query patient, returns match/no_match/ambiguous
 - **`FieldExtractor`** — extracts matching-relevant fields from FHIR Patient resources
@@ -460,7 +459,7 @@ patient_matching/
 │   │   └── tests/
 │   ├── matching/               # Core matching engine
 │   │   ├── matching_engine.py  # Rule evaluation + deduplication + twin tie-resolution
-│   │   ├── table2_rules.py     # 30 Category 1 (flat) CMS-approved rules
+│   │   ├── table2_rules.py     # 29 Category 1 (flat) CMS-approved rules
 │   │   ├── household_rules.py  # 8 Category 2 household/individual two-step rules (C2-*)
 │   │   ├── relationship_linkage_rules.py # 2 Category 2 guardian/newborn rules (C2-39, C2-40)
 │   │   ├── field_extractor.py  # FHIR → matching fields

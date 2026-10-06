@@ -1,7 +1,7 @@
 """Benchmark: MongoAtlasCache vs. DuckDBCache round-trip count & latency.
 
 Session 12, Task 6 / Open Question 2: MatchingEngine.match() calls
-backend.search() once per Table 2 rule (~38 rules total: 30 flat +
+backend.search() once per Table 2 rule (~37 rules total: 29 flat +
 8 household/individual), and CacheMatchingBackend.search() calls
 cache.search_by_field() once per criterion within each rule. With
 DuckDBCache this is in-process SQL; with MongoAtlasCache each call is a

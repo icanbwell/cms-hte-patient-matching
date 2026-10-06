@@ -1,7 +1,7 @@
 """Core matching engine implementing CMS Patient Matching Proposal Table 2 rules.
 
 Evaluates a query patient against candidates from the backend, applying:
-  - All 30 approved Category 1 (flat) field combinations, plus Category 2
+  - All 29 approved Category 1 (flat) field combinations, plus Category 2
     (household/individual two-step) rules
   - Constrained fuzzy matching (Damerau-Levenshtein <= 1, min 5 chars),
     except DOB, which uses a +/-1 calendar day tolerance instead (v3.3)
@@ -76,7 +76,7 @@ class MatchingEngine:
         extractor: Field extractor. Default created if None.
         comparator: Field comparator. Default created if None.
         rules: Subset of Category 1 (flat) Table 2 rules to evaluate.
-            Defaults to all 30.
+            Defaults to all 29.
         household_individual_rules: Subset of Category 2 (two-step
             household-then-individual) Table 2 rules to evaluate. Defaults
             to all 10 (the original 8 plus session 17's Relationship
