@@ -17,6 +17,9 @@ jobs:
   build_and_test:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
+    env:
+      # See the comment above the 'Sync dependencies' step.
+      UV_DEFAULT_INDEX: https://pypi.org/simple
 
     steps:
       # Checks-out your repository
@@ -36,8 +39,6 @@ jobs:
       # overrides pyproject's JFrog index, and the sync is not --frozen so uv re-resolves
       # instead of using the JFrog URLs in uv.lock. Later steps use --frozen --no-sync.
       - name: Sync dependencies
-        env:
-          UV_DEFAULT_INDEX: https://pypi.org/simple
         run: uv sync --all-extras --group dev
 
       # Lint gate - runs before tests. If any check fails, the job stops here and
