@@ -92,7 +92,9 @@ url = "https://artifacts.bwell.com/artifactory/api/pypi/virtual-pypi/simple"
 default = true
 
 [tool.pytest.ini_options]
-addopts = "--capture=fd"
+# calculations/ is standalone analysis code with its own requirements.txt (numpy/pandas,
+# not installed here) and its own `tests` package that collides with ./tests.
+addopts = "--capture=fd --ignore=calculations"
 log_cli = true
 log_cli_level = "INFO"
 asyncio_mode = "auto"
