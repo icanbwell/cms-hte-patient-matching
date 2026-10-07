@@ -14,7 +14,7 @@ from __future__ import annotations
 import random
 import re
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List, Set, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Set, Tuple
 
 from scripts.institutional_registry.build_registry import (
     Record,
@@ -115,7 +115,7 @@ def report() -> None:
     print("## Match robustness to patient-side address variation\n")
     rng = random.Random(0)
     sample = rng.sample([r for r in reg if r.usable], 3000)
-    variants = {
+    variants: Dict[str, Callable[[Record], Tuple[str, str]]] = {
         "unit appended (', APT 4B')": lambda r: (r.street + ", APT 4B", r.zip),
         "room appended (' RM 114')": lambda r: (r.street + " RM 114", r.zip),
         "lowercased": lambda r: (r.street.lower(), r.zip),
