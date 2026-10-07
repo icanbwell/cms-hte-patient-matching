@@ -55,8 +55,9 @@ HOSPITAL_TYPES = {
 # Default policy, not a spec requirement. `block_household_rules` = residents live at the
 # address, so Table 2-H rules that use Street Line must not fire on it (the patient is still
 # matched by every other rule); `review` = the address is mostly offices or non-residential
-# space (hospice admin offices, campus/school addresses, short-stay hospitals), so blocking
-# it automatically would over-block. Edit here to change it.
+# space (hospice admin offices, campus/school addresses), so blocking it automatically would
+# over-block. All hospitals are blocked, as decided by the project owner, even though acute
+# care patients stay briefly. Edit here to change it.
 MATCH_POLICY = {
     "nursing_home": "block_household_rules",
     "federal_correctional": "block_household_rules",
@@ -69,7 +70,7 @@ MATCH_POLICY = {
     # Overture's `retirement_home` mixes nursing, assisted living, memory care and
     # independent/senior apartments with no way to tell them apart.
     "senior_living": "review",
-    "hospital": "review",
+    "hospital": "block_household_rules",
     "hospice": "review",
     "higher_education_campus": "review",
 }
@@ -323,21 +324,23 @@ def load_sources() -> List[Record]:
         },
         default_collected=_file_date(DEST / "ipeds_hd.csv"),
     )
-    records += _records(
-        "federal_correctional",
-        "bop_physical",
-        json.loads((DEST / "bop.json").read_text()),
-        {
-            "source_id": "code",
-            "name": "name",
-            "street": "street",
-            "city": "city",
-            "state": "state",
-            "zip": "zipCode",
-            "beds": None,
-        },
-        default_collected=_file_date(DEST / "bop.json"),
-    )
+    bop = json.loads((DEST / "bop.json").read_text())
+    for address_type, source in (("1", "bop_physical"), ("3", "bop_mail")):
+        records += _records(
+            "federal_correctional",
+            source,
+            [a for a in bop if a.get("addressType") == address_type],
+            {
+                "source_id": "code",
+                "name": "name",
+                "street": "street",
+                "city": "city",
+                "state": "state",
+                "zip": "zipCode",
+                "beds": None,
+            },
+            default_collected=_file_date(DEST / "bop.json"),
+        )
     return records + _load_optional_sources()
 
 

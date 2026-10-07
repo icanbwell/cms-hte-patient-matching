@@ -33,12 +33,12 @@ Compare/POS processing date, Overture release) and otherwise the date we downloa
 several sources list an address it is the newest of them, so an address confirmed by a current
 source isn't labeled with a 2021 date. An address that
 serves two types (e.g. a hospital campus that also houses a nursing home) appears once per type.
-Current build: **155,408 rows**.
+Current build: **155,480 rows**.
 
 | `match_policy` | `institution_type` (rows) |
 |---|---|
-| `block_household_rules` (89,648) | assisted_living 61,524; nursing_home 14,792; correctional 7,907; homeless_shelter 3,828; halfway_house 767; psychiatric_hospital 624; federal_correctional 201; long_term_hospital 5 |
-| `review` (65,760) | senior_living 48,941; hospice 6,051; higher_education_campus 5,994; hospital 4,774 |
+| `block_household_rules` (94,494) | assisted_living 61,524; nursing_home 14,792; correctional 7,907; hospital 4,774; homeless_shelter 3,828; halfway_house 767; psychiatric_hospital 624; federal_correctional 273; long_term_hospital 5 |
+| `review` (60,986) | senior_living 48,941; hospice 6,051; higher_education_campus 5,994 |
 
 `match_policy` is a default this spike chose, not something the proposal specifies (`MATCH_POLICY`
 in `build_registry.py`). **`block_household_rules`** means the address must not be used as a
@@ -47,11 +47,13 @@ SSN/ITIN last 4, Subscriber ID or Phone); the patient is still matched by every 
 set where residents live at the address. **`review`** is set where the address is mostly offices or
 non-residential space, so blocking it automatically would over-block: `hospice` (mostly
 administrative offices, often with a suite number), `higher_education_campus` (schools and offices,
-no housing flag), `hospital` (acute care, critical access, children's, VA, DoD and rural emergency,
-i.e. short-stay or outpatient), and `senior_living` (Overture's `retirement_home`, which mixes
-nursing homes, assisted living and independent/senior apartments). Hospitals are split on Care
-Compare's `Hospital Type`: `Psychiatric` and `Long-term` become their own types because patients
-stay for extended periods.
+no housing flag), and `senior_living` (Overture's `retirement_home`, which mixes nursing homes,
+assisted living and independent/senior apartments). **All hospitals are blocked**, on the project
+owner's decision, even though acute care patients stay briefly: many people are registered at a
+hospital's address (inpatients, newborns, patients with no other address) and a household rule
+there would link unrelated people. Hospitals are still split on Care Compare's `Hospital Type`
+(`Psychiatric` and `Long-term` are their own types, `hospital` is everything else), so the split
+can be reversed in `MATCH_POLICY`.
 
 ## 1. Retrieval, source by source
 
@@ -62,7 +64,7 @@ stay for extended periods.
 | CMS Care Compare — hospice | Yes, no key | `yc9t-dgbk` | 6,669 rows; `Address Line 1`/`2` |
 | CMS Provider of Services (POS) | Yes, no key | Resolve the newest "Provider of Services File - Internet Quality Improvement and Evaluation System" entry in `https://data.cms.gov/data.json`, take its `text/csv` `downloadURL` (175 MB) | 77,564 rows. The URL changes every quarter, so never hardcode it. `prvdr_type_id` 20 = nursing home, 12 = hospice (decoded by joining to Care Compare on CCN). Hospitals are not in this file. Has certified bed counts. |
 | NCES IPEDS | Yes, no key | `https://nces.ed.gov/ipeds/datacenter/data/HD<year>.zip` (HD2024 is latest; the current year 404s until published) | 6,072 campus addresses. IC2024 has no housing-capacity field, so a dorm cannot be told from the rest of the campus. |
-| Federal Bureau of Prisons | Yes | No bulk export. List page `https://www.bop.gov/locations/list.jsp` exposes facility codes in `/locations/institutions/<code>/` links; `https://www.bop.gov/PublicInfo/execute/phyloc?todo=query&output=json&code=<CODE>` returns JSON per facility (address type 1 = physical) | Undocumented API (found in bop.gov's own JavaScript). 79 codes against ~118 institutions; listing by state/region returns nothing. |
+| Federal Bureau of Prisons | Yes | Both addresses per facility are kept: the physical address (type 1) and the inmate mail/parcels address (type 3), usually a PO box (66 of 79; 25 with a different ZIP), since a resident's own records are likely to carry the mail one. No bulk export. List page `https://www.bop.gov/locations/list.jsp` exposes facility codes in `/locations/institutions/<code>/` links; `https://www.bop.gov/PublicInfo/execute/phyloc?todo=query&output=json&code=<CODE>` returns JSON per facility (address type 1 = physical) | Undocumented API (found in bop.gov's own JavaScript). 79 codes against ~118 institutions; listing by state/region returns nothing. |
 | HIFLD Prison Boundaries | Yes, no key | DHS shut HIFLD Open on 2025-08-26; HIFLD Next republishes it. Walk `https://hifld.publicenvirodata.org/api/collections/hifld` -> "Prison Boundaries" child catalog -> latest-version collection -> GeoParquet asset on `storage.googleapis.com`; read with DuckDB | 6,468 facilities (5,845 open, 487 closed; county 3,694, state 2,079, local 346, federal 259), addresses on all but one. Capacity `-999` means unknown. The release ID in every URL changes, so the catalog is walked each run. License is "other"; check before redistributing. |
 | Prison Policy Initiative facility lists (2020 vintage) | Yes (scraped) | One HTML table per state at `https://www.prisonersofthecensus.org/data/prisons2020/<ST>/`, linked from `.../data/state_federal_local_2020vintage.html` | 5,217 facilities, but only 42% have a street address and survey dates are 2012–2013. Adds 888 addresses HIFLD lacks. Terms of use not stated. |
 | Overture Maps places | Yes, no key | DuckDB over the public S3 bucket `overturemaps-us-west-2` (~7 min scan); newest release resolved from the bucket listing | US `jail_or_prison`, `assisted_living_facility`, `retirement_home`, `homeless_shelter`, `halfway_house`. Overture's own `nursing` category is individual nurse practitioners, **not** nursing homes. License varies by contributing source. |
@@ -184,8 +186,32 @@ the state provides it so a consumer can filter them out.
    category looked like 15,480 nursing homes; sampling showed it is individual nurse
    practitioners. Check what a category contains before counting on it.
 8. **Which facility types count as institutional is a policy decision for the proposal, not a
-   data one.** Hospice, IPEDS and hospital samples are mostly non-residential, which is why they
-   are `review`.
+   data one.** Hospice and IPEDS samples are mostly non-residential, which is why they are
+   `review`; hospitals are blocked regardless of length of stay.
+9. **The engine's Street Line comparison is much looser than the registry key.** Tested by
+   running the engine's own `FieldExtractor` and `FieldComparator` on address pairs (not the full
+   pipeline, and not against real data):
+   - Street Line is compared on the line text alone. `100 Main St` in Austin, TX matches
+     `100 Main St` in Reno, NV. ZIP is a separate field that the household rules using Street
+     Line (H-03, H-06, H-09, H-14) do not require, and nothing in the matching engine or the
+     in-memory backend restricts candidates by ZIP.
+   - The Street Line collision probability (0.00003, `street_line_with_zip` in
+     `calculations/config.py`) is calibrated on street line **and** ZIP both matching, so the
+     implemented comparison is looser than the probability assumes.
+   - Every address line goes into the same set and any shared line counts. Same building,
+     different units match; **different buildings with the same unit** (`Apt 2`) match; a PO box
+     matches across states (`PO Box 12` in AK = `PO Box 12` in TX); so do `PMB 45` and
+     `General Delivery`.
+   - Because of this, a registry hit is only useful if the household rule is actually blocked on
+     it; and a missing registry entry is not the only way unrelated people are linked by address.
+     Requiring ZIP (and treating unit, PO box, PMB and General Delivery lines as non-matching) in
+     the Street Line comparison would help more than any single list. Not changed here: this PR
+     doesn't touch engine code.
+10. **A prison's residents may carry the mail address, not the physical one.** All 79 BOP
+    facilities publish both. 66 inmate-mail addresses are PO boxes, 25 have a different ZIP, and
+    73 of 79 give a different match key than the physical address. Both are now in the registry
+    (`bop_physical` and `bop_mail`). Hospitals and nursing homes likely have the same
+    billing/mailing split, which is not checked.
 
 ## 4. What this does not measure
 

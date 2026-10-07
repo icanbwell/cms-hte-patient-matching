@@ -180,13 +180,18 @@ def fetch_bop() -> None:
     rows: List[Dict[str, Any]] = []
     for code in codes:
         data = json.loads(_curl(BOP_API.format(code=code.upper()), timeout=30))
+        # Type 1 is the physical address; type 3 is the inmate mail/parcels address, usually
+        # a PO box, which is what a resident's own records are likely to carry.
         rows.extend(
-            a for a in data.get("Addresses") or [] if a.get("addressType") == "1"
+            a for a in data.get("Addresses") or [] if a.get("addressType") in ("1", "3")
         )
         time.sleep(0.2)
     (DEST / "bop.json").write_text(json.dumps(rows))
     _record("bop.json", f"{BOP_LIST} (facility codes) -> {BOP_API}")
-    print(f"bop: {len(codes)} codes on list page -> {len(rows)} physical addresses")
+    print(
+        f"bop: {len(codes)} codes on list page -> {len(rows)} addresses "
+        "(physical and inmate mail)"
+    )
 
 
 def fetch_assisted_living() -> None:
