@@ -59,6 +59,15 @@ _SUFFIX_EXPANSIONS: Dict[str, str] = {
 }
 
 
+# The canonical forms in _SUFFIX_EXPANSIONS that are generational ("Jr", "III"). Only these can
+# veto a match (spec Name Handling: "If a generational suffix can be identified on both the query
+# and the response and they do not match..."); a professional or honorific suffix (MD, PhD, Esq)
+# says nothing about which generation of a family someone is.
+GENERATIONAL_SUFFIXES: frozenset[str] = frozenset(
+    {"jr", "sr", "i", "ii", "iii", "iv", "v", "vi"}
+)
+
+
 @dataclass
 class NormalizedName:
     """A fully normalized name with all components separated.
@@ -167,7 +176,8 @@ class NameNormalizer:
 
         If a generational suffix can be identified on BOTH sides
         and they do not match, this returns True (the match must be negated).
-        Returns False if either side has no suffix.
+        Returns False if either side has no generational suffix (a non-generational
+        suffix such as "md" never conflicts).
         """
         if not suffix_a or not suffix_b:
             return False
@@ -175,7 +185,7 @@ class NameNormalizer:
         canon_a = self.normalize_suffix(suffix_a)
         canon_b = self.normalize_suffix(suffix_b)
 
-        if not canon_a or not canon_b:
+        if canon_a not in GENERATIONAL_SUFFIXES or canon_b not in GENERATIONAL_SUFFIXES:
             return False
 
         return canon_a != canon_b

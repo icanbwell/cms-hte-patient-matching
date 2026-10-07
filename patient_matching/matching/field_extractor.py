@@ -9,6 +9,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Set
 
+from patient_matching.normalization.name_normalizer import GENERATIONAL_SUFFIXES
+
 
 @dataclass
 class PatientFields:
@@ -196,6 +198,13 @@ class FieldExtractor:
             # name (not just the first) is also added to first_names per
             # Core Principle 10 ("match on any known value") - this
             # pre-dates session 19 and is unchanged here.
+            #
+            # Known deviation, deliberately NOT changed here: CMS v3.4.0 says First Name is
+            # the first given name only, with Middle Name a last-resort tiebreaker (C.7.3).
+            # Restricting first_names to given[0] loses 194 ONC true matches (pairs recall
+            # 0.9474 -> 0.9331), all given_abbreviate pairs ("MICHAEL J" vs "M. J") that
+            # link today only because the middle name satisfies First Name. See
+            # docs/LEARNINGS.md ("First Name accepts the middle name").
             given_list: List[str] = name_entry.get("given") or []
             for g in given_list:
                 if g:
@@ -213,9 +222,10 @@ class FieldExtractor:
                 if nick:
                     fields.first_names.add(nick)
 
-            # Suffixes
+            # Suffixes: only generational ones (Jr, Sr, II, III...). Those are what the
+            # suffix veto compares; "md", "phd", "esq" say nothing about generation.
             for s in name_entry.get("suffix") or []:
-                if s:
+                if s in GENERATIONAL_SUFFIXES:
                     fields.suffixes.add(s)
 
     @staticmethod

@@ -355,3 +355,36 @@ that path was never touched. The corrected harness shows +0.0042 pairs recall.
 **Where this could still bite:** a monkeypatched counterfactual that reports "no effect" may just be
 patching a code path the rule does not use; check that the baseline-vs-lever comparison actually exercises
 the field in that rule before concluding a lever is inert.
+
+## Only a generational suffix may veto a match; `md`/`phd` used to
+
+Spec (Name Handling): "If a *generational* suffix can be identified on both the query and the response
+and they do not match, the responder SHALL NOT return the match." The engine collected every suffix,
+and `_suffix_conflict` vetoed any two non-overlapping sets, so `MD` vs `PhD`, `Jr` vs `MD`, `Esq` vs
+`MD` and an unrecognized `MBA` vs `Jr` were all negated, and a shared `MD` hid a real `Jr` vs `Sr`
+conflict (`Jr, MD` vs `Sr, MD` linked because the sets overlapped). Fixed: `GENERATIONAL_SUFFIXES`
+(`jr sr i ii iii iv v vi`, in `name_normalizer.py`) is the only thing `FieldExtractor` collects into
+`suffixes`, and `NameNormalizer.suffixes_conflict` applies the same rule. Zero ONC cost (the test set
+has no non-generational suffixes). Probe: two records identical except the suffix, through the real
+pipeline, with `Jr`/`Sr` and `Jr`/`Jr.` controls.
+
+## First Name accepts the middle name (spec says it must not) - not changed, 194 ONC matches depend on it
+
+Spec: name fields are "separated into discrete components", and Middle Name is "a last-resort
+tiebreaker only" inside the two-candidate escalation (C.7.3). `FieldExtractor` adds *every* given name
+to `first_names`, so a record's middle name satisfies First Name: a first name matches the other
+record's middle name, and middle matches middle. Restricting `first_names` to the first given name
+(plus its nicknames, and the first given name of each other name entry) is a three-line change and
+passes the 37 spec tests, but costs **194 ONC pairs-tier true matches** (recall 0.9474 -> 0.9331,
+population 0.9504 -> 0.9358; both below their floors) and gains none. All 194 are `given_abbreviate`
+pairs such as `MICHAEL J` vs `M. J`: the initial replaces the first name, and the pair links today only
+because the middle name (`J`, `RALPH`) matches. The benchmark labels them as matches.
+
+This is the same trade as initial-only first names: the ranked levers in
+`docs/TEST_SET_0.0.5_ACCURACY_ANALYSIS.md` want to *add* an initial-only first-name match (with a
+priced collision), and the middle-name leak currently provides part of that recall unpriced. Decide
+them together; do not tighten the leak alone. Probe: legacy vs new `first_names` over
+`sample_labeled_pairs.jsonl`, pairs lost grouped by `rationale`.
+
+**Where this could still bite:** an initial-only first-name rule added later will overlap with this
+leak; remove the leak in the same change so the added rule's collision price is the whole story.
