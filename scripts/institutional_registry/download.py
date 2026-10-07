@@ -8,6 +8,7 @@ Sources (Proposal v3.3.6, Appendix A -- only the ones retrievable without an acc
 - HIFLD Prison Boundaries via HIFLD Next (federal, state, county and local detention)
 - Prison Policy Initiative state/federal/local facility lists (scraped; 2020 vintage)
 - Princeton open dataset of state-licensed assisted living facilities (GitHub, 2021 data)
+- Current state assisted living lists: California, Michigan, Wisconsin, Florida
 - Overture Maps places: senior/assisted living, shelters, jails and prisons, halfway houses
 Not downloadable automatically (state DOC rosters, BJS censuses, ...): download by hand into
 `data/institutional_registry/manual/` -- see MANUAL_DOWNLOADS.md. CASS validation is a paid
@@ -23,11 +24,14 @@ from __future__ import annotations
 
 import argparse
 import csv
+import http.cookiejar
 import io
 import json
 import re
 import subprocess
 import time
+import urllib.parse
+import urllib.request
 import zipfile
 from html.parser import HTMLParser
 from pathlib import Path
@@ -41,6 +45,20 @@ CARE_COMPARE = {
     "care_compare_hospital": "xubh-q36u",
     "care_compare_hospice": "yc9t-dgbk",
 }
+CA_CCL_URL = (
+    "https://gis.data.chhs.ca.gov/api/download/v1/items/"
+    "db31b0884a074cff9260facb3f2ade45/csv?layers=0"
+)
+MI_AFC_URL = "https://documents.apps.lara.state.mi.us/bchs/afc_sw.txt"
+WI_SERVICE = "https://dhsgis.wi.gov/server/rest/services/DHS_GIS/Facilities/MapServer"
+WI_LAYERS = {
+    7: "Community-Based Residential Facility",
+    17: "Residential Care Apartment Complex",
+    2: "Adult Family Home",
+}
+FL_SEARCH_URL = (
+    "https://quality.healthfinder.fl.gov/Facility-Search/FacilityLocateSearch"
+)
 PPI_BASE = "https://www.prisonersofthecensus.org/data/"
 HIFLD_COLLECTION = "https://hifld.publicenvirodata.org/api/collections/hifld"
 BOP_LIST = "https://www.bop.gov/locations/list.jsp"
@@ -248,6 +266,97 @@ def fetch_ppi_facilities() -> None:
     print(f"ppi_facilities: {len(states)} states, {len(rows)} facilities")
 
 
+def fetch_ca_assisted_living() -> None:
+    """California CDSS Community Care Licensing facilities (all license types, ~10 MB).
+
+    The elder-care rows (TYPE 740/741, Residential Care for the Elderly) are picked out in
+    build_registry.py. The CSV comes from the CHHS ArcGIS hub item named in CA_CCL_URL.
+    """
+    _curl(CA_CCL_URL, DEST / "state_al_ca.csv", timeout=180)
+    print("state_al_ca: ok")
+
+
+def fetch_mi_assisted_living() -> None:
+    """Michigan LARA statewide Adult Foster Care & Homes for the Aged list.
+
+    Comma-delimited with no header row; the record layout is documented at
+    michigan.gov/lara/.../adult-foster-care-record-description and parsed in build_registry.py.
+    """
+    _curl(MI_AFC_URL, DEST / "state_al_mi.txt", timeout=120)
+    print("state_al_mi: ok")
+
+
+def fetch_wi_assisted_living() -> None:
+    """Wisconsin DHS public ArcGIS service: CBRF, RCAC and Adult Family Home layers.
+
+    The DHS open-data portal's own CSV download returns 403, but the underlying map service
+    answers queries anonymously (2,000 records per page).
+    """
+    rows: List[Dict[str, Any]] = []
+    for layer, label in WI_LAYERS.items():
+        offset = 0
+        while True:
+            query = (
+                f"{WI_SERVICE}/{layer}/query?where=1%3D1&outFields=*&returnGeometry=false"
+                f"&resultOffset={offset}&resultRecordCount=2000&f=json"
+            )
+            page = json.loads(_curl(query, timeout=60))
+            features = [f["attributes"] for f in page.get("features", [])]
+            rows += [{**f, "layer": label} for f in features]
+            if len(features) < 2000:
+                break
+            offset += 2000
+    (DEST / "state_al_wi.json").write_text(json.dumps(rows))
+    print(f"state_al_wi: {len(rows)} facilities")
+
+
+def fetch_fl_assisted_living() -> None:
+    """Florida AHCA FloridaHealthFinder: all licensed assisted living facilities.
+
+    The site has no bulk file; its facility search embeds the matching records as JSON in
+    the results page. Searching "all counties" returns the whole state in one POST, but the
+    form needs a session cookie and an anti-forgery token from a prior GET.
+    """
+    opener = urllib.request.build_opener(
+        urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar())
+    )
+    opener.addheaders = [("User-Agent", USER_AGENT)]
+    page = opener.open(FL_SEARCH_URL, timeout=60).read().decode("utf-8", "replace")
+    token = re.search(r'name="__RequestVerificationToken"[^>]*value="([^"]+)"', page)
+    if token is None:
+        raise RuntimeError("Florida search page changed: no anti-forgery token found")
+    form = {
+        "__RequestVerificationToken": token.group(1),
+        "FacilityTypeSelection": "ALF",
+        "countySelection": "",  # all counties
+        "LicenseStatus": "",
+        "OpenClosed_LicenseStatus": "",
+        "facilityName": "",
+        "city": "",
+        "address": "",
+    }
+    request = urllib.request.Request(
+        FL_SEARCH_URL + "?handler=AdvancedSearch",
+        urllib.parse.urlencode(form).encode(),
+        method="POST",
+    )
+    body = opener.open(request, timeout=120).read().decode("utf-8", "replace")
+    marker = body.find('"FileNumber"')
+    if marker < 0:
+        raise RuntimeError("Florida results page changed: no embedded facility records")
+    records, _ = json.JSONDecoder().raw_decode(body[body.rfind("[{", 0, marker) :])
+    (DEST / "state_al_fl.json").write_text(json.dumps(records))
+    print(f"state_al_fl: {len(records)} facilities")
+
+
+def fetch_state_assisted_living() -> None:
+    """Current state licensing lists for the four states that publish them (CA, MI, WI, FL)."""
+    fetch_ca_assisted_living()
+    fetch_mi_assisted_living()
+    fetch_wi_assisted_living()
+    fetch_fl_assisted_living()
+
+
 def latest_overture_release() -> str:
     """Newest Overture release folder name, from the public bucket listing."""
     listing = _curl(OVERTURE_LIST, timeout=60).decode("utf-8", "replace")
@@ -296,6 +405,7 @@ def fetch_all(*, skip_overture: bool = False) -> None:
     fetch_assisted_living()
     fetch_hifld_prisons()
     fetch_ppi_facilities()
+    fetch_state_assisted_living()
     if skip_overture:
         print("overture: skipped")
     else:

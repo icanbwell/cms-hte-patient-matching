@@ -76,6 +76,9 @@ OVERTURE_TYPES = {
     "jail_or_prison": "correctional",
     "halfway_house": "halfway_house",
 }
+# California Community Care Licensing `TYPE` codes for Residential Care for the Elderly
+# (740) and RCFE in a Continuing Care Retirement Community (741).
+CA_ELDER_CARE_TYPES = {"740", "741"}
 MANUAL_COLUMNS = ["institution_type", "name", "street", "city", "state", "zip"]
 OUTPUT_COLUMNS = [
     "institution_type",
@@ -411,11 +414,122 @@ def _load_optional_sources() -> List[Record]:
     else:
         print(f"warning: {overture_path} missing; skipping Overture (run download)")
 
+    records += _load_state_assisted_living()
+
     manual_files = sorted(MANUAL_DIR.glob("*.csv")) if MANUAL_DIR.exists() else []
     if not manual_files:
         print(f"note: no files in {MANUAL_DIR} (see MANUAL_DOWNLOADS.md)")
     for path in manual_files:
         records += _load_manual(path)
+    return records
+
+
+def _strs(row: Dict[str, object]) -> Dict[str, str]:
+    """JSON values can be ints or None (e.g. an integer ZIP); `_records` expects strings."""
+    return {k: "" if v is None else str(v) for k, v in row.items()}
+
+
+def _load_state_assisted_living() -> List[Record]:
+    """Current state licensing lists (CA, MI, WI, FL), all typed `assisted_living`.
+
+    Dated by when we downloaded them. They include small group homes (Michigan foster care
+    homes with 1-12 beds, Wisconsin adult family homes), as the 2021 Princeton data does;
+    `beds` carries the capacity so a consumer can filter them out.
+    """
+    records: List[Record] = []
+
+    ca_path = DEST / "state_al_ca.csv"
+    if ca_path.exists():
+        records += _records(
+            "assisted_living",
+            "state_ca_ccl",
+            (r for r in _rows(ca_path) if r["TYPE"] in CA_ELDER_CARE_TYPES),
+            {
+                "source_id": "FAC_NBR",
+                "name": "NAME",
+                "street": "RES_STREET_ADDR",
+                "city": "RES_CITY",
+                "state": "RES_STATE",
+                "zip": "RES_ZIP_CODE",
+                "beds": "CAPACITY",
+            },
+            default_collected=_file_date(ca_path),
+        )
+
+    mi_path = DEST / "state_al_mi.txt"
+    if mi_path.exists():
+        # No header row. Columns: county, type, license no., name, supplemental address,
+        # street address, city, state, zip, phone, capacity, ... The street is in column 5,
+        # or in column 4 when 5 is empty; column 4 otherwise holds a suite/unit.
+        with mi_path.open(newline="", encoding="latin-1") as f:
+            mi_rows = [
+                {
+                    "license": r[2],
+                    "name": r[3],
+                    "street": r[5] or r[4],
+                    "city": r[6],
+                    "state": r[7],
+                    "zip": r[8],
+                    "capacity": r[10],
+                }
+                for r in csv.reader(f)
+                if len(r) > 10 and r[-1] == "ACTIVE"
+            ]
+        records += _records(
+            "assisted_living",
+            "state_mi_lara",
+            mi_rows,
+            {
+                "source_id": "license",
+                "name": "name",
+                "street": "street",
+                "city": "city",
+                "state": "state",
+                "zip": "zip",
+                "beds": "capacity",
+            },
+            default_collected=_file_date(mi_path),
+        )
+
+    wi_path = DEST / "state_al_wi.json"
+    if wi_path.exists():
+        records += _records(
+            "assisted_living",
+            "state_wi_dhs",
+            [_strs(r) for r in json.loads(wi_path.read_text())],
+            {
+                "source_id": "ASPEN_FACILITY_ID",
+                "name": "FACILITY_NAME",
+                "street": "ADDRESS",
+                "city": "CITY",
+                "state": "STATE",
+                "zip": "ZIP",
+                "beds": None,  # the service has no capacity field
+            },
+            default_collected=_file_date(wi_path),
+        )
+
+    fl_path = DEST / "state_al_fl.json"
+    if fl_path.exists():
+        records += _records(
+            "assisted_living",
+            "state_fl_ahca",
+            [
+                {**_strs(r), "state": "FL"}
+                for r in json.loads(fl_path.read_text())
+                if r.get("IsClosed") != "True"
+            ],
+            {
+                "source_id": "FileNumber",
+                "name": "Name",
+                "street": "Address",
+                "city": "City",
+                "state": "state",
+                "zip": "Zip",
+                "beds": "BedCount",
+            },
+            default_collected=_file_date(fl_path),
+        )
     return records
 
 

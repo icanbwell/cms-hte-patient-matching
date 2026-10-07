@@ -17,6 +17,10 @@
 | `hifld_prisons.csv` | HIFLD Prison Boundaries (via HIFLD Next); closed facilities are skipped | `correctional`, `federal_correctional` | Per-facility source date |
 | `ppi_facilities.csv` | Prison Policy Initiative facility lists (scraped; many rows have no address) | `correctional`, `federal_correctional` | Row's survey date (2012-2013) |
 | `assisted_living.csv` | Princeton open assisted-living dataset (GitHub) | `assisted_living` | Row's "Date Accessed" (2021) |
+| `state_al_ca.csv` | California CDSS Community Care Licensing facilities; only elder-care types 740/741 are used | `assisted_living` | Download date |
+| `state_al_mi.txt` | Michigan LARA Adult Foster Care & Homes for the Aged list (no header row) | `assisted_living` | Download date |
+| `state_al_wi.json` | Wisconsin DHS: community-based residential facilities, residential care apartment complexes, adult family homes | `assisted_living` | Download date |
+| `state_al_fl.json` | Florida AHCA assisted living facilities (closed ones skipped) | `assisted_living` | Download date |
 | `overture_gq.csv` | Overture Maps places | `senior_living`, `assisted_living`, `homeless_shelter`, `correctional`, `halfway_house` | Overture release date |
 
 `build_registry.py` reads these (plus anything in `manual/`) and writes
@@ -68,7 +72,7 @@ Confirm the file has street addresses before relying on it.
 | BJS **Census of State and Federal Adult Correctional Facilities** (2019) | State/federal prisons; useful to cross-check HIFLD | ICPSR study 38325 (`https://www.icpsr.umich.edu/web/NACJD/studies/38325`); anonymous download returned HTTP 403 so it needs an ICPSR login. Unconfirmed whether the public file includes street addresses. | `correctional` |
 | BJS **Census of Jails** (2019) | Local jails | ICPSR study 38323 (`https://www.icpsr.umich.edu/web/NACJD/studies/38323`); same login requirement and same address question. | `correctional` |
 | ICE detention facilities (Deportation Data Project, CC0) | Immigration detention | `https://deportationdata.org/news/2026-04-22-facilities-release.html`. Unconfirmed whether street addresses are included. | `correctional` |
-| State assisted-living licensing lists newer than 2021 (optional) | Refreshes the 2021 data. The Princeton dataset itself is **already automated** and is not part of this list; this row is only for newer state lists. | No national file: each state health or aging department publishes its own list in its own format (50 separate sites), and the Princeton repo has only the 2021 copies, not source URLs. The Princeton paper (`https://arxiv.org/abs/2212.14092`) describes the 2021 sources. Add a `data_collected` column (see above) so the build dates them correctly. | `assisted_living` |
+| State assisted-living licensing lists for states other than CA, MI, WI and FL (optional) | Refreshes the 2021 Princeton data, which is still the only source for those states (24,374 rows). CA, MI, WI and FL are **already automated**, as is the Princeton dataset itself. Minnesota (2,350 stale rows) has a search-only database and PDF directories with no structured download. Next largest stale states: AZ, TX, MD, GA. | No national file: each state health or aging department publishes its own list in its own format. The Princeton paper (`https://arxiv.org/abs/2212.14092`) describes the 2021 sources. Add a `data_collected` column (see above) so the build dates them correctly. | `assisted_living` |
 | State Department of Corrections facility rosters | Cross-check and fill HIFLD gaps | Each state DOC website (fragmented; no national file). | `correctional` |
 
 No usable open source was found for **college dormitories** (IPEDS gives campus addresses only,
