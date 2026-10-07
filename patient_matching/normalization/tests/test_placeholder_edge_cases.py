@@ -59,7 +59,19 @@ class TestNullValues:
 class TestRealNamesAreNotPlaceholders:
     @pytest.mark.parametrize(
         "family",
-        ["Infante", "Infantino", "Babyak", "Babylon", "Twine", "Zzaman", "Na", "Nil"],
+        [
+            "Infante",
+            "Infantino",
+            "Babyak",
+            "Babylon",
+            "Twine",
+            "Zzaman",
+            "Na",
+            "Nil",
+            "Sample",
+            "Baby",
+            "Demo",
+        ],
     )
     def test_real_family_names_that_look_like_placeholders_are_kept(
         self, family: str
@@ -74,7 +86,23 @@ class TestRealNamesAreNotPlaceholders:
         names = _normalized(name=[{"family": "Shah", "given": [given]}])["name"]
         assert names[0]["given"][0] == given.lower()
 
-    @pytest.mark.parametrize("family", ["Unknown", "ZZZ", "TBD", "X"])
+    @pytest.mark.parametrize("family", ["Sample", "Baby", "Demo"])
+    def test_test_and_newborn_words_are_real_family_names_through_the_extractor(
+        self, family: str
+    ) -> None:
+        normalized = _normalized(name=[{"family": family, "given": ["Maria"]}])
+        fields = FieldExtractor().extract(normalized)
+        assert fields.last_names == {family.lower()}
+
+    @pytest.mark.parametrize("given", ["Sample", "Baby", "Demo"])
+    def test_test_and_newborn_words_still_drop_as_a_given_name(
+        self, given: str
+    ) -> None:
+        names = _normalized(name=[{"family": "Shah", "given": [given]}])["name"]
+        assert "given" not in names[0]
+        assert names[0]["family"] == "shah"
+
+    @pytest.mark.parametrize("family", ["Unknown", "Unidentified", "ZZZ", "TBD", "X"])
     def test_placeholder_family_is_dropped_and_the_given_name_kept(
         self, family: str
     ) -> None:

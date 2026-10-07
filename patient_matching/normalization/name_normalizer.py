@@ -239,8 +239,9 @@ class NameNormalizer:
         # absent, symmetric to the given-name case above. "Doe" alone is not a placeholder:
         # the spec lists it only paired with a generic "John"/"Jane", which the combined
         # given+family check below catches.
-        # Only an exact placeholder word or shape drops a family name: the prefix patterns
-        # would drop real surnames (Infante, Babyak, Zzaman), and "na" is a real surname.
+        # Only the unidentified / unknown / repeated-character reasons drop a family name on
+        # its own: the prefix patterns would drop real surnames (Infante, Babyak, Zzaman), the
+        # test/newborn word lists would drop Sample, Demo and Baby, and "na" is a real surname.
         elif (
             family_reason in FAMILY_NAME_EXACT_REASONS
             and norm_family not in _REAL_FAMILY_NAMES

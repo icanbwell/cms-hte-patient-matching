@@ -113,7 +113,8 @@ _PLACEHOLDER_NAME_PATTERNS: List[Pattern[str]] = [
     re.compile(r"^\.+$"),
 ]
 
-# Spec V.D, Date of Birth: default-fill dates. Dates before (current year - 120) are
+# Spec V.D, Date of Birth: default-fill dates. Spec-literal on purpose: a real 2000-01-01
+# birthday is treated as absent. Dates before (current year - 120) are
 # already rejected by the range check; they are listed so the reason is explicit.
 _PLACEHOLDER_DATES: FrozenSet[str] = frozenset(
     {
@@ -126,7 +127,9 @@ _PLACEHOLDER_DATES: FrozenSet[str] = frozenset(
     }
 )
 
-# Spec V.D, SSN / ITIN Last 4.
+# Spec V.D, SSN / ITIN Last 4. Spec-literal on purpose: a real last four of 1234/0000/9999
+# (or repeated digits) is treated as absent. That only removes evidence, and shared defaults
+# are a real false-positive source.
 _PLACEHOLDER_LAST4: FrozenSet[str] = frozenset({"0000", "9999", "1234"})
 _REPEATED_DIGITS = re.compile(r"^(\d)\1{3}$")
 
@@ -143,14 +146,16 @@ _UNKNOWN_NAME_WORDS: FrozenSet[str] = frozenset(
     {"tbd", "pending", "missing", "unavailable", "unspecified", "notavailable"}
 )
 
-# Reason codes that identify a placeholder by an exact word or shape. Only these may drop a
-# FAMILY name on its own: the prefix-anchored name patterns ("^infant", "^baby", "^zz+") are
-# meant for a given name ("Baby Boy") and would drop real surnames (Infante, Babyak, Zzaman).
+# Reason codes that may drop a FAMILY name on its own (a placeholder family name with a real
+# given name). Deliberately narrow:
+# - Not the prefix-anchored name patterns ("^infant", "^baby", "^zz+"): they are meant for a
+#   given name ("Baby Boy") and would drop real surnames (Infante, Babyak, Zzaman).
+# - Not "test_name" or "newborn_temp_name": "Sample", "Demo" and "Baby" are real surnames
+#   (Baby is a common Kerala surname), so those words are placeholders only as a given name
+#   or when the given name is a placeholder too (that case is handled separately).
 FAMILY_NAME_EXACT_REASONS: FrozenSet[str] = frozenset(
     {
-        "newborn_temp_name",
         "unidentified_name",
-        "test_name",
         "unknown_placeholder",
         "single_or_repeated_character",
     }
@@ -244,6 +249,10 @@ class PlaceholderDetector:
         given-name position ("L." for "Lureane") is a legitimate abbreviation the matching
         rules are being extended to use (BAI-1061 levers), and treating it as absent costs
         ONC pairs-tier recall 0.9516 -> 0.9374. Callers pass True for given names.
+
+        DELIBERATE DEVIATION FROM THE CMS SPEC: given-name initials stay matchable although
+        V.D lists single-character names as placeholders. A single-character FAMILY name is
+        still a placeholder. A ticket to revisit this is to be filed.
 
         Reason codes: "empty", "newborn_temp_name", "unidentified_name",
         "test_name", "unknown_placeholder", "single_or_repeated_character",

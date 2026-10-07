@@ -353,8 +353,13 @@ normalizer only handled the reverse). `TABLE_VERSION` is `1.1.0`.
 placeholder names. Applied to given names it drops initial-only first names (`L.`), which cost 194
 ONC pairs-tier true matches (recall 0.9516 → 0.9374, below the 0.95 floor) and which the ranked
 accuracy levers (BAI-1061) want to *match*, not discard. `reason_for_name(..., allow_initial=True)` keeps
-them for given names; a single-character family name is still a placeholder. This needs a
-project-lead decision if the spec's wording is to be followed literally.
+them for given names; a single-character family name is still a placeholder. **This is a
+deliberate deviation from the CMS spec**, accepted by the project lead and the reviewer; a ticket to
+revisit it is to be filed.
+
+**Spec-literal on purpose:** a real SSN/ITIN last four of `1234`/`0000`/`9999` (or repeated digits)
+and a real `2000-01-01` birthday are treated as absent, as the spec's table says. Dropping a field
+only removes evidence, and shared defaults are a real false-positive source.
 
 **Cost of the rest:** the `555` exchange rule drops 4 ONC pairs (recall 0.9516 → 0.9513; population
 0.9515 → 0.9513). Not implemented (no data): a DOB equal to the record's registration date, and
@@ -362,8 +367,11 @@ project-lead decision if the spec's wording is to be followed literally.
 
 **Over-reach found in review and fixed:** the name placeholder patterns are prefix-anchored
 (`^infant`, `^baby`, `^zz+`) and were written for a *given* name, so applying them to a family name
-alone drops real surnames (Infante, Babyak, Zzaman); only exact word/shape reasons
-(`FAMILY_NAME_EXACT_REASONS`) may drop a family name, and `doe`/`na` are kept as real surnames. The
+alone drops real surnames (Infante, Babyak, Zzaman); only the unidentified / unknown / single-or-repeated-character reasons
+(`FAMILY_NAME_EXACT_REASONS`) may drop a family name, and `doe`/`na` are kept as real surnames.
+The test and newborn word lists are *not* used for a family name on its own: `Sample`, `Demo` and
+`Baby` are real surnames (review finding), so they drop only as a given name or when the given name
+is a placeholder too. The
 unknown-value word list is not used for names wholesale (`nil`, `null` are real names). The `555`
 rule applies to North American numbers only (`+46 8 555 1234` is valid) and sees through a phone
 extension. "123 Main St" is rescued only by a *real* unit in line 2 (`looks_like_unit`), not any
