@@ -1,5 +1,7 @@
 """Tests for name normalization."""
 
+import pytest
+
 from patient_matching.normalization.name_normalizer import NameNormalizer
 
 
@@ -76,9 +78,32 @@ class TestNameNormalizer:
         }
         result = self.normalizer.normalize_patient_names(patient)
 
-        # Baby Boy Doe should be filtered out
+        # Baby Boy Doe should be filtered out (both parts are placeholders)
         assert len(result) == 1
         assert result[0]["family"] == "smith"
+
+    @pytest.mark.parametrize(
+        "given",
+        [["Baby Girl", "Mary"], ["BABY BOY"], ["Infant"], ["Newborn Girl"]],
+    )
+    def test_placeholder_given_keeps_real_family_name(self, given: list[str]) -> None:
+        """A newborn/temporary given name must not discard a real family name.
+
+        The placeholder patterns are prefix-anchored, so testing the
+        concatenated given+family string used to flag the whole entry (and
+        lose e.g. `last_name`) whenever the given name began with "baby".
+        """
+        patient = {"name": [{"family": "Aaron", "given": given}]}
+        result = self.normalizer.normalize_patient_names(patient)
+
+        assert len(result) == 1
+        assert result[0]["family"] == "aaron"
+        assert "given" not in result[0]
+        assert "_nicknames" not in result[0]
+
+    def test_placeholder_given_and_family_still_filtered(self) -> None:
+        patient = {"name": [{"family": "Test", "given": ["Baby Boy"]}]}
+        assert self.normalizer.normalize_patient_names(patient) == []
 
     def test_test_patient_filtered(self) -> None:
         patient = {"name": [{"family": "Test", "given": ["Test"]}]}

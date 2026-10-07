@@ -261,3 +261,26 @@ from every tier by design") predates session 14: the `sibling_negative` pairs wi
 pairs (0.0106 > 0.01). Either decide what twins with no distinguishing data should expect, or
 set the ceiling just above 0.0106 with a note. Re-run the script before each pin bump; it keys
 pairs by `case_id`, which is only stable for pairs a release keeps.
+
+## A placeholder given name makes the normalizer drop the real family name too
+
+`NameNormalizer._normalize_name_entry` runs the placeholder patterns on `given + family`
+concatenated (`"babygirl" + "aaron"`). The `^baby…` prefix pattern matches on the given name alone,
+so the whole HumanName is discarded and the record ends up with no `last_name` at all — rule 30
+(`Last* + DOB + Phone`) can't rescue it. On test-set 0.0.3 this hits the 61 `placeholder/given`
+pairs. Repro: `{"name":[{"family":"AARON","given":["BABY GIRL","MARY"]}]}` normalizes to nothing.
+Fixed: when the given name is a placeholder and the family name is not, the normalizer now drops
+only the given names (`name_normalizer.py`; population recall +0.0036). See `docs/TEST_SET_0.0.3_ACCURACY_ANALYSIS.md` §3.1.
+
+**Where this could still bite:** any check that tests a concatenation of fields against patterns
+anchored with `^` — the first field decides the verdict for the whole.
+
+## ONC synthetic phones fail `phonenumbers.is_valid_number`
+
+1,650 of 14,219 pairs-tier source records (356 of the 968 false negatives) carry a phone the
+phone normalizer rejects as `invalid_number`. The sampled numbers all have an exchange code
+starting with `1`, invalid under NANP. This is a test-data artifact, so the fix belongs in the
+test-set generator, not in loosening the engine's validity check. Fixed in the test-set repo
+(`onc_loader.make_nanp_valid` + `fix_nanp_phones.py`, worktree branch `BAI-1061-valid-nanp-phones`,
+not yet tagged): population recall 0.9341 → 0.9515. The 0.0.3 pin still has the invalid phones
+until that release is cut and the pin bumped.
