@@ -23,20 +23,53 @@ Usage: `make fetch-onc-data`, or directly:
 
 from __future__ import annotations
 
+import os
 import subprocess
 from pathlib import Path
 
-# Bump both together, with a note of why, when the test-set repo cuts a new tag
-# this repo should track: SOURCE_TAG for human-readable provenance (see
-# tests/fixtures/onc/README.md), SOURCE_COMMIT - the tag's resolved commit -
-# for the actual fetch, since only a commit SHA is truly immutable.
+# The tag to fetch comes from the ONC_TEST_SET_TAG env var (the Makefile supplies the
+# checked-in default, so bumping the version is a one-line diff there; override per run
+# with `ONC_TEST_SET_TAG=<tag> make fetch-onc-data`). The tag is resolved to its commit
+# SHA at fetch time and the files are fetched by SHA, since a git tag is a mutable ref.
 SOURCE_REPO = "icanbwell/cms-hte-patient-matching-test-set"
-SOURCE_TAG = "0.0.2"
-SOURCE_COMMIT = "cf5aaa17e3ebab8ec27f587e087b70650f7b4f21"  # pragma: allowlist secret
+TAG_ENV_VAR = "ONC_TEST_SET_TAG"
+REPO_URL = f"https://github.com/{SOURCE_REPO}"
 
-BASE_URL = (
-    f"https://raw.githubusercontent.com/{SOURCE_REPO}/{SOURCE_COMMIT}/evaluation/cases"
-)
+
+def get_source_tag() -> str:
+    tag = os.environ.get(TAG_ENV_VAR, "").strip()
+    if not tag:
+        raise RuntimeError(
+            f"{TAG_ENV_VAR} is not set. Run via `make fetch-onc-data` (which defaults "
+            f"it) or set it to a tag of {SOURCE_REPO}, e.g. {TAG_ENV_VAR}=0.0.3"
+        )
+    return tag
+
+
+def resolve_commit(tag: str) -> str:
+    """Resolve `tag` to a commit SHA (peeling annotated tags to their commit)."""
+    result = subprocess.run(
+        ["git", "ls-remote", REPO_URL, f"refs/tags/{tag}", f"refs/tags/{tag}^{{}}"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"git ls-remote {REPO_URL} failed: {result.stderr.strip()}")
+    shas = {}
+    for line in result.stdout.splitlines():
+        sha, ref = line.split("\t")
+        shas[ref] = sha
+    sha = shas.get(f"refs/tags/{tag}^{{}}") or shas.get(f"refs/tags/{tag}")
+    if not sha:
+        raise RuntimeError(f"Tag {tag!r} not found in {SOURCE_REPO}")
+    return sha
+
+
+def base_url(commit: str) -> str:
+    return f"https://raw.githubusercontent.com/{SOURCE_REPO}/{commit}/evaluation/cases"
+
+
 FILES = (
     "sample_labeled_pairs.jsonl",
     "population_queries.jsonl",
@@ -51,8 +84,8 @@ CURL_RETRY_DELAY_SECONDS = "2"
 CURL_MAX_TIME_SECONDS = "60"
 
 
-def fetch(filename: str) -> None:
-    url = f"{BASE_URL}/{filename}"
+def fetch(filename: str, commit: str, tag: str) -> None:
+    url = f"{base_url(commit)}/{filename}"
     dest = DEST_DIR / filename
     print(f"Fetching {url} -> {dest}")
     result = subprocess.run(
@@ -77,7 +110,7 @@ def fetch(filename: str) -> None:
     if result.returncode != 0:
         raise RuntimeError(
             f"Failed to fetch {url} (curl exit {result.returncode}). Confirm "
-            f"SOURCE_COMMIT={SOURCE_COMMIT!r} (tag {SOURCE_TAG!r}) still exists "
+            f"commit {commit!r} (tag {tag!r}) still exists "
             f"at github.com/{SOURCE_REPO}."
         )
     if dest.stat().st_size == 0:
@@ -85,11 +118,13 @@ def fetch(filename: str) -> None:
 
 
 def main() -> None:
+    tag = get_source_tag()
+    commit = resolve_commit(tag)
     DEST_DIR.mkdir(parents=True, exist_ok=True)
     for filename in FILES:
-        fetch(filename)
+        fetch(filename, commit, tag)
     print(
-        f"Done. Fetched {len(FILES)} files from {SOURCE_TAG!r} ({SOURCE_COMMIT}) "
+        f"Done. Fetched {len(FILES)} files from {tag!r} ({commit}) "
         f"into {DEST_DIR}"
     )
 

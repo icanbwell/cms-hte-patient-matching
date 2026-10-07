@@ -9,7 +9,7 @@ copy silently drifts from the source repo with no way to detect it short of manu
 and remembering to update a provenance note. Fetching keeps the pin itself (two constants in
 `scripts/fetch_onc_test_data.py`) as the single source of truth for which version of the data this
 repo tests against, with no separate multi-megabyte file diff to review. The fetch itself resolves
-against `SOURCE_COMMIT`, not the tag name — tags are mutable refs that can be force-moved upstream,
+against the commit SHA the tag resolves to, not the tag name — tags are mutable refs that can be force-moved upstream,
 which would silently reintroduce the drift this change exists to eliminate.
 
 ## Getting the data
@@ -37,10 +37,10 @@ hasn't been run yet — see `tests/_onc_test_set.py`.
 | `population_queries.jsonl` | `cms-hte-patient-matching-test-set` @ `evaluation/cases/population_queries.jsonl` |
 | `population_candidates.jsonl` | `cms-hte-patient-matching-test-set` @ `evaluation/cases/population_candidates.jsonl` |
 
-Fetched from `https://github.com/icanbwell/cms-hte-patient-matching-test-set`, tag `0.0.2`
-(commit `cf5aaa17e3ebab8ec27f587e087b70650f7b4f21`) — see `SOURCE_TAG`/`SOURCE_COMMIT` in
-`scripts/fetch_onc_test_data.py` for the current pin, which is the authoritative version, not this
-note (update this note if you bump the pin, but the script is what actually governs it).
+Fetched from `https://github.com/icanbwell/cms-hte-patient-matching-test-set`, tag `0.0.3`
+(commit `167f820aa815da0ce8954807bdfb959c8025cb47`) — see `ONC_TEST_SET_TAG` in the `Makefile` for
+the current pin, which is the authoritative version, not this note (update this note if you bump
+the pin, but the Makefile default is what actually governs it).
 
 Every record in these files ultimately traces back to the public **ONC 2017 Patient Matching
 Algorithm Challenge dataset** (Office of the National Coordinator for Health IT — synthetic,
@@ -54,8 +54,9 @@ duplicated here to avoid a second copy of that explanation going stale.
 
 When the sibling repo cuts a new tag this repo should track:
 
-1. Update both `SOURCE_TAG` and `SOURCE_COMMIT` in `scripts/fetch_onc_test_data.py` — the tag for
-   human-readable provenance, the commit SHA it resolves to for the actual fetch.
+1. Update the `ONC_TEST_SET_TAG` default in the `Makefile`. The fetch script resolves the tag to a
+   commit SHA at run time (`git ls-remote`) and downloads by SHA. To try a tag without editing
+   anything: `ONC_TEST_SET_TAG=<tag> make onc-tests`.
 2. Run `make fetch-onc-data` and re-run both ONC tests locally.
 3. Confirm the new data doesn't shift recall/precision/FPR/F1 past the checked-in thresholds
    (`RECALL_FLOOR`, `FPR_CEILING`, etc. in each test file) — if it does, that's either a real

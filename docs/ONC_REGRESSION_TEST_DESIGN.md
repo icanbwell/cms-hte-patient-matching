@@ -54,14 +54,14 @@ nothing connects them.
 
 **This repo no longer commits a copy of the ONC-derived test data.** `scripts/fetch_onc_test_data.py`
 (`make fetch-onc-data`) downloads it from a pinned commit of `cms-hte-patient-matching-test-set`
-(tag `0.0.2` as of this writing, resolved to a commit SHA at fetch time — see the script's
-`SOURCE_TAG`/`SOURCE_COMMIT` constants, which are the authoritative pin, not this doc) into
+(tag `0.0.3` as of this writing, resolved to a commit SHA at fetch time — see the `Makefile`'s
+`ONC_TEST_SET_TAG` default, which is the authoritative pin, not this doc) into
 `tests/fixtures/onc/`, which is now gitignored.
 
 **Why:** the vendoring decision below traded "always current" for "standalone," but the resulting
 committed copy could still drift silently from the sibling repo — nothing forced anyone to notice
 or act on that drift. Pinning and fetching on demand keeps the *entire* size/staleness tradeoff in
-one reviewable diff (bumping `SOURCE_TAG`/`SOURCE_COMMIT`) instead of a multi-megabyte file diff
+one reviewable diff (bumping the `ONC_TEST_SET_TAG` default in the `Makefile`) instead of a multi-megabyte file diff
 each time the pin needs to move, while keeping the property the vendoring decision was solving
 for: no second repo needs to be checked out alongside this one, including in CI (CI just runs
 `make fetch-onc-data` as its own step — see `.github/workflows/build_and_test.yml`). The fetch
