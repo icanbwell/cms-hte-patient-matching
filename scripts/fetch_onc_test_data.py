@@ -67,6 +67,7 @@ def resolve_commit(tag: str) -> str:
 
 
 def base_url(commit: str) -> str:
+    """Return the raw-content base URL for the test-set cases at `commit`."""
     return f"https://raw.githubusercontent.com/{SOURCE_REPO}/{commit}/evaluation/cases"
 
 
