@@ -67,16 +67,17 @@ afterwards:
 
 ## Automated
 
-30 states are downloaded automatically: CA, MI, WI and FL (raw files `state_al_*`, see
-`MANUAL_DOWNLOADS.md`) and the 26 below, one module each in
+29 states are downloaded automatically: CA, MI, WI and FL (raw files `state_al_*`, see
+`MANUAL_DOWNLOADS.md`) and the 25 below, one module each in
 `scripts/institutional_registry/states/`, written to `data/institutional_registry/state_lists/<ST>.csv`.
-All 26 returned rows on the 2026-10-06 run and none failed (`state_lists_status.json` records the
-result of every run, including failures). Every row has street, city and ZIP except 2 in AK and 1
-in GA, which have no ZIP in the source.
+All 26 modules (the 25 below plus AK, which is withheld; see below) returned rows on the 2026-10-06 run and none failed (`state_lists_status.json` records the
+result of every run, including failures). Every row has street, city and ZIP except 1
+in GA, which has no ZIP in the source. AK is withheld from the committed data pending license
+confirmation (`docs/DATA_SOURCE_LICENSES.md`); `download.py --include-withheld` fetches it for local use.
 
 | State | Rows | Source and method | Types kept | Freshness and notes |
 |---|---|---|---|---|
-| AK | 814 | DHSS licensed assisted living homes spreadsheet; the link is scraped from the licensing page each run because the filename changes monthly | Assisted Living Home | Updated 2026-08-31. Rows are license segments, de-duplicated by license number. |
+| AK | (814 on 2026-10-06) | **Withheld**: not committed or fetched by default pending license confirmation. DHSS licensed assisted living homes spreadsheet; the link is scraped from the licensing page each run because the filename changes monthly | Assisted Living Home | Not in the current registry build. |
 | AZ | 2,072 | ADHS ArcGIS layer 18 (`All_State_Licensed_Facilities_in_Arizona`) | Assisted Living Home 1,719; Assisted Living Center 328; Adult Foster Care 25 | **February 2025 snapshot**; the other ADHS layers carry the same run date, so no newer ADHS data was found. Behavioral health and respite settings excluded. |
 | CO | 683 | CDPHE ArcGIS layer | Assisted Living Residence (ALR only 358; ALR/ACF 284; ALR/BISL 41) | Updated 2026-06-15. 11 `Pending` rows are kept, with that status. |
 | GA | 1,888 | DCH facility search, which serves a 5 MB XML dump of every facility | Personal Care Home 1,562; Assisted Living Community 326 | No capacity or status. Community living arrangements (developmental disability homes) excluded. |

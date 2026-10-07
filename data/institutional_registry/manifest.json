@@ -35,10 +35,6 @@
     "downloaded": "2026-10-06",
     "source": "https://data.cms.gov/sites/default/files/2026-08/9f345e2d-5199-4630-a08b-9b45581a9a2a/POS_iQIES.DATA.Q2_2026.csv"
   },
-  "ppi_facilities.csv": {
-    "downloaded": "2026-10-06",
-    "source": "https://www.prisonersofthecensus.org/data/state_federal_local_2020vintage.html (one page per state: https://www.prisonersofthecensus.org/data/prisons2020/<ST>/)"
-  },
   "state_al_ca.csv": {
     "downloaded": "2026-10-06",
     "source": "https://gis.data.chhs.ca.gov/api/download/v1/items/db31b0884a074cff9260facb3f2ade45/csv?layers=0"
@@ -54,10 +50,6 @@
   "state_al_wi.json": {
     "downloaded": "2026-10-06",
     "source": "https://dhsgis.wi.gov/server/rest/services/DHS_GIS/Facilities/MapServer/<layer 7,17,2>/query"
-  },
-  "state_lists/AK.csv": {
-    "downloaded": "2026-10-06",
-    "source": "https://health.alaska.gov/en/services/assisted-living-licensing-and-renewals/ (links to the open-facilities .xlsx)"
   },
   "state_lists/AZ.csv": {
     "downloaded": "2026-10-06",
