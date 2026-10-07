@@ -136,6 +136,39 @@ _NANP_555_EXCHANGE = re.compile(r"^1?\d{3}555\d{4}$")
 # Spec V.D, First / Last Name: single-character or repeated-character strings ("X", "ZZZ").
 _REPEATED_CHARACTER = re.compile(r"^(.)\1{2,}$")
 
+# Unknown-value words that are placeholders when they are a whole name. Deliberately not the
+# whole _UNKNOWN_PLACEHOLDERS list: "nil" and "null" are real given names/surnames, and "na"
+# is a common Korean surname (it is already in _UNIDENTIFIED_NAMES for the "N/A" spelling).
+_UNKNOWN_NAME_WORDS: FrozenSet[str] = frozenset(
+    {"tbd", "pending", "missing", "unavailable", "unspecified", "notavailable"}
+)
+
+# Reason codes that identify a placeholder by an exact word or shape. Only these may drop a
+# FAMILY name on its own: the prefix-anchored name patterns ("^infant", "^baby", "^zz+") are
+# meant for a given name ("Baby Boy") and would drop real surnames (Infante, Babyak, Zzaman).
+FAMILY_NAME_EXACT_REASONS: FrozenSet[str] = frozenset(
+    {
+        "newborn_temp_name",
+        "unidentified_name",
+        "test_name",
+        "unknown_placeholder",
+        "single_or_repeated_character",
+    }
+)
+
+# A second address line that is a unit: has a digit, or is a unit designator word.
+_UNIT_LIKE = re.compile(
+    r"\d|^(apt|apartment|unit|ste|suite|rm|room|fl|floor|bldg|building|lot|spc|space|"
+    r"trlr|trailer|dept|department|ph|bsmt|frnt|rear|ofc|lbby|lowr|uppr|hngr|pier|slip|"
+    r"stop|key)\b",
+    re.IGNORECASE,
+)
+
+# A phone extension, which must not hide a 555 exchange ("212-555-1212 ext 3", "x12", ";ext=4").
+_PHONE_EXTENSION = re.compile(
+    r"\s*(?:;\s*ext=|,|ext\.?|extension|x|#)\s*\d+\s*$", re.IGNORECASE
+)
+
 _PLACEHOLDER_PHONE_PATTERNS: List[Pattern[str]] = [
     re.compile(r"^0{7,}$"),
     re.compile(r"^1{10}$"),
@@ -157,9 +190,9 @@ _PLACEHOLDER_SSN_PATTERNS: List[Pattern[str]] = [
 
 # Spec V.D, Street Address: "123 Main St" only counts as a placeholder when it is not
 # accompanied by a real unit; "PO Box 0" always does.
-_GENERIC_STREET = re.compile(r"^123\s+main\s+(st|street)\.?$", re.IGNORECASE)
+_GENERIC_STREET = re.compile(r"^123\s+main\s+(st|street)\s*[.,]?$", re.IGNORECASE)
 _PLACEHOLDER_ADDRESS_PATTERNS: List[Pattern[str]] = [
-    re.compile(r"^p\.?\s*o\.?\s*box\s+0+$", re.IGNORECASE),
+    re.compile(r"^(p\.?\s*o\.?|post\s+office)\s*box\s*#?\s*0+\s*\.?$", re.IGNORECASE),
     re.compile(r"^unknown", re.IGNORECASE),
     re.compile(r"^(homeless|no\s*(fixed\s*)?address)", re.IGNORECASE),
     re.compile(r"^general\s*delivery$", re.IGNORECASE),
@@ -227,7 +260,7 @@ class PlaceholderDetector:
             return "unidentified_name"
         if stripped in _TEST_NAMES:
             return "test_name"
-        if stripped in _UNKNOWN_PLACEHOLDERS:
+        if stripped in _UNKNOWN_NAME_WORDS:
             return "unknown_placeholder"
         if (len(stripped) == 1 and not allow_initial) or _REPEATED_CHARACTER.match(
             stripped
@@ -294,14 +327,19 @@ class PlaceholderDetector:
         if not phone:
             return "empty"
 
-        digits = re.sub(r"\D", "", phone)
+        # An extension must not hide the number it hangs off.
+        number = _PHONE_EXTENSION.sub("", phone.strip())
+        digits = re.sub(r"\D", "", number)
         if not digits:
             return "no_digits"
 
         for pattern in _PLACEHOLDER_PHONE_PATTERNS:
             if pattern.match(digits):
                 return "placeholder_pattern"
-        if _NANP_555_EXCHANGE.match(digits):
+        # The 555 exchange is a North American numbering plan rule: an international number
+        # ("+46 8 555 1234") that happens to contain 555 there is not a placeholder.
+        international = number.lstrip().startswith("+") and not digits.startswith("1")
+        if not international and _NANP_555_EXCHANGE.match(digits):
             return "placeholder_555_exchange"
 
         return None
@@ -339,10 +377,18 @@ class PlaceholderDetector:
 
         return None
 
+    def looks_like_unit(self, line: Optional[str]) -> bool:
+        """True if an address line 2 is a real unit: it has a digit or is a unit designator
+        word, and is not itself a placeholder ("N/A", "Unknown"). "Springfield, IL" is not."""
+        text = (line or "").strip()
+        if not text or self.reason_for_general(text) is not None:
+            return False
+        return bool(_UNIT_LIKE.search(text))
+
     def reason_for_postal_code(self, postal_code: str) -> Optional[str]:
         """Why a postal code would be treated as a placeholder (spec V.D: ZIP 00000
         or 99999), or None if it isn't one. Reason code: "placeholder_zip"."""
-        digits = re.sub(r"\D", "", postal_code or "")
+        digits = re.sub(r"[^0-9]", "", postal_code or "")
         if digits[:5] in _PLACEHOLDER_ZIPS and len(digits) in (5, 9):
             return "placeholder_zip"
         return None

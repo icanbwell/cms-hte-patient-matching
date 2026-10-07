@@ -348,6 +348,19 @@ project-lead decision if the spec's wording is to be followed literally.
 0.9515 → 0.9513). Not implemented (no data): a DOB equal to the record's registration date, and
 `123 Main St` "accompanied by a real city match".
 
+**Over-reach found in review and fixed:** the name placeholder patterns are prefix-anchored
+(`^infant`, `^baby`, `^zz+`) and were written for a *given* name, so applying them to a family name
+alone drops real surnames (Infante, Babyak, Zzaman); only exact word/shape reasons
+(`FAMILY_NAME_EXACT_REASONS`) may drop a family name, and `doe`/`na` are kept as real surnames. The
+unknown-value word list is not used for names wholesale (`nil`, `null` are real names). The `555`
+rule applies to North American numbers only (`+46 8 555 1234` is valid) and sees through a phone
+extension. "123 Main St" is rescued only by a *real* unit in line 2 (`looks_like_unit`), not any
+non-blank line.
+
+**Present-but-null again:** `ident.get("value", "")` returns `None` for a null value and the new ITIN
+last-four check crashed on it; `lines[1]` can be `None` too (a FHIR null entry paired with `_line`).
+Use `or ""`. Both are covered in `test_placeholder_edge_cases.py`.
+
 **Where this could still bite:** test fixtures that use `555` phones, `123 Main St` or a 2000-01-01
 birth date as "real" sample values now normalize to nothing; use values outside the spec table.
 An attribution run (enable one group at a time against the ONC pairs tier) is the fast way to find

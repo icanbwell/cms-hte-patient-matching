@@ -152,8 +152,9 @@ class PatientNormalizer:
         """Filter out placeholder identifiers (e.g. fake SSNs, fake Subscriber/Member IDs)."""
         result = []
         for index, ident in enumerate(identifiers):
-            value = ident.get("value", "")
-            system = ident.get("system", "")
+            # `or ""`, not a default: a present-but-null value is None, not absent.
+            value = ident.get("value") or ""
+            system = ident.get("system") or ""
             path = f"identifier[{index}].value"
 
             # Check SSN placeholders

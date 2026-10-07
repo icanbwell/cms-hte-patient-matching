@@ -80,13 +80,16 @@ class AddressNormalizer:
         use = addr.get("use", "")
         addr_type = addr.get("type", "")
 
-        line1 = lines[0] if len(lines) > 0 else ""
-        line2 = lines[1] if len(lines) > 1 else ""
+        # FHIR allows a null entry in `line` (paired with a `_line` extension), so a present
+        # entry can be None, not just absent.
+        line1 = (lines[0] if len(lines) > 0 else "") or ""
+        line2 = (lines[1] if len(lines) > 1 else "") or ""
 
-        # Check for placeholder addresses (D.5)
+        # Check for placeholder addresses (D.5). "123 Main St" is only a placeholder when
+        # it is not accompanied by a real unit.
         if line1:
             reason = self._placeholders.reason_for_address(
-                line1, has_unit=bool(line2.strip())
+                line1, has_unit=self._placeholders.looks_like_unit(line2)
             )
             if reason is not None:
                 if report is not None:
@@ -110,9 +113,10 @@ class AddressNormalizer:
                 )
             norm_postal = ""
 
-        # If everything is empty after normalization, skip
+        # If everything is empty after normalization, skip (a ZIP-only address whose ZIP was
+        # just reported as a placeholder is already explained, so it isn't reported twice).
         if not any([normalized_line1, norm_city, norm_state, norm_postal]):
-            if report is not None:
+            if report is not None and postal_reason is None:
                 raw = line1 or city or state or postal_code
                 report.record(f"address[{index}]", raw, "empty")
             return None

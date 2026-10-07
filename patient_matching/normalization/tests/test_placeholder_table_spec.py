@@ -79,6 +79,7 @@ class TestNames:
     def test_placeholder_family_keeps_a_real_given_name(self) -> None:
         fields = _fields(given="Maria", family="Unknown")
         assert fields.first_names == {"maria"}
+        assert fields.last_names == set()
 
     @pytest.mark.parametrize(("given", "family"), [("John", "Doe"), ("Jane", "Doe")])
     def test_doe_paired_with_generic_first_name_is_absent(
@@ -196,9 +197,7 @@ class TestStreetAndZip:
         assert any(v.startswith("123 main st") for v in fields.street_lines)
 
     @pytest.mark.parametrize("zip_code", ["00000", "99999"])
-    def test_placeholder_zip_is_absent_and_drops_the_street_line(
-        self, zip_code: str
-    ) -> None:
+    def test_placeholder_zip_is_absent(self, zip_code: str) -> None:
         fields = _fields(line=["42 Willow Creek Rd"], zip_code=zip_code)
         assert fields.zip_codes == set()
 

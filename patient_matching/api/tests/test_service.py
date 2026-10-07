@@ -25,7 +25,7 @@ def _make_cached(
     phone: str = "+12122345678",
     email: str = "john@gmail.com",
     ssn_last4: str = "6789",
-    street: str = "123 main st",
+    street: str = "456 oak st",
 ) -> CachedPatient:
     return CachedPatient(
         patient_id=pid,
@@ -76,7 +76,7 @@ class TestPatientMatcherService:
                 {"system": "phone", "value": "+12122345678"},
                 {"system": "email", "value": "john@gmail.com"},
             ],
-            "address": [{"line": ["123 main st"]}],
+            "address": [{"line": ["456 oak st"]}],
             "identifier": [
                 {"system": "http://hl7.org/fhir/sid/us-ssn", "value": "xxx-xx-6789"},
             ],
@@ -105,7 +105,7 @@ class TestPatientMatcherService:
                 {"system": "phone", "value": "+12122345678"},
                 {"system": "email", "value": "john@gmail.com"},
             ],
-            "address": [{"line": ["123 main st"]}],
+            "address": [{"line": ["456 oak st"]}],
             "identifier": [
                 {"system": "http://hl7.org/fhir/sid/us-ssn", "value": "xxx-xx-6789"},
             ],
@@ -174,7 +174,7 @@ class TestPatientMatcherService:
                 {"system": "phone", "value": "+12122345678"},
                 {"system": "email", "value": "john@gmail.com"},
             ],
-            "address": [{"line": ["123 main st"]}],
+            "address": [{"line": ["456 oak st"]}],
             "identifier": [
                 {"system": "http://hl7.org/fhir/sid/us-ssn", "value": "xxx-xx-6789"},
             ],
