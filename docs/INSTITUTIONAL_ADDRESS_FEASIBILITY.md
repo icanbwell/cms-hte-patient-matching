@@ -8,7 +8,8 @@ retrieved**, and **how well exact matching against them works**. It does not eva
 precision/recall against real patient data (PHI stays in governed environments) — see "What this
 does not measure".
 
-Reproduce (raw downloads and output go to `data/institutional_registry/`, gitignored; measured
+Reproduce (raw downloads and output go to `data/institutional_registry/` and are committed; each
+file's source URL and download date is in `manifest.json`; measured
 2026-10-06). Standard library only, no extra packages:
 
 ```bash

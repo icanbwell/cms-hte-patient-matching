@@ -26,6 +26,7 @@ Usage:
 from __future__ import annotations
 
 import csv
+import gzip
 import json
 import re
 from dataclasses import dataclass, replace
@@ -34,7 +35,7 @@ from pathlib import Path
 from typing import Dict, Iterable, Iterator, List, Optional, Tuple
 
 from patient_matching.normalization.address_normalizer import AddressNormalizer
-from scripts.institutional_registry.download import DEST, MANUAL_DIR
+from scripts.institutional_registry.download import DEST, MANIFEST, MANUAL_DIR
 
 OUTPUT = DEST / "institutional_addresses.csv"
 # POS iQIES `prvdr_type_id` values, decoded by joining to Care Compare on CCN
@@ -167,7 +168,8 @@ def _pad_zip(zip_code: str) -> str:
 
 
 def _rows(path: Path) -> Iterator[Dict[str, str]]:
-    with path.open(newline="", encoding="utf-8-sig") as f:
+    opener = gzip.open if path.suffix == ".gz" else open
+    with opener(path, "rt", newline="", encoding="utf-8-sig") as f:
         yield from csv.DictReader(f)
 
 
@@ -187,7 +189,16 @@ def _iso_date(value: str) -> str:
 
 
 def _file_date(path: Path) -> str:
-    """Date a downloaded file was written: the best 'collected' date for sources that state none."""
+    """Date a file was downloaded: the 'collected' date for sources that state none.
+
+    Read from manifest.json, which download.py writes. Modification time is only a fallback
+    (e.g. a hand-downloaded file in manual/), because after a git clone every committed
+    file's modification time is the clone date.
+    """
+    if MANIFEST.exists():
+        entry = json.loads(MANIFEST.read_text()).get(path.name)
+        if entry:
+            return str(entry["downloaded"])
     return date.fromtimestamp(path.stat().st_mtime).isoformat()
 
 
@@ -268,8 +279,8 @@ def load_sources() -> List[Record]:
             },
             default_collected=_file_date(DEST / "care_compare_hospice.csv"),
         )
-    pos_date = _file_date(DEST / "pos_iqies.csv")
-    for row in _rows(DEST / "pos_iqies.csv"):
+    pos_date = _file_date(DEST / "pos_iqies.csv.gz")
+    for row in _rows(DEST / "pos_iqies.csv.gz"):
         if row["prvdr_type_id"] in POS_TYPES and row["pgm_trmntn_cd"] == "00":
             records += _records(
                 POS_TYPES[row["prvdr_type_id"]],

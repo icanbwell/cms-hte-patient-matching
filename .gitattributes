@@ -1,0 +1,2 @@
+# Downloaded source data is committed byte-for-byte; don't normalize its line endings.
+/data/institutional_registry/** -text

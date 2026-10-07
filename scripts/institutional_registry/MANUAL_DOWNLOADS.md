@@ -3,29 +3,51 @@
 ## Downloaded automatically
 
 `uv run python -m scripts.institutional_registry.download` writes these files to
-`data/institutional_registry/` (gitignored). You don't need to do anything for them.
-`--skip-overture` skips the slow (~7 min) Overture extract.
+`data/institutional_registry/`. You don't need to do anything for them. `--skip-overture` skips
+the slow (~7 min) Overture extract.
 
-| File | Source | Becomes `institution_type` | Date used for `data_collected` |
+The files are **committed to the repo** so the registry can be rebuilt without re-downloading.
+`manifest.json` in the same folder records each file's exact source URL and download date (the
+URLs below are the stable entry points; some, like the POS file and the HIFLD GeoParquet, are
+resolved at download time and change between releases, so the manifest has the one actually
+used). The POS file is stored gzipped (`pos_iqies.csv.gz`) because the raw 175 MB CSV exceeds
+GitHub's 100 MB file limit. To refresh the data, re-run the download and commit the changes.
+
+| File | Source (URL) | Becomes `institution_type` | Date used for `data_collected` |
 |---|---|---|---|
-| `care_compare_nh.csv` | CMS Care Compare nursing homes | `nursing_home` | Row's processing date |
-| `care_compare_hospital.csv` | CMS Care Compare hospitals | `hospital`, `psychiatric_hospital`, `long_term_hospital` (by Hospital Type) | Download date |
-| `care_compare_hospice.csv` | CMS Care Compare hospices | `hospice` | Download date |
-| `pos_iqies.csv` | CMS Provider of Services file (iQIES; nursing homes and hospices) | `nursing_home`, `hospice` | Row's processing date, else download date |
-| `ipeds_hd.csv` | NCES IPEDS campus directory | `higher_education_campus` | Download date |
-| `bop.json` | Federal Bureau of Prisons facility API | `federal_correctional` | Download date |
-| `hifld_prisons.csv` | HIFLD Prison Boundaries (via HIFLD Next); closed facilities are skipped | `correctional`, `federal_correctional` | Per-facility source date |
-| `ppi_facilities.csv` | Prison Policy Initiative facility lists (scraped; many rows have no address) | `correctional`, `federal_correctional` | Row's survey date (2012-2013) |
-| `assisted_living.csv` | Princeton open assisted-living dataset (GitHub) | `assisted_living` | Row's "Date Accessed" (2021) |
-| `state_al_ca.csv` | California CDSS Community Care Licensing facilities; only elder-care types 740/741 are used | `assisted_living` | Download date |
-| `state_al_mi.txt` | Michigan LARA Adult Foster Care & Homes for the Aged list (no header row) | `assisted_living` | Download date |
-| `state_al_wi.json` | Wisconsin DHS: community-based residential facilities, residential care apartment complexes, adult family homes | `assisted_living` | Download date |
-| `state_al_fl.json` | Florida AHCA assisted living facilities (closed ones skipped) | `assisted_living` | Download date |
-| `overture_gq.csv` | Overture Maps places | `senior_living`, `assisted_living`, `homeless_shelter`, `correctional`, `halfway_house` | Overture release date |
+| `care_compare_nh.csv` | CMS Care Compare nursing homes: `https://data.cms.gov/provider-data/dataset/4pq5-n9py` (CSV: `https://data.cms.gov/provider-data/api/1/datastore/query/4pq5-n9py/0/download?format=csv`) | `nursing_home` | Row's processing date |
+| `care_compare_hospital.csv` | CMS Care Compare hospitals: `https://data.cms.gov/provider-data/dataset/xubh-q36u` | `hospital`, `psychiatric_hospital`, `long_term_hospital` (by Hospital Type) | Download date |
+| `care_compare_hospice.csv` | CMS Care Compare hospices: `https://data.cms.gov/provider-data/dataset/yc9t-dgbk` | `hospice` | Download date |
+| `pos_iqies.csv.gz` | CMS Provider of Services file, iQIES (nursing homes and hospices): catalog `https://data.cms.gov/data.json`, entry "Provider of Services File - Internet Quality Improvement and Evaluation System" (newest quarter); landing page `https://data.cms.gov/provider-characteristics/hospitals-and-other-facilities` | `nursing_home`, `hospice` | Row's processing date, else download date |
+| `ipeds_hd.csv` | NCES IPEDS institutional directory: `https://nces.ed.gov/ipeds/datacenter/data/HD2024.zip` (newest year available) | `higher_education_campus` | Download date |
+| `bop.json` | Federal Bureau of Prisons: facility codes from `https://www.bop.gov/locations/list.jsp`, then `https://www.bop.gov/PublicInfo/execute/phyloc?todo=query&output=json&code=<CODE>` | `federal_correctional` | Download date |
+| `hifld_prisons.csv` | HIFLD Prison Boundaries via HIFLD Next: catalog `https://hifld.publicenvirodata.org/api/collections/hifld` -> "Prison Boundaries" -> GeoParquet on `storage.googleapis.com/hifld-next-portolan-published/...`; closed facilities are skipped | `correctional`, `federal_correctional` | Per-facility source date |
+| `ppi_facilities.csv` | Prison Policy Initiative, state/federal/local facilities (2020 vintage, scraped): `https://www.prisonersofthecensus.org/data/state_federal_local_2020vintage.html` and `.../data/prisons2020/<ST>/` | `correctional`, `federal_correctional` | Row's survey date (2012-2013) |
+| `assisted_living.csv` | Princeton open assisted-living dataset: `https://github.com/antonstengel/assisted-living-data` (file `assisted-living-facilities.csv`) | `assisted_living` | Row's "Date Accessed" (2021) |
+| `state_al_ca.csv` | California CDSS Community Care Licensing facilities: `https://gis.data.chhs.ca.gov/api/download/v1/items/db31b0884a074cff9260facb3f2ade45/csv?layers=0`; only elder-care types 740/741 are used | `assisted_living` | Download date |
+| `state_al_mi.txt` | Michigan LARA Adult Foster Care & Homes for the Aged: `https://documents.apps.lara.state.mi.us/bchs/afc_sw.txt` (no header row) | `assisted_living` | Download date |
+| `state_al_wi.json` | Wisconsin DHS: `https://dhsgis.wi.gov/server/rest/services/DHS_GIS/Facilities/MapServer`, layers 7 (community-based residential facilities), 17 (residential care apartment complexes), 2 (adult family homes) | `assisted_living` | Download date |
+| `state_al_fl.json` | Florida AHCA FloridaHealthFinder: `https://quality.healthfinder.fl.gov/Facility-Search/FacilityLocateSearch` (assisted living facilities, all counties; closed ones skipped) | `assisted_living` | Download date |
+| `overture_gq.csv` | Overture Maps places: `s3://overturemaps-us-west-2/release/<release>/theme=places/type=place/` (docs: `https://docs.overturemaps.org/guides/places/`) | `senior_living`, `assisted_living`, `homeless_shelter`, `correctional`, `halfway_house` | Overture release date |
 
-`build_registry.py` reads these (plus anything in `manual/`) and writes
-`institutional_addresses.csv`. A missing automatic file is a warning, not an error, so the build
-still runs if a download was skipped.
+Two files in the same folder are generated rather than downloaded: `manifest.json` (written by
+`download.py`) and `institutional_addresses.csv` (written by `build_registry.py`, which reads the
+files above plus anything in `manual/`). A missing automatic file is a warning, not an error, so
+the build still runs if a download was skipped.
+
+### Terms of use
+
+Committing these files republishes them in a public repo. Status of each source's terms, as far
+as I checked:
+
+| Source | Terms |
+|---|---|
+| CMS (Care Compare, POS), NCES IPEDS, Federal Bureau of Prisons | US government public data |
+| Princeton assisted-living dataset | CC BY 4.0: credit "Assisted Living in the United States: an Open Dataset" (A. Stengel, Princeton) |
+| HIFLD Prison Boundaries (HIFLD Next archive) | The catalog lists the license as "other"; **not confirmed** |
+| Prison Policy Initiative facility lists | No terms stated on the site; **not confirmed** |
+| Overture Maps places | Varies by contributing source; **not checked** (see the Overture docs) |
+| State licensing lists (CA, MI, WI, FL) | State government publications; terms **not checked** |
 
 ## Manual downloads
 
@@ -37,7 +59,7 @@ Download them by hand and drop the files into:
 data/institutional_registry/manual/
 ```
 
-(gitignored; `download.py` creates the folder). `build_registry.py` merges every `*.csv` in that
+(`download.py` creates the folder; files you add there can be committed like the others). `build_registry.py` merges every `*.csv` in that
 folder into `institutional_addresses.csv`, with `source` set to `manual:<filename>`.
 
 ## Required CSV format

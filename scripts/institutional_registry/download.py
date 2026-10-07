@@ -14,7 +14,9 @@ Not downloadable automatically (state DOC rosters, BJS censuses, ...): download 
 `data/institutional_registry/manual/` -- see MANUAL_DOWNLOADS.md. CASS validation is a paid
 service. Details in docs/INSTITUTIONAL_ADDRESS_FEASIBILITY.md.
 
-Files land in `data/institutional_registry/` (gitignored). All data is public; no PHI.
+Files land in `data/institutional_registry/` and are committed (the POS file gzipped to fit
+GitHub's file-size limit). `manifest.json` records each file's source URL and download date.
+All data is public; no PHI.
 
 Usage:
     uv run python -m scripts.institutional_registry.download
@@ -24,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import gzip
 import http.cookiejar
 import io
 import json
@@ -33,6 +36,7 @@ import time
 import urllib.parse
 import urllib.request
 import zipfile
+from datetime import date
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -78,6 +82,7 @@ OVERTURE_CATEGORIES = [
 # Sources that can't be fetched anonymously are downloaded by hand into this folder; see
 # MANUAL_DOWNLOADS.md next to this file for what to put there and the required columns.
 MANUAL_DIR = DEST / "manual"
+MANIFEST = DEST / "manifest.json"
 USER_AGENT = "Mozilla/5.0 (cms-hte-patient-matching institutional registry)"
 
 
@@ -102,6 +107,24 @@ def _curl(url: str, out: Optional[Path] = None, *, timeout: int = 300) -> bytes:
     return body
 
 
+def _record(name: str, source: str) -> None:
+    """Note where `name` came from and when, in `manifest.json` next to the files.
+
+    The date matters because these files are committed: after a `git clone` every file's
+    modification time is the clone date, so build_registry.py reads the download date from
+    here instead.
+    """
+    manifest = json.loads(MANIFEST.read_text()) if MANIFEST.exists() else {}
+    manifest[name] = {"source": source, "downloaded": date.today().isoformat()}
+    MANIFEST.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+
+
+def _save(url: str, name: str, *, timeout: int = 300) -> None:
+    """Download `url` to DEST/name and record it in the manifest."""
+    _curl(url, DEST / name, timeout=timeout)
+    _record(name, url)
+
+
 def latest_pos_csv_url() -> str:
     """Resolve the newest POS iQIES CSV from the catalog (never hardcode: URLs change quarterly)."""
     catalog = json.loads(_curl(CMS_CATALOG, timeout=120))
@@ -117,6 +140,20 @@ def latest_pos_csv_url() -> str:
     raise RuntimeError(f"no CSV distribution on {newest['title']}")
 
 
+def fetch_pos() -> None:
+    """CMS Provider of Services (iQIES), stored gzipped.
+
+    The raw CSV is 175 MB, over GitHub's 100 MB per-file limit, and these files are
+    committed; gzip is lossless and brings it to a committable size.
+    """
+    url = latest_pos_csv_url()
+    (DEST / "pos_iqies.csv.gz").write_bytes(
+        gzip.compress(_curl(url, timeout=600), compresslevel=9)
+    )
+    _record("pos_iqies.csv.gz", url)
+    print("pos_iqies: ok")
+
+
 def fetch_ipeds() -> None:
     """Newest IPEDS HD file; the current year 404s until NCES publishes it."""
     for year in range(time.localtime().tm_year, time.localtime().tm_year - 4, -1):
@@ -127,6 +164,7 @@ def fetch_ipeds() -> None:
         with zipfile.ZipFile(io.BytesIO(body)) as zf:
             name = next(n for n in zf.namelist() if n.lower().endswith(".csv"))
             (DEST / "ipeds_hd.csv").write_bytes(zf.read(name))
+        _record("ipeds_hd.csv", IPEDS_URL.format(year=year))
         print(f"ipeds: HD{year}")
         return
     raise RuntimeError("no IPEDS HD file found for the last 4 years")
@@ -144,12 +182,13 @@ def fetch_bop() -> None:
         )
         time.sleep(0.2)
     (DEST / "bop.json").write_text(json.dumps(rows))
+    _record("bop.json", f"{BOP_LIST} (facility codes) -> {BOP_API}")
     print(f"bop: {len(codes)} codes on list page -> {len(rows)} physical addresses")
 
 
 def fetch_assisted_living() -> None:
     """Princeton open dataset of state-licensed assisted living facilities (CC BY 4.0, 2021)."""
-    _curl(ALF_URL, DEST / "assisted_living.csv", timeout=120)
+    _save(ALF_URL, "assisted_living.csv", timeout=120)
     print("assisted_living: ok (state licensing data accessed 2021 -- stale)")
 
 
@@ -193,6 +232,7 @@ def fetch_hifld_prisons() -> None:
             from read_parquet('{url}')
         ) to '{DEST / "hifld_prisons.csv"}' (format csv, header)"""
     )
+    _record("hifld_prisons.csv", url)
     print("hifld_prisons: ok")
 
 
@@ -263,6 +303,10 @@ def fetch_ppi_facilities() -> None:
             ]
         )
         writer.writerows(rows)
+    _record(
+        "ppi_facilities.csv",
+        f"{PPI_BASE}state_federal_local_2020vintage.html (one page per state: {PPI_BASE}prisons2020/<ST>/)",
+    )
     print(f"ppi_facilities: {len(states)} states, {len(rows)} facilities")
 
 
@@ -272,7 +316,7 @@ def fetch_ca_assisted_living() -> None:
     The elder-care rows (TYPE 740/741, Residential Care for the Elderly) are picked out in
     build_registry.py. The CSV comes from the CHHS ArcGIS hub item named in CA_CCL_URL.
     """
-    _curl(CA_CCL_URL, DEST / "state_al_ca.csv", timeout=180)
+    _save(CA_CCL_URL, "state_al_ca.csv", timeout=180)
     print("state_al_ca: ok")
 
 
@@ -282,7 +326,7 @@ def fetch_mi_assisted_living() -> None:
     Comma-delimited with no header row; the record layout is documented at
     michigan.gov/lara/.../adult-foster-care-record-description and parsed in build_registry.py.
     """
-    _curl(MI_AFC_URL, DEST / "state_al_mi.txt", timeout=120)
+    _save(MI_AFC_URL, "state_al_mi.txt", timeout=120)
     print("state_al_mi: ok")
 
 
@@ -307,6 +351,8 @@ def fetch_wi_assisted_living() -> None:
                 break
             offset += 2000
     (DEST / "state_al_wi.json").write_text(json.dumps(rows))
+    layers = ",".join(str(layer) for layer in WI_LAYERS)
+    _record("state_al_wi.json", f"{WI_SERVICE}/<layer {layers}>/query")
     print(f"state_al_wi: {len(rows)} facilities")
 
 
@@ -346,6 +392,9 @@ def fetch_fl_assisted_living() -> None:
         raise RuntimeError("Florida results page changed: no embedded facility records")
     records, _ = json.JSONDecoder().raw_decode(body[body.rfind("[{", 0, marker) :])
     (DEST / "state_al_fl.json").write_text(json.dumps(records))
+    _record(
+        "state_al_fl.json", f"{FL_SEARCH_URL} (POST, facility type ALF, all counties)"
+    )
     print(f"state_al_fl: {len(records)} facilities")
 
 
@@ -389,6 +438,7 @@ def fetch_overture() -> None:
               and struct_extract(taxonomy, 'primary') in ({cats})
         ) to '{DEST / "overture_gq.csv"}' (format csv, header)"""
     )
+    _record("overture_gq.csv", path)
     print(f"overture: release {release} ok")
 
 
@@ -396,10 +446,9 @@ def fetch_all(*, skip_overture: bool = False) -> None:
     DEST.mkdir(parents=True, exist_ok=True)
     MANUAL_DIR.mkdir(parents=True, exist_ok=True)
     for name, dataset_id in CARE_COMPARE.items():
-        _curl(PDC_DOWNLOAD.format(id=dataset_id), DEST / f"{name}.csv", timeout=120)
+        _save(PDC_DOWNLOAD.format(id=dataset_id), f"{name}.csv", timeout=120)
         print(f"{name}: ok")
-    _curl(latest_pos_csv_url(), DEST / "pos_iqies.csv")
-    print("pos_iqies: ok")
+    fetch_pos()
     fetch_ipeds()
     fetch_bop()
     fetch_assisted_living()

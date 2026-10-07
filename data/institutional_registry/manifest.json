@@ -1,0 +1,58 @@
+{
+  "assisted_living.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://raw.githubusercontent.com/antonstengel/assisted-living-data/main/assisted-living-facilities.csv"
+  },
+  "bop.json": {
+    "downloaded": "2026-10-06",
+    "source": "https://www.bop.gov/locations/list.jsp (facility codes) -> https://www.bop.gov/PublicInfo/execute/phyloc?todo=query&output=json&code={code}"
+  },
+  "care_compare_hospice.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://data.cms.gov/provider-data/api/1/datastore/query/yc9t-dgbk/0/download?format=csv"
+  },
+  "care_compare_hospital.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://data.cms.gov/provider-data/api/1/datastore/query/xubh-q36u/0/download?format=csv"
+  },
+  "care_compare_nh.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://data.cms.gov/provider-data/api/1/datastore/query/4pq5-n9py/0/download?format=csv"
+  },
+  "hifld_prisons.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://storage.googleapis.com/hifld-next-portolan-published/hifld/prison-boundaries-1/prison-boundaries-1/v1.0.0/geoparquet/prison-boundaries-1.parquet"
+  },
+  "ipeds_hd.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://nces.ed.gov/ipeds/datacenter/data/HD2024.zip"
+  },
+  "overture_gq.csv": {
+    "downloaded": "2026-10-06",
+    "source": "s3://overturemaps-us-west-2/release/2026-09-23.1/theme=places/type=place/*"
+  },
+  "pos_iqies.csv.gz": {
+    "downloaded": "2026-10-06",
+    "source": "https://data.cms.gov/sites/default/files/2026-08/9f345e2d-5199-4630-a08b-9b45581a9a2a/POS_iQIES.DATA.Q2_2026.csv"
+  },
+  "ppi_facilities.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://www.prisonersofthecensus.org/data/state_federal_local_2020vintage.html (one page per state: https://www.prisonersofthecensus.org/data/prisons2020/<ST>/)"
+  },
+  "state_al_ca.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://gis.data.chhs.ca.gov/api/download/v1/items/db31b0884a074cff9260facb3f2ade45/csv?layers=0"
+  },
+  "state_al_fl.json": {
+    "downloaded": "2026-10-06",
+    "source": "https://quality.healthfinder.fl.gov/Facility-Search/FacilityLocateSearch (POST, facility type ALF, all counties)"
+  },
+  "state_al_mi.txt": {
+    "downloaded": "2026-10-06",
+    "source": "https://documents.apps.lara.state.mi.us/bchs/afc_sw.txt"
+  },
+  "state_al_wi.json": {
+    "downloaded": "2026-10-06",
+    "source": "https://dhsgis.wi.gov/server/rest/services/DHS_GIS/Facilities/MapServer/<layer 7,17,2>/query"
+  }
+}
