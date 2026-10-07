@@ -271,7 +271,8 @@ the state provides it so a consumer can filter them out.
    hospital, correctional, assisted living, shelter, dorm) so the registry can be filtered, not
    just unioned.
 2. Confirm licenses for HIFLD (archive license is "other"), the PPI lists and Overture's
-   contributing sources before the registry is distributed rather than used internally.
+   contributing sources before the registry is distributed rather than used internally. Per-source
+   terms, status and open decisions are in `docs/DATA_SOURCE_LICENSES.md`.
 3. Decide how to treat Princeton-only assisted living rows in the 27 covered states: each has a
    current state list, so a 2021 address missing from it is probably closed (8,329 rows; 1,453 in
    CA alone). They are still in the registry, dated 2021. Decide whether to drop them, whether to
