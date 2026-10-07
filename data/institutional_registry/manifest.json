@@ -87,6 +87,10 @@
     "downloaded": "2026-10-06",
     "source": "https://ldh.la.gov/assets/medicaid/hss/docs/DirectorySpreadsheets/Licensed_Providers_Report_YYYY_MM.xlsx (newest month that resolves)"
   },
+  "state_lists/MA.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://services1.arcgis.com/hGdibHYSPO59RG1h/arcgis/rest/services/Long_Term_Care_Residences/FeatureServer/0"
+  },
   "state_lists/MD.csv": {
     "downloaded": "2026-10-06",
     "source": "https://opendata.maryland.gov/resource/i48m-922u.json"
@@ -114,6 +118,10 @@
   "state_lists/NY.csv": {
     "downloaded": "2026-10-06",
     "source": "https://health.data.ny.gov/resource/wssx-idhx.json"
+  },
+  "state_lists/OK.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://services9.arcgis.com/QeqGrHRDFO8mPwTf/arcgis/rest/services/LongTermCareFacilities_2024/FeatureServer/1"
   },
   "state_lists/OR.csv": {
     "downloaded": "2026-10-06",

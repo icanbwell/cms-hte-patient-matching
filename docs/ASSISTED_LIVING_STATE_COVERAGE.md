@@ -8,7 +8,8 @@ downloads is in `scripts/institutional_registry/MANUAL_DOWNLOADS.md`.
 
 Research was done 2026-10-06 by fetching each endpoint, not from search summaries, with one
 exception noted per row. The research covered the 43 states and DC that had 2021-only rows;
-four states (ID, MA, NV, OK) were not researched, see the end of the "Not automated" section. "Stale rows" is the number of 2021-only Princeton rows in that state
+four more (ID, MA, NV, OK) were researched afterwards, see "Added later" in the "Not automated"
+section. "Stale rows" is the number of 2021-only Princeton rows in that state
 before the new automation (20,080 across the 43 states not already covered by CA, MI, WI, FL).
 
 ## Not automated, and why
@@ -48,22 +49,28 @@ before the new automation (20,080 across the 43 states not already covered by CA
 | VT | 108 | **PDF only** (`dlp.vermont.gov/.../rch_list_by_counties.pdf`, dated 2025-01-17). No `data.vermont.gov` dataset or VCGI layer exists. |
 | DC | 11 | **PDF only** (`dchealth.dc.gov/.../Assisted Living Residences Directory.pdf`, 2026-09); the table wraps and `pdftotext` output is messy. The only open layer has 10 memory-care rows. |
 
-### Not researched: ID, MA, NV, OK
+### Added later: ID, MA, NV, OK
 
-These four states were missed by the research above, which covered only the states that had
-2021-only rows in the registry. They have none because **their Princeton rows have no ZIP code at
-all** (NV 387 rows, ID 272, MA 268, OK 189), and the registry requires street plus ZIP to build a
-match key, so those rows were dropped. Their `assisted_living` rows today come only from Overture
-(ID 104, MA 177, NV 67, OK 115). Princeton also has blank ZIPs on 178 Kansas rows, 74 New Mexico
-rows, 11 Maine rows and 4 DC rows (1,390 of 44,638 overall). No state source for these four has
-been looked for yet.
+These four states were missed by the first round of research, which covered only the states that
+had 2021-only rows in the registry. They had none because **their Princeton rows have no ZIP code
+at all** (NV 387 rows, ID 272, MA 268, OK 189), and the registry requires street plus ZIP to build
+a match key, so those rows were dropped. Princeton also has blank ZIPs on 178 Kansas rows, 74 New
+Mexico rows, 11 Maine rows and 4 DC rows (1,390 of 44,638 overall). They were researched
+afterwards:
+
+| State | Result |
+|---|---|
+| MA | **Automated.** MassGIS "Long-Term Care Residences" ArcGIS layer: 259 assisted living residences and 58 rest homes (nursing homes dropped), all with street, city and ZIP; edited 2026-05-01. The city is the mailing city. |
+| OK | **Automated.** OSDH long-term care ArcGIS layer: 187 assisted living and 27 residential care facilities with licensed beds; the source directory is from 2024 (item modified 2025-11-20). |
+| ID | **Not automatable.** The official "Find a Provider" search is the FLARES portal (`flareslive.com/portal/SearchFacility.aspx`), an ASP.NET form that **contains a Google reCAPTCHA** and returned no results to a scripted POST. The only CAPTCHA-free page (`RecentSurveys.aspx`) lists facility name and town for surveys in the last 365 days (about 190 rows) with **no street or ZIP**. The old PDF list returns 404 and no open-data layer exists. The realistic route is a records request or an export from RALF@dhw.idaho.gov. |
+| NV | Research in progress when this was written; see `state_lists_status.json` and the module list for the outcome. |
 
 ## Automated
 
-27 states are downloaded automatically: CA, MI, WI and FL (raw files `state_al_*`, see
-`MANUAL_DOWNLOADS.md`) and the 23 below, one module each in
+29 states are downloaded automatically: CA, MI, WI and FL (raw files `state_al_*`, see
+`MANUAL_DOWNLOADS.md`) and the 25 below, one module each in
 `scripts/institutional_registry/states/`, written to `data/institutional_registry/state_lists/<ST>.csv`.
-All 23 returned rows on the 2026-10-06 run and none failed (`state_lists_status.json` records the
+All 25 returned rows on the 2026-10-06 run and none failed (`state_lists_status.json` records the
 result of every run, including failures). Every row has street, city and ZIP except 2 in AK and 1
 in GA, which have no ZIP in the source.
 
@@ -77,6 +84,7 @@ in GA, which have no ZIP in the source.
 | IN | 230 | ISDH residential care directory (one HTML page) | Residential care facilities | **Indiana has no assisted living license**, so this is the closest list. Page posted 2026-09-24. |
 | KY | 294 | CHFS spreadsheets for assisted living communities and personal care homes | Assisted living communities 247 (plain, dementia care, behavioral health); personal care homes 47 | No as-of date in the files. |
 | LA | 164 | LDH licensed providers spreadsheet, filtered to Adult Residential Care | Adult Residential Care (levels 1-4) | **File is `2026_03`, about 7 months old**: LDH has not published later months. No capacity. |
+| MA | 317 | MassGIS "Long-Term Care Residences" ArcGIS layer (EOEA and DPH records) | Assisted Living Residence 259; Rest Home 58 (nursing homes dropped) | Edited 2026-05-01. No capacity. City is the mailing city. |
 | MD | 1,568 | OHCQ Socrata dataset on `opendata.maryland.gov` | All rows are assisted living programs (no type column) | **Last updated July 2025.** License ID present on 1,236 rows. |
 | MN | 2,525 | MDH provider lookup API, returned as CSV | Assisted Living Facility 1,582; with dementia care 601; provisional 342 | Licenses expire 2026-27, so current. 4 duplicate licenses share two buildings. |
 | MO | 600 | DHSS Section for Long-Term Care Regulation, Socrata | ALF 60; ALF** 271; RCF 166; RCF* 103 (nursing and ICF dropped) | `status` holds the license expiration date, not a status. |
@@ -84,6 +92,7 @@ in GA, which have no ZIP in the source.
 | NE | 277 | NE DHHS layer on ArcGIS Online (see below) | Assisted Living Facility | Roster dated 2025-10-15. **The canonical `gis.ne.gov` service is down**; see "Implemented but needs attention". |
 | NJ | 241 | DOH health facilities CSV, filtered by type | Assisted Living Residence 193; Comprehensive Personal Care Home 35; Residential Health Care 13 | No capacity. "Assisted Living Program" (14, service agencies) and "Alternative Family Care" (4, sponsor offices) excluded. |
 | NY | 555 | DOH adult care facility directory, Socrata | Adult Home 406; Enriched Housing Program 149 | No date in the data. |
+| OK | 214 | OSDH Long Term Care Service ArcGIS layer (`LongTermCareFacilities_2024`, layer 1) | Assisted Living 187; Residential Care 27 (nursing homes, ICF/IID and adult day care dropped) | Source directory is from 2024; item modified 2025-11-20. Administrator and email columns not carried. |
 | OR | 2,155 | ODHS licensed settings export: token, then a POST that returns CSV | Adult foster home 1,583; residential care 332; assisted living 240 (nursing facilities dropped) | **Adult foster home names are not carried**: they are mostly the licensee's personal name, and this repo is public. Address and license ID are kept. |
 | PA | 992 | DHS licensed personal care homes, Socrata | Personal care homes only | **PA's separately licensed "assisted living residences" are not in this dataset.** |
 | SC | 428 | DPH health facilities ArcGIS layer, filtered to community residential care | Community Residential Care Facility | Live layer. |
@@ -127,7 +136,7 @@ many current addresses Princeton lacked (exact match on normalized street + ZIP5
 | VA | 564 | 81% | 117 |
 | WI | 3,877 | 70% | 1,145 |
 | WV | 94 | 76% | 11 |
-| **All 27** | **36,978** | **76%** | **11,218** |
+| **All 27** (MA and OK have no usable Princeton rows) | **36,978** | **76%** | **11,218** |
 
 The two sources agree on most addresses, which supports both. Oregon's large "new" count is
 adult foster homes, which Princeton largely did not include. Indiana (52%) and Minnesota (60%)
@@ -135,8 +144,8 @@ agree least: Indiana's list is residential care rather than assisted living, and
 assisted living licensing was introduced around 2021 (not verified here), so its 2021 data may
 predate the current licenses.
 
-**What is left from 2021.** `assisted_living` has 60,641 rows; 48,027 are dated 2026 and 12,614
-rest on the 2021 data alone (down from 38,040). Of those 12,614, **8,329 are in the 27 covered
+**What is left from 2021.** `assisted_living` has 61,104 rows; 48,490 are dated 2026 and 12,614
+rest on the 2021 data alone (down from 38,040). Of those 12,614, **8,329 are in the 29 covered
 states**: they are not on the state's current list, so they are probably closed or moved (the
 largest are CA 1,453, WI 1,133, MI 1,089, MN 967, FL 619). They are still in the registry,
 dated 2021, so a consumer can drop them. The other **4,285 are in the 20 jurisdictions (19 states and DC) with no automated
