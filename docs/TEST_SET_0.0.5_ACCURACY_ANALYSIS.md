@@ -100,6 +100,35 @@ committed). Baseline: pairs recall 0.9474 (fn 717), population recall 0.9504 (fn
 Uplift is the absolute change against the baseline row. Lever 3 adds +0.0016 pairs recall (+0.0012
 population) on top of 1 + 2, so its marginal value shrinks once the others land.
 
+### 5.0 Target metrics and which levers reach them
+
+Targets are the checked-in gates (`tests/test_onc_regression.py`, `tests/test_onc_population_regression.py`).
+Gap = uplift still needed from the baseline.
+
+| Metric | Target | Baseline (0.0.5) | Gap to target |
+|---|---|---|---|
+| Pairs recall | ≥ 0.9500 | 0.9474 | **+0.0026** (37 fewer fn) |
+| Pairs FPR | ≤ 0.0100 | 0.0052 | met |
+| Population recall | ≥ 0.9500 | 0.9504 | met (margin 0.0004) |
+| Population precision | ≥ 0.9900 | 0.9998 | met |
+| Population FPR | ≤ 0.0010 | 0.00004 | met |
+| Population F1 | ≥ 0.9700 | 0.9745 | met (margin 0.0045) |
+
+Only pairs recall fails, so the uplift that matters is pairs recall. Margin over target after each change
+(a negative or thin margin means the change does not safely restore the gate):
+
+| Change | Pairs recall | Margin vs 0.95 | Pop. recall | Margin vs 0.95 | Pop. F1 | Margin vs 0.97 | All targets met? |
+|---|---|---|---|---|---|---|---|
+| Baseline | 0.9474 | **−0.0026** | 0.9504 | +0.0004 | 0.9745 | +0.0045 | **No** |
+| 1. Initial-only first name | 0.9730 | +0.0230 | 0.9752 | +0.0252 | 0.9873 | +0.0173 | Yes |
+| 2. DOB edit distance ≤ 1 | 0.9534 | +0.0034 | 0.9554 | +0.0054 | 0.9771 | +0.0071 | Yes |
+| 3. 4-character fuzzy | 0.9512 | +0.0012 | 0.9534 | +0.0034 | 0.9760 | +0.0060 | Yes (thin) |
+| 4. Month/day swap only | 0.9481 | −0.0019 | 0.9511 | +0.0011 | 0.9748 | +0.0048 | **No** |
+| 1 + 2 | 0.9838 | +0.0338 | 0.9843 | +0.0343 | 0.9920 | +0.0220 | Yes |
+| 1 + 2 + 3 | 0.9854 | +0.0354 | 0.9855 | +0.0355 | 0.9926 | +0.0226 | Yes |
+
+Precision and FPR targets stay met in every run (precision 0.9998, no new false positives).
+
 Ranking by false negatives removed (pairs tier): initial-only first name −349, DOB edit distance −82,
 4-character fuzzy −53, month/day swap −10. The first alone clears the 0.95 floor by 0.023 on both tiers;
 the second alone clears it by 0.003–0.005; the third alone by 0.001–0.003.
@@ -153,16 +182,22 @@ evidence, so these are by-design misses rather than a rule gap (the other 39 wer
 
 ## 7. Recommendation
 
-1. Pin 0.0.5 (`Makefile`: `ONC_TEST_SET_TAG ?= 0.0.5`) and lower the pairs recall floor to 0.94
-   (margin 0.0074) with a pointer to this document, so main stays green. This is a gate change and needs
-   the project lead's sign-off; it is the second relaxation for a data change (the first was 0.0.2/0.0.3).
-2. Take lever 1 (initial-only first name) to the CMS spec owners first. It is the only change that moves
-   accuracy materially, and alone it restores the 0.95 floor on both tiers with room to spare. Restore
-   the 0.95 floor when it ships.
-3. Treat lever 2 (DOB edit distance) as the second request, and lever 3 (4-character fuzzy) as optional.
-   All three need derived P(collision) values and Tier 2/3 validation before shipping.
-4. Do not change engine behaviour on this evidence alone: these are counterfactuals measured on a
-   synthetic benchmark that over-samples these exact variants.
+Target: pairs recall back to ≥ 0.95 (gap +0.0026), all other gates held.
+
+1. **Smallest change that reaches the target:** lever 2, DOB edit distance ≤ 1 (+0.0060 pairs recall,
+   margin +0.0034). It only touches rules that already treat DOB as fuzzy-eligible.
+2. **Best margin:** lever 1, initial-only first name (+0.0256, margin +0.0230); the biggest uplift and
+   the riskiest, since an initial is far less selective than a full name. Restrict it to rules where at
+   least three other fields match exactly.
+3. Lever 3 (4-character fuzzy, +0.0038) reaches the target only by 0.0012 and lever 4 does not reach it;
+   neither is sufficient alone.
+4. Until a spec change ships, pin 0.0.5 (`Makefile`: `ONC_TEST_SET_TAG ?= 0.0.5`) with a temporary
+   pairs recall floor of 0.94 (margin 0.0074) pointing at this document, and restore 0.95 when the change
+   lands. This is a gate change and needs the project lead's sign-off; it is the second relaxation for a
+   data change (the first was 0.0.2/0.0.3).
+5. Every lever needs CMS sign-off, a derived P(collision), and Tier 2/3 validation. Do not change engine
+   behaviour on this evidence alone: these are counterfactuals on a synthetic benchmark that
+   over-samples these exact variants.
 
 ## 8. Method and caveats
 
