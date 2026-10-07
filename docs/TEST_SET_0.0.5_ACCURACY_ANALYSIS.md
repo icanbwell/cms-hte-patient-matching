@@ -163,6 +163,61 @@ which would recover somewhat less. Contradicts §V.E.3 as written (no fuzzy unde
 
 Only 10 false negatives (+0.0007). Lever 2 already includes it.
 
+### 5.5 Additional levers found by searching the misses
+
+To look beyond the four levers above, each of the 717 pairs-tier misses was reduced to which fields agree
+between source and target (exact, one edit apart, initial-only, or missing on a side). Two patterns
+dominate:
+
+- **One or two fields wrong on an otherwise identical record.** The largest signatures are "first name
+  is an initial + DOB one digit off" (about 300 pairs) with last name, phone, street, ZIP and SSN last 4
+  all exact; then "last name one edit off on a ≤4-character name + initial"; then DOB one digit off alone.
+- **Sparse records** (phone dropped or replaced, no DOB, placeholder address). Nothing recoverable.
+
+That pointed to variants of the existing levers plus one new one, each measured on the 0.0.5 data
+(monkeypatched, as in §5). Uplift is against the baseline (pairs 0.9474 / pop. 0.9504 / F1 0.9745).
+
+| # | Change | Pairs recall (fn) | Pairs uplift | Pop. recall | Pop. uplift | Pop. F1 | New FP | Meets 0.95 target? |
+|---|---|---|---|---|---|---|---|---|
+| 5 | **DOB edit distance ≤ 1 in every rule that uses DOB**, including rules where DOB is exact today (e.g. rule 11 First Name + DOB + Phone) | **0.9761 (326)** | **+0.0287** | 0.9778 | +0.0274 | 0.9887 | 0 | Yes, margin +0.0261 |
+| 6 | Initial-only first name **restricted to Category 2 (household) rules**, where phone/email/SSN last 4 already matched exactly in step 1 | 0.9533 (636) | +0.0059 | 0.9562 | +0.0058 | 0.9775 | 0 | Yes, margin +0.0033 |
+| 7 | Initial-only first name restricted to rules with ≥ 4 fields | 0.9504 (675) | +0.0030 | 0.9538 | +0.0034 | 0.9762 | 0 | Barely, margin +0.0004 |
+| 8 | Fuzzy match at edit distance 2 for strings ≥ 7 characters (`family_drop_letters` of 2 letters) | 0.9490 (695) | +0.0016 | 0.9523 | +0.0019 | 0.9755 | 0 | No |
+| 9 | DOB edit distance ≤ 1 applied only inside Category 2 rules | 0.9474 (717) | 0.0000 | 0.9504 | 0.0000 | 0.9745 | 0 | No (no effect: those rules have no fuzzy-eligible DOB) |
+| | **5 + 6** | **0.9822 (243)** | **+0.0348** | 0.9838 | +0.0334 | 0.9917 | 0 | Yes |
+| | 5 + 1 (initial-only in all rules) | 0.9876 (169) | +0.0402 | 0.9879 | +0.0375 | 0.9938 | 0 | Yes |
+| | 5 + 6 + 8 | 0.9825 (239) | +0.0351 | 0.9843 | +0.0339 | 0.9920 | 0 | Yes |
+
+Findings:
+
+- **Lever 5 is the largest single uplift measured** (+0.0287, 391 fewer false negatives), larger than
+  initial-only first name (+0.0256) and more than four times lever 2. The reason: most DOB-error misses
+  are in rules where DOB is exact today (rules 11, 12 and others), which lever 2 never touches. It is
+  also the riskiest to price: with the Table 3 DOB value (0.0001) replaced by an assumed ~0.0075 (about 75
+  one-edit neighbours of a date), rule 11 goes from 2e-12 to roughly 1.5e-10, about 75 times over the 2e-12
+  approval threshold. The 0.0075 is my estimate, not a spec figure. A real figure has to be derived.
+- **Lever 6 is the safest way to use initial-only first names.** It gets +0.0059 by itself, enough to clear
+  the target, while keeping the weak match (an initial's collision probability is roughly 0.1, assumed)
+  behind a household-level exact match. 5 + 6 reaches 0.9822 pairs recall; adding initial-only in every rule
+  adds only +0.0054 more.
+- Lever 8 is small and brings the same u-value problem as lever 3 for little gain. Not recommended.
+
+### 5.6 Candidate new rules, measured and mostly rejected
+
+The same field-agreement view was used to test brand-new field combinations (2 to 4 fields from first name,
+last name, DOB, phone, email, SSN last 4, street, ZIP, with fuzzy variants) as additional exact-match
+rules. Many have zero false positives on this benchmark and large uplift, for example `phone + street + zip`
+(covers 506 of the 717 pairs-tier misses, 1 false positive) and `SSN last 4 + street + ZIP` (395, 0 false
+positives). **These should not be adopted.** Phone, email, SSN last 4 and address are household
+identifiers; the spec moved rules 13-16 into the household/individual architecture precisely because
+those fields identify a household, not a person (see `table2_rules.py`). A rule built only from household
+identifiers would merge family members, and this benchmark cannot see that: its negatives are random pairs
+plus a small sibling set (36 pairs), so zero false positives is weak evidence.
+
+Combinations that include a person-level field plus a household identifier (for example `DOB (±1 digit) +
+phone + street`, 372 misses, 0 false positives, P(collision) about 2e-13 on my assumed DOB value) are
+effectively lever 5 restated as separate rules, and add nothing beyond it.
+
 ## 6. What remains after all three levers (199 pairs-tier false negatives)
 
 | Group | FN |
@@ -184,20 +239,24 @@ evidence, so these are by-design misses rather than a rule gap (the other 39 wer
 
 Target: pairs recall back to ≥ 0.95 (gap +0.0026), all other gates held.
 
-1. **Smallest change that reaches the target:** lever 2, DOB edit distance ≤ 1 (+0.0060 pairs recall,
-   margin +0.0034). It only touches rules that already treat DOB as fuzzy-eligible.
-2. **Best margin:** lever 1, initial-only first name (+0.0256, margin +0.0230); the biggest uplift and
-   the riskiest, since an initial is far less selective than a full name. Restrict it to rules where at
-   least three other fields match exactly.
-3. Lever 3 (4-character fuzzy, +0.0038) reaches the target only by 0.0012 and lever 4 does not reach it;
-   neither is sufficient alone.
-4. Until a spec change ships, pin 0.0.5 (`Makefile`: `ONC_TEST_SET_TAG ?= 0.0.5`) with a temporary
-   pairs recall floor of 0.94 (margin 0.0074) pointing at this document, and restore 0.95 when the change
-   lands. This is a gate change and needs the project lead's sign-off; it is the second relaxation for a
-   data change (the first was 0.0.2/0.0.3).
-5. Every lever needs CMS sign-off, a derived P(collision), and Tier 2/3 validation. Do not change engine
-   behaviour on this evidence alone: these are counterfactuals on a synthetic benchmark that
-   over-samples these exact variants.
+1. **Best accuracy for the least change in rule structure:** lever 5, DOB edit distance ≤ 1 in every
+   DOB-using rule (+0.0287, pairs recall 0.9761). It needs a derived DOB-fuzzy u-value, since the
+   estimate used here puts rules like 11 about 75 times over the 2e-12 threshold.
+2. **Lowest-risk way to restore the floor:** lever 2 (+0.0060, margin +0.0034) or lever 6 (initial-only
+   first name inside household rules, +0.0059, margin +0.0033). Each alone restores the gate; both are
+   narrow.
+3. **If one package is chosen: 5 + 6** (pairs recall 0.9822, population 0.9838, F1 0.9917, no new false
+   positives). Adding initial-only to every rule (lever 1) buys only +0.0054 more recall for the largest
+   collision-risk increase, so lever 6 is preferred to lever 1.
+4. Do not add new household-identifier-only rules (§5.6) however good they look on this benchmark. Levers 3,
+   4, 7, 8 and 9 do not by themselves clear the target safely.
+5. Until a spec change ships, pin 0.0.5 (`Makefile`: `ONC_TEST_SET_TAG ?= 0.0.5`) with a temporary pairs
+   recall floor of 0.94 (margin 0.0074) pointing at this document, and restore 0.95 when the change lands.
+   This is a gate change and needs the project lead's sign-off; it is the second relaxation for a data
+   change (the first was 0.0.2/0.0.3).
+6. Every lever needs CMS sign-off, a derived P(collision), and Tier 2/3 validation. Do not change engine
+   behaviour on this evidence alone: these are counterfactuals on a synthetic benchmark that over-samples
+   these exact variants.
 
 ## 8. Method and caveats
 
@@ -209,6 +268,11 @@ Target: pairs recall back to ≥ 0.95 (gap +0.0026), all other gates held.
   `exact_match`, so it also applies to any single-character value in any field; DOB edit distance:
   replaces `dob_fuzzy_match`; 4-character: sets `MIN_FUZZY_LENGTH` to 4 globally, looser than the
   proposed carve-out). The no-lever run reproduces the gated test's 717 / 674 false negatives.
+- §5.5 restrictions: lever 6 limits the patched comparison to rules whose id starts `C2-`; lever 7 to rules
+  with ≥ 4 fields; lever 5 patches `exact_match` so any date-shaped value pair gets edit distance ≤ 1.
+  §5.6 counts exact-field-agreement combinations over the misses and all baseline-unmatched negatives
+  (pairs and population); P(collision) uses Table 3 values, with assumed 0.0075 for DOB ±1 digit and 0.1
+  for an initial.
 - Pairs tier over-samples rare categories; its recall is not a real-world rate. The population tier is
   the representative one.
 - 0.0.3 and 0.0.5 are different samples (seed stream shifted), so category-level deltas of a few
