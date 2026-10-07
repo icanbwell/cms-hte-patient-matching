@@ -1,9 +1,9 @@
 # Accuracy analysis against test-set 0.0.3 — what improves recall
 
-Date: 2026-10-06 (re-run after fixes 1 and 2). Engine: `patient_matching` on
+Date: 2026-10-06 (re-run after fixes 1 and 2, both engine changes). Engine: `patient_matching` on
 `BAI-1061-test-set-0.0.3` (Table 2 Category 1 rules 01–28, 30 + Category 2 household rules).
 Data: `cms-hte-patient-matching-test-set` tag `0.0.3` (commit `167f820`), fetched with
-`make onc-tests`, and a phone-corrected copy of the same files (§3.2).
+`make onc-tests`; the data is unmodified in every run below.
 
 This supersedes the earlier three-change proposal's numbers, which were measured on the previous
 test set (baseline recall 0.9717, ~80,000 evaluations).
@@ -14,14 +14,14 @@ test set (baseline recall 0.9717, ~80,000 evaluations).
 |---|---|---|---|---|---|---|
 | 0.0.3 as shipped, original engine | 0.9290 (968) | 0.9305 | 0.9998 | 0.00004 | 0.9639 | 3 |
 | + fix 1 (placeholder-name bug), 0.0.3 data | 0.9326 (919) | 0.9341 | 0.9998 | 0.00004 | 0.9658 | 3 |
-| + fix 2 (NANP-valid phones in the data) | **0.9516 (660)** | **0.9515** | 0.9998 | 0.00004 | **0.9750** | 3 |
+| + fix 2 (phone normalizer keeps well-formed numbers with an unassigned exchange) | **0.9516 (660)** | **0.9515** | 0.9998 | 0.00004 | **0.9750** | 3 |
 
-Both fixes are measured with the real code, not a simulation. Pairs FPR is 0.0052 throughout; the
+Both fixes are measured with the real code, not a simulation, on the unmodified 0.0.3 data. Pairs FPR is 0.0052 throughout; the
 3 false positives are the sibling-twin pairs in `LEARNINGS.md` and never change.
 
 With the fixes, population recall (0.9515) and F1 (0.9750) clear the original 0.95 / 0.97 floors that
-were temporarily relaxed, and pairs recall (0.9516) clears 0.95. Restoring those floors requires the
-corrected data to be released as a new test-set tag and this repo's pin bumped to it (§3.2).
+were temporarily relaxed, and pairs recall (0.9516) clears 0.95. Restoring those floors needs no data
+change or pin bump.
 
 ## 2. Where the 968 original false negatives came from
 
@@ -62,37 +62,32 @@ Tests: `test_placeholder_given_keeps_real_family_name` (4 givens) and
 Measured: population recall 0.9305 → 0.9341 (+0.0036), pairs FN 968 → 919. A pre-fix simulation
 had predicted +0.0040.
 
-### 3.2 Fix 2 — ONC synthetic phones failed `phonenumbers.is_valid_number` (test data)
+### 3.2 Fix 2 — the phone normalizer dropped well-formed numbers with an unassigned exchange
 
-1,650 of 14,219 pairs-tier source records had a phone the engine's normalizer rejected as
-`invalid_number` (and silently dropped). About 11% of all ONC phones (36,573 of ~330,000 in the two
-shards sampled) have an exchange code starting with `1`, which is invalid under NANP; a few start
-with `0`. Real phones are not affected, so the engine's validity check was left alone.
+1,650 of 14,219 pairs-tier source records had a phone the normalizer rejected as `invalid_number`
+and silently dropped. About 11% of all ONC phones (36,573 of ~330,000 in the two shards sampled) are
+well-formed 10-digit numbers whose exchange code starts with `1` (a few with `0`), which no real
+line uses, so `phonenumbers.is_valid_number` rejects them. Two records holding the same such number
+are still linked by it; discarding it threw away real match evidence.
 
-Change, in `cms-hte-patient-matching-test-set` (worktree branch `BAI-1061-valid-nanp-phones`,
-cut from the 0.0.3 commit, **not committed, pushed or tagged**):
+Change (`patient_matching/normalization/phone_normalizer.py`): after `is_valid_number` fails, the
+number is still accepted if it would be valid with its exchange's first digit swapped for a valid
+one (`_is_well_formed_nanp`), and is then formatted to E.164 as usual. That keeps rejecting wrong
+lengths, area codes that are not assigned (e.g. 555), and non-+1 numbers; placeholders (`0000000000`,
+`5555555555`, ...) are still caught earlier by `PlaceholderDetector`.
+Tests: `test_well_formed_number_with_unassigned_exchange_is_kept` (4 forms) and
+`test_malformed_number_is_still_rejected` (6 forms); all 142 normalization tests pass.
 
-- `evaluation/onc_loader.py`: new `make_nanp_valid()` replaces only that one exchange digit
-  (`1`→`2`, `0`→`3`), preserving formatting, area code and country code; deterministic and
-  idempotent, applied to `PHONE` and `PHONE2` so regeneration is valid going forward.
-- `evaluation/fix_nanp_phones.py`: the committed `evaluation/cases/*.jsonl` are curated snapshots
-  that cannot be regenerated reproducibly (a manual rule-29 filter was applied), so this one-off
-  script rewrites only phone strings in place with the same mapping. Verified: line counts
-  unchanged; with phone values masked, every record is identical to 0.0.3; invalid phones fell
-  4,300 → 546 (pairs), 284 → 17 (queries), 2,269 → 229 (candidates).
-- Tests: `test_onc_loader.py` (8 mapping cases, idempotence, loader integration) and
-  `test_fix_nanp_phones.py`.
+Measured (on top of fix 1, unmodified 0.0.3 data): population recall 0.9341 → 0.9515 (+0.0174),
+pairs FN 919 → 660, false positives unchanged at 3.
 
-What remains invalid is intentional: placeholder numbers (`000-300-0000`, `999-999-9999`,
-`555-555-5555`) and two numbers joined in one string (`516-279-4488^^631-548-5760`).
+This replaces an earlier approach of rewriting the phones in the test-set data
+(icanbwell/cms-hte-patient-matching-test-set#19), which gave identical metrics but would have needed a
+new test-set release and pin bump and would not help real data with the same shape.
 
-Measured (on top of fix 1): population recall 0.9341 → 0.9515 (+0.0174), pairs FN 919 → 660.
-
-Caveat: remapping can, in principle, make a changed number equal another patient's existing number.
-Population-tier FP stayed at 3, so none produced a false match here.
-
-To get this into the benchmark: commit on that branch, tag a new release, bump `ONC_TEST_SET_TAG`
-in this repo's `Makefile`, then restore the 0.95 / 0.97 floors.
+Trade-off: the engine now accepts a phone that cannot belong to a real line. Population-tier false
+positives did not change, and phone only counts as evidence inside the Table 2 rules that also require
+other fields (or the Category 2 household step), but this loosens a production validity gate.
 
 ## 4. Remaining levers (measured on the fixed baseline)
 
@@ -150,8 +145,8 @@ rule gaps — only the changes in §4 (a spec change) would reach them.
 
 ## 6. Recommended order
 
-1. Land fix 1 (engine) — done in the working tree, uncommitted.
-2. Commit fix 2 in the test-set repo, tag it, bump this repo's pin, restore the 0.95 / 0.97 floors.
+1. Land fixes 1 and 2 (engine) — this PR.
+2. Restore the 0.95 / 0.97 floors (recall/F1) now that the 0.0.3 data clears them.
 3. Take initial-only first names to the CMS spec owners (§4.1): the biggest remaining lever
    (+0.024), needs a guard and a P(collision) derivation.
 4. DOB edit distance and the 4-character carve-out (§4.2, §4.3) are smaller (+0.006, +0.003) and
@@ -160,7 +155,7 @@ rule gaps — only the changes in §4 (a spec change) would reach them.
 ## 7. Method and caveats
 
 - Baseline and fix numbers come from `make onc-tests`'s pytest + `scripts/summarize_onc_metrics.py`
-  against the original fetched 0.0.3 files, then against the phone-corrected copy of the same files.
+  against the original fetched 0.0.3 files.
 - §4 counterfactuals re-run both tiers over the same fixtures through
   `normalize → extract → evaluate_pair` with the engine monkeypatched in a throwaway script (not
   committed). DOB variants did not re-derive P(collision); the engine's collision figures are unchanged.

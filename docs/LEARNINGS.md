@@ -277,10 +277,15 @@ anchored with `^` — the first field decides the verdict for the whole.
 
 ## ONC synthetic phones fail `phonenumbers.is_valid_number`
 
-1,650 of 14,219 pairs-tier source records (356 of the 968 false negatives) carry a phone the
-phone normalizer rejects as `invalid_number`. The sampled numbers all have an exchange code
-starting with `1`, invalid under NANP. This is a test-data artifact, so the fix belongs in the
-test-set generator, not in loosening the engine's validity check. Fixed in the test-set repo
-(`onc_loader.make_nanp_valid` + `fix_nanp_phones.py`, worktree branch `BAI-1061-valid-nanp-phones`,
-not yet tagged): population recall 0.9341 → 0.9515. The 0.0.3 pin still has the invalid phones
-until that release is cut and the pin bumped.
+1,650 of 14,219 pairs-tier source records (356 of the 968 false negatives) carried a phone the
+phone normalizer rejected as `invalid_number`. About 11% of ONC phones are well-formed 10-digit
+numbers with an exchange code starting with 1 (or 0) — unassigned, so `is_valid_number` says no,
+but still usable as an identifier. Fixed in the engine: `PhoneNormalizer._is_well_formed_nanp` accepts
+a number that is invalid only because of its exchange (re-checked with a valid exchange first digit);
+unassigned area codes and wrong lengths are still rejected. Population recall 0.9341 → 0.9515 on the
+unmodified 0.0.3 data. (An earlier approach, remapping the phones in the test-set data, gave identical
+numbers but needed a new release and pin bump and would not help real data.)
+
+**Where this could still bite:** `is_valid_number` is a strict "real line" check; for identifier
+matching a weaker "well-formed" check is usually the right bar — keep that distinction in mind for
+any other field validated through a library that checks assignment, not shape.
