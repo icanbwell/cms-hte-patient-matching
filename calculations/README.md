@@ -106,6 +106,12 @@ floor -- see below), SSN/ITIN last 4 digits (closed-form,
 post-2011-randomization cohort only), and MBI (namespace-size floor via CMS
 total Medicare enrollment).
 
+Widened-match variants are also computed, for pricing proposed rule changes against the 2e-12
+P(collision) threshold (`scripts/collision_feasibility.py`; see
+`docs/TEST_SET_0.0.5_ACCURACY_ANALYSIS.md` section 5.7): `first_name/initial` (initial-only first
+name), `first_name`/`last_name` `fuzzy_min4` (4-character minimum), and date-level `dob_full` rows
+(`exact_datelevel`, `fuzzy_pm1day`, `fuzzy_swap`, `fuzzy_dl1`).
+
 Four of these aren't Census-frequency-table measurements and are flagged as
 such in the output:
 
