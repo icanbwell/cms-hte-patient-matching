@@ -12,6 +12,10 @@ Reads the files written by `download.py` and writes
   as a Household-tier field) or `review` (mostly offices/non-residential); see MATCH_POLICY
 - name, street, city, state, zip, beds: from the first source that lists the address
   (`beds` is certified beds; blank when the source has none)
+- data_collected: ISO date the data was gathered, taken from the source when it states one
+  (HIFLD per-facility source date, Princeton "Date Accessed", PPI survey date, Care Compare
+  processing date, Overture release) and otherwise the date the file was downloaded; the
+  newest date among the sources that list the address
 - match_street, match_zip5: the exact-match key (see `address_key`)
 - sources, source_ids: every source/ID that listed the address, `|`-separated
 
@@ -25,6 +29,7 @@ import csv
 import json
 import re
 from dataclasses import dataclass, replace
+from datetime import date, datetime
 from pathlib import Path
 from typing import Dict, Iterable, Iterator, List, Optional, Tuple
 
@@ -81,6 +86,7 @@ OUTPUT_COLUMNS = [
     "state",
     "zip",
     "beds",
+    "data_collected",
     "match_street",
     "match_zip5",
     "sources",
@@ -101,6 +107,7 @@ class Record:
     state: str
     zip: str
     beds: str = ""
+    collected: str = ""  # ISO date (or year) the source says its data was gathered
     match_street: str = ""
     match_zip5: str = ""
 
@@ -161,19 +168,48 @@ def _rows(path: Path) -> Iterator[Dict[str, str]]:
         yield from csv.DictReader(f)
 
 
+_DATE_FORMATS = ("%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y")
+
+
+def _iso_date(value: str) -> str:
+    """'2024-08-19', '7/6/21', '6/30/2012' or an Overture release '2026-09-23.1' -> ISO date."""
+    text = value.strip()
+    for fmt in _DATE_FORMATS:
+        for candidate in (text, text[:10]):
+            try:
+                return datetime.strptime(candidate, fmt).date().isoformat()
+            except ValueError:
+                continue
+    return ""
+
+
+def _file_date(path: Path) -> str:
+    """Date a downloaded file was written: the best 'collected' date for sources that state none."""
+    return date.fromtimestamp(path.stat().st_mtime).isoformat()
+
+
 def _records(
     institution_type: str,
     source: str,
     rows: Iterable[Dict[str, str]],
     cols: Dict[str, Optional[str]],
+    *,
+    collected_col: Optional[str] = None,
+    default_collected: str = "",
 ) -> Iterator[Record]:
-    """Map source columns onto Record fields; `cols` values name the source column (None = blank)."""
+    """Map source columns onto Record fields; `cols` values name the source column (None = blank).
+
+    `collected` comes from `collected_col` when the row has a parseable date there, else
+    `default_collected`.
+    """
     for row in rows:
         get = {k: (row.get(v) or "").strip() if v else "" for k, v in cols.items()}
+        collected = _iso_date(row.get(collected_col) or "") if collected_col else ""
         yield Record(
             institution_type=get.pop("institution_type", "") or institution_type,
             source=source,
             zip=_pad_zip(get.pop("zip")),
+            collected=collected or default_collected,
             **get,
         )
 
@@ -184,6 +220,8 @@ def load_sources() -> List[Record]:
     care = {"city": "City/Town", "state": "State", "zip": "ZIP Code"}
     records: List[Record] = []
 
+    # Care Compare (nursing homes) and POS carry a processing date per row; the rest state
+    # none, so their date is when we downloaded the file (these are live "current" lists).
     records += _records(
         "nursing_home",
         "care_compare_nh",
@@ -195,6 +233,8 @@ def load_sources() -> List[Record]:
             "beds": "Number of Certified Beds",
             **care,
         },
+        collected_col="Processing Date",
+        default_collected=_file_date(DEST / "care_compare_nh.csv"),
     )
     for row in _rows(DEST / "care_compare_hospital.csv"):
         records += _records(
@@ -208,6 +248,7 @@ def load_sources() -> List[Record]:
                 "beds": None,
                 **care,
             },
+            default_collected=_file_date(DEST / "care_compare_hospital.csv"),
         )
     for row in _rows(DEST / "care_compare_hospice.csv"):
         row["street"] = f"{row['Address Line 1']} {row['Address Line 2']}".strip()
@@ -222,7 +263,9 @@ def load_sources() -> List[Record]:
                 "beds": None,
                 **care,
             },
+            default_collected=_file_date(DEST / "care_compare_hospice.csv"),
         )
+    pos_date = _file_date(DEST / "pos_iqies.csv")
     for row in _rows(DEST / "pos_iqies.csv"):
         if row["prvdr_type_id"] in POS_TYPES and row["pgm_trmntn_cd"] == "00":
             records += _records(
@@ -238,6 +281,8 @@ def load_sources() -> List[Record]:
                     "zip": "zip_cd",
                     "beds": "crtfd_bed_cnt",
                 },
+                collected_col="processing_date",
+                default_collected=pos_date,
             )
     records += _records(
         "higher_education_campus",
@@ -252,6 +297,7 @@ def load_sources() -> List[Record]:
             "zip": "ZIP",
             "beds": None,
         },
+        default_collected=_file_date(DEST / "ipeds_hd.csv"),
     )
     records += _records(
         "federal_correctional",
@@ -266,6 +312,7 @@ def load_sources() -> List[Record]:
             "zip": "zipCode",
             "beds": None,
         },
+        default_collected=_file_date(DEST / "bop.json"),
     )
     return records + _load_optional_sources()
 
@@ -289,6 +336,8 @@ def _load_optional_sources() -> List[Record]:
                 "zip": "Zip Code",
                 "beds": "Capacity",
             },
+            collected_col="Date Accessed",  # when each state's list was pulled (2021)
+            default_collected="2021",  # ~150 rows have no date; the whole file is 2021 data
         )
     else:
         print(f"warning: {alf_path} missing; skipping assisted_living (run download)")
@@ -313,6 +362,7 @@ def _load_optional_sources() -> List[Record]:
                     "zip": "ZIP",
                     "beds": "CAPACITY",
                 },
+                collected_col="SOURCEDATE",  # per-facility date HIFLD last validated the record
             )
     else:
         print(f"warning: {hifld_path} missing; skipping HIFLD prisons (run download)")
@@ -333,6 +383,7 @@ def _load_optional_sources() -> List[Record]:
                     "zip": "zip",
                     "beds": None,  # `prisoners` is a current population, not capacity
                 },
+                collected_col="survey_date",
             )
     else:
         print(f"warning: {ppi_path} missing; skipping PPI facilities (run download)")
@@ -354,6 +405,8 @@ def _load_optional_sources() -> List[Record]:
                         "zip": "zip",
                         "beds": None,
                     },
+                    collected_col="release",  # Overture release, e.g. 2026-09-23.1
+                    default_collected=_file_date(overture_path),
                 )
     else:
         print(f"warning: {overture_path} missing; skipping Overture (run download)")
@@ -389,6 +442,8 @@ def _load_manual(path: Path) -> List[Record]:
                 "zip": "zip",
                 "beds": "beds",
             },
+            collected_col="data_collected",  # optional column in the manual CSV
+            default_collected=_file_date(path),
         )
     )
 
@@ -423,6 +478,9 @@ def build() -> List[Dict[str, str]]:
                 "state": first.state,
                 "zip": first.zip,
                 "beds": first.beds,
+                # Newest date among the sources listing it, so an address confirmed by a
+                # current source isn't labeled with an older source's date.
+                "data_collected": max((r.collected for r in group), default=""),
                 "match_street": match_street,
                 "match_zip5": match_zip5,
                 "sources": "|".join(sorted({r.source for r in group})),

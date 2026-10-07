@@ -1,9 +1,32 @@
-# Manual downloads
+# Downloads: automatic and manual
 
-`download.py` fetches everything that can be fetched automatically: CMS Care Compare and
-Provider of Services, IPEDS, BOP, HIFLD Prison Boundaries (via HIFLD Next), the Prison Policy
-Initiative facility lists, the Princeton assisted-living dataset, and Overture Maps. The sources
-below can't be, because they sit behind a login or are published per state as separate web pages.
+## Downloaded automatically
+
+`uv run python -m scripts.institutional_registry.download` writes these files to
+`data/institutional_registry/` (gitignored). You don't need to do anything for them.
+`--skip-overture` skips the slow (~7 min) Overture extract.
+
+| File | Source | Becomes `institution_type` | Date used for `data_collected` |
+|---|---|---|---|
+| `care_compare_nh.csv` | CMS Care Compare nursing homes | `nursing_home` | Row's processing date |
+| `care_compare_hospital.csv` | CMS Care Compare hospitals | `hospital`, `psychiatric_hospital`, `long_term_hospital` (by Hospital Type) | Download date |
+| `care_compare_hospice.csv` | CMS Care Compare hospices | `hospice` | Download date |
+| `pos_iqies.csv` | CMS Provider of Services file (iQIES; nursing homes and hospices) | `nursing_home`, `hospice` | Row's processing date, else download date |
+| `ipeds_hd.csv` | NCES IPEDS campus directory | `higher_education_campus` | Download date |
+| `bop.json` | Federal Bureau of Prisons facility API | `federal_correctional` | Download date |
+| `hifld_prisons.csv` | HIFLD Prison Boundaries (via HIFLD Next); closed facilities are skipped | `correctional`, `federal_correctional` | Per-facility source date |
+| `ppi_facilities.csv` | Prison Policy Initiative facility lists (scraped; many rows have no address) | `correctional`, `federal_correctional` | Row's survey date (2012-2013) |
+| `assisted_living.csv` | Princeton open assisted-living dataset (GitHub) | `assisted_living` | Row's "Date Accessed" (2021) |
+| `overture_gq.csv` | Overture Maps places | `senior_living`, `assisted_living`, `homeless_shelter`, `correctional`, `halfway_house` | Overture release date |
+
+`build_registry.py` reads these (plus anything in `manual/`) and writes
+`institutional_addresses.csv`. A missing automatic file is a warning, not an error, so the build
+still runs if a download was skipped.
+
+## Manual downloads
+
+`download.py` fetches everything it can. The sources below can't be fetched automatically,
+because they sit behind a login or are published per state as separate web pages.
 Download them by hand and drop the files into:
 
 ```
@@ -26,7 +49,8 @@ One header row, then one row per facility. Required columns (exact names):
 | `state` | `TX` |
 | `zip` | `77343` |
 
-Optional: `beds` (capacity). Extra columns are ignored. If the source file has different column
+Optional: `beds` (capacity) and `data_collected` (the date the source says its data was gathered,
+e.g. `2026-09-15`; if omitted, the file's download date is used). Extra columns are ignored. If the source file has different column
 names (e.g. `ADDRESS`, `ZIPCODE`), rename them in a spreadsheet; the build script does not guess.
 
 `institution_type` is free text. Use one of the existing types if one fits so the
@@ -44,7 +68,7 @@ Confirm the file has street addresses before relying on it.
 | BJS **Census of State and Federal Adult Correctional Facilities** (2019) | State/federal prisons; useful to cross-check HIFLD | ICPSR study 38325 (`https://www.icpsr.umich.edu/web/NACJD/studies/38325`); anonymous download returned HTTP 403 so it needs an ICPSR login. Unconfirmed whether the public file includes street addresses. | `correctional` |
 | BJS **Census of Jails** (2019) | Local jails | ICPSR study 38323 (`https://www.icpsr.umich.edu/web/NACJD/studies/38323`); same login requirement and same address question. | `correctional` |
 | ICE detention facilities (Deportation Data Project, CC0) | Immigration detention | `https://deportationdata.org/news/2026-04-22-facilities-release.html`. Unconfirmed whether street addresses are included. | `correctional` |
-| State assisted-living licensing lists newer than 2021 | The Princeton file (auto-downloaded) is from 2021 | Each state health or aging department publishes its own list; the Princeton paper (`https://arxiv.org/abs/2212.14092`) lists the 2021 source per state. | `assisted_living` |
+| State assisted-living licensing lists newer than 2021 (optional) | Refreshes the 2021 data. The Princeton dataset itself is **already automated** and is not part of this list; this row is only for newer state lists. | No national file: each state health or aging department publishes its own list in its own format (50 separate sites), and the Princeton repo has only the 2021 copies, not source URLs. The Princeton paper (`https://arxiv.org/abs/2212.14092`) describes the 2021 sources. Add a `data_collected` column (see above) so the build dates them correctly. | `assisted_living` |
 | State Department of Corrections facility rosters | Cross-check and fill HIFLD gaps | Each state DOC website (fragmented; no national file). | `correctional` |
 
 No usable open source was found for **college dormitories** (IPEDS gives campus addresses only,

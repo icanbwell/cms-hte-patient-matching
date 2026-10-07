@@ -24,8 +24,13 @@ Sources that can't be fetched automatically are downloaded by hand into
 ## The registry CSV
 
 `institutional_addresses.csv` has one row per distinct (institution type, normalized street, ZIP5):
-`institution_type`, `match_policy`, `name`, `street`, `city`, `state`, `zip`, `beds`, the match key
-(`match_street`, `match_zip5`), and the `sources`/`source_ids` that listed it. An address that
+`institution_type`, `match_policy`, `name`, `street`, `city`, `state`, `zip`, `beds`,
+`data_collected`, the match key (`match_street`, `match_zip5`), and the `sources`/`source_ids` that
+listed it. `data_collected` is the ISO date the data was gathered: taken from the source where it
+states one (HIFLD per-facility source date, Princeton "Date Accessed", PPI survey date, Care
+Compare/POS processing date, Overture release) and otherwise the date we downloaded the file. When
+several sources list an address it is the newest of them, so an address confirmed by a current
+source isn't labeled with a 2021 date. An address that
 serves two types (e.g. a hospital campus that also houses a nursing home) appears once per type.
 Current build: **143,702 rows**.
 

@@ -170,7 +170,8 @@ def fetch_hifld_prisons() -> None:
     con.execute("install httpfs; load httpfs")
     con.execute(
         f"""copy (
-            select FACILITYID, NAME, ADDRESS, CITY, STATE, ZIP, TYPE, STATUS, CAPACITY
+            select FACILITYID, NAME, ADDRESS, CITY, STATE, ZIP, TYPE, STATUS, CAPACITY,
+                   SOURCEDATE
             from read_parquet('{url}')
         ) to '{DEST / "hifld_prisons.csv"}' (format csv, header)"""
     )
@@ -272,7 +273,8 @@ def fetch_overture() -> None:
             select id, struct_extract(names, 'primary') as name,
                    struct_extract(taxonomy, 'primary') as category, confidence,
                    addresses[1].freeform as street, addresses[1].locality as city,
-                   addresses[1].region as state, addresses[1].postcode as zip
+                   addresses[1].region as state, addresses[1].postcode as zip,
+                   '{release}' as release
             from read_parquet('{path}')
             where addresses[1].country = 'US'
               and struct_extract(taxonomy, 'primary') in ({cats})
