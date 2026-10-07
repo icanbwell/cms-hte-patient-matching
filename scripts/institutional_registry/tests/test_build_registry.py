@@ -3,6 +3,7 @@
 import pytest
 
 from scripts.institutional_registry.build_registry import (
+    _beds,
     HOSPITAL_TYPES,
     MATCH_POLICY,
     OVERTURE_TYPES,
@@ -25,6 +26,13 @@ from scripts.institutional_registry.build_registry import (
         # A '#' that is part of the house number must survive.
         ("#16 WILSON FARM ROAD", "#16 WILSON FARM ROAD"),
         ("1 PINNACLE MEADOWS", "1 PINNACLE MEADOWS"),
+        # Streets that merely contain a designator word are not truncated.
+        ("1282 FL-78", "1282 FL-78"),
+        ("100 Veterans Building Rd", "100 Veterans Building Rd"),
+        ("77 Ste Marie St", "77 Ste Marie St"),
+        ("12 Floor Ave", "12 Floor Ave"),
+        ("3349 BLDG A WHITING AVENUE", "3349 BLDG A WHITING AVENUE"),
+        ("500 MAIN ST BLDG 2", "500 MAIN ST"),
     ],
 )
 def test_strip_unit(street: str, expected: str) -> None:
@@ -88,3 +96,20 @@ def test_all_hospitals_are_blocked() -> None:
     """Decided by the project owner: acute care hospitals are blocked like the rest."""
     for institution_type in ("hospital", *HOSPITAL_TYPES.values()):
         assert MATCH_POLICY[institution_type] == "block_household_rules"
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("120", 120),
+        ("12.0", 12),
+        ("", None),
+        ("Not Applicable", None),
+        ("inf", None),
+        ("-999", None),
+    ],
+)
+def test_beds_rejects_non_numeric_non_finite_and_negative(
+    raw: str, expected: object
+) -> None:
+    assert _beds(raw) == expected

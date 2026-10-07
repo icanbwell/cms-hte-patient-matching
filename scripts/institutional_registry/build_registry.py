@@ -120,8 +120,14 @@ class Record:
 
 
 _NORMALIZER = AddressNormalizer()
+# A unit identifier: digit-led ("760", "4B"), letter+digit ("B1") or a single letter ("A").
+_UNIT_ID = r"(?:\d[\w-]*|[A-Z]\d[\w-]*|[A-Z])"
+# A trailing designator and its identifier (one or two tokens). The designator must be
+# followed by an identifier and then the end of the line, so a street whose name merely
+# contains one ("FL-78", "Veterans Building Rd", "Ste Marie St") is left whole.
 _UNIT_RE = re.compile(
-    r"(?:[,\s]+(?:SUITE|STE|UNIT|APT|APARTMENT|RM|ROOM|FLOOR|FL|BLDG|BUILDING|LOT)\b.*"
+    r"(?:[,\s]+(?:SUITE|STE|UNIT|APT|APARTMENT|RM|ROOM|FLOOR|FL|BLDG|BUILDING|LOT)\b"
+    rf"(?:\s+|\s*#\s*){_UNIT_ID}(?:\s+{_UNIT_ID})?[\s-]*"
     r"|[,\s]+#\s*\w.*)$",
     re.IGNORECASE,
 )
@@ -609,11 +615,13 @@ def add_keys(records: Iterable[Record]) -> List[Record]:
 
 
 def _beds(value: str) -> Optional[int]:
-    """Certified beds as an integer; None for blank or non-numeric (e.g. 'Not Applicable')."""
+    """Certified beds as a non-negative integer; None for blank, non-numeric ('Not Applicable'),
+    non-finite ('inf') or negative values."""
     try:
-        return int(float(value))
-    except ValueError:
+        beds = int(float(value))
+    except (ValueError, OverflowError):
         return None
+    return beds if beds >= 0 else None
 
 
 def build() -> List[RegistryEntry]:

@@ -25,7 +25,7 @@ Sources that can't be fetched automatically are downloaded by hand into
 ## The registry (FHIR Organization resources)
 
 `institutional_addresses.ndjson.gz` is FHIR R4 `Organization` resources, one per line (NDJSON, the
-FHIR Bulk Data format), gzipped: 155,480 resources, 16.8 MB (the uncompressed file is about 170 MB,
+FHIR Bulk Data format), gzipped: 155,534 resources, 16.8 MB (the uncompressed file is about 170 MB,
 over GitHub's 100 MB limit). There is one resource per distinct (institution type, normalized
 street, ZIP5). An address that serves two types (e.g. a hospital campus that also houses a nursing
 home) appears once per type. The mapping is in `scripts/institutional_registry/fhir_registry.py`:
@@ -45,7 +45,7 @@ home) appears once per type. The mapping is in `scripts/institutional_registry/f
 The five extensions, the `institution-type` code system and the identifier systems sit under
 `https://cms-hte-patient-matching.icanbwell.com/fhir/`, the same base the engine uses for its own
 extension. None is published as a conformance resource (StructureDefinition, CodeSystem) yet (follow-up:
-BAI-1086), so the resources do not claim a `meta.profile`. All 155,480 resources validate against the
+BAI-1086), so the resources do not claim a `meta.profile`. All 155,534 resources validate against the
 `fhirschemapy` R4B `Organization` model and read back to the same values. **Names are kept as the sources publish them.** Several state lists (MI, WI, NC, AZ, AK, CA) and the
 Princeton data carry facility names that, for small private homes, may be a person's name; only Oregon's
 adult foster home names are blanked (`states/or_state.py`). The project owner decided on 2026-10-07 to keep
@@ -66,7 +66,7 @@ Compare/POS processing date, Overture release) and otherwise the date we downloa
 several sources list an address it is the newest of them, so an address confirmed by a current
 source isn't labeled with a 2021 date. 143 rows had `Not Applicable`/`Not Available` as `beds`
 in the old CSV; those are now simply left out.
-Current build: **155,480 resources**.
+Current build: **155,534 resources**.
 
 | `match_policy` | `institution_type` (rows) |
 |---|---|
