@@ -35,7 +35,9 @@ same engine measures precision=0.9998, recall=0.9305, FPR=0.0000,
 accuracy=0.9892, F1=0.9639. After the placeholder-given-name and phone-validity
 fixes it measures precision=0.9998, recall=0.9515, FPR=0.0000, accuracy=0.9924,
 F1=0.9750, so the recall and F1 floors (temporarily relaxed to 0.92 / 0.95) are
-restored to 0.95 / 0.97.
+restored to 0.95 / 0.97. With test-set 0.0.5 (2,000 queries, 15,747 candidates, 80,000
+evaluations) it measures recall=0.9504, precision=0.9998, FPR=0.0000, F1=0.9745; the recall
+margin is 0.0004 (5 true matches).
 """
 
 from __future__ import annotations

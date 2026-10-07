@@ -37,8 +37,8 @@ hasn't been run yet — see `tests/_onc_test_set.py`.
 | `population_queries.jsonl` | `cms-hte-patient-matching-test-set` @ `evaluation/cases/population_queries.jsonl` |
 | `population_candidates.jsonl` | `cms-hte-patient-matching-test-set` @ `evaluation/cases/population_candidates.jsonl` |
 
-Fetched from `https://github.com/icanbwell/cms-hte-patient-matching-test-set`, tag `0.0.3`
-(commit `167f820aa815da0ce8954807bdfb959c8025cb47`) — see `ONC_TEST_SET_TAG` in the `Makefile` for
+Fetched from `https://github.com/icanbwell/cms-hte-patient-matching-test-set`, tag `0.0.5`
+(commit `ea2d2e2bc0b3081eacdc577fbb94655ecee445f4`) — see `ONC_TEST_SET_TAG` in the `Makefile` for
 the current pin, which is the authoritative version, not this note (update this note if you bump
 the pin, but the Makefile default is what actually governs it).
 
