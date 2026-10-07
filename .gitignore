@@ -145,3 +145,6 @@ dmypy.json
 # `tests/fixtures/onc/README.md`.
 /tests/fixtures/onc/*.jsonl
 calculations/.env
+
+# Public facility registries downloaded by scripts/institutional_address_feasibility.py
+/data/institutional_registry/

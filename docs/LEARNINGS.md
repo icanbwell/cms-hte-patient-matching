@@ -297,3 +297,9 @@ from every tier by design") predates session 14: the `sibling_negative` pairs wi
 pairs (0.0106 > 0.01). Either decide what twins with no distinguishing data should expect, or
 set the ceiling just above 0.0106 with a note. Re-run the script before each pin bump; it keys
 pairs by `case_id`, which is only stable for pairs a release keeps.
+
+## Institutional-address registry: retrieval is easy for CMS facilities, hard for corrections
+
+Spike for Proposal v3.3.6 (see `docs/INSTITUTIONAL_ADDRESS_FEASIBILITY.md`). CMS Care Compare, the POS file and IPEDS download anonymously; BOP has only an undocumented per-facility JSON API; HIFLD Open was shut down 2025-08-26 (archives only); state DOC, BJS jails and CASS are not retrievable. A match key of (normalized street line 1, ZIP5) needs the unit stripped from **both** sides: registry streets embed suites, and scourgify leaves a unit inside line 1 when designators are stacked or the line is unparseable (unit-suffix match rate 80% -> 100% once stripped). A `#` unit rule must require a preceding character or it eats `#16 WILSON FARM ROAD`.
+
+**Where this could still bite:** the POS CSV URL changes every quarter (resolve it from `data.cms.gov/data.json`), and unparseable street lines fall back to unnormalized text, so the same address can key differently across sources.
