@@ -54,9 +54,12 @@ rule needing one — including rule 30 (`Last* + DOB + Phone`) — could not fir
 
 Change (`patient_matching/normalization/name_normalizer.py`): when the given name is a placeholder
 and the family name is not, drop the given names and keep the family name. When both are
-placeholders (e.g. `Baby Boy Doe`) the entry is still dropped, as before.
+placeholders (e.g. `Baby Boy Doe`) the entry is still dropped, as before. The drop is recorded in the
+`NormalizationReport` as `name[i].given`. This applies to any placeholder given name next to a real
+family name (e.g. `Test`, `Unknown`), not only the `baby…` prefix cases; previously those were kept
+as a first name unless the concatenation happened to match a pattern.
 Tests: `test_placeholder_given_keeps_real_family_name` (4 givens) and
-`test_placeholder_given_and_family_still_filtered`; all 132 normalization tests pass.
+`test_placeholder_given_and_family_still_filtered`; all normalization tests pass.
 
 Measured: population recall 0.9305 → 0.9341 (+0.0036), pairs FN 968 → 919. A pre-fix simulation
 had predicted +0.0040.
