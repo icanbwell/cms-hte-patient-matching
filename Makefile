@@ -28,7 +28,7 @@ help: ## Show this help.
 
 # Version of cms-hte-patient-matching-test-set the ONC tests run against; override per run
 # with `ONC_TEST_SET_TAG=<tag> make onc-tests`.
-export ONC_TEST_SET_TAG ?= 0.0.3
+export ONC_TEST_SET_TAG ?= 0.0.5
 
 .PHONY: fetch-onc-data
 fetch-onc-data: ## Download the ONC-derived test data the ONC regression tests read (tests/fixtures/onc/) -- run before `make tests` to include them; they skip (not fail) if this hasn't been run

@@ -347,3 +347,79 @@ def test_phone_u_scales_co_resident_probability_by_landline_household_share():
     assert result.u_unbiased < street_and_zip.u_unbiased
     assert "NCHS" in result.notes
     assert "floor" in result.notes.lower()
+
+
+# ---------------------------------------------------------------------------
+# Widened-match variants: DOB neighbors, date-level DOB u, initial-only first name
+# ---------------------------------------------------------------------------
+
+
+def test_dob_neighbors_pm1day_is_adjacent_days_only():
+    from datetime import date
+
+    assert compute.dob_neighbors(date(2000, 3, 7), "pm1day") == {
+        date(2000, 3, 6),
+        date(2000, 3, 8),
+    }
+
+
+def test_dob_neighbors_swap_adds_month_day_transposition():
+    from datetime import date
+
+    n = compute.dob_neighbors(date(2000, 3, 7), "swap")
+    assert date(2000, 7, 3) in n
+    # 2000-03-17 is a digit replacement, not a swap: not a neighbor here.
+    assert date(2000, 3, 17) not in n
+    # No valid swap when the day exceeds 12.
+    assert compute.dob_neighbors(date(2000, 3, 25), "swap") == compute.dob_neighbors(
+        date(2000, 3, 25), "pm1day"
+    )
+
+
+def test_dob_neighbors_dl1_includes_digit_replacement_and_transposition():
+    from datetime import date
+
+    n = compute.dob_neighbors(date(2000, 3, 7), "dl1")
+    assert date(2000, 3, 17) in n  # one digit replaced
+    assert date(2001, 3, 7) in n  # year digit replaced
+    assert date(2000, 7, 3) in n  # month/day swap
+    assert date(2000, 3, 7) not in n  # never itself
+
+
+def test_dob_neighbors_rejects_unknown_variant():
+    from datetime import date
+
+    with pytest.raises(ValueError):
+        compute.dob_neighbors(date(2000, 3, 7), "bogus")
+
+
+def _one_year_agesex(birth_year: int = 2000) -> pd.DataFrame:
+    return pd.DataFrame(
+        {"SEX": [0], "AGE": [2025 - birth_year], "POPESTIMATE2025": [1000.0]}
+    )
+
+
+def test_dob_fuzzy_u_exact_is_one_over_days_in_year():
+    # One birth year (2000, a leap year): every date equally likely, u = 1/366.
+    u = compute.dob_fuzzy_u(_one_year_agesex(), None)
+    assert u.field == "dob_full" and u.variant == "exact_datelevel"
+    assert u.u_simple == pytest.approx(1 / 366)
+
+
+def test_dob_fuzzy_u_widening_is_monotone_and_above_exact():
+    agesex = _one_year_agesex()
+    exact = compute.dob_fuzzy_u(agesex, None).u_simple
+    pm1 = compute.dob_fuzzy_u(agesex, "pm1day").u_simple
+    swap = compute.dob_fuzzy_u(agesex, "swap").u_simple
+    dl1 = compute.dob_fuzzy_u(agesex, "dl1").u_simple
+    assert exact < pm1 < swap < dl1
+
+
+def test_first_initial_u_groups_by_first_letter():
+    listed = pd.DataFrame(
+        {"name": ["ANNA", "ALEX", "BOB", "BETH"], "count": [50, 50, 50, 50]}
+    )
+    r = compute.first_initial_u(listed, "x")
+    assert (r.field, r.variant) == ("first_name", "initial")
+    # Two letters, each 50%: u_simple = 0.5^2 + 0.5^2.
+    assert r.u_simple == pytest.approx(0.5)
