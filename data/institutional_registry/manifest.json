@@ -115,6 +115,10 @@
     "downloaded": "2026-10-06",
     "source": "https://www.nj.gov/health/guide/json/healthfacilities_map_datav2.csv"
   },
+  "state_lists/NV.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://nvdpbh.aithent.com/Protected/LIC/LicenseeSearch.aspx?Program=HF&PubliSearch=Y"
+  },
   "state_lists/NY.csv": {
     "downloaded": "2026-10-06",
     "source": "https://health.data.ny.gov/resource/wssx-idhx.json"

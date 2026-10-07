@@ -33,11 +33,11 @@ Compare/POS processing date, Overture release) and otherwise the date we downloa
 several sources list an address it is the newest of them, so an address confirmed by a current
 source isn't labeled with a 2021 date. An address that
 serves two types (e.g. a hospital campus that also houses a nursing home) appears once per type.
-Current build: **154,988 rows**.
+Current build: **155,408 rows**.
 
 | `match_policy` | `institution_type` (rows) |
 |---|---|
-| `block_household_rules` (89,228) | assisted_living 61,104; nursing_home 14,792; correctional 7,907; homeless_shelter 3,828; halfway_house 767; psychiatric_hospital 624; federal_correctional 201; long_term_hospital 5 |
+| `block_household_rules` (89,648) | assisted_living 61,524; nursing_home 14,792; correctional 7,907; homeless_shelter 3,828; halfway_house 767; psychiatric_hospital 624; federal_correctional 201; long_term_hospital 5 |
 | `review` (65,760) | senior_living 48,941; hospice 6,051; higher_education_campus 5,994; hospital 4,774 |
 
 `match_policy` is a default this spike chose, not something the proposal specifies (`MATCH_POLICY`
@@ -72,7 +72,7 @@ stay for extended periods.
 | Wisconsin assisted living (DHS) | Yes, no key | Public ArcGIS service `dhsgis.wi.gov/server/rest/services/DHS_GIS/Facilities/MapServer`, layers 7 (CBRF), 17 (RCAC), 2 (adult family homes), 2,000 records per page. The open-data portal's own CSV download returns 403. | 4,125 rows (1,555 + 367 + 2,203). No capacity field. |
 | Florida assisted living (AHCA FloridaHealthFinder) | Yes, no key | No bulk file. POST the facility search (type ALF, all counties) with a session cookie and anti-forgery token; the results page embeds the records as JSON | 3,024 facilities with address, ZIP, bed count, license status. Depends on the page structure, so the likeliest of the four to break. |
 | Minnesota assisted living (MDH) | Yes, no key | The provider lookup's own CSV API (`provider-profile-api.web.health.state.mn.us/csv?...providerGroup=Assisted%20Living%20Facilities`) | 2,525 facilities. An earlier version of this doc said "no structured download"; that was wrong, only the search page had been checked. |
-| 25 more state lists (AK, AZ, CO, GA, IA, IN, KY, LA, MA, MD, MN, MO, NC, NE, NJ, NY, OK, OR, PA, SC, TN, TX, UT, VA, WV) | Yes, no key | One module per state in `scripts/institutional_registry/states/` (spreadsheets, Socrata, ArcGIS, form posts, HTML) | See `docs/ASSISTED_LIVING_STATE_COVERAGE.md` for every source, count and caveat, and for the 20 states that could not be automated. |
+| 26 more state lists (AK, AZ, CO, GA, IA, IN, KY, LA, MA, MD, MN, MO, NC, NE, NJ, NV, NY, OK, OR, PA, SC, TN, TX, UT, VA, WV) | Yes, no key | One module per state in `scripts/institutional_registry/states/` (spreadsheets, Socrata, ArcGIS, form posts, HTML) | See `docs/ASSISTED_LIVING_STATE_COVERAGE.md` for every source, count and caveat, and for the 20 states that could not be automated. |
 | BJS Census of State and Federal Adult Correctional Facilities / Census of Jails | No | ICPSR (HTTP 403 anonymously) | Manual download; unconfirmed whether public files include street addresses. |
 | State DOC rosters | No | Fragmented per state | Manual. |
 | Vera Incarceration Trends | No | County-level only | No facility addresses. |
@@ -138,16 +138,16 @@ and 38.1% match it or `retirement_home` — the two sources largely disagree on 
 the Princeton data is five years old.
 
 **State lists refresh most of the 2021 data.** Current state licensing lists are downloaded
-automatically for 29 states: CA, MI, WI, FL, and 25 more (AK, AZ, CO, GA, IA, IN, KY, LA, MA, MD,
-MN, MO, NC, NE, NJ, NY, OK, OR, PA, SC, TN, TX, UT, VA, WV). Per-state sources, row counts and
+automatically for 30 states: CA, MI, WI, FL, and 26 more (AK, AZ, CO, GA, IA, IN, KY, LA, MA, MD,
+MN, MO, NC, NE, NJ, NV, NY, OK, OR, PA, SC, TN, TX, UT, VA, WV). Per-state sources, row counts and
 caveats are in `docs/ASSISTED_LIVING_STATE_COVERAGE.md`, which also lists the jurisdictions that
 are not automated and why. Compared with Princeton's 2021 addresses for the 27 states that have
-any (MA and OK's Princeton rows have no ZIP), 76% of the 36,978 addresses are still on the
+any (the Princeton rows for MA, NV and OK have no ZIP), 76% of the 36,978 addresses are still on the
 current lists (from 52% in IN to 98% in NY), and the lists add 11,218 addresses Princeton lacked. The two datasets agree on most addresses, which supports both;
 the 24% missing from the current lists are likely closures or moves (not checked facility by
 facility).
 
-Rows dated 2021 only (`sources` = `princeton_alf`) fell from 38,040 to 12,614 of 61,104
+Rows dated 2021 only (`sources` = `princeton_alf`) fell from 38,040 to 12,614 of 61,524
 `assisted_living` rows. Of those 12,614, 8,329 are in covered states (addresses absent from the
 current list, probably closed) and 4,285 are in the 20 uncovered jurisdictions (largest: ME, OH,
 WA, IL, KS, AL). The state lists include small group homes (e.g. Michigan foster care homes, Oregon
@@ -169,12 +169,12 @@ the state provides it so a consumer can filter them out.
    HIFLD itself is an archive of a discontinued DHS product and will not be updated.
 4. **Assisted living is still the weakest data, but much improved**: no authoritative national
    source exists, and Overture and the 2021 Princeton data disagree heavily. Current state
-   licensing lists are automated for 29 states and agree with Princeton on 76% of addresses
+   licensing lists are automated for 30 states and agree with Princeton on 76% of addresses
    (a few are old: MD July 2025, AZ Feb 2025, LA Mar 2026). 12,614 rows still rest on 2021 data
    alone, 4,285 of them in states with no automated source. Separately, 1,390 Princeton rows
    (3%) have no ZIP and are not in the registry at all; four states (ID, MA, NV, OK) lost all of
-   theirs this way. MA and OK now have state lists; Idaho has none (its list is behind a
-   reCAPTCHA) and Nevada is still being researched.
+   theirs this way. MA, NV and OK now have state lists; Idaho has none (its list is behind a
+   reCAPTCHA).
 5. **Campus ≠ dorm.** IPEDS gives one campus address; matching it excludes the administrative
    address but cannot tell which patients live in a residence hall.
 6. **Bed counts exist for CMS facilities** (POS `crtfd_bed_cnt`, Care Compare certified beds) and

@@ -63,14 +63,14 @@ afterwards:
 | MA | **Automated.** MassGIS "Long-Term Care Residences" ArcGIS layer: 259 assisted living residences and 58 rest homes (nursing homes dropped), all with street, city and ZIP; edited 2026-05-01. The city is the mailing city. |
 | OK | **Automated.** OSDH long-term care ArcGIS layer: 187 assisted living and 27 residential care facilities with licensed beds; the source directory is from 2024 (item modified 2025-11-20). |
 | ID | **Not automatable.** The official "Find a Provider" search is the FLARES portal (`flareslive.com/portal/SearchFacility.aspx`), an ASP.NET form that **contains a Google reCAPTCHA** and returned no results to a scripted POST. The only CAPTCHA-free page (`RecentSurveys.aspx`) lists facility name and town for surveys in the last 365 days (about 190 rows) with **no street or ZIP**. The old PDF list returns 404 and no open-data layer exists. The realistic route is a records request or an export from RALF@dhw.idaho.gov. |
-| NV | Research in progress when this was written; see `state_lists_status.json` and the module list for the outcome. |
+| NV | **Automated, with effort.** There is no bulk file: the DPBH licensee search ("CLICs", `nvdpbh.aithent.com`) is a stateful ASP.NET form. The module selects Health Facilities, then "Residential Facility for Groups", searches, and pages through 45 pages of 10 with ViewState postbacks, checking the collected row count against the page's reported total (441, all Active). The address is one string with no comma before the city, so it is split with scourgify. **Python's certificate store can't verify this host's chain**, so requests go through curl (TLS verification stays on) rather than the shared `Session`. The page's Excel export returned HTML, not a file, and wasn't pursued. |
 
 ## Automated
 
-29 states are downloaded automatically: CA, MI, WI and FL (raw files `state_al_*`, see
-`MANUAL_DOWNLOADS.md`) and the 25 below, one module each in
+30 states are downloaded automatically: CA, MI, WI and FL (raw files `state_al_*`, see
+`MANUAL_DOWNLOADS.md`) and the 26 below, one module each in
 `scripts/institutional_registry/states/`, written to `data/institutional_registry/state_lists/<ST>.csv`.
-All 25 returned rows on the 2026-10-06 run and none failed (`state_lists_status.json` records the
+All 26 returned rows on the 2026-10-06 run and none failed (`state_lists_status.json` records the
 result of every run, including failures). Every row has street, city and ZIP except 2 in AK and 1
 in GA, which have no ZIP in the source.
 
@@ -91,6 +91,7 @@ in GA, which have no ZIP in the source.
 | NC | 1,083 | DHSR adult care home and family care home spreadsheets | Adult care homes (7+ beds) 568; family care homes (2-6 beds) 515 | As of 07/2026. |
 | NE | 277 | NE DHHS layer on ArcGIS Online (see below) | Assisted Living Facility | Roster dated 2025-10-15. **The canonical `gis.ne.gov` service is down**; see "Implemented but needs attention". |
 | NJ | 241 | DOH health facilities CSV, filtered by type | Assisted Living Residence 193; Comprehensive Personal Care Home 35; Residential Health Care 13 | No capacity. "Assisted Living Program" (14, service agencies) and "Alternative Family Care" (4, sponsor offices) excluded. |
+| NV | 441 | DPBH licensee search, scraped through a 45-page ASP.NET form flow (see "Added later") | Residential Facility for Groups (the license Nevada uses for assisted living and group homes), Active only | Live. Capacity (bed count) populated. Contact names and phones not read. |
 | NY | 555 | DOH adult care facility directory, Socrata | Adult Home 406; Enriched Housing Program 149 | No date in the data. |
 | OK | 214 | OSDH Long Term Care Service ArcGIS layer (`LongTermCareFacilities_2024`, layer 1) | Assisted Living 187; Residential Care 27 (nursing homes, ICF/IID and adult day care dropped) | Source directory is from 2024; item modified 2025-11-20. Administrator and email columns not carried. |
 | OR | 2,155 | ODHS licensed settings export: token, then a POST that returns CSV | Adult foster home 1,583; residential care 332; assisted living 240 (nursing facilities dropped) | **Adult foster home names are not carried**: they are mostly the licensee's personal name, and this repo is public. Address and license ID are kept. |
@@ -136,7 +137,7 @@ many current addresses Princeton lacked (exact match on normalized street + ZIP5
 | VA | 564 | 81% | 117 |
 | WI | 3,877 | 70% | 1,145 |
 | WV | 94 | 76% | 11 |
-| **All 27** (MA and OK have no usable Princeton rows) | **36,978** | **76%** | **11,218** |
+| **All 27** (MA, NV and OK have no usable Princeton rows) | **36,978** | **76%** | **11,218** |
 
 The two sources agree on most addresses, which supports both. Oregon's large "new" count is
 adult foster homes, which Princeton largely did not include. Indiana (52%) and Minnesota (60%)
@@ -144,8 +145,8 @@ agree least: Indiana's list is residential care rather than assisted living, and
 assisted living licensing was introduced around 2021 (not verified here), so its 2021 data may
 predate the current licenses.
 
-**What is left from 2021.** `assisted_living` has 61,104 rows; 48,490 are dated 2026 and 12,614
-rest on the 2021 data alone (down from 38,040). Of those 12,614, **8,329 are in the 29 covered
+**What is left from 2021.** `assisted_living` has 61,524 rows; 48,910 are dated 2026 and 12,614
+rest on the 2021 data alone (down from 38,040). Of those 12,614, **8,329 are in the 30 covered
 states**: they are not on the state's current list, so they are probably closed or moved (the
 largest are CA 1,453, WI 1,133, MI 1,089, MN 967, FL 619). They are still in the registry,
 dated 2021, so a consumer can drop them. The other **4,285 are in the 20 jurisdictions (19 states and DC) with no automated
