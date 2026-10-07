@@ -235,6 +235,7 @@ class Multipliers:
 
 
 def rule_views() -> List[RuleView]:
+    """One `RuleView` per Table 2 Category 1 rule and per Category 2 (household) rule."""
     views: List[RuleView] = []
     for r in APPROVED_RULES:
         fields = tuple(
@@ -348,6 +349,7 @@ def p_collision(
 
 
 def _spec_u(name: str, fuzzy: bool) -> float:
+    """Table 3 u for `name`: its fuzzy value when `fuzzy` and one exists, else its exact value."""
     exact_u, fuzzy_u = FIELD_U_PROBS[name]
     return fuzzy_u if (fuzzy and fuzzy_u) else exact_u
 
@@ -382,6 +384,7 @@ def assign(
 
 
 def feasibility_report(mult: Multipliers) -> Dict[str, Any]:
+    """Price every lever, alone and in `COMBOS`, on both bases and return the full report."""
     rules = rule_views()
     report: Dict[str, Any] = {
         "threshold": APPROVAL_THRESHOLD,
@@ -416,10 +419,12 @@ def feasibility_report(mult: Multipliers) -> Dict[str, Any]:
 
 
 def _fmt(rules: List[str]) -> str:
+    """Comma-separated rule ids, or `none`."""
     return ", ".join(rules) if rules else "none"
 
 
 def print_report(report: Dict[str, Any]) -> None:
+    """Print the multipliers and, per basis, where each lever and combination fits."""
     print(f"Threshold: {report['threshold']:.0e}\n")
     print("Empirical multipliers (widened u / baseline u):")
     for wid, m in report["multipliers"].items():
@@ -438,6 +443,7 @@ def print_report(report: Dict[str, Any]) -> None:
 
 
 def main() -> None:
+    """Print the feasibility report from the u-probability CSV; optionally write it as JSON."""
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--csv", type=Path, default=DEFAULT_CSV)
     parser.add_argument(

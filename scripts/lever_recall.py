@@ -62,6 +62,7 @@ _orig_dob_fuzzy = fc.FieldComparator.dob_fuzzy_match
 
 
 def initial_match(q: Set[str], c: Set[str]) -> bool:
+    """True if one side has a single-letter value and the other a longer value starting with it."""
     return any(
         (len(a) == 1 and len(b) > 1 and b.startswith(a))
         or (len(b) == 1 and len(a) > 1 and a.startswith(b))
@@ -71,6 +72,7 @@ def initial_match(q: Set[str], c: Set[str]) -> bool:
 
 
 def _swap(d: str) -> str | None:
+    """`date` (YYYY-MM-DD) with month and day swapped, or None when that is not a valid date."""
     y, m, dd = d.split("-")
     try:
         date.fromisoformat(f"{y}-{dd}-{m}")
@@ -80,6 +82,7 @@ def _swap(d: str) -> str | None:
 
 
 def dob_swap_match(q: Set[str], c: Set[str]) -> bool:
+    """The engine's +/-1 day DOB match, widened to also accept a month/day swap."""
     if _orig_dob_fuzzy(q, c):
         return True
     return any(_swap(a) in c for a in q if _swap(a)) or any(
@@ -88,6 +91,7 @@ def dob_swap_match(q: Set[str], c: Set[str]) -> bool:
 
 
 def dob_dl1_match(q: Set[str], c: Set[str]) -> bool:
+    """The month/day-swap match, widened to any DOB one Damerau-Levenshtein edit away on YYYYMMDD."""
     if dob_swap_match(q, c):
         return True
     return any(
@@ -101,6 +105,7 @@ def _patch_for(levers: Tuple[str, ...]) -> None:
     # The ignores below are false positives: this harness deliberately replaces
     # FieldComparator's staticmethods at class level to approximate a rule change, and
     # mypy rejects assigning to a method and staticmethod-wrapped callables.
+    """Apply `levers` to `FieldComparator` and `MIN_FUZZY_LENGTH` (class-level monkeypatch)."""
     initial = any(k.startswith("initial") for k in levers)
     dl1 = any(k.startswith("dob_dl1") for k in levers)
     swap = any(k.startswith("dob_swap") for k in levers)
@@ -126,6 +131,7 @@ def _patch_for(levers: Tuple[str, ...]) -> None:
 def _restore() -> None:
     # Re-wrap: the originals were read off the class as plain functions, and assigning a plain
     # function back would turn the staticmethods into instance methods.
+    """Put the original `FieldComparator` methods and `MIN_FUZZY_LENGTH` back."""
     fc.FieldComparator.exact_match = staticmethod(_orig_exact)  # type: ignore[method-assign]
     fc.FieldComparator.dob_fuzzy_match = staticmethod(  # type: ignore[method-assign]
         _orig_dob_fuzzy
@@ -141,6 +147,7 @@ class Data:
 
 
 def load_data(fixtures: Path = FIXTURES) -> Data:
+    """Load and normalize the ONC pairs, population queries and candidates from `fixtures`."""
     norm, ext = NormalizationManager(), FieldExtractor()
 
     def extract(p: Dict[str, Any]) -> PatientFields:
@@ -225,6 +232,7 @@ def unrestricted(
 
 
 def main() -> None:
+    """Measure recall for every lever and combination, unrestricted and restricted to the rules that fit."""
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--json", type=Path, default=None)
     args = parser.parse_args()
