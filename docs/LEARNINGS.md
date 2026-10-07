@@ -311,6 +311,18 @@ only the given names (`name_normalizer.py`; population recall +0.0036). See `doc
 **Where this could still bite:** any check that tests a concatenation of fields against patterns
 anchored with `^` — the first field decides the verdict for the whole.
 
+## Test-set 0.0.5 drops pairs recall below the floor because trivial matches were removed
+
+On the unchanged engine, pairs recall is 0.9516 on 0.0.3 and 0.9474 on 0.0.5 (floor 0.95); population
+recall 0.9515 → 0.9504. The test-set stopped emitting fuzzy-variant pairs identical to their source
+(128 of 180 `dob_swap` pairs in 0.0.3 were exact copies) and regenerated the data with a shifted seed,
+so fuzzy-variant recall fell 0.957 → 0.938 and compound-variant recall 0.725 → 0.711. Categories the
+generator changes did not touch are identical. See `docs/TEST_SET_0.0.5_ACCURACY_ANALYSIS.md`.
+
+**Where this could still bite:** a recall floor calibrated on a benchmark that contains no-op pairs
+overstates the engine; re-check floors whenever the generator's sampling changes, not only when the
+engine does.
+
 ## ONC synthetic phones fail `phonenumbers.is_valid_number`
 
 1,650 of 14,219 pairs-tier source records (356 of the 968 false negatives) carried a phone the
@@ -352,3 +364,21 @@ first written to collapse them; a round-trip check over every resource caught it
 **Where this could still bite:** treat a pydantic model passing as "well-formed", not "conformant"; for real
 conformance run the HL7 validator against published profiles. When flattening a many-to-many into delimited
 columns, check the pairing survives before building a reader on top of it.
+
+## Widened-match levers: most rules have no P(collision) headroom, and a test harness can hide a lever's effect
+
+Rules 11, 12, 13-16, 08, 09 and 23 sit at exactly 2e-12, the approval threshold, so widening any of their
+fields (DOB within one edit: measured 32.4x the exact-DOB u; initial-only first name: 37.5x) cannot pass
+Table 3 as written. Rules 02, 03 and the eight household rules have the headroom. Restricted to the rules
+that fit, the best package (DOB within one edit in 02/03/household + initial-only in household) keeps
+0.9780 of the unrestricted 0.9822 pairs recall. Measured with `calculations/`,
+`scripts/collision_feasibility.py` and `scripts/lever_recall.py`; see
+`docs/TEST_SET_0.0.5_ACCURACY_ANALYSIS.md` section 5.7.
+
+Separately, the first lever harness reported "DOB within one edit in household rules only" as having no
+effect because it widened only `dob_fuzzy_match`; household rules compare DOB with exact matching, so
+that path was never touched. The corrected harness shows +0.0042 pairs recall.
+
+**Where this could still bite:** a monkeypatched counterfactual that reports "no effect" may just be
+patching a code path the rule does not use; check that the baseline-vs-lever comparison actually exercises
+the field in that rule before concluding a lever is inert.

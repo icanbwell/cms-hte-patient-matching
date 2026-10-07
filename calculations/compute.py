@@ -18,9 +18,11 @@ these to `download.py` and file loading.
 
 from __future__ import annotations
 
+import calendar
 import json
 import zipfile
 from dataclasses import dataclass, field
+from datetime import date, timedelta
 
 import numpy as np
 import pandas as pd
@@ -466,6 +468,151 @@ def dob_full_u(u_yob_unbiased: float, u_yob_simple: float) -> FieldResult:
         u_yob_simple / days_per_year,
         "derived from year_of_birth",
         notes,
+    )
+
+
+# ---------------------------------------------------------------------------
+# 5b. Widened-match variants: fuzzy DOB and initial-only first name
+#
+# The conservative u-values in Table 3 price EXACT agreement (and the spec's own
+# fuzzy variants for names/street). The rule changes proposed in
+# docs/TEST_SET_0.0.5_ACCURACY_ANALYSIS.md widen what counts as agreement, so each
+# needs its own u. These are the same sum-of-squares quantity as everywhere else
+# in this module, taken over the widened match set.
+# ---------------------------------------------------------------------------
+
+DOB_FUZZY_VARIANTS = ("pm1day", "swap", "dl1")
+
+
+def _dob_digits(d: date) -> str:
+    return f"{d.year:04d}{d.month:02d}{d.day:02d}"
+
+
+def _parse_dob_digits(s: str) -> date | None:
+    try:
+        return date(int(s[:4]), int(s[4:6]), int(s[6:8]))
+    except ValueError:
+        return None
+
+
+def _one_digit_edit_dates(s: str) -> set[date]:
+    """Valid dates one edit from the 8-digit YYYYMMDD string `s`: one digit replaced,
+    or two adjacent different digits swapped."""
+    candidates = [
+        s[:i] + c + s[i + 1 :] for i in range(8) for c in "0123456789" if c != s[i]
+    ]
+    candidates += [
+        s[:i] + s[i + 1] + s[i] + s[i + 2 :] for i in range(7) if s[i] != s[i + 1]
+    ]
+    parsed = (_parse_dob_digits(t) for t in candidates)
+    return {d for d in parsed if d is not None}
+
+
+def dob_neighbors(d: date, variant: str) -> set[date]:
+    """Dates (other than `d`) that count as a DOB match under `variant`.
+
+    pm1day: within one calendar day (the spec's existing DOB* tolerance).
+    swap:   pm1day, plus month/day transposed (2000-03-07 <-> 2000-07-03).
+    dl1:    swap, plus any date one Damerau-Levenshtein edit away on the 8-digit
+            YYYYMMDD string (one digit replaced, or two adjacent digits swapped).
+            Equal-length strings, so insert/delete cannot apply.
+    """
+    if variant not in DOB_FUZZY_VARIANTS:
+        raise ValueError(f"unknown DOB variant {variant!r}")
+    out: set[date] = set()
+    for delta in (-1, 1):
+        try:
+            out.add(d + timedelta(days=delta))
+        except OverflowError:
+            pass
+    if variant in ("swap", "dl1"):
+        swapped = _parse_dob_digits(f"{d.year:04d}{d.day:02d}{d.month:02d}")
+        if swapped is not None:
+            out.add(swapped)
+    if variant == "dl1":
+        out.update(_one_digit_edit_dates(_dob_digits(d)))
+    out.discard(d)
+    return out
+
+
+def dob_fuzzy_u(
+    agesex: pd.DataFrame, variant: str | None, reference_year: int = 2025
+) -> FieldResult:
+    """u for DOB agreement at the date level, exact (`variant=None`) or widened.
+
+    u = sum over dates d of p(d) * sum over {d} + neighbors(d) of p(n), with
+    p(d) = P(birth year) / days in that year (uniform within a year, as in
+    `dob_full_u`). Uses real calendar lengths, so the exact (`variant=None`)
+    value differs slightly from `dob_full_u`'s 365.25 approximation; the
+    widened u must be compared with this function's own exact value
+    (field `dob_full`, variant `exact_datelevel`) to get the multiplier.
+    """
+    both = agesex[(agesex["SEX"] == 0) & (agesex["AGE"] != 999)]
+    pop = both[f"POPESTIMATE{reference_year}"].to_numpy(dtype=np.float64)
+    years = (reference_year - both["AGE"]).to_numpy()
+    pmf = {int(y): float(c) for y, c in zip(years, pop / pop.sum())}
+
+    def days_in(y: int) -> int:
+        return 366 if calendar.isleap(y) else 365
+
+    def p_date(d: date) -> float:
+        return pmf.get(d.year, 0.0) / days_in(d.year)
+
+    u = 0.0
+    n_dates = 0
+    neighbor_total = 0
+    for y in sorted(pmf):
+        d = date(y, 1, 1)
+        end = date(y, 12, 31)
+        while d <= end:
+            p = p_date(d)
+            if variant is None:
+                u += p * p
+            else:
+                nbrs = dob_neighbors(d, variant)
+                u += p * (p + sum(p_date(n) for n in nbrs))
+                neighbor_total += len(nbrs)
+            n_dates += 1
+            d += timedelta(days=1)
+    if variant is None:
+        notes = (
+            "Date-level exact DOB agreement, uniform within each birth year using "
+            "real calendar lengths; the baseline the widened DOB variants are "
+            "divided by."
+        )
+        name = "exact_datelevel"
+    else:
+        notes = (
+            f"DOB agreement widened to variant '{variant}' (see compute.dob_neighbors); "
+            f"mean {neighbor_total / n_dates:.1f} neighbor dates per date. Same uniform-"
+            f"within-year assumption as dob_full; neighbors in a different birth year "
+            f"are weighted by that year's mass. u_unbiased = u_simple here (N is in "
+            f"the hundreds of millions, so the finite-population correction is below "
+            f"1e-8)."
+        )
+        name = f"fuzzy_{variant}"
+    return FieldResult("dob_full", name, u, u, "nc-est2025-agesex-res.csv", notes)
+
+
+def first_initial_u(listed: pd.DataFrame, source_file: str) -> FieldResult:
+    """u for 'initial-only first name matches a full first name': two people agree
+    if one record carries just the first letter and the other a name starting
+    with it. That is sum over letters L of P(first letter = L)^2, over the listed
+    (>=100-occurrence) first names -- same coverage caveat as the name u-values.
+    """
+    names = listed["name"].astype(str)
+    letters = names.str.strip().str[:1].str.upper()
+    counts = listed["count"].groupby(letters.to_numpy()).sum()
+    counts = counts[counts.index.str.isalpha()].to_numpy(dtype=np.float64)
+    u_unbiased, u_simple = u_from_counts(counts)
+    notes = (
+        "Probability two distinct people share a first LETTER (the match set for an "
+        "initial-only first name against a full name). Distribution = counts by first "
+        f"letter over the {len(listed):,} listed first names; unlisted names are "
+        "ignored, so this assumes they follow the listed letter mix."
+    )
+    return FieldResult(
+        "first_name", "initial", u_unbiased, u_simple, source_file, notes
     )
 
 

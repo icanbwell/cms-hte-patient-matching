@@ -10,6 +10,7 @@ an interruption does not repeat completed work.
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import datetime as dt
 from pathlib import Path
 
@@ -150,6 +151,30 @@ def main(*, do_download: bool = True, do_compute: bool = True) -> None:
     )
     results.append(r)
 
+    # Widened-match variants used by the collision-feasibility check
+    # (scripts/collision_feasibility.py): initial-only first name, and name fuzzy
+    # matching with the 5-character minimum lowered to 4.
+    _log("First name initial-only (2020)...")
+    results.append(compute.first_initial_u(first2020, "Names2020_FirstNames_Sex.xlsx"))
+    _log("Last name fuzzy, 4-char minimum (2020)... (checkpointed)")
+    r = name_fuzzy_u_cached(
+        last2020,
+        "last_name",
+        "Names2020_LastNames_RaceHispanic.xlsx",
+        "lastname_2020_min4",
+        min_len=4,
+    )
+    results.append(dataclasses.replace(r, variant="fuzzy_min4"))
+    _log("First name fuzzy, 4-char minimum (2020)... (checkpointed)")
+    r = name_fuzzy_u_cached(
+        first2020,
+        "first_name",
+        "Names2020_FirstNames_Sex.xlsx",
+        "firstname_2020_min4",
+        min_len=4,
+    )
+    results.append(dataclasses.replace(r, variant="fuzzy_min4"))
+
     # Middle name (proxy: reuses the first-name distribution just loaded above)
     _log("Middle name (proxy via first-name distribution)...")
     r = compute.middle_name_proxy_u(
@@ -167,6 +192,10 @@ def main(*, do_download: bool = True, do_compute: bool = True) -> None:
     _log("DOB full (derived)...")
     dob = compute.dob_full_u(yob["all_ages"].u_unbiased, yob["all_ages"].u_simple)
     results.append(dob)
+    _log("Date-level DOB exact + widened variants (pm1day, swap, dl1)...")
+    results.append(compute.dob_fuzzy_u(agesex, None))
+    for _variant in compute.DOB_FUZZY_VARIANTS:
+        results.append(compute.dob_fuzzy_u(agesex, _variant))
 
     # ZIP
     _log("ZIP (ZCTA proxy)...")
