@@ -18,11 +18,19 @@ uv run --with pandas python -m scripts.institutional_address_feasibility       #
 
 `institutional_addresses.csv` has one row per distinct (institution type, normalized street, ZIP5):
 `institution_type` (`nursing_home`, `hospice`, `hospital`, `higher_education_campus`,
-`federal_correctional`), `name`, `street`, `city`, `state`, `zip`, `beds`, the match key
+`federal_correctional`), `match_policy` (`exclude` or `review`, see below), `name`, `street`, `city`, `state`, `zip`, `beds`, the match key
 (`match_street`, `match_zip5`), and the `sources`/`source_ids` that listed it. Current build:
 32,314 rows (nursing_home 14,792; hospice 6,051; higher_education_campus 5,994; hospital 5,398;
 federal_correctional 79). An address that serves two types (e.g. a hospital campus that also
 houses a nursing home) appears once per type.
+
+`match_policy` is a default this spike chose, not something the proposal specifies (`MATCH_POLICY`
+in `build_registry.py`). Samples of each type showed that only some are places where residents
+live: **`exclude`** = `nursing_home` (14,792), `federal_correctional` (79); **`review`** =
+`hospital` (5,398; no inpatient/outpatient split in the source), `hospice` (6,051; mostly
+administrative offices, often with a suite number), `higher_education_campus` (5,994; mostly
+schools and offices, no housing flag). Auto-excluding the `review` types would over-exclude
+non-residential addresses.
 
 ## 1. Retrieval, source by source
 

@@ -6,6 +6,8 @@ Reads the files written by `download.py` and writes
 
 - institution_type: nursing_home | hospice | hospital | higher_education_campus |
   federal_correctional
+- match_policy: `exclude` (residents live there) or `review` (mostly offices/non-residential);
+  see MATCH_POLICY
 - name, street, city, state, zip, beds: from the first source that lists the address
   (`beds` is certified beds; blank when the source has none)
 - match_street, match_zip5: the exact-match key (see `address_key`)
@@ -30,6 +32,17 @@ OUTPUT = DEST / "institutional_addresses.csv"
 # POS iQIES `prvdr_type_id` values, decoded by joining to Care Compare on CCN
 # (every Care Compare nursing home is type 20, every hospice type 12).
 POS_TYPES = {"20": "nursing_home", "12": "hospice"}
+# Default policy, not a spec requirement: `exclude` = residents live at the address, so a
+# Household-tier match on it is unsafe; `review` = the address is mostly offices or
+# non-residential space (hospice admin offices, campus/school addresses, hospitals), so
+# excluding it automatically would over-exclude. Edit here to change the policy.
+MATCH_POLICY = {
+    "nursing_home": "exclude",
+    "federal_correctional": "exclude",
+    "hospital": "review",
+    "hospice": "review",
+    "higher_education_campus": "review",
+}
 SOURCE_COLUMNS = [
     "institution_type",
     "source",
@@ -227,9 +240,12 @@ def build() -> pd.DataFrame:
     first = grouped[["name", "street", "city", "state", "zip", "beds"]].first()
     first["sources"] = grouped["source"].agg(lambda s: "|".join(sorted(set(s))))
     first["source_ids"] = grouped["source_id"].agg(lambda s: "|".join(sorted(set(s))))
-    return first.reset_index()[
+    first = first.reset_index()
+    first["match_policy"] = first["institution_type"].map(MATCH_POLICY)
+    return first[
         [
             "institution_type",
+            "match_policy",
             "name",
             "street",
             "city",
@@ -248,7 +264,7 @@ def main() -> None:
     registry = build()
     registry.to_csv(OUTPUT, index=False)
     print(f"wrote {len(registry)} rows to {OUTPUT}")
-    print(registry["institution_type"].value_counts().to_string())
+    print(registry.groupby(["match_policy", "institution_type"]).size().to_string())
 
 
 if __name__ == "__main__":
