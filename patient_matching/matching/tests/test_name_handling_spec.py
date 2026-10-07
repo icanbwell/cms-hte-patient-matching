@@ -107,3 +107,80 @@ class TestGenerationalSuffixVeto:
         self, a: Optional[str], b: Optional[str], conflict: bool
     ) -> None:
         assert _norm.suffixes_conflict(a, b) is conflict
+
+
+class TestGenerationalSuffixCoverage:
+    """A generational suffix must be recognised however it is spelled: before the veto was
+    limited to generational suffixes, any unrecognised suffix still vetoed, so dropping one
+    silently turned a blocked pair into a match."""
+
+    @pytest.mark.parametrize(
+        ("a", "b"),
+        [
+            (["VII"], ["VIII"]),
+            (["IX"], ["X"]),
+            (["VII"], ["II"]),
+            (["Jr"], ["VII"]),
+            (["6th"], ["7th"]),
+            (["sixth"], ["seventh"]),
+            (["the second"], ["the third"]),
+            (["Jr., MD"], ["Sr."]),
+            (["Jr III"], ["Sr"]),
+            (["2d"], ["3d"]),
+        ],
+    )
+    def test_generational_suffixes_in_any_spelling_still_veto(
+        self, a: List[str], b: List[str]
+    ) -> None:
+        assert _links(_record(a), _record(b)) is False
+
+    @pytest.mark.parametrize(
+        ("a", "b"),
+        [
+            (["VII"], ["7th"]),
+            (["the second"], ["II"]),
+            (["Jr., MD"], ["Jr"]),
+            (["2d"], ["2nd"]),
+        ],
+    )
+    def test_the_same_generation_in_different_spellings_still_links(
+        self, a: List[str], b: List[str]
+    ) -> None:
+        assert _links(_record(a), _record(b)) is True
+
+    @pytest.mark.parametrize(
+        ("raw", "expected"),
+        [
+            (["Jr"], {"jr"}),
+            (["Jr."], {"jr"}),
+            (["MD"], set()),
+        ],
+    )
+    def test_extractor_canonicalizes_a_raw_suffix_instead_of_dropping_it(
+        self, raw: List[str], expected: Set[str]
+    ) -> None:
+        # Un-normalized input is outside the contract, but it must not silently lose its veto.
+        assert _extract(_record(raw)).suffixes == expected
+
+    def test_a_bare_string_suffix_is_one_suffix_not_a_set_of_characters(self) -> None:
+        patient = _record()
+        patient["name"][0]["suffix"] = "Jr"
+        assert _extract(_norm.normalize(patient)).suffixes == {"jr"}
+
+    def test_suffixes_split_across_name_entries_still_veto(self) -> None:
+        a, b = _record(["Jr"]), _record(["Sr"])
+        a["name"].append({"family": "Alvarez", "given": ["Maria"], "suffix": ["MD"]})
+        b["name"].append({"family": "Alvarez", "given": ["Maria"], "suffix": ["MD"]})
+        assert _links(a, b) is False
+
+    def test_the_audit_record_shows_only_the_generational_values_compared(self) -> None:
+        import asyncio
+
+        from patient_matching.matching.in_memory_backend import InMemoryBackend
+
+        stored = _norm.normalize(_record(["Sr", "MD"]))
+        engine = MatchingEngine(backend=InMemoryBackend([stored]))
+        result = asyncio.run(engine.match(_norm.normalize(_record(["Jr", "MD"]))))
+        vetoed = [e for e in result.rule_evaluations if e.negated_by_suffix]
+        assert vetoed
+        assert vetoed[0].suffix_values == {"query": ["jr"], "candidate": ["sr"]}

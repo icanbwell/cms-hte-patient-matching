@@ -11,6 +11,7 @@ Handles:
 from __future__ import annotations
 
 import logging
+import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set
 
@@ -50,6 +51,21 @@ _SUFFIX_EXPANSIONS: Dict[str, str] = {
     "fifth": "v",
     "vi": "vi",
     "6th": "vi",
+    "sixth": "vi",
+    "vii": "vii",
+    "7th": "vii",
+    "seventh": "vii",
+    "viii": "viii",
+    "8th": "viii",
+    "eighth": "viii",
+    "ix": "ix",
+    "9th": "ix",
+    "ninth": "ix",
+    "x": "x",
+    "10th": "x",
+    "tenth": "x",
+    "2d": "ii",
+    "3d": "iii",
     "esq": "esq",
     "esquire": "esq",
     "md": "md",
@@ -64,8 +80,36 @@ _SUFFIX_EXPANSIONS: Dict[str, str] = {
 # and the response and they do not match..."); a professional or honorific suffix (MD, PhD, Esq)
 # says nothing about which generation of a family someone is.
 GENERATIONAL_SUFFIXES: frozenset[str] = frozenset(
-    {"jr", "sr", "i", "ii", "iii", "iv", "v", "vi"}
+    {"jr", "sr", "i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x"}
 )
+
+# A raw suffix string can hold several ("Jr., MD", "Jr III") or an article ("the second").
+_SUFFIX_SPLIT = re.compile(r"[\s,;]+")
+_SUFFIX_STOPWORDS = frozenset({"the"})
+
+
+def split_suffix(raw: str) -> List[str]:
+    """Break a raw suffix string into its separate suffixes ("Jr., MD" -> ["Jr.", "MD"])."""
+    return [
+        t for t in _SUFFIX_SPLIT.split(raw) if t and t.lower() not in _SUFFIX_STOPWORDS
+    ]
+
+
+def canonical_suffix(token: str) -> str:
+    """One suffix token in its canonical form ("Jr." -> "jr", "2nd" -> "ii")."""
+    cleaned = normalize_text(token)
+    return _SUFFIX_EXPANSIONS.get(cleaned, cleaned)
+
+
+def generational_suffixes(raw: Any) -> Set[str]:
+    """The generational suffixes in a raw suffix value (a string, possibly compound)."""
+    if not isinstance(raw, str):
+        return set()
+    return {
+        canon
+        for canon in (canonical_suffix(token) for token in split_suffix(raw))
+        if canon in GENERATIONAL_SUFFIXES
+    }
 
 
 @dataclass
@@ -144,8 +188,7 @@ class NameNormalizer:
 
     def normalize_suffix(self, suffix: str) -> str:
         """Normalize a suffix to its canonical form using the expansion table."""
-        cleaned = normalize_text(suffix)
-        return _SUFFIX_EXPANSIONS.get(cleaned, cleaned)
+        return canonical_suffix(suffix)
 
     def get_nicknames(self, given_name: str) -> Set[str]:
         """Look up known nicknames for a given name.
@@ -182,13 +225,13 @@ class NameNormalizer:
         if not suffix_a or not suffix_b:
             return False
 
-        canon_a = self.normalize_suffix(suffix_a)
-        canon_b = self.normalize_suffix(suffix_b)
+        generational_a = generational_suffixes(suffix_a)
+        generational_b = generational_suffixes(suffix_b)
 
-        if canon_a not in GENERATIONAL_SUFFIXES or canon_b not in GENERATIONAL_SUFFIXES:
+        if not generational_a or not generational_b:
             return False
 
-        return canon_a != canon_b
+        return generational_a.isdisjoint(generational_b)
 
     def _normalize_human_name(
         self,
@@ -211,7 +254,16 @@ class NameNormalizer:
         # Normalize components
         norm_family = normalize_text(family) if family else ""
         norm_given = [normalize_text(g) for g in given_list if g]
-        norm_suffix = [self.normalize_suffix(s) for s in suffix_list if s]
+        # A bare string is one suffix (not a sequence of characters); a compound string
+        # ("Jr., MD") is split into its separate suffixes.
+        if isinstance(suffix_list, str):
+            suffix_list = [suffix_list]
+        norm_suffix = [
+            self.normalize_suffix(token)
+            for s in suffix_list
+            if s
+            for token in split_suffix(s)
+        ]
         norm_prefix = [normalize_text(p) for p in prefix_list if p]
 
         # Check for placeholders (D.5 — applies to both requestor and responder)

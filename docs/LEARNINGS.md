@@ -363,10 +363,22 @@ and they do not match, the responder SHALL NOT return the match." The engine col
 and `_suffix_conflict` vetoed any two non-overlapping sets, so `MD` vs `PhD`, `Jr` vs `MD`, `Esq` vs
 `MD` and an unrecognized `MBA` vs `Jr` were all negated, and a shared `MD` hid a real `Jr` vs `Sr`
 conflict (`Jr, MD` vs `Sr, MD` linked because the sets overlapped). Fixed: `GENERATIONAL_SUFFIXES`
-(`jr sr i ii iii iv v vi`, in `name_normalizer.py`) is the only thing `FieldExtractor` collects into
-`suffixes`, and `NameNormalizer.suffixes_conflict` applies the same rule. Zero ONC cost (the test set
-has no non-generational suffixes). Probe: two records identical except the suffix, through the real
-pipeline, with `Jr`/`Sr` and `Jr`/`Jr.` controls.
+(`jr sr i ii iii iv v vi vii viii ix x`, in `name_normalizer.py`) is the only thing `FieldExtractor`
+collects into `suffixes`, and `NameNormalizer.suffixes_conflict` applies the same rule. Zero ONC cost
+(the test set's only suffixes are `II`, `JR.`, `SR.`). Probe: two records identical except the suffix,
+through the real pipeline, with `Jr`/`Sr` and `Jr`/`Jr.` controls.
+
+**Narrowing the veto must not narrow what counts as generational.** Before, *any* unrecognized suffix
+still vetoed; after restricting to a table, a generational suffix the table lacked (`VII`, `7th`,
+`sixth`, `the second`, `2d`) silently stopped vetoing, so `VII` vs `VIII` went from blocked to linked.
+The table now covers `vii`-`x`, the spelled ordinals and `2d`/`3d`; a raw suffix string is split into its
+separate suffixes (`"Jr., MD"` -> `jr`, `md`; `"the"` is dropped); a bare string suffix is one suffix,
+not a set of characters; and `FieldExtractor` canonicalizes (`generational_suffixes`) instead of
+trusting that the input was normalized, so a raw `"Jr."` still vetoes.
+
+**Where this could still bite:** a generational suffix the table does not list (`XI`+, other languages)
+no longer vetoes; a suffix typed into the family or given name (`"Alvarez Jr"`) is never collected, on
+`main` or here.
 
 ## First Name accepts the middle name (spec says it must not) - not changed, 194 ONC matches depend on it
 
