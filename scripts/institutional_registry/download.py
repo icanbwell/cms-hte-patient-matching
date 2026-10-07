@@ -41,6 +41,8 @@ from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from scripts.institutional_registry.states.common import ROW_FIELDS, Session
+
 DEST = Path("data/institutional_registry")
 CMS_CATALOG = "https://data.cms.gov/data.json"
 PDC_DOWNLOAD = "https://data.cms.gov/provider-data/api/1/datastore/query/{id}/0/download?format=csv"
@@ -83,6 +85,7 @@ OVERTURE_CATEGORIES = [
 # MANUAL_DOWNLOADS.md next to this file for what to put there and the required columns.
 MANUAL_DIR = DEST / "manual"
 MANIFEST = DEST / "manifest.json"
+STATE_LISTS_DIR = DEST / "state_lists"
 USER_AGENT = "Mozilla/5.0 (cms-hte-patient-matching institutional registry)"
 
 
@@ -406,6 +409,53 @@ def fetch_state_assisted_living() -> None:
     fetch_fl_assisted_living()
 
 
+def fetch_state_lists() -> None:
+    """Run every module in `states/` and save its rows to state_lists/<ST>.csv.
+
+    One state failing must not stop the others, so each is isolated. A state that is marked
+    BROKEN, raises, or returns nothing keeps whatever file an earlier run left (stale rather
+    than missing) and is recorded in state_lists_status.json with the reason; that file is
+    the source for docs/INSTITUTIONAL_ADDRESS_FEASIBILITY.md's broken-states table.
+    """
+    from scripts.institutional_registry.states import state_modules
+
+    STATE_LISTS_DIR.mkdir(parents=True, exist_ok=True)
+    session = Session()
+    status: Dict[str, Dict[str, Any]] = {}
+    for module in state_modules():
+        code = module.STATE
+        broken = getattr(module, "BROKEN", None)
+        if broken:
+            status[code] = {"ok": False, "reason": f"marked broken: {broken}"}
+        else:
+            try:
+                rows = module.fetch(session)
+            except Exception as err:  # noqa: BLE001 - isolate per-state failures
+                status[code] = {"ok": False, "reason": f"{type(err).__name__}: {err}"}
+            else:
+                if not rows:
+                    status[code] = {"ok": False, "reason": "returned no rows"}
+                else:
+                    with (STATE_LISTS_DIR / f"{code}.csv").open(
+                        "w", newline="", encoding="utf-8"
+                    ) as f:
+                        writer = csv.DictWriter(
+                            f, fieldnames=ROW_FIELDS, lineterminator="\n"
+                        )
+                        writer.writeheader()
+                        writer.writerows(rows)
+                    _record(f"state_lists/{code}.csv", module.SOURCE)
+                    status[code] = {"ok": True, "rows": len(rows)}
+        status[code]["checked"] = date.today().isoformat()
+        print(f"state_lists {code}: {status[code]}")
+    (DEST / "state_lists_status.json").write_text(
+        json.dumps(status, indent=2, sort_keys=True) + "\n"
+    )
+    failed = sorted(c for c, s in status.items() if not s["ok"])
+    if failed:
+        print(f"state_lists: {len(failed)} state(s) not updated: {', '.join(failed)}")
+
+
 def latest_overture_release() -> str:
     """Newest Overture release folder name, from the public bucket listing."""
     listing = _curl(OVERTURE_LIST, timeout=60).decode("utf-8", "replace")
@@ -455,6 +505,7 @@ def fetch_all(*, skip_overture: bool = False) -> None:
     fetch_hifld_prisons()
     fetch_ppi_facilities()
     fetch_state_assisted_living()
+    fetch_state_lists()
     if skip_overture:
         print("overture: skipped")
     else:

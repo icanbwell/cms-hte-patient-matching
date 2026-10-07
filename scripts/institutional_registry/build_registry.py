@@ -35,7 +35,12 @@ from pathlib import Path
 from typing import Dict, Iterable, Iterator, List, Optional, Tuple
 
 from patient_matching.normalization.address_normalizer import AddressNormalizer
-from scripts.institutional_registry.download import DEST, MANIFEST, MANUAL_DIR
+from scripts.institutional_registry.download import (
+    DEST,
+    MANIFEST,
+    MANUAL_DIR,
+    STATE_LISTS_DIR,
+)
 
 OUTPUT = DEST / "institutional_addresses.csv"
 # POS iQIES `prvdr_type_id` values, decoded by joining to Care Compare on CCN
@@ -196,7 +201,12 @@ def _file_date(path: Path) -> str:
     file's modification time is the clone date.
     """
     if MANIFEST.exists():
-        entry = json.loads(MANIFEST.read_text()).get(path.name)
+        manifest = json.loads(MANIFEST.read_text())
+        try:
+            key = path.relative_to(DEST).as_posix()  # e.g. state_lists/MN.csv
+        except ValueError:
+            key = path.name
+        entry = manifest.get(key)
         if entry:
             return str(entry["downloaded"])
     return date.fromtimestamp(path.stat().st_mtime).isoformat()
@@ -541,6 +551,27 @@ def _load_state_assisted_living() -> List[Record]:
             },
             default_collected=_file_date(fl_path),
         )
+
+    # One normalized CSV per state, written by download.fetch_state_lists().
+    state_lists = (
+        sorted(STATE_LISTS_DIR.glob("*.csv")) if STATE_LISTS_DIR.exists() else []
+    )
+    for path in state_lists:
+        records += _records(
+            "assisted_living",
+            f"state_{path.stem.lower()}",
+            _rows(path),
+            {
+                "source_id": "license_id",
+                "name": "name",
+                "street": "street",
+                "city": "city",
+                "state": "state",
+                "zip": "zip",
+                "beds": "capacity",
+            },
+            default_collected=_file_date(path),
+        )
     return records
 
 
@@ -584,11 +615,19 @@ def add_keys(records: Iterable[Record]) -> List[Record]:
 def build() -> List[Dict[str, str]]:
     """Dedupe to one row per (institution type, match key); drop rows with no usable key."""
     groups: Dict[Tuple[str, str, str], List[Record]] = {}
+    dropped: Dict[str, int] = {}
     for r in add_keys(load_sources()):
         if r.usable:
             groups.setdefault(
                 (r.institution_type, r.match_street, r.match_zip5), []
             ).append(r)
+        else:
+            dropped[r.source] = dropped.get(r.source, 0) + 1
+    if dropped:  # rows with no street or no 5-digit ZIP can't be matched, so say so
+        detail = ", ".join(f"{s} {n}" for s, n in sorted(dropped.items()))
+        print(
+            f"note: dropped {sum(dropped.values())} rows with no usable key: {detail}"
+        )
     rows = []
     for (institution_type, match_street, match_zip5), group in sorted(groups.items()):
         first = group[0]

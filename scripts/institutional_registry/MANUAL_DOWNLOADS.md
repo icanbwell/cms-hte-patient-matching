@@ -28,10 +28,12 @@ GitHub's 100 MB file limit. To refresh the data, re-run the download and commit 
 | `state_al_mi.txt` | Michigan LARA Adult Foster Care & Homes for the Aged: `https://documents.apps.lara.state.mi.us/bchs/afc_sw.txt` (no header row) | `assisted_living` | Download date |
 | `state_al_wi.json` | Wisconsin DHS: `https://dhsgis.wi.gov/server/rest/services/DHS_GIS/Facilities/MapServer`, layers 7 (community-based residential facilities), 17 (residential care apartment complexes), 2 (adult family homes) | `assisted_living` | Download date |
 | `state_al_fl.json` | Florida AHCA FloridaHealthFinder: `https://quality.healthfinder.fl.gov/Facility-Search/FacilityLocateSearch` (assisted living facilities, all counties; closed ones skipped) | `assisted_living` | Download date |
+| `state_lists/<ST>.csv` (23 files: AK, AZ, CO, GA, IA, IN, KY, LA, MD, MN, MO, NC, NE, NJ, NY, OR, PA, SC, TN, TX, UT, VA, WV) | Each state's licensing list, one module per state in `scripts/institutional_registry/states/` (spreadsheets, Socrata, ArcGIS, form posts, HTML). Exact source URL per state is in `manifest.json` and `docs/ASSISTED_LIVING_STATE_COVERAGE.md` | `assisted_living` | Download date |
 | `overture_gq.csv` | Overture Maps places: `s3://overturemaps-us-west-2/release/<release>/theme=places/type=place/` (docs: `https://docs.overturemaps.org/guides/places/`) | `senior_living`, `assisted_living`, `homeless_shelter`, `correctional`, `halfway_house` | Overture release date |
 
-Two files in the same folder are generated rather than downloaded: `manifest.json` (written by
-`download.py`) and `institutional_addresses.csv` (written by `build_registry.py`, which reads the
+Three files in the same folder are generated rather than downloaded: `manifest.json` and
+`state_lists_status.json` (written by `download.py`; the latter records, per state, whether the
+last run worked and why not if it didn't) and `institutional_addresses.csv` (written by `build_registry.py`, which reads the
 files above plus anything in `manual/`). A missing automatic file is a warning, not an error, so
 the build still runs if a download was skipped.
 
@@ -94,7 +96,7 @@ Confirm the file has street addresses before relying on it.
 | BJS **Census of State and Federal Adult Correctional Facilities** (2019) | State/federal prisons; useful to cross-check HIFLD | ICPSR study 38325 (`https://www.icpsr.umich.edu/web/NACJD/studies/38325`); anonymous download returned HTTP 403 so it needs an ICPSR login. Unconfirmed whether the public file includes street addresses. | `correctional` |
 | BJS **Census of Jails** (2019) | Local jails | ICPSR study 38323 (`https://www.icpsr.umich.edu/web/NACJD/studies/38323`); same login requirement and same address question. | `correctional` |
 | ICE detention facilities (Deportation Data Project, CC0) | Immigration detention | `https://deportationdata.org/news/2026-04-22-facilities-release.html`. Unconfirmed whether street addresses are included. | `correctional` |
-| State assisted-living licensing lists for states other than CA, MI, WI and FL (optional) | Refreshes the 2021 Princeton data, which is still the only source for those states (24,374 rows). CA, MI, WI and FL are **already automated**, as is the Princeton dataset itself. Minnesota (2,350 stale rows) has a search-only database and PDF directories with no structured download. Next largest stale states: AZ, TX, MD, GA. | No national file: each state health or aging department publishes its own list in its own format. The Princeton paper (`https://arxiv.org/abs/2212.14092`) describes the 2021 sources. Add a `data_collected` column (see above) so the build dates them correctly. | `assisted_living` |
+| State assisted-living licensing lists for the states not automated (optional) | Refreshes the 2021 Princeton data, which is still the only source for those states (4,285 rows). 27 states are **already automated**, as is the Princeton dataset itself. `docs/ASSISTED_LIVING_STATE_COVERAGE.md` lists the 20 jurisdictions that aren't, with the specific reason for each (PDF-only, no ZIP in the list view, a stale snapshot, a blocked host, ...) and what a fix would take. Largest: ME, OH, WA, IL, KS, AL. ID, MA, NV and OK have not been researched. | No national file: each state health or aging department publishes its own list in its own format. The Princeton paper (`https://arxiv.org/abs/2212.14092`) describes the 2021 sources. Add a `data_collected` column (see above) so the build dates them correctly. | `assisted_living` |
 | State Department of Corrections facility rosters | Cross-check and fill HIFLD gaps | Each state DOC website (fragmented; no national file). | `correctional` |
 
 No usable open source was found for **college dormitories** (IPEDS gives campus addresses only,

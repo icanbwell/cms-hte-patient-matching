@@ -54,5 +54,97 @@
   "state_al_wi.json": {
     "downloaded": "2026-10-06",
     "source": "https://dhsgis.wi.gov/server/rest/services/DHS_GIS/Facilities/MapServer/<layer 7,17,2>/query"
+  },
+  "state_lists/AK.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://health.alaska.gov/en/services/assisted-living-licensing-and-renewals/ (links to the open-facilities .xlsx)"
+  },
+  "state_lists/AZ.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://services1.arcgis.com/mpVYz37anSdrK4d8/ArcGIS/rest/services/All_State_Licensed_Facilities_in_Arizona/FeatureServer/18"
+  },
+  "state_lists/CO.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://services3.arcgis.com/66aUo8zsujfVXRIT/arcgis/rest/services/CDPHE_Health_Facilities/FeatureServer/0"
+  },
+  "state_lists/GA.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://forms.dch.georgia.gov/hfrd/FACSEARCH.aspx"
+  },
+  "state_lists/IA.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://dia-hfd.iowa.gov/ (TypeVals 22, 28, 12; Home/GenerateEntitySearchCsv)"
+  },
+  "state_lists/IN.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://www.in.gov/health/reports/QAMIS/resdir/wdirRes.htm"
+  },
+  "state_lists/KY.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://www.chfs.ky.gov/agencies/os/oig/dhc/Documents/Assisted%20Living%20Community%20Directory.xlsx ; https://www.chfs.ky.gov/agencies/os/oig/dhc/Documents/Personal%20Care%20Home%20Directory.xlsx"
+  },
+  "state_lists/LA.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://ldh.la.gov/assets/medicaid/hss/docs/DirectorySpreadsheets/Licensed_Providers_Report_YYYY_MM.xlsx (newest month that resolves)"
+  },
+  "state_lists/MD.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://opendata.maryland.gov/resource/i48m-922u.json"
+  },
+  "state_lists/MN.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://provider-profile-api.web.health.state.mn.us/csv?county=&city=&name=&id=&zipCode=&providerGroup=Assisted%20Living%20Facilities&providerType=&miles=&limit=100000"
+  },
+  "state_lists/MO.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://data.mo.gov/resource/fenu-sipv.json"
+  },
+  "state_lists/NC.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://info.ncdhhs.gov/dhsr/data/Ahlist.xlsx ; https://info.ncdhhs.gov/dhsr/data/Fchlist.xlsx"
+  },
+  "state_lists/NE.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://services8.arcgis.com/sfauBl8MaKYMG7K4/arcgis/rest/services/Assisted_Living_Facility_Upload/FeatureServer/27 ; fallback https://gis.ne.gov/agencyext/rest/services/DHHS_Assisted_Living_Facilities/FeatureServer/0"
+  },
+  "state_lists/NJ.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://www.nj.gov/health/guide/json/healthfacilities_map_datav2.csv"
+  },
+  "state_lists/NY.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://health.data.ny.gov/resource/wssx-idhx.json"
+  },
+  "state_lists/OR.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://ltclicensing.oregon.gov/Providers (POST https://ltclicensing.oregon.gov/Providers/Export, type=csv, Filters=Status=Open)"
+  },
+  "state_lists/PA.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://data.pa.gov/resource/pqf4-d4xn.json"
+  },
+  "state_lists/SC.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://services5.arcgis.com/G4BLIH7rTQoIjCFv/arcgis/rest/services/Health_Facilities/FeatureServer/0"
+  },
+  "state_lists/TN.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://internet.health.tn.gov/facilitylistings (types 0537, 0593, 0536)"
+  },
+  "state_lists/TX.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://apps.hhs.texas.gov/providers/directories/AL.xlsx"
+  },
+  "state_lists/UT.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://services1.arcgis.com/99lidPhWCzftIe9K/ArcGIS/rest/services/LicensedHealthCareFacilities/FeatureServer/0"
+  },
+  "state_lists/VA.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://www.dss.virginia.gov/licensed-care/search-licensing-programs/assisted-living-facility-search/?facilityName=&location=&zipCode=&page=1&perPage=1000&sort=asc&endpoint=alf"
+  },
+  "state_lists/WV.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://ohflac.wvdhhr.org/Apps/Lookup/FacilitySearch (POST .../FacilitySearch/FacilitySearch, FedCode W7*, W3*, W2*)"
   }
 }

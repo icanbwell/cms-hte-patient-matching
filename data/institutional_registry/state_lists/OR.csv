@@ -1,0 +1,2156 @@
+name,street,city,state,zip,capacity,license_id,license_type,status
+,805 QUEENS AVE,Creswell,OR,97426,0,000000,AFH,Open
+,14843 Southeast Lilac Drive,Milwaukie,OR,97267,5,0000000015,AFH,Open
+,5289 Southeast Lake Road,Milwaukie,OR,97222,1,0000000016,AFH,Open
+,12297 Southeast One Rosa Drive,Happy Valley,OR,97086,5,0000000017,AFH,Open
+,14415 Blue Mountain Way,Oregon City,OR,97045,5,0000000018,AFH,Open
+,6585 Main Street,Springfield,OR,97478,5,0000000025,AFH,Open
+,1390 Clay St NE,Salem,OR,97301,4,0000000028,AFH,Open
+,2706 NW Horizon Dr,Mcminnville,OR,97128,5,0000000035,AFH,Open
+,2640 Eastlake Dr SE,Salem,OR,97306,5,0000000040,AFH,Open
+,20385 Southwest Skiver Street,Beaverton,OR,97007,5,0000000041,AFH,Open
+,16941 Southeast Shadybrook Drive,Milwaukie,OR,97267,4,0000000042,AFH,Open
+,13655 SE 123rd Ave,Clackamas,OR,97015,5,0000000043,AFH,Open
+,2906 Southeast Roswell Street,Milwaukie,OR,97222,5,0000000044,AFH,Open
+,20800 Hidden Springs Road,West Linn,OR,97068,5,0000000045,AFH,Open
+,8680 SE 139th Avenue,Happy Valley,OR,97086,5,0000000048,AFH,Open
+,2050 16th Avenue SE,Albany,OR,97322,5,0000000052,AFH,Open
+,2405 Stearns Way,Medford,OR,97501,5,0000000053,AFH,Open
+,13033 Southeast 139th Avenue,Happy Valley,OR,97086,5,0000000054,AFH,Open
+,27949 Southeast Clapa Lane,Eagle Creek,OR,97022,5,0000000055,AFH,Open
+,765 West Maple Street,Lebanon,OR,97355,5,0000000056,AFH,Open
+,12642 SE 125th Avenue,Happy Valley,OR,97086,5,0000000079,AFH,Open
+,540 Waldo Ave SE,Salem,OR,97302,3,0000000107,AFH,Open
+,10990 Southwest Butner Road,Portland,OR,97225,5,0000000114,AFH,Open
+,1948 Southeast Gerhard Drive,Hillsboro,OR,97123,2,0000000116,AFH,Open
+,220 East 18th Avenue,Junction City,OR,97448,5,0000000117,AFH,Open
+,28705 SW Canyon Creek Rd S,Wilsonville,OR,97070,5,0000000119,AFH,Open
+,3327 Monroe Ave NE,Salem,OR,97301,5,0000000120,AFH,Open
+,3828 Northeast 2nd Street,Gresham,OR,97030,5,0000000121,AFH,Open
+,7433 SE Jennings Ave,Milwaukie,OR,97267,5,0000000122,AFH,Open
+,2947 Southwest Plum Court,Portland,OR,97219,4,0000000123,AFH,Open
+,2415 Northeast Grant Street,Hillsboro,OR,97124,5,0000000126,AFH,Open
+,17636 Northeast Wasco Street,Portland,OR,97230,5,0000000127,AFH,Open
+,3127 Southwest Lillyben Avenue,Gresham,OR,97080,5,0000000128,AFH,Open
+,3950 Southwest Laurelwood Avenue,Portland,OR,97225,5,0000000129,AFH,Open
+,1635 Davis Rd S,Salem,OR,97306,5,0000000131,AFH,Open
+,1919 N Wareham Lane,Newberg,OR,97132,5,0000000132,AFH,Open
+,9540 Southwest Killarney Lane,Tualatin,OR,97062,5,0000000134,AFH,Open
+,1067 Munkers Ct SE,Salem,OR,97317,5,0000000137,AFH,Open
+,2406 Southeast 130th Avenue,Portland,OR,97233,5,0000000138,AFH,Open
+,835 Northeast Josephine Street,Hillsboro,OR,97124,5,0000000139,AFH,Open
+,1821 Southeast 157th Drive,Portland,OR,97233,2,0000000140,AFH,Open
+,7450 SW Alpine Dr,Beaverton,OR,97008,5,0000000141,AFH,Open
+,7698 Southwest Leslie Street,Tigard,OR,97223,5,0000000143,AFH,Open
+,930 Southwest 215th Avenue,Aloha,OR,97006,3,0000000144,AFH,Open
+,10718 Southeast Center Street,Portland,OR,97266,3,0000000145,AFH,Open
+,19420 Westling Drive,Oregon City,OR,97045,5,0000000146,AFH,Open
+,16336 Northeast Multnomah Street,Portland,OR,97230,5,0000000147,AFH,Open
+,10961 Southeast 92nd Avenue,Happy Valley,OR,97086,5,0000000149,AFH,Open
+,11860 Southwest Tuckerwood Court,Beaverton,OR,97008,5,0000000151,AFH,Open
+,1900 Southwest 139th Avenue,Beaverton,OR,97005,5,0000000153,AFH,Open
+,7250 Southwest Meadows Court,Wilsonville,OR,97070,2,0000000154,AFH,Open
+,7670 Southeast McBride Street,Milwaukie,OR,97222,3,0000000156,AFH,Open
+,177 Canemah Ct.,Oregon City,OR,97045,3,0000000176,AFH,Open
+,3750 Saxon Dr S,Salem,OR,97302,5,0000000177,AFH,Open
+,825 Royalty Drive NE,Salem,OR,97301,5,0000000178,AFH,Open
+,22347 Southeast Hoffmeister Road,Damascus,OR,97089,5,0000000183,AFH,Open
+,1923 Waymire Street NW,Salem,OR,97304,5,0000000184,AFH,Open
+,4827 Southeast 1st Terrace,Gresham,OR,97080,5,0000000189,AFH,Open
+,1928 28th Avenue,Forest Grove,OR,97116,5,0000000190,AFH,Open
+,5412 Lone Oak Rd SE,Salem,OR,97306,5,0000000191,AFH,Open
+,1903 N Valeri Drive,Newberg,OR,97132,5,0000000192,AFH,Open
+,3232 Southeast 129th Avenue,Portland,OR,97236,5,0000000193,AFH,Open
+,3785 Southwest 5th Drive,Gresham,OR,97030,5,0000000194,AFH,Open
+,353 Southeast Ankeny Circle,Portland,OR,97233,5,0000000195,AFH,Open
+,4076 Alana Ave SE,Salem,OR,97302,4,0000000196,AFH,Open
+,5295 Willow Leaf St N,Keizer,OR,97303,5,0000000199,AFH,Open
+,319 Silver Hills Cir SE,Salem,OR,97306,5,0000000201,AFH,Open
+,11835 Danee Place,Oregon City,OR,97045,5,0000000204,AFH,Open
+,1535 Southeast Evelyn Court,Gresham,OR,97080,5,0000000205,AFH,Open
+,860 McVey Avenue,Lake Oswego,OR,97034,5,0000000207,AFH,Open
+,13453 Southeast Erin Court,Clackamas,OR,97015,5,0000000209,AFH,Open
+,1960 NE 21st Ave,Canby,OR,97013,5,0000000211,AFH,Open
+,5335 Anaconda Drive S,Salem,OR,97302,4,0000000212,AFH,Open
+,984 Southwest 174th Place,Beaverton,OR,97006,5,0000000213,AFH,Open
+,14845 Northwest Bonneville Loop,Beaverton,OR,97006,5,0000000216,AFH,Open
+,905 Southwest 174th Place,Beaverton,OR,97006,5,0000000219,AFH,Open
+,19271 South Pease Road,Oregon City,OR,97045,4,0000000220,AFH,Open
+,2305 Southwest 187th Avenue,Beaverton,OR,97006,5,0000000221,AFH,Open
+,17461 Quail Court,Gladstone,OR,97027,5,0000000222,AFH,Open
+,1123 Southeast 148th Avenue,Portland,OR,97233,5,0000000223,AFH,Open
+,17812 Northeast Multnomah Drive,Portland,OR,97230,5,0000000224,AFH,Open
+,21541 Southeast Alder Street,Gresham,OR,97030,4,0000000229,AFH,Open
+,18304 Shady Hollow Way,West Linn,OR,97068,5,0000000231,AFH,Open
+,14547 South Thayer Road,Oregon City,OR,97045,5,0000000233,AFH,Open
+,14211 Southeast 120th Place,Clackamas,OR,97015,5,0000000235,AFH,Open
+,4639 Fultz Ave NE,Salem,OR,97301,4,0000000236,AFH,Open
+,12030 Northwest Kearney Street,Portland,OR,97229,5,0000000237,AFH,Open
+,16106 Hunter Avenue,Oregon City,OR,97045,5,0000000238,AFH,Open
+,3552 Southeast 65th Avenue,Portland,OR,97206,5,0000000239,AFH,Open
+,2336 Southwest Sundial Avenue,Troutdale,OR,97060,5,0000000242,AFH,Open
+,13603 SE 155th Dr.,Clackamas,OR,97015,4,0000000244,AFH,Open
+,18740 Southwest Lisa Court,Beaverton,OR,97006,5,0000000246,AFH,Open
+,10975 Southwest Butner Road,Portland,OR,97225,5,0000000247,AFH,Open
+,18037 Southeast Kelly Street,Portland,OR,97236,4,0000000248,AFH,Open
+,340 Stellers Eagle St NW,Salem,OR,97304,3,0000000251,AFH,Open
+,645 Foxglove St SE,Salem,OR,97306,5,0000000252,AFH,Open
+,2210 Northeast 23rd Street,Gresham,OR,97030,5,0000000258,AFH,Open
+,3961 Camishaun Court NE,Salem,OR,97305,5,0000000263,AFH,Open
+,4454 Hilton Drive,Eugene,OR,97402,5,0000000264,AFH,Open
+,6061 Pine Ridge Place,Eugene,OR,97402,1,0000000265,AFH,Open
+,5188 Southeast Oetkin Way,Milwaukie,OR,97267,5,0000000268,AFH,Open
+,1321 Northeast Lilac Court,Hillsboro,OR,97124,5,0000000269,AFH,Open
+,2966 Hawaiian Avenue,Medford,OR,97504,2,0000000270,AFH,Open
+,4444 Jackpine St NE,Salem,OR,97305,5,0000000271,AFH,Open
+,142 Northeast 192nd Avenue,Portland,OR,97230,4,0000000280,AFH,Open
+,2754 Southwest Hume Court,Portland,OR,97219,5,0000000285,AFH,Open
+,5370 Anaconda Drive S,Salem,OR,97302,5,0000000286,AFH,Open
+,12795 Southeast Callahan Road,Happy Valley,OR,97086,5,0000000287,AFH,Open
+,16049 Godon Way,Oregon City,OR,97045,5,0000000289,AFH,Open
+,13424 SE Highpointe St,Clackamas,OR,97015,5,0000000290,AFH,Open
+,11620 Southwest Ridgeview Terrace,Beaverton,OR,97008,5,0000000291,AFH,Open
+,5838 Southeast 136th Avenue,Portland,OR,97236,5,0000000292,AFH,Open
+,710 Southeast 16th Avenue,Hillsboro,OR,97123,5,0000000293,AFH,Open
+,8673 SE Margie Way,Happy Valley,OR,97086,5,0000000294,AFH,Open
+,2080 Northeast 14th Avenue,Hillsboro,OR,97124,5,0000000296,AFH,Open
+,167 Cypress Court,Roseburg North,OR,97495,5,0000000299,AFH,Open
+,19450 Sunset Springs Drive,Oregon City,OR,97045,5,0000000300,AFH,Open
+,15621 Northeast Siskiyou Court,Portland,OR,97230,5,0000000303,AFH,Open
+,15155 Southwest Kilchis Court,Beaverton,OR,97007,4,0000000304,AFH,Open
+,4821 Southeast Thiessen Road,Milwaukie,OR,97267,5,0000000305,AFH,Open
+,19855 Southwest Rock Drive,Aloha,OR,97006,5,0000000306,AFH,Open
+,2186 Southeast Bush Street,Hillsboro,OR,97123,5,0000000310,AFH,Open
+,4131 Alderbrook Ave SE,Salem,OR,97302,5,0000000315,AFH,Open
+,19850 Northeast Wasco Street,Portland,OR,97230,5,0000000318,AFH,Open
+,22345 Southwest Mandan Drive,Tualatin,OR,97062,5,0000000320,AFH,Open
+,1817 North Barlow Street,Cornelius,OR,97113,5,0000000322,AFH,Open
+,9560 Southwest 135th Avenue,Beaverton,OR,97008,5,0000000323,AFH,Open
+,1116 Turbyne Road,Sweet Home,OR,97386,0,0000000325,AFH,Open
+,2985 Clover Street Northeast,Albany,OR,97322,5,0000000326,AFH,Open
+,9210 SE 92nd Ave,Happy Valley,OR,97086,5,0000000327,AFH,Open
+,1215 Southwest 181st Avenue,Beaverton,OR,97003,5,0000000328,AFH,Open
+,1073 Coburg Road,Eugene,OR,97401,5,0000000329,AFH,Open
+,19960 Southwest Cascadia Street,Aloha,OR,97078,5,0000000330,AFH,Open
+,14430 Southwest McFarland Boulevard,Tigard,OR,97224,5,0000000333,AFH,Open
+,2048 Southeast Elliott Place,Gresham,OR,97080,5,0000000335,AFH,Open
+,2206 Maple Street,Myrtle Point,OR,97458,5,0000000336,AFH,Open
+,9101 Southeast Hawthorne Boulevard,Portland,OR,97216,5,0000000337,AFH,Open
+,18965 Northwest Nelscott Street,Portland,OR,97229,5,0000000338,AFH,Open
+,12822 Southeast Ott Street,Clackamas,OR,97015,4,0000000339,AFH,Open
+,200 Ward Road,Merlin,OR,97532,4,0000000341,AFH,Open
+,1735 Southeast Morgan Road,Hillsboro,OR,97123,5,0000000343,AFH,Open
+,8840 SW Spruce Street,Tigard,OR,97223,5,0000000344,AFH,Open
+,3722 Northeast 142nd Avenue,Portland,OR,97230,5,0000000345,AFH,Open
+,9970 Southwest Cynthia Street,Beaverton,OR,97008,1,0000000347,AFH,Open
+,15894 Altona Lane,Oregon City,OR,97045,5,0000000351,AFH,Open
+,8000 Southwest Oleson Road,Portland,OR,97223,5,0000000353,AFH,Open
+,3879 Southeast Hillyard Road,Gresham,OR,97080,4,0000000354,AFH,Open
+,560 Mill Stream Woods,Stayton,OR,97383,5,0000000355,AFH,Open
+,12680 SE Mather Road,Clackamas,OR,97015,5,0000000359,AFH,Open
+,17736 Northeast Couch Street,Portland,OR,97230,3,0000000360,AFH,Open
+,1079 Cynthia St N,Keizer,OR,97303,5,0000000364,AFH,Open
+,53852 East Appleton Road,Milton-Freewater,OR,97862,5,0000000372,AFH,Open
+,1829 Southwest J Street,Grants Pass,OR,97526,5,0000000374,AFH,Open
+,17318 SW 128th Ave,Portland,OR,97224,4,0000000376,AFH,Open
+,304 Southeast 16th Street,Gresham,OR,97080,5,0000000377,AFH,Open
+,20 S. 6th Avenue,Elgin,OR,97827,5,0000000378,AFH,Open
+,6915 Southwest Tierra Del Mar Drive,Beaverton,OR,97007,5,0000000380,AFH,Open
+,9040 Southwest Trigger Court,Beaverton,OR,97008,5,0000000381,AFH,Open
+,210 Southwest 130th Avenue,Beaverton,OR,97005,3,0000000382,AFH,Open
+,17423 Southeast Main Street,Portland,OR,97233,5,0000000383,AFH,Open
+,1320 Southwest Hillview Avenue,Corvallis,OR,97333,0,0000000384,AFH,Open
+,22770 Southwest Mandan Drive,Tualatin,OR,97062,5,0000000390,AFH,Open
+,12025 Southwest Carmen Street,Tigard,OR,97223,5,0000000392,AFH,Open
+,2344 NW Glen Oak Ave,Redmond,OR,97756,5,0000000393,AFH,Open
+,840 Northwest Riverview Avenue,Gresham,OR,97030,5,0000000395,AFH,Open
+,14700 Southeast Lincoln Street,Portland,OR,97233,0,0000000396,AFH,Open
+,813 N Marie Avenue,Newberg,OR,97132,5,0000000397,AFH,Open
+,28441 Southwest Meadows Loop,Wilsonville,OR,97070,5,0000000398,AFH,Open
+,1224 West Fairview Drive,Springfield,OR,97477,2,0000000399,AFH,Open
+,3631 North Trenton Street,Portland,OR,97217,4,0000000405,AFH,Open
+,2886 Northeast 22nd Court,Gresham,OR,97030,4,0000000408,AFH,Open
+,1860 Southeast 104th Avenue,Portland,OR,97216,4,0000000409,AFH,Open
+,2227 Ridgebrook Drive,West Linn,OR,97068,5,0000000413,AFH,Open
+,18410 Southwest Deline Street,Aloha,OR,97007,4,0000000414,AFH,Open
+,17290 Southwest Alvord Lane,Beaverton,OR,97007,5,0000000415,AFH,Open
+,11825 SE Sunny Way,Happy Valley,OR,97086,5,0000000416,AFH,Open
+,14424 Southeast Bevington Court,Milwaukie,OR,97267,5,0000000417,AFH,Open
+,4800 Southwest 160th Avenue,Beaverton,OR,97007,5,0000000418,AFH,Open
+,10244 Northeast Brazee Street,Portland,OR,97220,3,0000000421,AFH,Open
+,1703 Southeast 140th Avenue,Portland,OR,97233,5,0000000422,AFH,Open
+,3290 Ford Drive,Medford,OR,97504,5,0000000423,AFH,Open
+,2085 Jelden St NE,Salem,OR,97301,5,0000000424,AFH,Open
+,3022 Northeast Linden Avenue,Gresham,OR,97030,5,0000000425,AFH,Open
+,13259 Southeast 128th Avenue,Clackamas,OR,97015,5,0000000426,AFH,Open
+,11400 Southwest 90th Avenue,Tigard,OR,97223,2,0000000427,AFH,Open
+,4551 Camellia Street,Springfield,OR,97478,1,0000000428,AFH,Open
+,13340 Southeast Rusk Road,Milwaukie,OR,97222,5,0000000429,AFH,Open
+,18921 Northeast Davis Street,Portland,OR,97230,5,0000000430,AFH,Open
+,3206 Southeast 160th Avenue,Portland,OR,97236,5,0000000431,AFH,Open
+,6580 Southeast Royce Court,Hillsboro,OR,97123,3,0000000432,AFH,Open
+,1570 Rosemont Rd,West Linn,OR,97068,5,0000000433,AFH,Open
+,9240 Southwest Omara Street,Tigard,OR,97223,5,0000000436,AFH,Open
+,8398 Cason Rd,Gladstone,OR,97027,5,0000000437,AFH,Open
+,1921 19th St,West Linn,OR,97068,5,0000000438,AFH,Open
+,5040 Barnes CT SE,Salem,OR,97306,5,0000000439,AFH,Open
+,5350 Lakeview Blvd,Lake Oswego,OR,97035,5,0000000440,AFH,Open
+,4286 Camellia Drive South,Salem,OR,97302,5,0000000441,AFH,Open
+,16800 Southeast Ankeny Street,Portland,OR,97233,3,0000000442,AFH,Open
+,18212 Bluff Rd.,Sandy,OR,97055,5,0000000444,AFH,Open
+,7545 SW 91ST AVE,Portland,OR,97223,5,0000000445,AFH,Open
+,16524 SE Oatfield Rd,Milwaukie,OR,97267,5,0000000447,AFH,Open
+,535 Sunrise Avenue,Medford,OR,97504,5,0000000450,AFH,Open
+,4084 Sanesota Way SE,Salem,OR,97317,5,0000000455,AFH,Open
+,4790 Southeast 10th Terrace,Gresham,OR,97080,5,0000000456,AFH,Open
+,3322 Knighton Way,Forest Grove,OR,97116,5,0000000457,AFH,Open
+,3742 Southwest Pasadena Street,Portland,OR,97219,5,0000000460,AFH,Open
+,17350 Southwest Bany Road,Beaverton,OR,97007,3,0000000461,AFH,Open
+,1924 Southeast 174th Avenue,Portland,OR,97233,5,0000000463,AFH,Open
+,9584 Southwest Taylor Street,Portland,OR,97225,5,0000000464,AFH,Open
+,477 Southeast 70th Avenue,Hillsboro,OR,97123,4,0000000465,AFH,Open
+,11 Southeast 197th Avenue,Portland,OR,97233,5,0000000466,AFH,Open
+,5356 Arcade Ave NE,Keizer,OR,97303,5,0000000467,AFH,Open
+,15546 SE Green Hills Ct,Happy Valley,OR,97086,5,0000000468,AFH,Open
+,11945 Southwest Butner Road,Portland,OR,97225,5,0000000472,AFH,Open
+,20550 Southwest Johnson Street,Beaverton,OR,97003,5,0000000473,AFH,Open
+,14707 Southeast Mill Street,Portland,OR,97233,5,0000000474,AFH,Open
+,4820 Southeast 10th Terrace,Gresham,OR,97080,4,0000000475,AFH,Open
+,310 Candalaria Blvd S,Salem,OR,97302,5,0000000476,AFH,Open
+,2307 Misty Glen Ave NW,Salem,OR,97304,5,0000000477,AFH,Open
+,723 Southwest 28th Street,Troutdale,OR,97060,3,0000000480,AFH,Open
+,17711 Southeast Haig Drive,Portland,OR,97236,5,0000000481,AFH,Open
+,17395 Southeast Colina Vista Avenue,Milwaukie,OR,97267,5,0000000482,AFH,Open
+,19720 Southwest Trelane Street,Beaverton,OR,97006,5,0000000483,AFH,Open
+,3362 Viewpoint Drive,Medford,OR,97504,5,0000000488,AFH,Open
+,936 South 8th Street,Cottage Grove,OR,97424,3,0000000494,AFH,Open
+,929 Stonebridge Ave NE,Keizer,OR,97303,5,0000000497,AFH,Open
+,18350 Southwest Jaylee Street,Beaverton,OR,97078,4,0000000498,AFH,Open
+,2250 Northwest 8th Court,Gresham,OR,97030,5,0000000499,AFH,Open
+,4104 Glenwood Dr SE,Salem,OR,97317,4,0000000500,AFH,Open
+,276 44th Ave SE,Salem,OR,97317,5,0000000501,AFH,Open
+,18710 Leland Road,Oregon City,OR,97045,5,0000000502,AFH,Open
+,14560 Southeast Thornapple Lane,Milwaukie,OR,97267,5,0000000504,AFH,Open
+,9359 Southeast Levern Lane,Happy Valley,OR,97086,5,0000000505,AFH,Open
+,1646 Desantis Dr,Woodburn,OR,97071,5,0000000506,AFH,Open
+,377 Idylwood Drive Southeast,Salem,OR,97302,4,0000000507,AFH,Open
+,20796 Hidden Springs Road,West Linn,OR,97068,5,0000000508,AFH,Open
+,3526 Northeast 120th Avenue,Portland,OR,97220,4,0000000511,AFH,Open
+,12705 Southeast Lincoln Street,Portland,OR,97233,5,0000000512,AFH,Open
+,2379 Leo St,Mcminnville,OR,97128,5,0000000513,AFH,Open
+,13711 Southeast Sherman Drive,Portland,OR,97233,5,0000000514,AFH,Open
+,2420 La Jolla Ct NW,Salem,OR,97304,5,0000000515,AFH,Open
+,14725 Southeast Rhine Street,Portland,OR,97236,5,0000000516,AFH,Open
+,4049 Sanesota Way SE,Salem,OR,97317,5,0000000517,AFH,Open
+,1148 Southeast 144th Avenue,Portland,OR,97233,5,0000000519,AFH,Open
+,14030 Southeast Bush Street,Portland,OR,97236,5,0000000523,AFH,Open
+,325 Silver Hills Cir SE,Salem,OR,97306,5,0000000524,AFH,Open
+,12684 SE Majestic Lane,Happy Valley,OR,97086,5,0000000525,AFH,Open
+,839 Johnson St,Woodburn,OR,97071,5,0000000526,AFH,Open
+,9757 Southeast 172nd Avenue,Happy Valley,OR,97086,5,0000000528,AFH,Open
+,12972 Southwest Wilmington Lane,Tigard,OR,97224,5,0000000529,AFH,Open
+,13090 Southwest Walnut Street,Tigard,OR,97223,5,0000000531,AFH,Open
+,2025 Southeast 102nd Avenue,Portland,OR,97216,5,0000000532,AFH,Open
+,6160 Southwest Hall Boulevard,Beaverton,OR,97008,5,0000000534,AFH,Open
+,6912 South 6th Street,Klamath Falls,OR,97603,5,0000000535,AFH,Open
+,15917 Southeast Taggart Court,Portland,OR,97236,3,0000000536,AFH,Open
+,2929 Southeast 141st Avenue,Portland,OR,97236,3,0000000537,AFH,Open
+,6605 Southeast Tuscany Court,Milwaukie,OR,97267,5,0000000539,AFH,Open
+,4241 Southeast 136th Avenue,Portland,OR,97236,5,0000000540,AFH,Open
+,10500 Southwest Clydesdale Terrace,Beaverton,OR,97008,5,0000000542,AFH,Open
+,2030 Northeast 159th Avenue,Portland,OR,97230,5,0000000543,AFH,Open
+,152 Northeast Baldwin Street,Portland,OR,97211,5,0000000544,AFH,Open
+,7049 Southwest Rice Court,Portland,OR,97223,5,0000000545,AFH,Open
+,2066 Alex Ave SE,Salem,OR,97302,5,0000000550,AFH,Open
+,5395 Southwest 188th Avenue,Beaverton,OR,97078,3,0000000551,AFH,Open
+,1801 Southeast Brookwood Avenue,Hillsboro,OR,97123,5,0000000554,AFH,Open
+,3155 Southeast Cornutt Street,Hillsboro,OR,97123,5,0000000556,AFH,Open
+,13212 Southeast Terra Cascade Drive,Happy Valley,OR,97086,3,0000000557,AFH,Open
+,16910 Southeast Alder Street,Portland,OR,97233,5,0000000558,AFH,Open
+,7540 Southwest Ashford Street,Portland,OR,97224,5,0000000559,AFH,Open
+,5110 Southeast Drake Road,Hillsboro,OR,97123,5,0000000560,AFH,Open
+,12629 Northeast Rose Parkway,Portland,OR,97230,4,0000000561,AFH,Open
+,13838 Southeast Raymond Street,Portland,OR,97236,2,0000000562,AFH,Open
+,2233 Juneau Ct S,Salem,OR,97302,5,0000000564,AFH,Open
+,8675 Southwest Sagert Street,Tualatin,OR,97062,5,0000000565,AFH,Open
+,25197 E BOLTON ROAD,Veneta,OR,97487,5,0000000567,AFH,Open
+,2587 19th Street,Springfield,OR,97477,5,0000000568,AFH,Open
+,5655 Southeast Powell Valley Road,Gresham,OR,97080,5,0000000569,AFH,Open
+,15993 Southeast Peace Court,Happy Valley,OR,97086,2,0000000570,AFH,Open
+,306 Broadway Street,Springfield,OR,97477,3,0000000572,AFH,Open
+,16910 Southeast Spray Avenue,Milwaukie,OR,97267,5,0000000573,AFH,Open
+,90880 Robertson Lane,Coos Bay,OR,97420,3,0000000574,AFH,Open
+,12024 Southeast Raymond Street,Portland,OR,97266,5,0000000575,AFH,Open
+,7454 Shadowwood CT NE,Keizer,OR,97303,5,0000000576,AFH,Open
+,2346 Northeast 165th Drive,Portland,OR,97230,4,0000000579,AFH,Open
+,3393 Knob Hill Way 3391 Knob Hill Way,Prineville,OR,97754,5,0000000580,AFH,Open
+,5607 Southeast Waymire Street,Milwaukie,OR,97222,5,0000000581,AFH,Open
+,2510 SW 200th Ct.,Beaverton,OR,97006,5,0000000584,AFH,Open
+,98 Northwest Wilson Avenue,Gresham,OR,97030,4,0000000586,AFH,Open
+,14908 Mt View Dr,Condon,OR,97823,2,0000000587,AFH,Open
+,18540 Southeast Tibbetts Court,Gresham,OR,97030,5,0000000591,AFH,Open
+,19862 Castleberry Loop,Oregon City,OR,97045,5,0000000592,AFH,Open
+,15825 SE Upman Way,Damascus,OR,97089,5,0000000593,AFH,Open
+,12880 Southwest Cleveland Bay Lane,Beaverton,OR,97008,4,0000000595,AFH,Open
+,4079 Sanesota Way SE,Salem,OR,97317,5,0000000597,AFH,Open
+,3607 Cameron Court Northeast,Albany,OR,97322,5,0000000598,AFH,Open
+,2934 NE Wells Acres Rd,Bend,OR,97701,5,0000000600,AFH,Open
+,407 Merrill Street,Coos Bay,OR,97420,1,0000000602,AFH,Open
+,519 Shire Court,Eugene,OR,97401,5,0000000603,AFH,Open
+,18290 Southwest Broad Oak Ct,Beaverton,OR,97007,5,0000000604,AFH,Open
+,1095 Southwest 197th Avenue,Aloha,OR,97003,5,0000000606,AFH,Open
+,1769 Cinnamon Hill Drive Southeast,Salem,OR,97306,4,0000000608,AFH,Open
+,1593 Jordan Drive South,Salem,OR,97302,5,0000000609,AFH,Open
+,2314 Misty Glen Avenue NW,Salem,OR,97304,5,0000000610,AFH,Open
+,550 Mill Stream Woods,Stayton,OR,97383,5,0000000611,AFH,Open
+,335 Northeast 168th Avenue,Portland,OR,97230,3,0000000613,AFH,Open
+,2756 Pheasant Ave SE,Salem,OR,97302,5,0000000614,AFH,Open
+,12402 Cominger Drive,Oregon City,OR,97045,5,0000000615,AFH,Open
+,15150 Southeast Lostine Drive,Clackamas,OR,97015,5,0000000616,AFH,Open
+,1635 Fairview Place,Cottage Grove,OR,97424,4,0000000645,AFH,Open
+,10540 Southwest Tranquil Way,Wilsonville,OR,97070,5,0000000646,AFH,Open
+,2139 Delta Waters Road,Medford,OR,97504,5,0000000647,AFH,Open
+,1116 SW Cashmere Drive,Grants Pass,OR,97527,3,0000000648,AFH,Open
+,1717 Northeast 205th Avenue,Fairview,OR,97024,5,0000000649,AFH,Open
+,4129 SW Majestic Ave,Redmond,OR,97756,5,0000000650,AFH,Open
+,2981 Northeast Kindsey Lane,Albany,OR,97321,5,0000000651,AFH,Open
+,15355 Penny Avenue,Sandy,OR,97055,5,0000000654,AFH,Open
+,1637 Hummingbird Lane,Stayton,OR,97383,5,0000000655,AFH,Open
+,16980 Northwest Somerset Drive,Beaverton,OR,97006,5,0000000656,AFH,Open
+,12021 Southeast Summer Place,Clackamas,OR,97015,5,0000000658,AFH,Open
+,4076 Alana Ave SE,Salem,OR,97302,5,0000000659,AFH,Open
+,12722 Bellamy Way,Oregon City,OR,97045,5,0000000661,AFH,Open
+,97 Northwest Royal Court,Gresham,OR,97030,5,0000000684,AFH,Open
+,5833 North Lombard Street,Portland,OR,97203,0,10587,AFH,Open
+,1701 Northeast 116th Place,Portland,OR,97220,5,11316,AFH,Open
+,5191 Southeast Powell Valley Road,Gresham,OR,97080,5,11327,AFH,Open
+,1906 Southeast 72nd Avenue,Portland,OR,97215,5,11364,AFH,Open
+,7220 Southeast Stephens Street,Portland,OR,97215,5,11369,AFH,Open
+,1234 Northeast 47th Avenue,Portland,OR,97213,5,11396,AFH,Open
+,14947 Southeast Mill Street,Portland,OR,97233,5,11403,AFH,Open
+,717 Northeast 157th Avenue,Portland,OR,97230,5,11419,AFH,Open
+,3631 Southeast 23rd Street,Gresham,OR,97080,5,11443,AFH,Open
+,1101 Northwest 4th Street,Gresham,OR,97030,5,11482,AFH,Open
+,1724 Southeast 138th Avenue,Portland,OR,97233,5,11489,AFH,Open
+,2122 Southeast 170th Avenue,Portland,OR,97233,5,11490,AFH,Open
+,17929 Northeast Everett Court,Portland,OR,97230,5,11491,AFH,Open
+,14599 Northeast Brazee Court,Portland,OR,97230,5,11492,AFH,Open
+,8830 Northeast Sacramento Street,Portland,OR,97220,5,11493,AFH,Open
+,332 Southeast 202nd Avenue,Portland,OR,97233,3,11494,AFH,Open
+,311 Southeast 133rd Avenue,Portland,OR,97233,5,11495,AFH,Open
+,2938 Northeast 6th Street,Gresham,OR,97030,5,11498,AFH,Open
+,3015 Southwest Linneman Drive,Gresham,OR,97080,3,11499,AFH,Open
+,11915 Southeast Powell Boulevard,Portland,OR,97266,5,11501,AFH,Open
+,13146 Southeast Blackberry Circle,Portland,OR,97236,5,11502,AFH,Open
+,19909 Northeast Clackamas Court,Portland,OR,97230,5,11504,AFH,Open
+,5000 Southeast Regner Road,Gresham,OR,97080,4,11509,AFH,Open
+,12722 Southeast Mill Court,Portland,OR,97233,5,11510,AFH,Open
+,2103 Southeast 130th Avenue,Portland,OR,97233,5,11511,AFH,Open
+,4450 Northeast 38th Avenue,Portland,OR,97211,5,11512,AFH,Open
+,4453 Northeast Failing Street,Portland,OR,97213,5,11513,AFH,Open
+,17141 Southeast Market Street,Portland,OR,97233,5,11514,AFH,Open
+,11239 Southeast Bush Street,Portland,OR,97266,5,11515,AFH,Open
+,13041 Southeast Alder Street,Portland,OR,97233,5,11516,AFH,Open
+,1217 Northeast 155th Avenue,Portland,OR,97230,5,11517,AFH,Open
+,1827 Southeast 76th Avenue,Portland,OR,97215,5,11522,AFH,Open
+,6440 Southeast 142nd Avenue,Portland,OR,97236,3,11523,AFH,Open
+,1912 Northeast 116th Place,Portland,OR,97220,5,11524,AFH,Open
+,7831 North Delaware Avenue,Portland,OR,97217,3,11526,AFH,Open
+,2726 Southeast 118th Avenue,Portland,OR,97266,5,11527,AFH,Open
+,16731 Southeast Powell Boulevard,Portland,OR,97236,5,11528,AFH,Open
+,819 Northeast 181st Avenue,Portland,OR,97230,5,11529,AFH,Open
+,302 Southwest Riverview Avenue,Gresham,OR,97080,5,11531,AFH,Open
+,3007 Southeast 171st Drive,Portland,OR,97236,5,11532,AFH,Open
+,2609 Southeast 164th Avenue,Portland,OR,97236,5,11534,AFH,Open
+,2000 Southeast Regner Road,Gresham,OR,97080,5,11536,AFH,Open
+,1725 Northwest Division Street,Gresham,OR,97030,5,11537,AFH,Open
+,3632 Southeast 151st Avenue,Portland,OR,97236,5,11538,AFH,Open
+,12567 Southeast Bush Street,Portland,OR,97236,4,11540,AFH,Open
+,329 Northeast 188th Avenue,Portland,OR,97230,5,11541,AFH,Open
+,9538 North Burr Avenue,Portland,OR,97203,5,11545,AFH,Open
+,822 Northeast 117th Avenue,Portland,OR,97220,5,11546,AFH,Open
+,1905 Northeast 144th Avenue,Portland,OR,97230,3,11547,AFH,Open
+,"10551 NE San Rafael St, Portland, OR 97220",Portland,OR,97220,3,11548,AFH,Open
+,7940 Southeast 107th Avenue,Portland,OR,97266,3,11551,AFH,Open
+,3768 Southeast 21st Drive,Gresham,OR,97080,5,11552,AFH,Open
+,175 Northeast Olvera Court,Gresham,OR,97030,5,11553,AFH,Open
+,3347 Southeast 115th Avenue,Portland,OR,97266,5,11554,AFH,Open
+,2280 Northwest 5th Street,Gresham,OR,97030,0,11556,AFH,Open
+,19915 Northeast Halsey Street,Portland,OR,97230,5,11559,AFH,Open
+,20435 Northeast Halsey Street,Fairview,OR,97024,5,11560,AFH,Open
+,1357 Southeast 207th Avenue,Gresham,OR,97030,4,11561,AFH,Open
+,4331 Northeast 18th Avenue,Portland,OR,97211,5,11562,AFH,Open
+,1143 Northeast 157th Avenue,Portland,OR,97230,5,11563,AFH,Open
+,1040 Northeast 172nd Avenue,Portland,OR,97230,4,11565,AFH,Open
+,890 Northwest Riverview Avenue,Gresham,OR,97030,5,11567,AFH,Open
+,1531 Southwest Walters Loop,Gresham,OR,97080,5,11568,AFH,Open
+,"14809 SE Mill St, Portland, OR 97233",Portland,OR,97233,4,11569,AFH,Open
+,17661 Northeast Davis Street,Portland,OR,97230,5,11570,AFH,Open
+,17725 Southeast Harrison Street,Portland,OR,97233,5,11571,AFH,Open
+,1002 Southeast 142nd Avenue,Portland,OR,97233,5,11573,AFH,Open
+,1819 Southeast 117th Avenue,Portland,OR,97216,5,11575,AFH,Open
+,2443 Northeast 161st Avenue,Portland,OR,97230,2,11576,AFH,Open
+,8 Northeast 202nd Avenue,Portland,OR,97230,5,11577,AFH,Open
+,7047 Southeast Clatsop Street,Portland,OR,97206,5,11578,AFH,Open
+,3753 Southwest 7th Court,Gresham,OR,97030,4,11579,AFH,Open
+,9220 Southeast Henry Street,Portland,OR,97266,3,11580,AFH,Open
+,8524 Southeast 172nd Avenue,Gresham,OR,97080,5,11581,AFH,Open
+,3965 Southwest 5th Drive,Gresham,OR,97030,5,11582,AFH,Open
+,3241 Southeast 180th Avenue,Portland,OR,97236,4,11585,AFH,Open
+,2049 Southeast 102nd Avenue,Portland,OR,97216,5,11588,AFH,Open
+,16602 Northeast Russell Court,Portland,OR,97230,5,11590,AFH,Open
+,9712 Southeast Duke Street,Portland,OR,97266,5,11591,AFH,Open
+,13740 Northeast Rose Parkway,Portland,OR,97230,4,11592,AFH,Open
+,807 Southwest Hartley Avenue,Gresham,OR,97030,4,11593,AFH,Open
+,13220 Southeast Harold Street,Portland,OR,97236,5,11594,AFH,Open
+,2831 Southeast 51st Avenue,Portland,OR,97206,5,11595,AFH,Open
+,1601 Southeast Elliott Avenue,Gresham,OR,97080,5,11596,AFH,Open
+,9005 Southeast Washington Street,Portland,OR,97216,4,11598,AFH,Open
+,12402 Northeast Hassalo Street,Portland,OR,97230,5,11599,AFH,Open
+,21511 Southeast Salmon Street,Gresham,OR,97030,5,11600,AFH,Open
+,4025 Northeast 114th Avenue,Portland,OR,97220,5,11602,AFH,Open
+,3528 Northeast 126th Avenue,Portland,OR,97230,3,11603,AFH,Open
+,1522 Southeast 174th Avenue,Portland,OR,97233,3,11605,AFH,Open
+,3519 Southeast 143rd Avenue,Portland,OR,97236,4,11606,AFH,Open
+,10941 Southeast Long Street,Portland,OR,97266,5,11607,AFH,Open
+,19715 Northeast Hassalo Street,Portland,OR,97230,5,11609,AFH,Open
+,18857 Southeast Giese Road,Gresham,OR,97080,5,11611,AFH,Open
+,25 Northwest Sleret Avenue,Gresham,OR,97030,5,11612,AFH,Open
+,4138 SE CONCORD Rd.,Milwaukie,OR,97267,5,2387416748,AFH,Open
+,3780 SW 102ND AVE,Beaverton,OR,97005,5,2388635834,AFH,Open
+,760 NW 180TH AVE,Beaverton,OR,97006,5,2406721182,AFH,Open
+,3788 SHOESTRING RD,Riddle,OR,97469,1,2409686381,AFH,Open
+,19610 SW SANDRA LANE,Beaverton,OR,97003,5,2413501835,AFH,Open
+,7140 SW 174TH AVE,Aloha,OR,97007,5,2446838558,AFH,Open
+,740 LANCASTER DR SE,Salem,OR,97317,5,2452096077,AFH,Open
+,16645 SW OAK ST,Beaverton,OR,97007,5,2474596499,AFH,Open
+,5615 SW 197TH AVE,Aloha,OR,97007,5,2475178752,AFH,Open
+,2247 SW Pumice Ave,Redmond,OR,97756,5,2488080570,AFH,Open
+,182 E Tall Fir Court,Sisters,OR,97759,5,2489933596,AFH,Open
+,266 S 22ND STREET,Cottage Grove,OR,97424,5,2525828323,AFH,Open
+,19230 BRYANT RD,Lake Oswego,OR,97034,5,2531559944,AFH,Open
+,1468 DAYLILY STREET,Woodburn,OR,97071,3,2542397799,AFH,Open
+,5970 SW 170TH AVE,Beaverton,OR,97007,2,2569461401,AFH,Open
+,16157 SE ALDER MEADOWS DRIVE,Damascus,OR,97089,5,2582151879,AFH,Open
+,1567 RUSSET DRIVE,Eugene,OR,97401,2,2627115035,AFH,Open
+,10905 SW 78TH AVE,Tigard,OR,97223,5,2628932651,AFH,Open
+,13798 SW BENCHVIEW PLACE,Tigard,OR,97223,3,2647328602,AFH,Open
+,18954 SW SAMMY DR,Beaverton,OR,97003,5,2679378118,AFH,Open
+,2364 SE 55TH CT,Hillsboro,OR,97123,5,2702513917,AFH,Open
+,1941 Green Acres Lane,Lake Oswego,OR,97034,5,2709575022,AFH,Open
+,4585 BLUE SKY COURT SE,Salem,OR,97317,5,2713766607,AFH,Open
+,1536 45TH AVE NE,Salem,OR,97301,5,2716328591,AFH,Open
+,530 NE GRANT STREET,Hillsboro,OR,97124,5,2717975930,AFH,Open
+,20650 SW JOHNSON ST,Aloha,OR,97003,5,2773118019,AFH,Open
+,801 RUMSEY CT NW,Salem,OR,97304,5,2790533674,AFH,Open
+,12977 SE REGENCY VIEW ST,Happy Valley,OR,97086,5,2797702614,AFH,Open
+,5915 BARCLAY Ave,Gladstone,OR,97027,5,2807388946,AFH,Open
+,12505 SE CREST DR,Happy Valley,OR,97086,5,2810430653,AFH,Open
+,2250 LANSING AVE NE,Salem,OR,97301,5,2815339171,AFH,Open
+,18900 SW BLAMON CT,Aloha,OR,97007,5,2864427585,AFH,Open
+,5800 SE WEIKO WAY,Milwaukie,OR,97222,5,2870550495,AFH,Open
+,313 SOUTH 3RD STREET,Lebanon,OR,97355,0,2908880883,AFH,Open
+,5668 MOONSTONE LOOP SE,Salem,OR,97306,5,2929839114,AFH,Open
+,20639 NW QUAIL HOLLOW DR,Portland,OR,97229,5,2942855746,AFH,Open
+,1331 Redwood Circle,Grants Pass,OR,97527,3,2956463902,AFH,Open
+,301 K AVE,La Grande,OR,97850,5,3012696847,AFH,Open
+,2010 SW 79TH AVE,Portland,OR,97225,5,3024537281,AFH,Open
+,5445 SWALLOW TAIL STREET SE,Salem,OR,97306,4,3033142772,AFH,Open
+,11940 SW BEAVERCREST CT,Beaverton,OR,97008,5,3038928878,AFH,Open
+,8729 SW REILING ST,Tigard,OR,97224,5,3044246237,AFH,Open
+,17745 SW MARTY LN,Beaverton,OR,97003,5,3066310647,AFH,Open
+,2405 SW 195TH AVE,Beaverton,OR,97003,5,3117800420,AFH,Open
+,14890 SW DAVIS ROAD,Beaverton,OR,97007,5,3120122733,AFH,Open
+,5253 HECETA BEACH RD,Florence,OR,97439,5,3152696640,AFH,Open
+,7490 SW 172ND AVE,Beaverton,OR,97007,5,3153350110,AFH,Open
+,611 NE SUNDANCE COURT,Hillsboro,OR,97124,4,3160671262,AFH,Open
+,11455 SW DUCHESS WAY,Beaverton,OR,97008,5,3171744608,AFH,Open
+,5810 SW 176TH AVE,Beaverton,OR,97007,5,3193968824,AFH,Open
+,2628 Beebe Rd,Central Point,OR,97502,3,3195004873,AFH,Open
+,14000 SE OATFIELD RD,Milwaukie,OR,97267,5,3229931743,AFH,Open
+,11846 SE 32ND AVE,Milwaukie,OR,97222,5,3252335838,AFH,Open
+,373 ATWATER ST S,Monmouth,OR,97361,4,3256499502,AFH,Open
+,15730 SE ROYER RD,Damascus,OR,97089,5,3293261318,AFH,Open
+,3965 BAMBI AVE NE,Salem,OR,97301,5,3322214436,AFH,Open
+,143 NW SCOTT ST,Hillsboro,OR,97124,5,3331833868,AFH,Open
+,5040 WEST PORT STREET,Eugene,OR,97402,5,3340278177,AFH,Open
+,444 CHEMAWA WAY N,Keizer,OR,97303,5,3348310584,AFH,Open
+,1532 NW Jackpine Ave,Redmond,OR,97756,4,3358164030,AFH,Open
+,4031 GLENDALE AVE NE,Salem,OR,97301,4,3392542355,AFH,Open
+,12940 SW WASHINGTON AVE,Beaverton,OR,97005,3,3395490932,AFH,Open
+,2340 NW 10th Street,Redmond,OR,97756,4,3396869302,AFH,Open
+,2620 SW Xero Avenue,Redmond,OR,97756,5,3402709901,AFH,Open
+,10600 SE IDLEMAN RD,Clackamas,OR,97015,5,3418449775,AFH,Open
+,14990 SW 161ST AVE,Tigard,OR,97224,5,3422553539,AFH,Open
+,15085 SW DAWN COURT,Tigard,OR,97224,5,3434829713,AFH,Open
+,760 CLAY STREET E,Monmouth,OR,97361,3,3446748283,AFH,Open
+,163 EAST 10TH STREET,Coquille,OR,97423,5,3461860115,AFH,Open
+,80 N 31ST AVE,Cornelius,OR,97113,5,3472633578,AFH,Open
+,6428 SW 155TH AVE,Beaverton,OR,97007,5,3509747063,AFH,Open
+,18950 WALLING CIRCLE,West Linn,OR,97068,5,3537543945,AFH,Open
+,958 SW 174TH PL,Beaverton,OR,97006,5,3539207808,AFH,Open
+,797 NE KATHRYN STREET,Hillsboro,OR,97124,5,3551369582,AFH,Open
+,1185 BALTIMORE AVENUE SE,Bandon,OR,97411,5,3581010746,AFH,Open
+,6770 SW MOLALLA BEND RD,Wilsonville,OR,97070,5,3606775135,AFH,Open
+,20695 SW CLARION ST,Beaverton,OR,97003,5,360803357,AFH,Open
+,2905 SW 192ND AVE,Beaverton,OR,97003,5,3614961052,AFH,Open
+,4762 SE WHITE LAKE RD,Milwaukie,OR,97222,5,3621520498,AFH,Open
+,15100 SW 98th Ave,Tigard,OR,97224,5,3622120289,AFH,Open
+,16162 HUNTER AVE,Oregon City,OR,97045,5,3662856025,AFH,Open
+,115 MARGIE CT,Myrtle Creek,OR,97457,3,3687072250,AFH,Open
+,8591 SE OWEN DR,Happy Valley,OR,97086,5,3727081761,AFH,Open
+,20150 SW JETTE LANE,Beaverton,OR,97003,5,374352910,AFH,Open
+,646 Pheasant Creek Dr.,Central Point,OR,97502,5,3772510097,AFH,Open
+,890 MULE DEER PLACE NW,Salem,OR,97304,5,3781135852,AFH,Open
+,16415 HUNTER AVE,Oregon City,OR,97045,5,3783326651,AFH,Open
+,14950 SW DAPHNE CT,Beaverton,OR,97007,5,3803389824,AFH,Open
+,12579 SW FAIRFIELD CT,Beaverton,OR,97005,5,3819025993,AFH,Open
+,8563 SW HAMLET ST,Tigard,OR,97224,5,3824352251,AFH,Open
+,1041 N CENTRAL BLVD,Coquille,OR,97423,3,3849634946,AFH,Open
+,443 HOLMES LANE,Oregon City,OR,97045,5,3857693188,AFH,Open
+,16185 SW KESSLER LN,Tigard,OR,97224,5,3864765773,AFH,Open
+,9714 SE LADERA CT,Damascus,OR,97089,5,3866482137,AFH,Open
+,4542 NW TUMALO COURT,Portland,OR,97229,5,3897184182,AFH,Open
+,3820 NE LINCOLN ST,Hillsboro,OR,97124,5,3905901260,AFH,Open
+,2195 RIVER HEIGHTS CIRCLE,West Linn,OR,97068,5,3914153158,AFH,Open
+,18325 SW AUGUSTA LANE,Beaverton,OR,97003,5,3933080769,AFH,Open
+,613 SW Ruby Street,Madras,OR,97741,5,3933488207,AFH,Open
+,10535 SW 175TH AVE,Beaverton,OR,97007,5,3938725883,AFH,Open
+,1850 DAVIS RD,Oregon City,OR,97045,5,3968926426,AFH,Open
+,344 STELLERS EAGLE ST NW,Salem,OR,97304,3,3979468594,AFH,Open
+,944 ELIZABETH STREET,Eugene,OR,97402,5,4011871881,AFH,Open
+,1072 ROCK CREEK RD S,Salem,OR,97306,5,4028034100,AFH,Open
+,2350 SE 53RD AVE,Hillsboro,OR,97123,5,4029023944,AFH,Open
+,1725 1ST ST,Columbia City,OR,97018,4,4059939958,AFH,Open
+,501 N. 11th St.,Elgin,OR,97827,5,4070200957,AFH,Open
+,4539 SESAME ST NE,Salem,OR,97305,5,4126909514,AFH,Open
+,355 DODD LANE,Yoncalla,OR,97499,4,4139752021,AFH,Open
+,2695 12TH PLACE SE,Salem,OR,97302,5,4148023653,AFH,Open
+,1147 NE NEWPORT HEIGHTS DR,Newport,OR,97365,0,4170824202,AFH,Open
+,3956 SE LAKE RD,Milwaukie,OR,97222,5,4171211555,AFH,Open
+,6232 Southwest Hamilton Street,Portland,OR,97221,5,4230894955,AFH,Open
+,7735 SW 175TH PLACE,Beaverton,OR,97007,5,424563133,AFH,Open
+,1903 W 13TH ST,The Dalles,OR,97058,5,4290762693,AFH,Open
+,20046 SW JOANN COURT,Aloha,OR,97003,5,4318440786,AFH,Open
+,1568 N DAVIS ST,Cornelius,OR,97113,5,4335505422,AFH,Open
+,14819 SE PRIMROSE,Milwaukie,OR,97267,5,4357116031,AFH,Open
+,9905 SE 172ND AVE,Happy Valley,OR,97086,5,4366097811,AFH,Open
+,11325 SW 90TH AVE,Tigard,OR,97223,5,4367626887,AFH,Open
+,2419 SW BARBARA ST,Mcminnville,OR,97128,4,4373728310,AFH,Open
+,146 Fenton Avenue,Molalla,OR,97038,5,4380638438,AFH,Open
+,12540 SW QUAIL CREEK LN,Tigard,OR,97223,5,4381773090,AFH,Open
+,880 W 18TH AVENUE,Eugene,OR,97402,5,4385411796,AFH,Open
+,9339 HWY 97 SOUTH SUITE 2,Klamath Falls,OR,97603,5,4396246305,AFH,Open
+,6755 SW FERNBROOK CT,Wilsonville,OR,97070,5,4421512464,AFH,Open
+,6730 SW PEACH LN,Beaverton,OR,97008,5,4423412088,AFH,Open
+,6742 SE PINE CREEK WAY,Portland,OR,97267,5,4426260842,AFH,Open
+,6775 SW ROLLINGWOOD DRIVE,Beaverton,OR,97008,5,4429343461,AFH,Open
+,3443 LAWRENCE ST SE,Salem,OR,97302,5,4430909317,AFH,Open
+,1380 CLAY ST NE,Salem,OR,97301,5,4431251562,AFH,Open
+,7609 SW MAYO STREET,Portland,OR,97223,5,4468839487,AFH,Open
+,9765 SW VISTA PLACE,Portland,OR,97225,5,4476713176,AFH,Open
+,30803 JEPPESON LANE,Hermiston,OR,97838,5,4504631617,AFH,Open
+,19710 SW SHIRE CT,Aloha,OR,97003,3,4508985696,AFH,Open
+,12146 SE SOLSTICE CT,Clackamas,OR,97015,5,4514607905,AFH,Open
+,192 E TALL FIR CT,Sisters,OR,97759,5,4525669258,AFH,Open
+,21552 SW 91ST AVE,Tualatin,OR,97062,5,4535855033,AFH,Open
+,95 SW 144TH AVE,Beaverton,OR,97006,3,4547417753,AFH,Open
+,34000 NE COLORADO LAKE DR,Corvallis,OR,97333,5,4554689178,AFH,Open
+,18120 SW BROAD OAK BLVD,Aloha,OR,97007,5,4571433827,AFH,Open
+,10725 SE 78TH AVE,Milwaukie,OR,97222,5,4588099666,AFH,Open
+,8335 SW 85TH AVE,Portland,OR,97223,5,4664044729,AFH,Open
+,6625 SW ROBBINS RD,Tualatin,OR,97062,5,467275981,AFH,Open
+,13060 SE 119TH DRIVE,Clackamas,OR,97015,5,4716204062,AFH,Open
+,2470 APPLEGATE AVE,Grants Pass,OR,97527,5,4717996084,AFH,Open
+,7530 SW FLORENCE LN,Portland,OR,97223,3,4724167837,AFH,Open
+,13868 SE CLATSOP ST,Happy Valley,OR,97086,5,4738102590,AFH,Open
+,4615 CHERRY LANE,Medford,OR,97504,5,4769415052,AFH,Open
+,2421 Southeast 190th Avenue,Portland,OR,97233,5,4769601619,AFH,Open
+,705 MAIN STREET,Aumsville,OR,97325,3,4785401766,AFH,Open
+,2564 LAUSANNE CIRCLE,Medford,OR,97504,5,4822427992,AFH,Open
+,4315 Lower River Rd,Grants Pass,OR,97526,3,4842236991,AFH,Open
+,845 NW 1ST PLACE,Hillsboro,OR,97124,5,4844186772,AFH,Open
+,13045 SW 107TH CT,Portland,OR,97223,5,4857622470,AFH,Open
+,4850 SW MENLO DR,Beaverton,OR,97005,4,4868503733,AFH,Open
+,14455 SE JOHNSON RD,Milwaukie,OR,97267,5,4915202231,AFH,Open
+,19675 SW KINNAMAN RD,Beaverton,OR,97078,5,4942314174,AFH,Open
+,550 ELZORA LOOP,Milton Freewater,OR,97862,5,4958657269,AFH,Open
+,8995 SW NORTH DAKOTA STREET,Tigard,OR,97223,4,4963375178,AFH,Open
+,151 Arroyo Dr.,Grants Pass,OR,97527,5,4978858919,AFH,Open
+,10360 SW AVERY STREET,Tualatin,OR,97062,4,4988641410,AFH,Open
+,1453 NARCISSUS CT NE,Salem,OR,97304,5,4989833813,AFH,Open
+,88650 WINTER LANE,Veneta,OR,97487,2,500002,AFH,Open
+,3352 EDGEVIEW LN,Forest Grove,OR,97116,5,500008,AFH,Open
+,3615 Southeast 118th Avenue,Portland,OR,97266,5,500059,AFH,Open
+,12207 SE GUILFORD DR,Milwaukie,OR,97222,5,500157,AFH,Open
+,1239 SW 34th Place,Redmond,OR,97756,2,500183,AFH,Open
+,5045 SE APPENINE WAY,Milwaukie,OR,97222,4,500212,AFH,Open
+,13090 SW LAURMONT DRIVE,Tigard,OR,97223,5,5002138704,AFH,Open
+,6581 PETER RD SE,Aumsville,OR,97325,5,500473,AFH,Open
+,11233 SW 175TH AVENUE,Beaverton,OR,97007,5,500564,AFH,Open
+,13211 SE 128TH AVE,Clackamas,OR,97015,5,500671,AFH,Open
+,2592 ERMINE STREET SE,Albany,OR,97322,5,500864,AFH,Open
+,12550 SW 134TH AVE,Tigard,OR,97223,5,500968,AFH,Open
+,343 NW GLENHART AVE,Winston,OR,97496,2,501003,AFH,Open
+,3201 Delta Waters Rd,Medford,OR,97504,5,501086,AFH,Open
+,3050 COLONIAL AVENUE,Medford,OR,97504,3,501448,AFH,Open
+,360 Northeast 139th Avenue,Portland,OR,97230,5,501491,AFH,Open
+,8150 SW 80TH AVE,Portland,OR,97223,5,5017331995,AFH,Open
+,3655-3665 Northeast Division Street,Gresham,OR,97030,4,501909,AFH,Open
+,3088 Old Stage Rd,Central Point,OR,97502,5,502078,AFH,Open
+,124 FOREST PARK DR,Saint Helens,OR,97051,5,5022028373,AFH,Open
+,17934 NW PARK VIEW BLVD,Portland,OR,97229,5,502311,AFH,Open
+,16808 Northeast Hassalo Street,Portland,OR,97230,5,502387,AFH,Open
+,6760 SW GRIFFIN DR,Portland,OR,97223,5,502475,AFH,Open
+,4182 NE LAURA ST,Hillsboro,OR,97124,5,5026521293,AFH,Open
+,4675 SUSSEX CT,Depoe Bay,OR,97341,5,503020,AFH,Open
+,1257 CALVIN STREET,Eugene,OR,97401,5,503471,AFH,Open
+,95 LAUREL STREET,Gleneden Beach,OR,97388,5,5035403309,AFH,Open
+,401 GLENN STREET S,Vale,OR,97918,5,503580,AFH,Open
+,1345 NW Canyon Drive,Redmond,OR,97756,5,503728,AFH,Open
+,1942 NW OERDING AVENUE,Roseburg,OR,97471,5,503901,AFH,Open
+,2580 SW GARDENVIEW AVE,Portland,OR,97225,5,504143,AFH,Open
+,3139 SE WALNUT STREET,Hillsboro,OR,97123,4,5042427371,AFH,Open
+,122 NW 5TH AVE,Canby,OR,97013,1,504323,AFH,Open
+,3429 S Stage Rd,Medford,OR,97501,5,504667,AFH,Open
+,29845 SW FARMINGTON RD,Hillsboro,OR,97123,5,504817,AFH,Open
+,2740 HARLOW ROAD,Eugene,OR,97401,5,504947,AFH,Open
+,2355 Southeast 137th Avenue,Portland,OR,97233,5,504986,AFH,Open
+,377 NW TREGLOWN CT,Hillsboro,OR,97124,5,505022,AFH,Open
+,518 Northwest 23rd Avenue,Gresham,OR,97030,5,505036,AFH,Open
+,11961 SE SUMMERS LANE,Clackamas,OR,97015,5,505105,AFH,Open
+,275 S 70TH STREET,Springfield,OR,97478,5,5052587351,AFH,Open
+,1187 SW 6TH AVENUE,Ontario,OR,97914,3,505550,AFH,Open
+,1164 IRVING AVE,Astoria,OR,97103,3,505682,AFH,Open
+,4616 Southwest 42nd Place,Portland,OR,97221,5,505769,AFH,Open
+,1020 ELM ST NW,Salem,OR,97304,5,506032,AFH,Open
+,4408 Southeast Knapp Street,Portland,OR,97206,5,506061,AFH,Open
+,445 NW 114TH AVE,Portland,OR,97229,5,506127,AFH,Open
+,5120 Southeast 48th Avenue,Portland,OR,97206,5,506133,AFH,Open
+,7435 SW CANYON ROAD,Portland,OR,97225,5,506146,AFH,Open
+,1465 Southeast 5th Street,Gresham,OR,97080,5,506197,AFH,Open
+,2120 SW ROXBURY AVE,Portland,OR,97225,5,506219,AFH,Open
+,1000 Southeast 130th Avenue,Portland,OR,97233,5,506234,AFH,Open
+,17400 SE RIVER RD,Milwaukie,OR,97267,5,506281,AFH,Open
+,99 AVON ST,Creswell,OR,97426,3,506298,AFH,Open
+,2800 CEDAR LINKS DR,Medford,OR,97504,5,506420,AFH,Open
+,14301 SE RICHEY RD,Boring,OR,97009,4,506468,AFH,Open
+,2404 LIBERTY STREET,North Bend,OR,97459,5,506517,AFH,Open
+,15204 SE ORCHID AVE,Clackamas,OR,97015,5,506674,AFH,Open
+,29995 SW BROWN RD,Wilsonville,OR,97070,5,506847,AFH,Open
+,280 SW 150TH AVE,Beaverton,OR,97006,5,506876,AFH,Open
+,11242 NE Shaver St.,Portland,OR,97220,3,507133,AFH,Open
+,182 WARNER PARROT RD,Oregon City,OR,97045,5,507227,AFH,Open
+,20873 SE GREENMONT DR,Bend,OR,97702,5,507243,AFH,Open
+,1101 NE CHEHALEM DR,Newberg,OR,97132,5,507292,AFH,Open
+,2520 E Main St.,Medford,OR,97504,4,507332,AFH,Open
+,10772 LEVERMAN RD SE,Aumsville,OR,97325,5,507338,AFH,Open
+,15335 Northeast Glisan Street,Portland,OR,97230,5,507403,AFH,Open
+,3557 Southwest 2nd Street,Gresham,OR,97030,5,507420,AFH,Open
+,3668 Northeast Division Street,Gresham,OR,97030,5,507489,AFH,Open
+,6720 Southeast 66th Avenue,Portland,OR,97206,5,507492,AFH,Open
+,4661 Southeast Powell Valley Road,Gresham,OR,97080,5,507523,AFH,Open
+,10425 SW WALKER RD,Beaverton,OR,97005,5,508067,AFH,Open
+,2593 Lotus Lane,Central Point,OR,97502,4,508252,AFH,Open
+,21690 HIGHWAY 47,Yamhill,OR,97148,5,508371,AFH,Open
+,2387 Northeast 148th Avenue,Portland,OR,97230,5,508592,AFH,Open
+,12115 Southeast Flavel Street,Portland,OR,97266,5,508608,AFH,Open
+,5491 BEECHWOOD ST S,Salem,OR,97306,5,508850,AFH,Open
+,14821 SE GREENVIEW AVE,Milwaukie,OR,97267,5,508880,AFH,Open
+,498 TIPTON RD,Roseburg,OR,97471,5,508916,AFH,Open
+,539 S MORRISON ST,Coos Bay,OR,97420,4,508920,AFH,Open
+,6111 Southeast 43rd Avenue,Portland,OR,97206,5,508967,AFH,Open
+,896 NE CASTLEWOOD CT,Hillsboro,OR,97124,5,509029,AFH,Open
+,13996 SE SIEBEN PKWY,Clackamas,OR,97015,5,5092575855,AFH,Open
+,11310 SW 90TH AVE,Tigard,OR,97223,5,509355,AFH,Open
+,1838 Northeast 143rd Avenue,Portland,OR,97230,5,509465,AFH,Open
+,6929 SW Kent Lane,Culver,OR,97734,4,509525,AFH,Open
+,2217 Southeast 156th Avenue,Portland,OR,97233,4,509537,AFH,Open
+,640 Northeast 155th Avenue,Portland,OR,97230,5,509540,AFH,Open
+,47 LYNNBROOK DR,Eugene,OR,97404,5,509580,AFH,Open
+,1690 TAYLOR STREET,Eugene,OR,97402,5,509601,AFH,Open
+,2912 Southeast 101st Avenue,Portland,OR,97266,5,509630,AFH,Open
+,1601 Northeast 152nd Place,Portland,OR,97230,5,509726,AFH,Open
+,6810 SW 204TH AVE,Aloha,OR,97078,5,509758,AFH,Open
+,8340 SW MONTICELLO COURT,Beaverton,OR,97008,5,509791,AFH,Open
+,10140 SW WALNUT ST,Tigard,OR,97223,5,5098657401,AFH,Open
+,16828 Southeast Kelly Street,Portland,OR,97236,0,509882,AFH,Open
+,5907 Southwest Patton Road,Portland,OR,97221,5,509918,AFH,Open
+Farmington Square Beaverton,14420 SW FARMINGTON RD,Beaverton,OR,97005,72,50A028,RCF,Open
+Faye Wright Senior Living,960 BOONE RD SE,Salem,OR,97306,122,50A034,RCF,Open
+Regency Park Alzheimer's Care,8300 SW BARNES RD,Portland,OR,97225,49,50A070,RCF,Open
+Holly Residential Care Center,1075 IRVINGTON DRIVE,Eugene,OR,97404,42,50A074,RCF,Open
+Farmington Square Medford,1530 POPLAR DRIVE,Medford,OR,97504,81,50A083,RCF,Open
+Jurgens Park Senior Living,17950 SW 115TH AVE,Tualatin,OR,97062,64,50A143,RCF,Open
+Ascot Park Senior Living,2730 BAILEY LANE,Eugene,OR,97401,66,50A149,RCF,Open
+Merrill Gardens at Eugene,2440 WILLAKENZIE ROAD,Eugene,OR,97401,32,50A165,RCF,Open
+Columbia Place Memory Care,15727 NE RUSSELL STREET,Portland,OR,97230,20,50A219,RCF,Open
+Settler's Park Memory Care Community,2895 17TH ST,Baker City,OR,97814,30,50A226,RCF,Open
+Brookdale Beaverton,16655 NW WALKER ROAD,Beaverton,OR,97006,60,50A232,RCF,Open
+Brookdale Troutdale,1201 SW CHERRY PARK ROAD,Troutdale,OR,97060,61,50A236,RCF,Open
+Regent Court,400 NW ELKS DRIVE,Corvallis,OR,97330,48,50A239,RCF,Open
+Marquis Autumn Hills Residential Memory Care,6630 SW BEAVERTON-HILLSDALE HWY,Portland,OR,97225,22,50A244,RCF,Open
+Bridgecreek Memory Care,1401 S 12TH STREET,Lebanon,OR,97355,58,50A253,RCF,Open
+Providence Brookside Memory Care,1550 BROOKSIDE DR,Hood River,OR,97031,24,50A262,RCF,Open
+Brookdale Bend,1099 NE WATT WAY,Bend,OR,97701,59,50A263,RCF,Open
+Autumn Garden Memory RCF,6215 SE HAZEL ST,Portland,OR,97206,10,50M006,RCF,Open
+Cascade Park Retirement Center,950 N CASCADE DR,Woodburn,OR,97071,32,50M012,RCF,Open
+Emerald Gardens,1890 NEWBERG HWY,Woodburn,OR,97071,59,50M019,RCF,Open
+Firwood Gardens RCF,819 NE 122ND AVE,Portland,OR,97230,85,50M037,RCF,Open
+Donham Place Inc,5833 N LOMBARD ST,Portland,OR,97203,13,50M048,RCF,Open
+Elena's Manor,351 SE 5TH ST,Hillsboro,OR,97123,62,50M049,RCF,Open
+Brookdale River Valley Tualatin,19200 SW 65TH AVE,Tualatin,OR,97062,120,50M054,RCF,Open
+Gresham Pointe Senior Living,25200 SE STARK ST,Gresham,OR,97030,88,50M055,RCF,Open
+Brookdale Medford,3033 E BARNETT ROAD,Medford,OR,97504,95,50M056,RCF,Open
+Jefferson Lodge Memory Care Community,664 SE JEFFERSON ST,Dallas,OR,97338,55,50M065,RCF,Open
+Mt Scott Residential Care Home,8014 SE LAMBERT ST,Portland,OR,97206,46,50M086,RCF,Open
+The Butte,1250 SE ROBERTS AVE,Gresham,OR,97030,32,50M092,RCF,Open
+Cascade Aids Project / Our House of Portland,2727 SE ALDER ST,Portland,OR,97214,14,50M096,RCF,Open
+Golden Years Manor N. Oregon,995 N OREGON ST,Ontario,OR,97914,14,50M098,RCF,Open
+Tabor Crest Residential Care,7430 SE DIVISION ST,Portland,OR,97206,30,50M109,RCF,Open
+Bonaventure of Milwaukie Memory Care,5801 SE Kellogg Creek Dr.,Milwaukie,OR,97222,32,50M128104,RCF,Open
+River Grove Memory Care,140 GREEN LANE,Eugene,OR,97404,60,50M132,RCF,Open
+Oak Lane Residential Care Facility,727 SW ROGUE RIVER AVENUE,Grants Pass,OR,97526,80,50M133,RCF,Open
+Brookdale Ontario,1372 SW 8TH AVE,Ontario,OR,97914,82,50M142,RCF,Open
+Desire For Healing Inc,44882 MISSION RD,Pendleton,OR,97801,50,50M144,RCF,Open
+Forest Meadows,625 BARBARA DRIVE,Grants Pass,OR,97526,15,50M154,RCF,Open
+Terwilliger Plaza MetcALF Unit,2545 SW TERWILLIGER BLVD,Portland,OR,97201,29,50M157,RCF,Open
+Carlty Gardens,2669 S CLOVERLEAF LOOP,Springfield,OR,97477,28,50M172,RCF,Open
+The Springs at Willowcreek,4398 GLENCOE ST NE,Salem,OR,97301,85,50M174,RCF,Open
+Haven House Retirement Center,714 MAIN STREET P.O. Box 386,Fossil,OR,97830,19,50M201,RCF,Open
+Valley Rose,1040 LUND LANE,Baker City,OR,97814,9,50M204,RCF,Open
+Heritage Heights Senior Living,13637 GARDEN MEADOW DRIVE,Oregon City,OR,97045,75,50M218,RCF,Open
+Pine Rose,475 S SHASTA PL,Burns,OR,97720,15,50M220,RCF,Open
+Blue Haven Memory Care - Dallas,280 SE UGLOW ST,Dallas,OR,97338,16,50M227,RCF,Open
+Brookdale Wilsonville,8170 VLAHOS DR,Wilsonville,OR,97070,37,50M228,RCF,Open
+Sherwood Pines Residential Care,87986 SHERWOOD ST P.O. Box 1016,Veneta,OR,97487,16,50M264,RCF,Open
+Pacific Living Centers of Redmond,1600 SW RIMROCK WAY,Redmond,OR,97756,15,50M265,RCF,Open
+Pacific Living Centers of Hood River,1995 8TH ST,Hood River,OR,97031,15,50M267,RCF,Open
+Sweet Bye N Bye Memory Care Facilities,2850 EVERGREEN AVE NE,Salem,OR,97301,30,50M268,RCF,Open
+Crystal Terrace Memory Care,320 JADE TERRACE,Klamath Falls,OR,97601,44,50M300,RCF,Open
+Juniper House Memory Care,301 SW 28TH DRIVE,Pendleton,OR,97801,16,50M422,RCF,Open
+Marjorie House Memory Care Community,2855 NE CUMULUS AVENUE,Mcminnville,OR,97128,46,50M423,RCF,Open
+Kinsington at Redwood Park,1390 DOWELL ROAD,Grants Pass,OR,97527,30,50M424,RCF,Open
+Maple Valley Memory Care,219 NE FIRCREST DR,Mcminnville,OR,97128,28,50M425,RCF,Open
+Countryside Living of Redmond,1350 NW CANAL BLVD,Redmond,OR,97756,38,50M426,RCF,Open
+Fieldstone Village at Keizer Ridge Memory Care,1165 MCGEE COURT NE,Keizer,OR,97303,23,50M427,RCF,Open
+Guardian Angel Homes Memory Care,540 NW 12TH ST,Hermiston,OR,97838,32,50M428,RCF,Open
+Rivera Mansions RCF,2220 SE 174TH AVENUE,Portland,OR,97233,36,50M429,RCF,Open
+Tabor Crest Ii Memory Care,16050 NE HALSEY STREET,Portland,OR,97230,30,50M434,RCF,Open
+Willamette Springs Memory Care,6000 SW MOSAIC DRIVE,Corvallis,OR,97333,72,50M436,RCF,Open
+Bayside Terrace Memory Care,192 NORMAN AVENUE,Coos Bay,OR,97420,22,50M440,RCF,Open
+The Meadow at Mt Bachelor Memory Care,20215 POWERS ROAD,Bend,OR,97702,24,50M441,RCF,Open
+Calaroga Terrace Senior Living,1400 NE SECOND AVE,Portland,OR,97232,105,50R009,RCF,Open
+Cherry Blossom Cottage,11177 SE CHERRY BLOSSOM DR,Portland,OR,97216,49,50R014,RCF,Open
+Conifer House Residential Care And Memory Care,145 NE CONIFER BLVD,Corvallis,OR,97330,51,50R023,RCF,Open
+Fountain Plaza,1441 MORROW ROAD,Medford,OR,97504,19,50R038,RCF,Open
+Friendsview Retirement Community,1301 E FULTON ST,Newberg,OR,97132,155,50R040,RCF,Open
+Fox Hollow,5320 FOX HOLLOW RD,Eugene,OR,97405,54,50R046,RCF,Open
+Avamere Court at Keizer RCF,5210 RIVER ROAD N,Keizer,OR,97303,63,50R068,RCF,Open
+Cedarbrook Lodge Senior Living,775 NE 27TH ST,Mcminnville,OR,97128,35,50R078,RCF,Open
+Mt Angel Towers,ONE TOWERS LANE BOX 2120,Mount Angel,OR,97362,32,50R085,RCF,Open
+The Creston Senior Living,3102 SE HOLGATE BLVD,Portland,OR,97202,115,50R091,RCF,Open
+Sweetbriar Villa,6135 E ST,Springfield,OR,97478,39,50R108,RCF,Open
+West Hills Village Senior Residence,5711 SW MULTNOMAH BLVD,Portland,OR,97219,150,50R121,RCF,Open
+Santiam Gardens Residential Care,1625 CENTER ST NE,Salem,OR,97301,55,50R125,RCF,Open
+Regency Woodland,4710 SUNNYSIDE RD SE,Salem,OR,97302,40,50R126,RCF,Open
+Cascades of Bend Retirement Community,1801 NE LOTUS DR,Bend,OR,97701,70,50R128,RCF,Open
+Clackamas Heights Senior Living,14550 SE VISTA LANE,Milwaukie,OR,97267,40,50R139,RCF,Open
+Serenity Hills Senior Living,16200 Southwest Division Street,Beaverton,OR,97007,71,50R140271,RCF,Open
+Horton Plaza,1122 SPRING STREET,Medford,OR,97504,18,50R145,RCF,Open
+Philomath Elder Care,620 South 19th Street,Philomath,OR,97370,10,50R161710,RCF,Open
+Oaktree Residential Living,5030 WEST PORT ST,Eugene,OR,97402,16,50R171,RCF,Open
+Minds In Motion Initiative,744 Capitol Street Northeast,Salem,OR,97301,5,50R200410,RCF,Open
+Riverview Terrace,1970 WEST HARVARD AVENUE,Roseburg,OR,97471,20,50R202,RCF,Open
+Capital Manor Retirement Community,1955 DALLAS HWY NW,Salem,OR,97304,117,50R216,RCF,Open
+Blue Haven Memory Care - Independence,202 SOUTH 9TH STREET,Independence,OR,97351,16,50R225,RCF,Open
+Willamette View Terrace,13169 SE RIVER ROAD,Portland,OR,97222,47,50R229,RCF,Open
+Holladay Park Plaza,1300 Northeast 16th Avenue,Portland,OR,97232,44,50R230,RCF,Open
+The Springs at Anna Maria,822 GOLF VIEW DRIVE,Medford,OR,97504,38,50R234,RCF,Open
+Ivy Court Senior Living,18265 SE RIVER ROAD,Milwaukie,OR,97222,16,50R251,RCF,Open
+Rose Linn Vintage Place,2330 DEBOK ROAD,West Linn,OR,97068,70,50R270,RCF,Open
+Willamette View Memory Care Community,13145 SE RIVER ROAD,Portland,OR,97222,21,50R271,RCF,Open
+Suttle Care and Retirement Inc,1601 SW 24TH ST,Pendleton,OR,97801,27,50R273,RCF,Open
+Pacific Living Centers of Medford at Arrowhead,3853 ARROWHEAD DRIVE,Medford,OR,97504,11,50R274,RCF,Open
+Avamere at St Helens,2400 GABLE RD,Saint Helens,OR,97051,28,50R275,RCF,Open
+Edgewood Point Memory Care,7733 SW SCHOLLS FERRY RD,Beaverton,OR,97008,27,50R276,RCF,Open
+Hillside Memory Support,440 NW HILLSIDE PARK WAY,Mcminnville,OR,97128,20,50R277,RCF,Open
+Evergreen Memory Care Community,3720 N CLAREY ST,Eugene,OR,97402,64,50R279,RCF,Open
+New Friends Memory And Residential Care of Florence,3321 OAK ST,Florence,OR,97439,48,50R280,RCF,Open
+Pacific Living Centers of Bend,2853 NE CONNERS AVE,Bend,OR,97701,15,50R281,RCF,Open
+Elite Care Adams - Hood,4483 SE OATFIELD HILL RD,Milwaukie,OR,97267,30,50R282,RCF,Open
+Countryside Living Memory Care,390 NW 2ND AVE,Canby,OR,97013,35,50R283,RCF,Open
+West Wind Court,465 4TH ST SW,Bandon,OR,97411,14,50R285,RCF,Open
+Raleigh Hills Enhanced Care Community,4815 SW DOGWOOD LANE,Portland,OR,97225,21,50R287,RCF,Open
+Sunset Rose,1514 ATHENS AVE,Pendleton,OR,97801,15,50R288,RCF,Open
+Rosewood Memory Care,2550 SE CENTURY BLVD,Hillsboro,OR,97123,48,50R290,RCF,Open
+Crystal Terrace,1000 TOWN CENTER DRIVE,Klamath Falls,OR,97601,43,50R292,RCF,Open
+Miramont Pointe,11520 SE SUNNYSIDE ROAD,Clackamas,OR,97015,186,50R293,RCF,Open
+Footsteps at Murrayhill,10880 SW DAVIES ROAD,Beaverton,OR,97008,32,50R294,RCF,Open
+Pacific Living Centers of Grants Pass at Anique,525 ANIQUE LANE,Grants Pass,OR,97526,15,50R295,RCF,Open
+Avamere at Seaside Residential Care Facility,2500 S ROOSEVELT DR,Seaside,OR,97138,40,50R296,RCF,Open
+Prestige Senior Living Orchard Heights Memory Care,695 ORCHARD HEIGHTS RD NW,Salem,OR,97304,18,50R297,RCF,Open
+Reflections Memory Care,2480 CORAL AVE NE,Salem,OR,97305,16,50R298,RCF,Open
+Hawthorne House of Salem,3042 HYACINTH ST NE,Salem,OR,97303,15,50R300,RCF,Open
+Emerson House Portland,3577 SE DIVISION,Portland,OR,97202,55,50R301,RCF,Open
+Timberwood Court Specialty Care Community,2875 SE 14TH AVE,Albany,OR,97322,48,50R302,RCF,Open
+Springridge Court Memory Care,32100 SW FRENCH PRAIRIE ROAD,Wilsonville,OR,97070,16,50R303,RCF,Open
+Gateway Gardens,178 COMMONS DRIVE,Eugene,OR,97401,90,50R304,RCF,Open
+Pacific Living Centers of Klamath Falls,44 NORTH HOMEDALE RD,Klamath Falls,OR,97603,15,50R306,RCF,Open
+Meadowlark Memory Care,2156 BROOKHURST STREET,Medford,OR,97504,13,50R307,RCF,Open
+Elite Care Rainier - Helens,4457 SE OATFIELD HILL RD,Milwaukie,OR,97267,30,50R308,RCF,Open
+Rosewood Court Residential Care,4254 WEATHERS STREET NE,Salem,OR,97301,50,50R310,RCF,Open
+Compass Rose Memory Care,2690 NE YACHT AVE,Lincoln City,OR,97367,43,50R311,RCF,Open
+Prairie House Memory Care Community,51485 MORSON ST,La Pine,OR,97739,18,50R313,RCF,Open
+Magnolia Gardens Memory Care,1355 DAUGHERTY AVE,Cottage Grove,OR,97424,35,50R314,RCF,Open
+Ihome Care,12032 SE HOLGATE BLVD,Portland,OR,97266,64,50R316,RCF,Open
+Elite Care Jefferson - Ashland,4422 SE OATFIELD HILL ROAD,Milwaukie,OR,97267,30,50R318,RCF,Open
+Golden Age Living,3484 SE HILL ROAD,Milwaukie,OR,97267,15,50R319,RCF,Open
+Avamere at Bethany,16360 NW AVAMERE CT,Portland,OR,97229,26,50R320,RCF,Open
+Providence Cully Residential Care,5119 NE 57TH AVE,Portland,OR,97218,42,50R321,RCF,Open
+Mountain View Residential Care Facility,1220 SE 282ND AVENUE,Gresham,OR,97080,23,50R322,RCF,Open
+Prestige Senior Living Arbor Place Memory Care,3150 JUANIPERO WAY,Medford,OR,97504,18,50R323,RCF,Open
+West Wind Residential Care Community,3130 JUANIPERO ST,Medford,OR,97504,16,50R326,RCF,Open
+The Atrium at Flagstone,3325 COLUMBIA VIEW DR,The Dalles,OR,97058,33,50R327,RCF,Open
+Arbor House of Grants Pass,820 GOLD COURT,Grants Pass,OR,97527,15,50R328,RCF,Open
+Dallas Retirement Village Memory Care Center,377 NW JASPER ST,Dallas,OR,97338,20,50R331,RCF,Open
+Heritage House of Woodburn,943 N CASCADE DR,Woodburn,OR,97071,15,50R332,RCF,Open
+Willow Creek Memory Care,175 NE 16TH STREET,Madras,OR,97741,16,50R334,RCF,Open
+Oswego Grove,4550 SW CARMAN DRIVE,Lake Oswego,OR,97035,31,50R336,RCF,Open
+Fanno Creek By Elite Care,12353 SW GRANT ST,Tigard,OR,97223,30,50R340,RCF,Open
+Autumn House of Grants Pass,2268 WILLIAMS HWY,Grants Pass,OR,97527,15,50R343,RCF,Open
+Brookdale Redmond Clare Bridge,1942 SW CANYON DRIVE,Redmond,OR,97756,32,50R344,RCF,Open
+Middlefield Oaks Memory Care Community,1500 VILLAGE DRIVE,Cottage Grove,OR,97424,36,50R345,RCF,Open
+Bayberry Commons Memory Care,2211 LAURA STREET,Springfield,OR,97477,14,50R347,RCF,Open
+Rock of Ages Mennonite Home,15600 SW ROCK OF AGES ROAD,Mcminnville,OR,97128,22,50R348,RCF,Open
+Touchmark at Mount Bachelor Village,19800 SW TOUCHMARK WAY,Bend,OR,97702,95,50R349,RCF,Open
+Hawthorne Gardens Memory Care Community,2828 SE TAYLOR ST,Portland,OR,97214,35,50R350,RCF,Open
+Chantele's Loving Touch Memory Care,1128 W CENTRAL AVENUE,Sutherlin,OR,97479,45,50R351,RCF,Open
+Pheasant Pointe Memory Care Community,835 E MAIN STREET,Molalla,OR,97038,12,50R352,RCF,Open
+Cedar Village Memory Care Community,4452 LANCASTER DR NE,Salem,OR,97301,24,50R353,RCF,Open
+Riverside Living Inc,23500 NE HALSEY ST,Wood Village,OR,97060,16,50R355,RCF,Open
+Harmony House of Salem,3062 HYACINTH ST NE,Salem,OR,97301,15,50R356,RCF,Open
+Mcloughlin Memory Care of Oregon,1145 MOLALLA AVENUE,Oregon City,OR,97045,28,50R357,RCF,Open
+Fircrest Senior Living,213 NE FIRCREST DR,Mcminnville,OR,97128,52,50R358,RCF,Open
+Spruce Point Memory Care,375 9TH STREET,Florence,OR,97439,25,50R359,RCF,Open
+Russellville Park Memory Care,20 SE 103RD AVENUE,Portland,OR,97216,20,50R360,RCF,Open
+Footsteps at Tanasbourne,1950 NE 102ND AVENUE,Hillsboro,OR,97006,12,50R361,RCF,Open
+Manor Terrace Care Suites,1250 MIRA MAR AVENUE,Medford,OR,97504,30,50R363,RCF,Open
+Tanner Spring Memory Care,23000 HORIZON DRIVE,West Linn,OR,97068,52,50R366,RCF,Open
+Arbor Oaks Terrace Memory Care Residence,317 N. WERTH BLVD,Newberg,OR,97132,48,50R367,RCF,Open
+Brightcreek at Sea View,98059 GERLACH LANE,Brookings,OR,97415,35,50R368,RCF,Open
+Arbor Senior Living,800 NW 25TH AVE,Portland,OR,97210,40,50R369,RCF,Open
+Roxy Ann Memory Community,2530 LONE PINE ROAD,Medford,OR,97504,16,50R370,RCF,Open
+Applegate House of Grants Pass,1635 KELLENBECK AVE,Grants Pass,OR,97527,15,50R371,RCF,Open
+Kinsington Place,827 SW KINSINGTON COURT,Grants Pass,OR,97526,16,50R372,RCF,Open
+Silver Creek Memory Care Community,703 EVERGREEN RD,Woodburn,OR,97071,20,50R373,RCF,Open
+Hazelwood Enhanced Memory Care,11547 NE GLISAN ST,Portland,OR,97220,40,50R374,RCF,Open
+Rn Villa Senior Care,401 NE 139TH AVENUE,Portland,OR,97230,45,50R375,RCF,Open
+Forest Grove Beehive Memory Care,2635 21ST AVENUE,Forest Grove,OR,97116,22,50R376,RCF,Open
+Footsteps at Clackamas Woods,14404 SE WEBSTER ROAD,Milwaukie,OR,97267,32,50R377,RCF,Open
+Adara Oaks Living,931 NE LINDEN AVENUE,Gresham,OR,97030,60,50R378,RCF,Open
+Table Rock Memory Care Community,2636 TABLE ROCK RD,Medford,OR,97504,84,50R379,RCF,Open
+Countryside Living Memory Care South,406 NW 2ND AVENUE,Canby,OR,97013,20,50R380,RCF,Open
+Maryville Memory Care,14645 SW Farmington Road,Beaverton,OR,97007,16,50R381,RCF,Open
+Washington Gardens Memory Care,9000 SW 91ST AVENUE,Tigard,OR,97223,48,50R382,RCF,Open
+Royalton Place Memory Care,5555 SE KING RD,Milwaukie,OR,97222,28,50R383,RCF,Open
+Senior Haven RCF,12140 SE FOSTER RD,Portland,OR,97266,49,50R384,RCF,Open
+Bonaventure of Salem Memory Care,3411 BOONE RD SE,Salem,OR,97317,24,50R385,RCF,Open
+Solomia Home Care LLC,184 N 2ND ST,Saint Helens,OR,97051,7,50R386,RCF,Open
+Mt. Bachelor Memory Care,20225 POWERS ROAD,Bend,OR,97702,56,50R390,RCF,Open
+Wallowa Valley Senior Living Memory Care,605 MEDICAL PARKWAY,Enterprise,OR,97828,10,50R391,RCF,Open
+Jennings Mccall RCF,2221 OAK STREET,Forest Grove,OR,97116,27,50R393,RCF,Open
+Valley View Memory Care Community,112 NW VALLEY VIEW DR,John Day,OR,97845,10,50R394,RCF,Open
+Sweet Bye N Bye Memory Care - West,2855 EVERGREEN AVE NE,Salem,OR,97301,28,50R395,RCF,Open
+Whitewood Gardens,2027 SE 174TH AVE,Portland,OR,97233,39,50R396,RCF,Open
+Footsteps at Sherwood,15677 SW OREGON ST,Sherwood,OR,97140,31,50R397,RCF,Open
+Footsteps at Carman Oaks,3900 SW CARMAN DRIVE,Lake Oswego,OR,97035,16,50R398,RCF,Open
+Footsteps at Mill Creek,1201 W 10TH STREET,The Dalles,OR,97058,25,50R399,RCF,Open
+Marie Rose Residential Care,17360 HOLY NAMES DRIVE,Lake Oswego,OR,97034,52,50R401,RCF,Open
+Grace Manor Residential Care Community,2811 BAILEY LANE,Eugene,OR,97401,21,50R402,RCF,Open
+Brookdale Geary Street Memory Care,2445 GEARY ST SE,Albany,OR,97321,44,50R403,RCF,Open
+Coral Springs Residential Care,2520 CORAL AVENUE NE,Salem,OR,97305,32,50R404,RCF,Open
+Elite Care Larch - Tabor,4425 SE OATFIELD HILL RD,Milwaukie,OR,97267,30,50R405,RCF,Open
+Bartlett House of Medford,3465 LONE PINE RD,Medford,OR,97504,15,50R407,RCF,Open
+Memory Lane Homes of Baker,3078 RESORT ST,Baker City,OR,97814,15,50R408,RCF,Open
+Heartwood Place,2325 BOONES FERRY ROAD,Woodburn,OR,97071,48,50R409,RCF,Open
+Mckenzie Living,6452 A STREET,Springfield,OR,97478,21,50R410,RCF,Open
+Waterford Grand Memory Care,600 WATERFORD WAY,Eugene,OR,97401,64,50R411,RCF,Open
+Sunset Estates,281 SUNSET DRIVE,Ontario,OR,97914,16,50R412,RCF,Open
+Parkview Memory Care at Cherrywood Village,10721 SE CHERRY BLOSSOM DRIVE,Portland,OR,97216,38,50R413,RCF,Open
+The Arbor at Avamere Court,450 CLAGGETT COURT N,Keizer,OR,97303,49,50R414,RCF,Open
+Windsong at Eola Hills,2030 WALLACE ROAD NW,Salem,OR,97304,64,50R415,RCF,Open
+Cherrywood Memory Care - Revere Court,2750 NE DORAN DRIVE,Mcminnville,OR,97128,56,50R416,RCF,Open
+Advocate Care,13033 SOUTH EAST HOLGATE BLVD,Portland,OR,97236,34,50R417,RCF,Open
+Clatsop Care Memory Community,2219 SE DOLPHIN ROAD,Warrenton,OR,97146,32,50R421,RCF,Open
+Bonaventure of Albany Memory Care,420 GERI ST NW,Albany,OR,97321,23,50R430,RCF,Open
+Bonaventure of Tigard Memory Care,15000 SW HALL BLVD,Tigard,OR,97224,23,50R432,RCF,Open
+Waterhouse Ridge Memory Care Community,1115 NW 158TH AVENUE,Beaverton,OR,97006,68,50R433,RCF,Open
+Merrill Gardens at Cedar Mill Memory Care,11795 NW CEDAR FALLS DRIVE,Portland,OR,97229,23,50R438,RCF,Open
+Barbur Vista Residential Care,9451 SW BARBUR BOULEVARD,Portland,OR,97219,32,50R439,RCF,Open
+Bonaventure of Gresham Memory Care,22514 SE STARK STREET,Gresham,OR,97030,27,50R442,RCF,Open
+Sunnyside Meadows,12195 SE 117TH AVENUE,Happy Valley,OR,97086,72,50R443,RCF,Open
+The Rawlin at Riverbend,3491 GAME FARM ROAD,Springfield,OR,97477,72,50R445,RCF,Open
+Bonaventure of Keizer Memory Care,5525 MCLEOD LANE NE,Keizer,OR,97303,35,50R447,RCF,Open
+Cascade Valley Memory Care,1010 NE THIRD AVENUE,Milton Freewater,OR,97862,23,50R448,RCF,Open
+Footsteps at Greer Gardens,1282 GOODPASTURE ISLAND ROAD,Eugene,OR,97401,32,50R449,RCF,Open
+Village at Valley View,1071 W JACKSON ROAD,Ashland,OR,97520,48,50R450,RCF,Open
+Mckenzie Living Eugene,2625 LONE OAK WAY,Eugene,OR,97404,58,50R451,RCF,Open
+Bonaventure of Medford Memory Care,2530 EAST MCANDREWS ROAD,Medford,OR,97504,25,50R453,RCF,Open
+Kellyville RCF,12221 SE KELLY STREET,Portland,OR,97236,50,50R454,RCF,Open
+Mill View Memory Care,1290 SW SILVER LAKE BLVD,Bend,OR,97702,36,50R455,RCF,Open
+Waverly Place Memory Care,2853 SE SALEM AVE,Albany,OR,97321,20,50R456,RCF,Open
+Timber Town Living,1116 W CENTRAL AVENUE,Sutherlin,OR,97479,47,50R457,RCF,Open
+Celia's House In Holmes Park,217 S MODOC AVE,Medford,OR,97504,12,50R458,RCF,Open
+Murray Highland,4900 SW MURRAY BLVD,Beaverton,OR,97005,33,50R460,RCF,Open
+Touchmark In The West Hills,840 SW TOUCHMARK WAY,Portland,OR,97225,155,50R461,RCF,Open
+The Suites Memory Care Community,1301 SE PARKDALE DR,Grants Pass,OR,97527,28,50R462,RCF,Open
+Liberty Pointe,1241 NE 6TH STREET,Gresham,OR,97030,55,50R463,RCF,Open
+Memory Support Center at Rogue Valley Manor,1550 MALAMA WAY,Medford,OR,97504,40,50R464,RCF,Open
+The Pines at Juniper Springs,590 NW 23RD STREET,Redmond,OR,97756,24,50R465,RCF,Open
+Morningstar Memory Care of Beaverton,14475 SW BARROWS RD,Beaverton,OR,97007,44,50R466,RCF,Open
+The Grove at Pear Valley Memory Care,800 N HASKELL ST,Central Point,OR,97502,24,50R467,RCF,Open
+Mapleview Manor LLC,7100 SE LAKE RD,Milwaukie,OR,97267,30,50R468,RCF,Open
+The Pines at The Canopy -,9860 NW CORNELL RD,Portland,OR,97229,30,50R469,RCF,Open
+Aveena Memory Care,21910 SE BORGES RD,Damascus,OR,97089,15,50R470,RCF,Open
+Better Living RCF,15855 SE POWELL BLVD,Portland,OR,97236,19,50R471,RCF,Open
+River Terrace Memory Care,950 SOUTH END RD,Oregon City,OR,97045,54,50R472,RCF,Open
+Boone Ridge Memory Care,2950 BOONE RD SE,Salem,OR,97306,48,50R473,RCF,Open
+Merrill Gardens at Sherwood Memory Care,16872 SW EDY ROAD,Sherwood,OR,97140,28,50R474,RCF,Open
+Countryside Village Lodge,1718 KELLENBECK AVE,Grants Pass,OR,97527,28,50R475,RCF,Open
+South Beach Manor,411 SE 35TH ST,South Beach,OR,97366,41,50R476,RCF,Open
+Cello Memory Care,5292 HARVARD AVENUE,Florence,OR,97439,10,50R477,RCF,Open
+Brookside Memory Care,11045 SW HALL BLVD,Tigard,OR,97223,42,50R478,RCF,Open
+Valley View RCF,9000 SE 190TH DRIVE,Damascus,OR,97089,15,50R479,RCF,Open
+Battle Creek Memory Care,1805 WALN DR SE,Salem,OR,97306,68,50R480,RCF,Open
+Courtyard at Mt Tabor Pavilion,2350 SE 60TH AVE,Portland,OR,97206,29,50R481,RCF,Open
+Footsteps at Sunnyside,14391 SE PRINCETON VILLAGE WAY,Happy Valley,OR,97015,26,50R482,RCF,Open
+Mountain Park Memory Care Community,13600 SE 122ND AVE,Clackamas,OR,97015,104,50R483,RCF,Open
+Footsteps at Lake Oswego,3900 KRUSE WAY PLACE,Lake Oswego,OR,97035,24,50R484,RCF,Open
+Kinsington Oak Grove,77 OAK GROVE ROAD,Medford,OR,97501,60,50R486,RCF,Open
+The Grove Memory Care,2184 POPLAR DRIVE,Medford,OR,97504,49,50R487,RCF,Open
+Marquis Hope Village Memory Care,1589 S IVY ST,Canby,OR,97013,24,50R488,RCF,Open
+The Pines at The Landing,2490 NW EDENBOWER BLVD,Roseburg,OR,97471,21,50R489,RCF,Open
+Holi Senior Living,188 NE 77TH AVE,Hillsboro,OR,97124,90,50R490,RCF,Open
+New Friends of Coos Bay,955 KENTUCKY AVE,Coos Bay,OR,97420,55,50R491,RCF,Open
+Miracle Heights at Happy Valley,13677 SE 147TH AVE,Happy Valley,OR,97015,47,50R492,RCF,Open
+Sweet Home RCF,950 NANDINA ST,Sweet Home,OR,97386,18,50R493,RCF,Open
+Everbloom Memory Care,2630 CHURCH ST NE,Salem,OR,97301,40,50R494,RCF,Open
+Still Waters Inc,475 ELMIRA AVE SE,Bandon,OR,97411,19,50R496,RCF,Open
+Bear Creek Memory Care LLC,250 KENNEL AVE,Molalla,OR,97038,68,50R497,RCF,Open
+Awbrey Place Memory Care,2825 NEFF RD,Bend,OR,97701,26,50R498,RCF,Open
+Hillside Place Memory Care,1400 SE 19TH ST,Lincoln City,OR,97367,8,50R499,RCF,Open
+Golden Age Memory Care,14504 SE OATFIELD RD,Milwaukie,OR,97267,15,50R500,RCF,Open
+Juniper Canyon Living,2855 NW 7TH ST,Redmond,OR,97756,108,50R501,RCF,Open
+Chinook Place Memory Care,470 NE OAK ST,Madras,OR,97741,17,50R502,RCF,Open
+Stephanie Gardens Residential Care,19751 SE STARK ST,Portland,OR,97233,52,50R503,RCF,Open
+Kelly Gardens Residential Care,813 NE KELLY AVE,Gresham,OR,97030,61,50R504,RCF,Open
+Sunset Villa,1690 ARCATA WAY,Ontario,OR,97914,16,50R505,RCF,Open
+Marquis Eugene Memory Care,555 COUNTRY CLUB RD,Eugene,OR,97401,50,50R506,RCF,Open
+Comfort Village LLC,16161 BURGESS RD,La Pine,OR,97739,51,50R507,RCF,Open
+Larkspur Supportive Living at Madrona Grove,13505 SE RIVER RD,Portland,OR,97222,16,50R508,RCF,Open
+Valley View Adult Care LLC,1313 E 16TH ST,The Dalles,OR,97058,1,50R509,RCF,Open
+Cedar Senior Living,14908 SE CEDAR AVE,Milwaukie,OR,97267,15,50R510,RCF,Open
+Clg-Bend Buildings 1-3,1801 NE LOTUS DRIVE,Bend,OR,97701,100,50R511,RCF,Open
+Hopewell House,6171 SW CAPITOL HWY,Portland,OR,97239,13,50R512,RCF,Open
+The Springs at Happy Valley,13160 SE 172ND AVE,Happy Valley,OR,97086,92,50R513,ALF,Open
+Serenity RCF,15225 SE POWELL BLVD,Portland,OR,97236,25,50R514,RCF,Open
+Footsteps at Happy Valley,13160 SE 172ND AVE,Happy Valley,OR,97086,32,50R516,RCF,Open
+Mirabella Portland Memory Care,3550 S BOND AVE,Portland,OR,97239,17,50R517,RCF,Open
+Morningstar Memory Care at Laurelhurst,3140 NE SANDY BLVD,Portland,OR,97232,32,50R518,RCF,Open
+The Ackerly at Reed's Crossing Memory Care,7235 SE CIRCUIT DRIVE,Hillsboro,OR,97123,28,50R519,RCF,Open
+Wiley Creek Memory Care,4950 MOUNTAIN FIR ST,Sweet Home,OR,97386,48,50R520,RCF,Open
+The Watermark at The Pearl,1540 NW 13TH AVE,Portland,OR,97209,109,50R522,RCF,Open
+Bush Street Living,5529 SE BUSH ST,Portland,OR,97206,2,50R523,RCF,Open
+Clearwater Beaverton,910 NW 185TH AVE,Beaverton,OR,97006,123,50R524,RCF,Open
+Cogir of Tigard Memory Care,9244 Southwest Oak Street,Tigard,OR,97223,28,50R56903,RCF,Open
+Cogir of Tigard,9244 Southwest Oak Street,Tigard,OR,97223,107,50R56960,ALF,Open
+,6307 SE HULL AVE,Milwaukie,OR,97267,5,510283,AFH,Open
+,11638 Southwest 35th Avenue,Portland,OR,97219,5,510308,AFH,Open
+,4415 LONE OAK ROAD SE,Salem,OR,97302,5,510342,AFH,Open
+,16565 SW ELLERSON STREET,Beaverton,OR,97007,3,510688,AFH,Open
+,16351 Northeast Holladay Street,Portland,OR,97230,4,510692,AFH,Open
+,6248 Southwest Hamilton Street,Portland,OR,97221,5,510811,AFH,Open
+,16508 SE OATFIELD RD,Milwaukie,OR,97267,5,510822,AFH,Open
+,15521 SE MEADOWLARK LANE,Milwaukie,OR,97267,3,510967,AFH,Open
+,2845 Southeast 153rd Avenue,Portland,OR,97236,5,510972,AFH,Open
+,2340 Southeast 137th Avenue,Portland,OR,97233,5,510973,AFH,Open
+,12631 SW 135TH AVE,Tigard,OR,97223,5,511156,AFH,Open
+,95122 MARCOLA ROAD,Marcola,OR,97454,5,511229,AFH,Open
+,5005 E STREET,Springfield,OR,97478,4,511286,AFH,Open
+,15032 Southeast Woodward Street,Portland,OR,97236,5,511427,AFH,Open
+,2120 Northeast 132nd Avenue,Portland,OR,97230,5,511465,AFH,Open
+,1835 Southeast 114th Place,Portland,OR,97216,5,511467,AFH,Open
+,16061 SE SOUTHVIEW ST,Milwaukie,OR,97267,5,511532,AFH,Open
+,14652 SE STERLING COURT,Clackamas,OR,97015,5,511567,AFH,Open
+,2470 Siskiyou Blvd.,Medford,OR,97504,3,511594,AFH,Open
+,16921 Southeast Main Street,Portland,OR,97233,5,511784,AFH,Open
+,10752 LEVERMAN RD SE,Aumsville,OR,97325,5,511802,AFH,Open
+,12625 SW GRANT AVE,Tigard,OR,97223,5,511807,AFH,Open
+,9757 Southeast Boise Street,Portland,OR,97266,3,511813,AFH,Open
+,4507 Southeast Ogden Street,Portland,OR,97206,5,511887,AFH,Open
+,3749 EDGEWOOD DR,North Bend,OR,97459,1,511906,AFH,Open
+,15824 SE ECKERT LN,Damascus,OR,97089,3,5119438758,AFH,Open
+,910 W MAPLE STREET,Lebanon,OR,97355,5,512006,AFH,Open
+,3256 NE OLYMPIC ST,Hillsboro,OR,97124,5,512204,AFH,Open
+,2609 Northeast 137th Avenue,Portland,OR,97230,5,512318,AFH,Open
+,628 Northeast 155th Avenue,Portland,OR,97230,5,512320,AFH,Open
+,315 YORK ST,Ashland,OR,97520,4,512576,AFH,Open
+,5244 Williams Hwy,Grants Pass,OR,97527,5,512598,AFH,Open
+,1015 Northeast 58th Avenue,Portland,OR,97213,5,512677,AFH,Open
+,17780 SCHALIT WAY,Lake Oswego,OR,97035,5,512873,AFH,Open
+,8622 North Chase Avenue,Portland,OR,97217,5,512933,AFH,Open
+,3819 SE OATFIELD COURT,Milwaukie,OR,97267,5,513020,AFH,Open
+,4190 COLLINS WAY,Lake Oswego,OR,97035,4,513068,AFH,Open
+,2988 BAILEY AVENUE,Medford,OR,97504,5,513089,AFH,Open
+,4047 Southeast 5th Street,Gresham,OR,97080,4,513228,AFH,Open
+,3964 North Massachusetts Avenue,Portland,OR,97227,5,513248,AFH,Open
+,10891 SE ORIENT DR,Boring,OR,97009,3,513364,AFH,Open
+,380 COOPER CREEK ROAD,Sutherlin,OR,97479,2,513417,AFH,Open
+,805 Northeast 118th Avenue,Portland,OR,97220,5,513448,AFH,Open
+,7618 Southeast 114th Avenue,Portland,OR,97266,5,513459,AFH,Open
+,8737 Northeast Fremont Street,Portland,OR,97220,5,513464,AFH,Open
+,1409 Northeast 114th Avenue,Portland,OR,97220,5,513496,AFH,Open
+,1208 Northeast Magda Lane,Portland,OR,97230,5,513497,AFH,Open
+,1816 Southeast 117th Avenue,Portland,OR,97216,5,513535,AFH,Open
+,11560 SE IDLEMAN ROAD,Happy Valley,OR,97086,5,513559,AFH,Open
+,3158 COTTONWOOD COURT,West Linn,OR,97068,5,513560,AFH,Open
+,15515 SE MEADOWLARK LANE,Milwaukie,OR,97267,5,513584,AFH,Open
+,522 NW 23RD AVE,Gresham,OR,97030,5,513750,AFH,Open
+,7770 SW GARDEN HOME RD,Portland,OR,97223,5,513831,AFH,Open
+,10254 SE ISAAC DR,Happy Valley,OR,97086,5,513850,AFH,Open
+,6755 SW CANBY ST,Portland,OR,97223,5,513871,AFH,Open
+,1247 CALVIN STREET,Eugene,OR,97401,5,513926,AFH,Open
+,2894 ELYSIUM AVE,Eugene,OR,97401,5,513946,AFH,Open
+,1543 Northeast 137th Avenue,Portland,OR,97230,5,514073,AFH,Open
+,431 Southeast Hale Drive,Gresham,OR,97080,5,514110,AFH,Open
+,3512 Northeast 135th Avenue,Portland,OR,97230,5,514126,AFH,Open
+,15742 SE WEBSTER RD,Milwaukie,OR,97267,5,514173,AFH,Open
+,1122 Southwest Stephenson Street,Portland,OR,97219,5,514205,AFH,Open
+,5803 SOUTHGATE DR,Klamath Falls,OR,97603,5,514235,AFH,Open
+,1246 Joshua Ct,Central Point,OR,97502,5,514258,AFH,Open
+,2853 Southwest Pleasant View Drive,Gresham,OR,97080,5,514266,AFH,Open
+,10335 SW CRESTWOOD DR,Beaverton,OR,97008,5,514312,AFH,Open
+,830 MCVEY AVE,Lake Oswego,OR,97034,5,514314,AFH,Open
+,16970 NW ELKTON CT,Beaverton,OR,97006,5,5143633949,AFH,Open
+,9240 Northeast Schuyler Street,Portland,OR,97220,5,514376,AFH,Open
+,6375 SW 124TH AVENUE,Beaverton,OR,97008,5,514402,AFH,Open
+,1378 WILLAMETTE FALLS DR,West Linn,OR,97068,5,514417,AFH,Open
+,8951 SE 41ST AVENUE,Milwaukie,OR,97267,5,514433,AFH,Open
+,63504 3RD RD,Coos Bay,OR,97420,1,514473,AFH,Open
+,906 SW 174TH PLACE,Beaverton,OR,97006,5,514516,AFH,Open
+,1835 GRANDVIEW AVE,Medford,OR,97504,5,514528,AFH,Open
+,4820 SW FAIRMOUNT DRIVE,Beaverton,OR,97005,5,514710,AFH,Open
+,1315 DOLLAR ST,West Linn,OR,97068,4,514734,AFH,Open
+,19101 SUNCREST DR,West Linn,OR,97068,5,514766,AFH,Open
+,3565 BELLE VISTA CT S,Salem,OR,97302,5,514816,AFH,Open
+,2542 WATERS EDGE WAY,Medford,OR,97504,5,5148204670,AFH,Open
+,2017 SE 45TH AVENUE,Hillsboro,OR,97123,5,514998,AFH,Open
+,1854 Beacon Dr.,Grants Pass,OR,97526,5,515011,AFH,Open
+,1601 Northeast 156th Avenue,Portland,OR,97230,5,515020,AFH,Open
+,5084 SE KING ROAD,Milwaukie,OR,97222,5,515075,AFH,Open
+,855 Northeast 112th Avenue,Portland,OR,97220,5,515082,AFH,Open
+,6754 APOLLO RD,West Linn,OR,97068,5,515092,AFH,Open
+,12333 Northeast Russell Street,Portland,OR,97230,5,515178,AFH,Open
+,12945 Northeast Pacific Street,Portland,OR,97230,5,515179,AFH,Open
+,3597 Cedar Links Dr.,Medford,OR,97504,5,515223,AFH,Open
+,1354 Southeast 162nd Avenue,Portland,OR,97233,5,515253,AFH,Open
+,12954 SW BRADLEY LN,Tigard,OR,97224,5,515258,AFH,Open
+,1437 Southeast 174th Avenue,Portland,OR,97233,4,515264,AFH,Open
+,7114 SW 100TH TERRACE,Beaverton,OR,97008,5,515322,AFH,Open
+,15804 Northeast Broadway,Portland,OR,97230,5,515375,AFH,Open
+,4322 OREGON TRAIL CT NE,Salem,OR,97305,5,515406,AFH,Open
+,1756 Northwest 14th Drive,Gresham,OR,97030,5,515476,AFH,Open
+,8953 Southeast Crystal Springs Boulevard,Portland,OR,97266,5,515492,AFH,Open
+,1327 PRIMROSE LN,Forest Grove,OR,97116,5,5155309496,AFH,Open
+,2020 Sunset Drive,Medford,OR,97501,5,515555,AFH,Open
+,850 Northeast 236th Place,Wood Village,OR,97060,5,515582,AFH,Open
+,14510 NW PERIMETER DRIVE,Beaverton,OR,97006,5,515595,AFH,Open
+,627 W Harbeck Rd.,Grants Pass,OR,97527,5,515656,AFH,Open
+,20712 SW PARKER CT,Beaverton,OR,97078,5,515667,AFH,Open
+,1238 Northeast 157th Avenue,Portland,OR,97230,5,515688,AFH,Open
+,15051 SE PIONEER DR,Clackamas,OR,97015,3,515716,AFH,Open
+,2288 Southeast Mignonette Court,Gresham,OR,97080,5,515777,AFH,Open
+,8109 SE CLACKAMAS RD,Milwaukie,OR,97267,5,515824,AFH,Open
+,13048 Southeast Cora Street,Portland,OR,97236,5,515847,AFH,Open
+,311 Northeast 106th Avenue,Portland,OR,97220,5,515904,AFH,Open
+,1304 Blue Sky Way,Central Point,OR,97502,5,515917,AFH,Open
+,16025 SE SOUTHVIEW AVENUE,Milwaukie,OR,97267,5,515942,AFH,Open
+,3232 S SHORE DRIVE SE,Albany,OR,97322,4,515950,AFH,Open
+,6332 Southwest Haines Street,Portland,OR,97219,5,515967,AFH,Open
+,2060 Southeast 162nd Avenue,Portland,OR,97233,5,515984,AFH,Open
+,1152 SE HAWTHORNE,Roseburg,OR,97470,5,516092,AFH,Open
+,12081 SW TAYLOR CT,Portland,OR,97225,5,516255,AFH,Open
+,9838 NW LEAHY RD,Portland,OR,97229,5,516263,AFH,Open
+,2457 ROSE BLOSSOM DR,Springfield,OR,97477,2,516265,AFH,Open
+,23196 SW MANSFIELD STREET,Sherwood,OR,97140,5,516276,AFH,Open
+,2526 Waters edge way,Medford,OR,97504,5,516324,AFH,Open
+,1665 BERRY STREET SE,Salem,OR,97302,5,516458,AFH,Open
+,4302 Southeast Flavel Street,Portland,OR,97206,5,516459,AFH,Open
+,4124 Northeast 136th Avenue,Portland,OR,97230,5,516549,AFH,Open
+,10159 SE 134TH AVE,Happy Valley,OR,97086,5,516688,AFH,Open
+,9950 SW THURLOW DRIVE,Portland,OR,97225,5,516701,AFH,Open
+,2653 SHARON WAY,Eugene,OR,97401,5,516722,AFH,Open
+,978 WHITE OAK AVE,Central Point,OR,97502,5,516744,AFH,Open
+,6765 RHODODENDRON AVENUE,Gleneden Beach,OR,97388,5,516764,AFH,Open
+,11216 NW BLACKHAWK DRIVE,Portland,OR,97229,5,516774,AFH,Open
+,13785 BEAN CT,Oregon City,OR,97045,5,516783,AFH,Open
+,11847 Southeast Alder Street,Portland,OR,97216,4,516887,AFH,Open
+,932 LEFOR DR NW,Salem,OR,97304,5,5169225761,AFH,Open
+,667 MORGAN AVENUE,Ontario,OR,97914,1,517009,AFH,Open
+,185 BLUE CHIP LN,Grants Pass,OR,97527,5,517012,AFH,Open
+,2330 NE 35TH STREET,Lincoln City,OR,97367,1,517014,AFH,Open
+,6138 SE EASTBROOK DR,Milwaukie,OR,97222,5,517015,AFH,Open
+,11689 SW 129TH PL,Tigard,OR,97223,4,517133,AFH,Open
+,10740 AGATE ROAD,Eagle Point,OR,97524,5,517158,AFH,Open
+,7071 SW RICE CT,Portland,OR,97223,5,517205,AFH,Open
+,4905 SE THIESSEN RD,Milwaukie,OR,97267,5,517246,AFH,Open
+,17180 NW JOSCELYN STREET,Beaverton,OR,97006,5,517327,AFH,Open
+,1202 Southwest 57th Avenue,Portland,OR,97221,5,517335,AFH,Open
+,1891 SE RIVER ROAD,Hillsboro,OR,97123,5,5174065343,AFH,Open
+,6647 SE FRANCES STREET,Hillsboro,OR,97123,5,517443,AFH,Open
+,1317 Northeast 152nd Avenue,Portland,OR,97230,5,517575,AFH,Open
+,217 Northwest Royal Court,Gresham,OR,97030,5,517648,AFH,Open
+,18935 SW HEIGHTSVIEW CT,Beaverton,OR,97007,3,517690,AFH,Open
+,5420 Southeast Malden Drive,Portland,OR,97206,5,517707,AFH,Open
+,16744 SE RIVER ROAD,Milwaukie,OR,97267,5,517732,AFH,Open
+,13229 SE 125TH AVE,Clackamas,OR,97015,5,517739,AFH,Open
+,2868 FAR WEST AVE,Medford,OR,97501,4,517740,AFH,Open
+,3315 Northeast 5th Street,Gresham,OR,97030,5,517942,AFH,Open
+,13275 SW NICOLE LANE,Tigard,OR,97224,5,517977,AFH,Open
+,2209 Fairbanks St.,Medford,OR,97504,3,517999,AFH,Open
+,1031 NW Morgan Lane,Grants Pass,OR,97526,5,518044,AFH,Open
+,1910 NW KINGS BLVD,Corvallis,OR,97330,4,518053,AFH,Open
+,3035 NE LAUREL SPRING DR,Roseburg,OR,97470,5,518111,AFH,Open
+,20776 NE LIBERTY LANE,Bend,OR,97701,5,518158,AFH,Open
+,1349 Northeast 196th Avenue,Portland,OR,97230,5,518169,AFH,Open
+,1474 NE ARROWWOOD STREET,Hillsboro,OR,97124,5,518173,AFH,Open
+,1719 SW EASY STREET,Corvallis,OR,97333,1,518202,AFH,Open
+,5795 SKYLINE DRIVE,West Linn,OR,97068,5,518278,AFH,Open
+,4514 47TH AVE NE,Salem,OR,97305,5,518286,AFH,Open
+,212 AMANDA CT,Oregon City,OR,97045,4,518319,AFH,Open
+,307 Black Oak Dr.,Medford,OR,97504,5,518331,AFH,Open
+,3499 DELTA WATERS ROAD,Medford,OR,97504,5,518447,AFH,Open
+,20676 SW PARKER CT,Beaverton,OR,97078,5,518500,AFH,Open
+,17948 Southeast Mill Court,Portland,OR,97233,5,518585,AFH,Open
+,4450 NW QUINAULT CT,Portland,OR,97229,5,518593,AFH,Open
+,16584 SW HART ROAD,Beaverton,OR,97007,5,518650,AFH,Open
+,21392 SE HWY 212,Damascus,OR,97089,5,518695,AFH,Open
+,12833 SE EVENING STAR DRIVE,Happy Valley,OR,97086,5,518697,AFH,Open
+,7411 North Monteith Avenue,Portland,OR,97203,5,518719,AFH,Open
+,1600 Northeast 156th Avenue,Portland,OR,97230,5,518724,AFH,Open
+,8605 SW BIRCHWOOD RD,Portland,OR,97225,5,518744,AFH,Open
+,8670 SW TURQUOISE LOOP,Beaverton,OR,97007,5,518794,AFH,Open
+,2580 CLARK ST,North Bend,OR,97459,5,518799,AFH,Open
+,1270 MADRONA AVENUE S,Salem,OR,97302,5,518911,AFH,Open
+,12980 SE ALMOND CT,Clackamas,OR,97015,5,518979,AFH,Open
+,43865 LAKEVIEW WAY,Foster,OR,97345,5,519110,AFH,Open
+,9107 NEWTON ROAD,Corvallis,OR,97330,5,5195462434,AFH,Open
+,8865 SE TIFFANY CT,Clackamas,OR,97015,5,5197285302,AFH,Open
+,22825 SW MANDAN DRIVE,Tualatin,OR,97062,5,519824,AFH,Open
+,2068 BURDETTE DR,Roseburg,OR,97471,1,519969,AFH,Open
+,11333 SW 91ST COURT,Portland,OR,97223,5,519973,AFH,Open
+,1420 E BRIARCLIFF LANE,Eugene,OR,97404,5,520035,AFH,Open
+,1290 TERRITORIAL ROAD,Cottage Grove,OR,97424,5,520042,AFH,Open
+,87920 TERRITORIAL RD,Veneta,OR,97487,5,520067,AFH,Open
+,850 S 3RD STREET,Cottage Grove,OR,97424,5,520102,AFH,Open
+,1548 HALLET COURT NW,West Salem,OR,97304,5,520157,AFH,Open
+,1573 ALDERWOOD STREET,Eugene,OR,97404,5,520160,AFH,Open
+,3485 SW 86TH AVE,Portland,OR,97225,5,520223,AFH,Open
+,96539 DULEY CREEK ROAD,Brookings,OR,97415,2,520242,AFH,Open
+,1665 HAYES ST,Eugene,OR,97402,4,520285,AFH,Open
+,20445 WILLAMETTE DR,West Linn,OR,97068,5,520345,AFH,Open
+,1685 VALLEY VIEW DR,West Linn,OR,97068,5,520364,AFH,Open
+,8665 SW TURQUOISE LOOP,Beaverton,OR,97007,5,520417,AFH,Open
+,820 BEVERLY WAY,Jacksonville,OR,97530,5,520434,AFH,Open
+,2170 GRACE AVE NW,Albany,OR,97321,5,520496,AFH,Open
+,5035 NW CRESCENT VALLEY DRIVE,Corvallis,OR,97330,5,520506,AFH,Open
+,8580 SW TURQUOISE LOOP,Beaverton,OR,97007,5,520540,AFH,Open
+,6553 B STREET,Springfield,OR,97478,5,520641,AFH,Open
+,7061 SE BORWICK ST,Hillsboro,OR,97123,4,520679,AFH,Open
+,59354 CHERRYWOOD DR,Saint Helens,OR,97051,5,520763,AFH,Open
+,5803 SW MCEWAN RD,Lake Oswego,OR,97035,5,520808,AFH,Open
+,3837 BARTLETT AVENUE,Klamath Falls,OR,97603,4,520837,AFH,Open
+,5735 RIVER ST,West Linn,OR,97068,5,520859,AFH,Open
+,11737 SE MARKET DRIVE,Clackamas,OR,97015,5,520860,AFH,Open
+,17565 SW PHEASANT LN,Aloha,OR,97003,0,520914,AFH,Open
+,7710 Southeast 103rd Avenue,Portland,OR,97266,5,520953,AFH,Open
+,5664 MOONSTONE LOOP SE,Salem,OR,97306,5,520966,AFH,Open
+,3275 Snowy Butte Lane,Central Point,OR,97502,5,5209917711,AFH,Open
+,8955 SW CLUB MEADOW LANE,Portland,OR,97225,5,521073,AFH,Open
+,1012 ROCHESTER BRIDGE RD,Oakland,OR,97462,4,521093,AFH,Open
+,16980 NW SOMERSET DRIVE,Beaverton,OR,97006,5,521156,AFH,Open
+,1717 REDWOOD COURT,Forest Grove,OR,97116,1,521280,AFH,Open
+,10905 Northeast Knott Street,Portland,OR,97220,5,521317,AFH,Open
+,1444 MORROW RD,Medford,OR,97504,5,521361,AFH,Open
+,2051 SOAPSTONE AVE SE,Salem,OR,97306,1,521366,AFH,Open
+,24275 SW NODAWAY LANE,Wilsonville,OR,97070,5,521421,AFH,Open
+,18750 BOYNTON STREET,Oregon City,OR,97045,3,521465,AFH,Open
+,12398 PORTLAND ROAD NE,Gervais,OR,97026,5,521486,AFH,Open
+,3215 Southeast 5th Street,Gresham,OR,97080,5,521519,AFH,Open
+,4322 TRAPPER DRIVE NE,Salem,OR,97305,5,521644,AFH,Open
+,5735 Southeast 60th Avenue,Portland,OR,97206,5,521646,AFH,Open
+,1720 SW 89TH AVENUE,Portland,OR,97225,5,521657,AFH,Open
+,3001 WINDSOR AVE NE,Salem,OR,97301,5,521767,AFH,Open
+,3005 WINDSOR AVE NE,Salem,OR,97301,5,521768,AFH,Open
+,3009 WINDSOR AVE NE,Salem,OR,97301,5,521769,AFH,Open
+,13293 SE RIDGECREST ROAD,Happy Valley,OR,97086,5,521808,AFH,Open
+,1720 Northwest 27th Avenue,Portland,OR,97210,5,521850,AFH,Open
+,2567 FISHER RD NE,Salem,OR,97305,5,522046,AFH,Open
+,2342 ROBERTS RD,Medford,OR,97504,5,522161,AFH,Open
+,50792 S HUNTINGTON ROAD,La Pine,OR,97739,5,522195,AFH,Open
+,940 FAIRVIEW AVENUE SE,Salem,OR,97302,5,522257,AFH,Open
+,410 BEECHER ROAD,Wolf Creek,OR,97497,5,522287,AFH,Open
+,370 SPAULDING WAY,Brownsville,OR,97327,5,522294,AFH,Open
+,3215 DELTA WATERS RD,Medford,OR,97504,5,522312,AFH,Open
+,629 BAKER CREEK RD,Mcminnville,OR,97128,5,522387,AFH,Open
+,1285 CASCADE DRIVE,Lebanon,OR,97355,5,522403,AFH,Open
+,2931 IRIS CIR,Medford,OR,97504,4,522439,AFH,Open
+,4370 HARVEY WAY,Lake Oswego,OR,97035,5,522450,AFH,Open
+,6251 MAIN ST APT #1,Springfield,OR,97478,5,522451,AFH,Open
+,327 MILLIE ST,Cave Junction,OR,97523,2,522492,AFH,Open
+,403 RANCHO VISTA DR,Grants Pass,OR,97526,5,522494,AFH,Open
+,7855 SW ALAMEDA LN,Beaverton,OR,97007,2,522506,AFH,Open
+,13890 SW CHERRYHILL CT,Beaverton,OR,97008,5,522507,AFH,Open
+,1422 SW G Street,Grants Pass,OR,97526,5,522519,AFH,Open
+,15675 SW HART RD,Beaverton,OR,97007,5,522528,AFH,Open
+,1542 ROSEBURG RD,Myrtle Point,OR,97458,0,522543,AFH,Open
+,9045 SW CLUB MEADOW LANE,Portland,OR,97225,5,522566,AFH,Open
+,12634 Southeast Long Street,Portland,OR,97236,5,522570,AFH,Open
+,3281 Southeast 5th Street,Gresham,OR,97080,5,522587,AFH,Open
+,119 Northeast 156th Avenue,Portland,OR,97230,5,522884,AFH,Open
+,17555 UPPER CHERRY LANE,Lake Oswego,OR,97034,5,522890,AFH,Open
+,1141 TOWER,North Bend,OR,97459,5,522949,AFH,Open
+,4517 SE HILL RD,Milwaukie,OR,97267,5,522954,AFH,Open
+,6770 SW KING BLVD,Beaverton,OR,97008,5,522957,AFH,Open
+,22845 SW MANDAN DR,Tualatin,OR,97062,5,523072,AFH,Open
+,332 NE C Street,Grants Pass,OR,97526,5,523192,AFH,Open
+,16500 SW SATTERBERG RD,Beaverton,OR,97007,5,523194,AFH,Open
+,2470 SW BALSAM AVE,Beaverton,OR,97005,1,523208,AFH,Open
+,2367 Northeast 23rd Street,Gresham,OR,97030,4,523234,AFH,Open
+,11375 Southwest Capitol Highway,Portland,OR,97219,5,523264,AFH,Open
+,1360 CLAY ST NE,Salem,OR,97301,5,523271,AFH,Open
+,2805 NE GREAT HORNED PLACE,Bend,OR,97701,5,523278,AFH,Open
+,2809 NE Great Horned Pl,Bend,OR,97701,5,523280,AFH,Open
+,2960 Rosewood St.,Medford,OR,97504,5,523296,AFH,Open
+,227 E ST,Riddle,OR,97469,5,523299,AFH,Open
+,15807 SE RAINIER AVE,Clackamas,OR,97015,5,5233044617,AFH,Open
+,1269 Northeast 162nd Avenue,Portland,OR,97230,5,523331,AFH,Open
+,4160 MAPLETON DRIVE,West Linn,OR,97068,5,523344,AFH,Open
+,4807 Southeast 113th Avenue,Portland,OR,97266,5,523379,AFH,Open
+,6301 SE BROWNLEE ROAD,Milwaukie,OR,97267,5,523425,AFH,Open
+,13982 SE SIEBEN PARK WAY,Clackamas,OR,97015,5,523429,AFH,Open
+,50 N RIVER DR,Roseburg,OR,97470,4,523509,AFH,Open
+,7027 SW RICE COURT,Portland,OR,97223,5,523525,AFH,Open
+,903 LAKESHORE DR,Port Orford,OR,97465,5,523534,AFH,Open
+,3950 LONE OAK RD SE,Salem,OR,97302,5,523540,AFH,Open
+,6517 HILYARD AVENUE,Klamath Falls,OR,97603,5,523564,AFH,Open
+,12565 SE BOSS LANE,Milwaukie,OR,97222,5,523636,AFH,Open
+,8925 SW DAVIES RD,Beaverton,OR,97008,5,523760,AFH,Open
+,1826 McKenzie Dr.,Medford,OR,97501,3,523770,AFH,Open
+,810 CHARMAN STREET,Oregon City,OR,97045,3,523827,AFH,Open
+,2647 GREYFOX COURT,Sutherlin,OR,97479,5,523884,AFH,Open
+,8263 SW 168TH AVE,Aloha,OR,97007,5,523948,AFH,Open
+,1444 Willow Lane,Grants Pass,OR,97527,5,523966,AFH,Open
+,29 Northeast 125th Place,Portland,OR,97230,5,523967,AFH,Open
+,510 BRANDON DRIVE,Newberg,OR,97132,5,524019,AFH,Open
+,3834 E MAIN ST,Hillsboro,OR,97123,5,524037,AFH,Open
+,236 North I Street,Lakeview,OR,97630,5,524052,AFH,Open
+,945 SW 174TH PLACE,Beaverton,OR,97006,5,524092,AFH,Open
+,5569 TRADITION ALLEY,Eugene,OR,97402,5,524139,AFH,Open
+,3716 OREGON AVENUE,Springfield,OR,97478,4,524156,AFH,Open
+,1065 SANBORN AVENUE,Eugene,OR,97404,5,5242006664,AFH,Open
+,1751 Boundary Lane,Grants Pass,OR,97527,5,524216,AFH,Open
+,580 HUNSAKER LANE,Eugene,OR,97404,5,524302,AFH,Open
+,15130 Southeast Sherman Street,Portland,OR,97233,5,524349,AFH,Open
+,20701 SW CELEBRITY LANE,Aloha,OR,97078,5,524365,AFH,Open
+,2625 ROSS LANE,Eugene,OR,97404,5,524366,AFH,Open
+,435 ELDER STREET,Drain,OR,97435,5,524468,AFH,Open
+,4051 ALDERBROOK AVE SE,Salem,OR,97302,5,524484,AFH,Open
+,52 NW BIRCH COURT,Warrenton,OR,97146,5,524502,AFH,Open
+,16158 ELKHORN LN,La Pine,OR,97739,3,524506,AFH,Open
+,32905 OLD CHURCH ROAD,Tangent,OR,97389,5,524543,AFH,Open
+,14941 S CARUS ROAD,Oregon City,OR,97045,4,524632,AFH,Open
+,1560 ROSEMONT RD,West Linn,OR,97068,5,524659,AFH,Open
+,9005 SE 92ND AVE,Happy Valley,OR,97086,5,524667,AFH,Open
+,7150 SW MOLALLA BEND ROAD,Wilsonville,OR,97070,1,524670,AFH,Open
+,3110 Northeast 162nd Avenue,Portland,OR,97230,4,524699,AFH,Open
+,8810 MATNEY WAY,Klamath Falls,OR,97603,4,524709,AFH,Open
+,640 N 13TH AVE,Elgin,OR,97827,5,524740,AFH,Open
+,6217 SE SIGRID STREET,Hillsboro,OR,97123,1,524741,AFH,Open
+,2352 ROBERTS RD,Medford,OR,97504,5,524742,AFH,Open
+,2145 NW WEST WIND DRIVE,Mcminnville,OR,97128,5,524745,AFH,Open
+,9320 SW DAVIES RD,Beaverton,OR,97008,5,524752,AFH,Open
+,610 BAIN STREET SE,Albany,OR,97322,5,524770,AFH,Open
+,2297 MINNESOTA STREET,Eugene,OR,97402,5,524784,AFH,Open
+,4 Northeast 202nd Avenue,Portland,OR,97230,5,524797,AFH,Open
+,2336 BAXTER ROAD SE,Salem,OR,97306,5,524820,AFH,Open
+,417 NW MERRIE DRIVE,Corvallis,OR,97330,4,524845,AFH,Open
+,355 YORK ST,Ashland,OR,97520,4,524864,AFH,Open
+,400 Southeast 15th Street,Gresham,OR,97080,5,524865,AFH,Open
+,915 NE Butler Market Road,Bend,OR,97701,5,524953,AFH,Open
+,4809 SE LAKE ROAD,Milwaukie,OR,97222,5,524972,AFH,Open
+,13210 SE JORDAN CT,Happy Valley,OR,97086,5,524977,AFH,Open
+,2700 Northeast 17th Street,Gresham,OR,97030,5,524980,AFH,Open
+,30785 WASHINGTON STREET,Lebanon,OR,97355,3,525023,AFH,Open
+,12785 SW SUMMIT RIDGE ST,Tigard,OR,97224,5,525026,AFH,Open
+,735 Northeast 162nd Avenue,Portland,OR,97230,5,525049,AFH,Open
+,3195 DELTA WATERS ROAD,Medford,OR,97504,5,525056,AFH,Open
+,2400 MISSION AVE,Eugene,OR,97403,1,525058,AFH,Open
+,25 Jack Nicklaus Road,Medford,OR,97504,5,525077,AFH,Open
+,53918 E APPLETON RD,Milton Freewater,OR,97862,5,525091,AFH,Open
+,2695 Southwest 24th Street,Gresham,OR,97080,5,525102,AFH,Open
+,1562 NE Noble Heights Dr.,Grants Pass,OR,97526,4,525104,AFH,Open
+,410 Cheslock Rd.,Grants Pass,OR,97527,2,525122,AFH,Open
+,1210 OAK STREET,Oakland,OR,97462,5,525125,AFH,Open
+,955 21ST AVE SW,Albany,OR,97321,2,525158,AFH,Open
+,6560 SE MONROE ST,Milwaukie,OR,97222,5,525171,AFH,Open
+,7650 SW CANYON LN,Portland,OR,97225,5,525179,AFH,Open
+,2301 Southwest Ek Road,West Linn,OR,97068,5,525185,AFH,Open
+,643 JESS WAY,Grants Pass,OR,97526,4,525221,AFH,Open
+,263 Felkner Rd.,Grants Pass,OR,97527,5,525230,AFH,Open
+,424 Northeast 148th Avenue,Portland,OR,97230,4,525247,AFH,Open
+,2579 JACKSON STREET SE,Albany,OR,97322,5,525268,AFH,Open
+,1117 LOMBARD,North Bend,OR,97459,5,525277,AFH,Open
+,5568 MURRAY ST SE,Salem,OR,97306,5,525297,AFH,Open
+,13575 SE 119TH DR,Clackamas,OR,97015,5,525309,AFH,Open
+,1170 32ND PLACE,Forest Grove,OR,97116,5,525310,AFH,Open
+,13923 SE FAIROAKS WAY,Milwaukie,OR,97267,5,525326,AFH,Open
+,2429 PRIMROSE ST,Eugene,OR,97402,5,525331,AFH,Open
+,954 NE 9TH ST,Grants Pass,OR,97526,5,525334,AFH,Open
+,879 N Mountain Ave,Central Point,OR,97502,5,525335,AFH,Open
+,4005 Southwest Scholls Ferry Road,Portland,OR,97221,5,525347,AFH,Open
+,51417 EVANS WAY,La Pine,OR,97739,3,525358,AFH,Open
+,5632 Southeast Duke Street,Portland,OR,97206,5,525361,AFH,Open
+,248 ELMA AVE SE,Salem,OR,97317,5,525366,AFH,Open
+,1303 CHESTNUT ST,Milton Freewater,OR,97862,5,525371,AFH,Open
+,512 67TH PL,Springfield,OR,97478,5,525374,AFH,Open
+,1113 CIRCLEWOOD CT,Central Point,OR,97502,5,5253899480,AFH,Open
+,147 ROBERLEE LN,Roseburg,OR,97471,3,525418,AFH,Open
+,2712 WILLAMINA AVE,Forest Grove,OR,97116,5,525420,AFH,Open
+,93831 PLEASANT VALLEY LN,Myrtle Point,OR,97458,5,525435,AFH,Open
+,9339 HIGHWAY 97 S,Klamath Falls,OR,97603,5,525449,AFH,Open
+,640 2ND AVE,Powers,OR,97466,1,525450,AFH,Open
+,11944 SE BOYER RD,Mcminnville,OR,97128,4,525490,AFH,Open
+,5120 Northeast Jarrett Street,Portland,OR,97218,5,525500,AFH,Open
+,300 Northeast 197th Avenue,Portland,OR,97230,5,525507,AFH,Open
+,11740 Southeast Main Street,Portland,OR,97216,5,525511,AFH,Open
+,12704 Southeast Market Street,Portland,OR,97233,5,525536,AFH,Open
+,8509 Southwest 45th Avenue,Portland,OR,97219,5,525554,AFH,Open
+,440 David Way,Talent,OR,97540,5,525580,AFH,Open
+,1711 MAGNOLIA ST,Junction City,OR,97448,5,525583,AFH,Open
+,11255 SW 79TH AVE,Tigard,OR,97223,5,525587,AFH,Open
+,2745 THATCHER RD,Forest Grove,OR,97116,5,525594,AFH,Open
+,2300 THATCHER RD,Forest Grove,OR,97116,5,525595,AFH,Open
+,14212 SE WEBSTER RD,Milwaukie,OR,97267,5,525599,AFH,Open
+,2649 GREYFOX COURT,Sutherlin,OR,97479,5,525602,AFH,Open
+,2055 SW 79TH AVE,Portland,OR,97225,5,525603,AFH,Open
+,7555 SW 157TH AVE,Beaverton,OR,97007,5,525608,AFH,Open
+,19900 SW IMPERIAL ST,Aloha,OR,97003,5,525633,AFH,Open
+,322 BLACK OAK DR,Medford,OR,97504,5,525652,AFH,Open
+,6555 LOONEY LN SW,Albany,OR,97321,0,525657,AFH,Open
+,712 N KEENE WAY DRIVE,Medford,OR,97504,5,525677,AFH,Open
+,130 NW REED LN,Dallas,OR,97338,5,525678,AFH,Open
+,5128 Southeast 48th Avenue,Portland,OR,97206,5,525695,AFH,Open
+,315 SE IRONWOOD AVE,Dallas,OR,97338,5,525718,AFH,Open
+,35 CLOVER ST SUITE A,Gleneden Beach,OR,97388,0,525747,AFH,Open
+,1632 Southwest Orchard Avenue,Gresham,OR,97080,5,525764,AFH,Open
+,1637 HUMMINGBIRD LN,Stayton,OR,97383,5,525830,AFH,Open
+,919 Northeast 172nd Avenue,Portland,OR,97230,5,525834,AFH,Open
+,17630 SW MEADOWBROOK WAY,Beaverton,OR,97078,5,525868,AFH,Open
+,2510 SE SPRUCE STREET,Hillsboro,OR,97123,5,5259280477,AFH,Open
+,515 Southeast Paropa Place,Gresham,OR,97080,5,525945,AFH,Open
+,7592 Monument Dr.,Grants Pass,OR,97526,3,525952,AFH,Open
+,11070 SW 121ST AVE,Tigard,OR,97223,5,525953,AFH,Open
+,13200 SW VILLAGE GLENN DR,Tigard,OR,97223,5,525958,AFH,Open
+,2676 TAHOE AVE SE,Salem,OR,97306,5,525959,AFH,Open
+,130 NE 12TH AVE,Hillsboro,OR,97124,5,526015,AFH,Open
+,520 Southeast Vista Terrace,Gresham,OR,97080,5,526037,AFH,Open
+,12808 Northeast Clackamas Street,Portland,OR,97230,5,526040,AFH,Open
+,1475 SANDSTONE CT S,Salem,OR,97306,5,526063,AFH,Open
+,4465 GREAT PLAINS DR NE,Salem,OR,97305,4,526097,AFH,Open
+,533 Southeast Paropa Place,Gresham,OR,97080,5,526101,AFH,Open
+,3818 E MAIN ST,Hillsboro,OR,97123,5,526117,AFH,Open
+,2966 ALDER ST,Eugene,OR,97405,5,526121,AFH,Open
+,17613 OAK MEADOW LN,Lake Oswego,OR,97034,5,526130,AFH,Open
+,11608 Northeast San Rafael Street,Portland,OR,97220,4,526135,AFH,Open
+,16215 SE WEBSTER RD,Milwaukie,OR,97267,5,526141,AFH,Open
+,3434 Northeast 130th Avenue,Portland,OR,97230,5,526149,AFH,Open
+,3024 Southeast 129th Avenue,Portland,OR,97236,5,526161,AFH,Open
+,4067 Northwest 1st Street,Gresham,OR,97030,5,526166,AFH,Open
+,3018 LANSING AVE SE,Albany,OR,97322,5,526171,AFH,Open
+,1391 Marilee St.,Central Point,OR,97502,5,526187,AFH,Open
+,11838 Northeast Russell Street,Portland,OR,97220,5,526188,AFH,Open
+,37190 SE TRUBE RD,Sandy,OR,97055,5,526206,AFH,Open
+,983 BURLEY HILL DR NW,Salem,OR,97304,5,526217,AFH,Open
+,2847 INGALLS DR,White City,OR,97503,5,526250,AFH,Open
+,4042 GARDNER RD SE,Salem,OR,97302,5,526289,AFH,Open
+,2802 MADISON ST SE,Albany,OR,97322,5,526295,AFH,Open
+,19280 SW PECAN CT,Beaverton,OR,97003,3,526316,AFH,Open
+,3035 Northeast 128th Avenue,Portland,OR,97230,5,526320,AFH,Open
+,80580 S CABANA RD,Hermiston,OR,97838,4,526341,AFH,Open
+,552 IDYLWOOD DR SE,Salem,OR,97302,5,526359,AFH,Open
+,1538 SPRINGBROOK ROAD,Medford,OR,97504,5,526367,AFH,Open
+,8733 Southeast Harney Street,Portland,OR,97266,5,526374,AFH,Open
+,18879 OAKTREE AVENUE,Oregon City,OR,97045,5,526379,AFH,Open
+,5725 SW GLENBROOK RD,Beaverton,OR,97007,5,526381,AFH,Open
+,8525 SE 140TH PLACE,Clackamas,OR,97086,5,526385,AFH,Open
+,6134 SE HACIENDA ST,Hillsboro,OR,97123,5,526396,AFH,Open
+,1510 Northeast Hacienda Avenue,Gresham,OR,97030,5,526408,AFH,Open
+,2739 Southeast Franklin Street,Portland,OR,97202,5,526436,AFH,Open
+,4704 CHATHAM ST SE,Salem,OR,97302,4,526457,AFH,Open
+,3920 SW 188TH AVE,Beaverton,OR,97078,5,526468,AFH,Open
+,15915 Northeast Glisan Street,Portland,OR,97230,5,526499,AFH,Open
+,3478 SW 91ST AVE,Portland,OR,97225,5,526505,AFH,Open
+,4802 NOREN AVE NE,Keizer,OR,97303,5,526510,AFH,Open
+,6919 SW OAK ST,Tigard,OR,97223,5,526518,AFH,Open
+,1957 BOBCAT AVE SW,Albany,OR,97321,3,526540,AFH,Open
+,605 16TH ST,La Grande,OR,97850,5,526578,AFH,Open
+,733 Faith Ave,Ashland,OR,97520,5,526602,AFH,Open
+,105 Southeast 151st Avenue,Portland,OR,97233,5,526622,AFH,Open
+,114 SW 5TH Ave,Milton Freewater,OR,97862,5,526636,AFH,Open
+,715 SW MADISON ST,Madras,OR,97741,5,526653,AFH,Open
+,10362 SE ISAAC DR,Happy Valley,OR,97086,5,526675,AFH,Open
+,1778 Northwest 14th Drive,Gresham,OR,97030,1,526684,AFH,Open
+,192 Saradan Lane,Grants Pass,OR,97527,5,526688,AFH,Open
+,12100 SE NELLA WAY,Happy Valley,OR,97086,5,526720,AFH,Open
+,15550 Southeast La Bonita Way,Milwaukie,OR,97267,5,526739,AFH,Open
+,3135 Southeast 160th Avenue,Portland,OR,97236,5,526747,AFH,Open
+,111 S 52ND,Springfield,OR,97478,5,526766,AFH,Open
+,3243 Snowy Butte Lane,Central Point,OR,97502,5,526782,AFH,Open
+,3533 Southeast 160th Avenue,Portland,OR,97236,5,526847,AFH,Open
+,2244 MINNESOTA STREET,Eugene,OR,97402,5,526861,AFH,Open
+,3871 Northwest 3rd Street,Gresham,OR,97030,5,526901,AFH,Open
+,13620 SW BEEF BEND RD UNIT 126,Tigard,OR,97224,5,526967,AFH,Open
+,607 S LINDEN ST,Cornelius,OR,97113,5,527002,AFH,Open
+,4711 Southwest Shattuck Road,Portland,OR,97221,5,527118,AFH,Open
+,715 Northeast 236th Place,Wood Village,OR,97060,5,527123,AFH,Open
+,2600 NW 144TH AVE,Beaverton,OR,97006,4,5271831512,AFH,Open
+,1214 Southeast 144th Avenue,Portland,OR,97233,5,527196,AFH,Open
+,13501 Northeast Halsey Street,Portland,OR,97230,5,527428,AFH,Open
+,4826 SW BEACH AVENUE,Lincoln City,OR,97367,1,527441,AFH,Open
+,4722 OAK PARK DR NE,Salem,OR,97305,5,527575,AFH,Open
+,372A SPAULDING WAY,Brownsville,OR,97327,5,527687,AFH,Open
+,36854 GILKEY ROAD,Scio,OR,97374,4,527712,AFH,Open
+,16726 Southeast Mill Street,Portland,OR,97233,5,527722,AFH,Open
+,4156 Northeast 219th Court,Fairview,OR,97024,5,527782,AFH,Open
+,16534 Southeast Stephens Street,Portland,OR,97233,5,527832,AFH,Open
+,1212 Southeast 282nd Avenue,Gresham,OR,97080,5,527888,AFH,Open
+,13527 Southeast Market Street,Portland,OR,97233,4,528081,AFH,Open
+,210 Southwest Phyllis Court,Gresham,OR,97030,5,528105,AFH,Open
+,1868 Northeast 114th Place,Portland,OR,97220,5,528168,AFH,Open
+,16544 Southeast Salmon Street,Portland,OR,97233,5,528171,AFH,Open
+,3718 Southeast 162nd Avenue,Portland,OR,97236,5,528242,AFH,Open
+,1701 Northeast 137th Avenue,Portland,OR,97230,3,528272,AFH,Open
+,1120 Southeast 225th Avenue,Gresham,OR,97030,5,528283,AFH,Open
+,2436 Southeast 87th Avenue,Portland,OR,97216,5,528285,AFH,Open
+,13600 Northeast Clackamas Street,Portland,OR,97230,4,528292,AFH,Open
+,20 Northwest Sleret Avenue,Gresham,OR,97030,5,528308,AFH,Open
+,2427 Northeast 148th Avenue,Portland,OR,97230,5,528314,AFH,Open
+,2932 Northeast Glisan Street,Portland,OR,97232,5,528341,AFH,Open
+,3606 Southeast 156th Avenue,Portland,OR,97236,5,528386,AFH,Open
+,7621 Southeast 104th Avenue,Portland,OR,97266,5,528395,AFH,Open
+,2351 Northeast 148th Avenue,Portland,OR,97230,5,528457,AFH,Open
+,6556 Southeast 131st Avenue,Portland,OR,97236,5,528458,AFH,Open
+,8026 Southeast Woodstock Boulevard,Portland,OR,97206,3,528459,AFH,Open
+,9258 Southeast Salmon Street,Portland,OR,97216,5,528461,AFH,Open
+,1921 Southeast 117th Avenue,Portland,OR,97216,5,528475,AFH,Open
+,15849 Northeast Halsey Street,Portland,OR,97230,5,528530,AFH,Open
+,271 Black Oak Dr.,Medford,OR,97504,5,528545,AFH,Open
+,10422 Northeast Ashante Drive,Portland,OR,97211,5,528555,AFH,Open
+,12145 Southeast Flavel Street,Portland,OR,97266,5,528573,AFH,Open
+,4125 Southeast 134th Avenue,Portland,OR,97236,5,528598,AFH,Open
+,4145 Northeast 135th Avenue,Portland,OR,97230,5,528631,AFH,Open
+,3648 Southwest 22nd Court,Gresham,OR,97080,4,528636,AFH,Open
+,16914 Southeast Pine Street,Portland,OR,97233,5,528649,AFH,Open
+,944 Northeast 118th Avenue,Portland,OR,97220,5,528691,AFH,Open
+,819 Northeast 117th Avenue,Portland,OR,97220,5,528696,AFH,Open
+,550 Northeast 148th Avenue,Portland,OR,97230,5,528722,AFH,Open
+,13250 Northeast Glisan Street,Portland,OR,97230,5,528747,AFH,Open
+,3670 Southeast 150th Avenue,Portland,OR,97236,5,528789,AFH,Open
+,1003 Southeast Strebin Road,Troutdale,OR,97060,5,528792,AFH,Open
+,3583 Southeast 49th Avenue,Portland,OR,97206,5,528827,AFH,Open
+,11604 Southwest 35th Avenue,Portland,OR,97219,5,528829,AFH,Open
+,1445 Southeast 135th Avenue,Portland,OR,97233,5,528894,AFH,Open
+,13015 Northeast Oregon Street,Portland,OR,97230,5,528939,AFH,Open
+,800 Northeast 148th Avenue,Portland,OR,97230,5,528941,AFH,Open
+,18120 Southeast Main Street,Portland,OR,97233,5,528969,AFH,Open
+,2988 Southwest Emerald Avenue,Gresham,OR,97080,4,528987,AFH,Open
+,17932 Northeast Everett Court,Portland,OR,97230,5,529009,AFH,Open
+,7621 Southeast 112th Avenue,Portland,OR,97266,5,529028,AFH,Open
+,18530 Southeast Stephens Circle,Portland,OR,97233,5,529048,AFH,Open
+,4255 Southeast 117th Avenue,Portland,OR,97266,5,529049,AFH,Open
+,18242 Southeast Mill Street,Portland,OR,97233,5,529072,AFH,Open
+,16560 Southeast Mill Street,Portland,OR,97233,5,529075,AFH,Open
+,15232 Southeast Woodward Street,Portland,OR,97236,5,529077,AFH,Open
+,2392 Northeast Liberty Avenue,Gresham,OR,97030,5,529085,AFH,Open
+,12815 Southeast Salmon Street,Portland,OR,97233,5,529119,AFH,Open
+,2525 Southeast 176th Place,Portland,OR,97236,5,529120,AFH,Open
+,10831 Southwest 57th Place,Portland,OR,97219,5,529124,AFH,Open
+,1250 Northeast Cochran Drive,Gresham,OR,97030,5,529125,AFH,Open
+,2524 Northeast 122nd Avenue,Portland,OR,97230,5,529150,AFH,Open
+,795 Northwest 4th Street,Gresham,OR,97030,5,529183,AFH,Open
+,1216 Southeast 282nd Avenue,Gresham,OR,97080,5,529191,AFH,Open
+,13077 Southeast Glenwood Street,Portland,OR,97236,5,529196,AFH,Open
+,1625 Northeast Cochran Drive,Gresham,OR,97030,5,529197,AFH,Open
+,1438 Northeast 19th Street,Gresham,OR,97030,5,529211,AFH,Open
+,9103 North Kimball Avenue,Portland,OR,97203,5,529220,AFH,Open
+,16411 Northeast Oregon Street,Portland,OR,97230,4,529253,AFH,Open
+,4127 Northeast 137th Avenue,Portland,OR,97230,5,529257,AFH,Open
+,607 Northeast 151st Avenue,Portland,OR,97230,4,529264,AFH,Open
+,238 Northeast 169th Avenue,Portland,OR,97230,5,529265,AFH,Open
+,7625 Southeast Flavel Street,Portland,OR,97206,4,529266,AFH,Open
+,4301 Southeast Lambert Street,Portland,OR,97206,5,529281,AFH,Open
+,1715 Northeast 155th Avenue,Portland,OR,97230,5,529296,AFH,Open
+,3671 Southeast 15th Terrace,Gresham,OR,97080,3,529352,AFH,Open
+,17009 Southeast Kelly Street,Portland,OR,97236,4,529353,AFH,Open
+,11615 Northeast Pacific Street,Portland,OR,97220,5,529357,AFH,Open
+,110 Northeast 172nd Avenue,Portland,OR,97230,5,529364,AFH,Open
+,7460 O'NEIL RD NE,Keizer,OR,97303,5,529377,AFH,Open
+,23323 Northeast Glisan Street,Wood Village,OR,97060,5,529382,AFH,Open
+,254 Northeast 106th Avenue,Portland,OR,97220,5,529421,AFH,Open
+,205 Northeast 165th Avenue,Portland,OR,97230,4,529422,AFH,Open
+,18931 Northeast Davis Street,Portland,OR,97230,5,529428,AFH,Open
+,2341 Southeast 143rd Avenue,Portland,OR,97233,5,529447,AFH,Open
+,3250 Southeast 174th Avenue,Portland,OR,97236,5,529457,AFH,Open
+,16246 Southeast Clinton Street,Portland,OR,97236,5,529480,AFH,Open
+,315 Northeast 202nd Avenue,Portland,OR,97230,4,529483,AFH,Open
+,501 RAILROAD AVE,Gearhart,OR,97138,3,529489,AFH,Open
+,16001 Northeast Morris Street,Portland,OR,97230,5,529573,AFH,Open
+,805 QUEENS AVE,Creswell,OR,97426,5,530481,AFH,Open
+,10605 Northeast Thompson Street,Portland,OR,97220,5,530634,AFH,Open
+,11520 SW BEL AIRE LN,Beaverton,OR,97008,4,533208,AFH,Open
+,21505 SW TILE FLAT RD,Beaverton,OR,97007,5,5338580323,AFH,Open
+,725 Northeast 157th Avenue,Portland,OR,97230,5,534425,AFH,Open
+,14724 Southeast Rhone Street,Portland,OR,97236,5,534511,AFH,Open
+,3723 Southeast 74th Avenue,Portland,OR,97206,4,534599,AFH,Open
+,5950 SW MAIN AVE,Beaverton,OR,97005,5,5356134025,AFH,Open
+,32134 Cody Junior Road,Bend,OR,97701,5,535844,AFH,Open
+,1471 JONMART AVE,Salem,OR,97306,5,5365718026,AFH,Open
+,2198 JULIET CT S,Salem,OR,97302,5,5374609823,AFH,Open
+,7115 SW 78TH AVE,Portland,OR,97223,5,537618,AFH,Open
+,7245 SW 77TH AVE,Portland,OR,97223,5,537626,AFH,Open
+,15199 NW BLAZE TER,Beaverton,OR,97006,5,5383990008,AFH,Open
+,17380 SE 82ND DR,Clackamas,OR,97015,5,5384328250,AFH,Open
+,7435 SW ALPINE DR,Beaverton,OR,97008,4,5385007612,AFH,Open
+,1404 Southeast 143rd Place,Portland,OR,97233,5,538504,AFH,Open
+,3523 JEFFERSON MARION ROAD SE,Jefferson,OR,97352,5,539200,AFH,Open
+,5472 LONE OAK RD SE,Salem,OR,97306,5,5397624267,AFH,Open
+,4625 BALDWIN CT NE,Salem,OR,97301,5,5406622642,AFH,Open
+,8883 SW 90TH AVE,Portland,OR,97223,5,541438,AFH,Open
+,4515 42ND AVE NE,Salem,OR,97305,5,5423973827,AFH,Open
+,6935 SW HYLAND WAY,Beaverton,OR,97008,5,5434419342,AFH,Open
+,9076 SW MONTEREY PLACE,Portland,OR,97225,5,5435412239,AFH,Open
+,1610 CHURCH ST NE,Salem,OR,97301,5,5455918521,AFH,Open
+,5380 SW 185TH AVE,Beaverton,OR,97078,5,5469270741,AFH,Open
+,20790 SW PARKER CT,Beaverton,OR,97078,5,547005,AFH,Open
+,11000 SW CABOT ST,Beaverton,OR,97005,2,5475382434,AFH,Open
+,2903 SUMMERS LANE,Klamath Falls,OR,97603,5,549659,AFH,Open
+,2106 Northeast 132nd Avenue,Portland,OR,97230,3,549704,AFH,Open
+,345 SW DEVON LN,Beaverton,OR,97006,5,5522101149,AFH,Open
+,11117 SE 30TH AVE,Milwaukie,OR,97222,5,5524504900,AFH,Open
+,1352 WILLAMETTE FALLS DR,West Linn,OR,97068,5,5536526131,AFH,Open
+,2239 SE 74TH AVE,Hillsboro,OR,97123,3,554134,AFH,Open
+,19845 SW PIKE ST,Aloha,OR,97078,5,5548828648,AFH,Open
+,7103 SW 163RD PLACE,Beaverton,OR,97007,5,557814,AFH,Open
+,705 W 12TH ST,The Dalles,OR,97058,5,5578889726,AFH,Open
+,41751 BIRCH CREEK ROAD,Pendleton,OR,97801,5,557905,AFH,Open
+,129 S MILWAUKIE AVENUE,Hines,OR,97738,1,560065,AFH,Open
+,4773 FLINTLOCK COURT NE,Salem,OR,97305,5,5615350677,AFH,Open
+,6440 Southeast 84th Place,Portland,OR,97266,4,562988,AFH,Open
+,8579 SE BACHMAN DR,Gladstone,OR,97027,5,5630339556,AFH,Open
+,2833 Southeast 154th Avenue,Portland,OR,97236,5,563135,AFH,Open
+,4281 MARMOT COURT NE,Salem,OR,97305,5,5639546804,AFH,Open
+,7659 SW ALDRICH COURT,Beaverton,OR,97007,5,5642706135,AFH,Open
+,1197 N STREET,Springfield,OR,97477,3,5659096860,AFH,Open
+,1217 Northeast Magda Lane,Portland,OR,97230,4,566448,AFH,Open
+,411 2ND ST UNIT A,Rogue River,OR,97537,3,5672595307,AFH,Open
+,2948 HAPPY VALLEY RD,Roseburg,OR,97471,1,568977,AFH,Open
+,4330 SW 107TH AVENUE,Beaverton,OR,97005,5,570320,AFH,Open
+,23174 SW MANSFIELD STREET,Sherwood,OR,97140,5,571484,AFH,Open
+,2918 Southeast 140th Avenue,Portland,OR,97236,2,572896,AFH,Open
+,2704 Southeast 121st Avenue,Portland,OR,97266,0,572920,AFH,Open
+,20745 SW CLARION ST,Beaverton,OR,97003,5,5732955050,AFH,Open
+,15730 Southeast Bybee Drive,Portland,OR,97236,4,574728,AFH,Open
+,9102 SE RAINBOW CIRCLE,Milwaukie,OR,97222,5,5758281028,AFH,Open
+,12720 Southeast Washington Court,Portland,OR,97233,1,577242,AFH,Open
+,1741 Southeast 113th Avenue,Portland,OR,97216,4,577382,AFH,Open
+,4280 SW 86TH AVE,Portland,OR,97225,5,5800346977,AFH,Open
+,980 RED MOUNTAIN DR,Grants Pass,OR,97526,3,580535,AFH,Open
+,1535 NW 138TH AVE,Portland,OR,97229,4,580712,AFH,Open
+,19255 CHEROKEE RD,Bend,OR,97702,5,5807533869,AFH,Open
+,210 E 40TH AVE,Eugene,OR,97405,5,581137,AFH,Open
+,6975 SW TIERRA DEL MAR DR,Beaverton,OR,97007,2,581939,AFH,Open
+,2182 FIRESIDE COURT,Springfield,OR,97477,5,5822859560,AFH,Open
+,265 Felkner Rd.,Grants Pass,OR,97527,5,5829027630,AFH,Open
+,772 SW 175TH PLACE,Beaverton,OR,97006,5,583158,AFH,Open
+,3095 MOLALLA RD,Woodburn,OR,97071,4,5832562572,AFH,Open
+,3717 Southeast 174th Avenue,Portland,OR,97236,5,583638,AFH,Open
+,603 SW ARTHUR ST,Mcminnville,OR,97128,5,5838508832,AFH,Open
+,20300 NW ROCK CREEK BLVD,Portland,OR,97229,5,5842664149,AFH,Open
+,10770 SW FAIRHAVEN ST,Tigard,OR,97223,5,5857004688,AFH,Open
+,197 HERITAGE CT,Woodburn,OR,97071,4,587290,AFH,Open
+,9105 SW WASHINGTON ST,Portland,OR,97225,5,587407,AFH,Open
+,4215 Southeast Rex Street,Portland,OR,97206,5,589408,AFH,Open
+,3013 Southeast 138th Avenue,Portland,OR,97236,5,589424,AFH,Open
+,2631 Southeast Wendy Drive,Gresham,OR,97080,5,589440,AFH,Open
+,772 MADRONA ST E,Monmouth,OR,97361,4,5899734178,AFH,Open
+,3050 E MCANDREWS RD,Medford,OR,97504,5,5902345660,AFH,Open
+,15130 SE FAIROAKS AVE,Milwaukie,OR,97267,5,590377,AFH,Open
+,1310 CALIFORNIA AVE,Coos Bay,OR,97420,3,590716,AFH,Open
+,1428 MEADOWS DRIVE,Lake Oswego,OR,97034,5,5920665457,AFH,Open
+,19305 SW ANDERSON ST,Aloha,OR,97078,5,5925984582,AFH,Open
+,5095 SW 184TH AVE,Aloha,OR,97078,5,592761,AFH,Open
+,9555 SW MURDOCK ST,Tigard,OR,97224,5,5951940044,AFH,Open
+,18550 SW GASSNER RD,Beaverton,OR,97007,5,5961524066,AFH,Open
+,10148 SE 96TH AVE,Happy Valley,OR,97086,5,5992884463,AFH,Open
+Sandy Rose,1325 SW SAGE,Hermiston,OR,97838,40,5MA003,RCF,Open
+Curry Manor,1458 QUAIL LANE,Roseburg,OR,97470,62,5MA024,RCF,Open
+Farmington Square Gresham,1655 NE 18TH,Gresham,OR,97030,102,5MA031,RCF,Open
+Gateway Living,611 N CLOVERLEAF LOOP,Springfield,OR,97477,123,5MA042,RCF,Open
+Providence Glendoveer Residential Care,13007 NE GLISAN ST,Portland,OR,97230,91,5MA043,RCF,Open
+Harvest Homes Memory Care,6921 N ROBERTS AVE,Portland,OR,97203,40,5MA051,RCF,Open
+Lydia's House,5353 COLUMBUS ST SE,Albany,OR,97321,28,5MA080,RCF,Open
+Mckenzie Manor Memory Care,360 W 28TH AVE,Eugene,OR,97405,65,5MA106,RCF,Open
+St Andrews Memory Care Community,7617 SE MAIN ST,Portland,OR,97215,85,5MA107,RCF,Open
+Cedarbrook Place Memory Care,721 NE 27TH ST,Mcminnville,OR,97128,15,5MA130,RCF,Open
+Pelican Pointe,615 WASHBURN WAY,Klamath Falls,OR,97603,48,5MA131,RCF,Open
+Pacific View Memory Care Community,1000 6TH AVE WEST,Bandon,OR,97411,30,5MA137,RCF,Open
+Grove Pointe Senior Living,3110 19TH AVE,Forest Grove,OR,97116,110,5MA146,RCF,Open
+Brookstone Alzheimer's Special Care Center,5881 WOODSIDE DR SE,Salem,OR,97306,57,5MA151,RCF,Open
+The Cottages Senior Living,1808 SE 182ND AVENUE,Portland,OR,97233,114,5MA160,RCF,Open
+Skylark Memory Care,950 SKYLARK PLACE,Ashland,OR,97520,32,5MA161,RCF,Open
+Golden Years Manor Alameda,1310 SW 12TH AVE,Ontario,OR,97914,14,5MA166,RCF,Open
+McMinnville Memory Care,320 SW HILL ROAD,Mcminnville,OR,97128,57,5MA170,RCF,Open
+Brookdale Salem,1355 BOONE RD SE,Salem,OR,97302,60,5MA205,RCF,Open
+Cedar Crest Alzheimer Special Care Center,18325 SW PACIFIC HWY,Tualatin,OR,97062,56,5MA207,RCF,Open
+Powell Valley Memory Care Community,4001 SE 182ND AVE,Gresham,OR,97030,42,5MA213,RCF,Open
+Footsteps at Wilsonville,7600 SW VLAHOS DR,Wilsonville,OR,97070,51,5MA217,RCF,Open
+Desert Sage Memory Care,1025 NE PURCELL BLVD,Bend,OR,97701,43,5MA221,RCF,Open
+Monarch Gardens Memory Care,984 PARKVIEW DRIVE,Brookings,OR,97415,55,5MA222,RCF,Open
+Pacific Living Centers of Roseburg at Ramp,427 SE RAMP ST,Roseburg,OR,97470,30,5MA233,RCF,Open
+Pacific Living Centers of Prineville,228 SW MEADOW LAKES DR,Prineville,OR,97754,15,5MA238,RCF,Open
+Callahan Court Memory Care Community,1770 NW VALLEY VIEW DRIVE,Roseburg,OR,97471,48,5MA240,RCF,Open
+Pacific Living Centers of Madras,572 NE OAK STREET,Madras,OR,97741,15,5MA241,RCF,Open
+Pacific Grove Memory Care,3334 22ND AVE,Forest Grove,OR,97116,56,5MA242,RCF,Open
+Quail Crest Memory Care,2630 LONE OAK WAY,Eugene,OR,97404,80,5MA243,RCF,Open
+Avamere at Sherwood,16500 SW CENTURY DRIVE,Sherwood,OR,97140,24,5MA245,RCF,Open
+Pacific Living Centers of Medford at Brookhurst,2146 BROOKHURST ST,Medford,OR,97504,14,5MA246,RCF,Open
+Avamere at Sandy,17727 SE LANGENSAND RD,Sandy,OR,97055,24,5MA249,RCF,Open
+Courtyard at Mt Tabor Garden House,6323 SE DIVISION,Portland,OR,97206,24,5MA252,RCF,Open
+Brookdale Roseburg,3400 NW EDENBOWER BLVD,Roseburg,OR,97470,60,5MA254,RCF,Open
+Pacific Living Centers of Grants Pass at Heidi,2144 NW HEIDI LANE,Grants Pass,OR,97526,15,5MA255,RCF,Open
+Avamere at Newberg,730 FOOTHILLS DRIVE,Newberg,OR,97132,22,5MA259,RCF,Open
+Avamere at Hillsboro,2000 SE 30TH AVE,Hillsboro,OR,97123,24,5MA261,RCF,Open
+Wildflower Lodge,508 16TH ST,La Grande,OR,97850,30,5MA266,RCF,Open
+Cascades of Grants Pass - The Pointe,1400 REDWOOD CIRCLE,Grants Pass,OR,97527,64,5MA269,RCF,Open
+Tsl Elderhealth And Living Memory Village,382-B SOUTH 58TH ST,Springfield,OR,97478,95,5ME119,RCF,Open
+Premier Living Center,5120 SE 118TH,Portland,OR,97266,16,5ME175,RCF,Open
+Harmony Living,1535 SW SHIRLEY ANN DRIVE,Mcminnville,OR,97128,16,5ME248,RCF,Open
+,18745 SW ALDERWOOD DR,Beaverton,OR,97003,5,6004415702,AFH,Open
+,2722 Northeast 122nd Avenue,Portland,OR,97230,5,6005223335,AFH,Open
+,16430 SW WRIGHT ST,Beaverton,OR,97007,5,6013500395,AFH,Open
+,2454 LYON STREET SE,Albany,OR,97322,0,6024181641,AFH,Open
+,3040 SE PERSONS CT,Milwaukie,OR,97267,5,6045487090,AFH,Open
+,13274 SW BENISH ST,Tigard,OR,97223,5,6052027554,AFH,Open
+,17540 SW OVIATT ST,Beaverton,OR,97007,5,6085111352,AFH,Open
+,12395 SW MCKAY CT,Beaverton,OR,97008,5,6099800875,AFH,Open
+,2203 SW 184TH TERRACE,Beaverton,OR,97003,1,6100719426,AFH,Open
+,4943 RANKIN CT,Salem,OR,97306,5,6115905839,AFH,Open
+,723 10TH STREET SE,Bandon,OR,97411,1,6129160281,AFH,Open
+,1323 C STREET,Independence,OR,97351,5,6149641119,AFH,Open
+,1157 SW TOBIAS WAY,Aloha,OR,97003,5,6156623891,AFH,Open
+,4917 38TH PLACE NE,Salem,OR,97305,5,6161762842,AFH,Open
+,543 NE 18TH AVENUE,Hillsboro,OR,97124,5,6169567233,AFH,Open
+,3560 NW PARKVIEW DRIVE,Beaverton,OR,97006,5,6170799424,AFH,Open
+,5203 Southeast El Centro Way,Milwaukie,OR,97267,5,6172913216,AFH,Open
+,3532 NW 3RD AVE,Hillsboro,OR,97124,5,6177747279,AFH,Open
+,5755 SW HALL BLVD,Beaverton,OR,97005,5,6180684402,AFH,Open
+,1310 SW 181ST AVE,Beaverton,OR,97003,4,6186839521,AFH,Open
+,14647 SE STERLING CT,Clackamas,OR,97015,5,6196974116,AFH,Open
+,7837 SE THIESSEN RD,Milwaukie,OR,97267,5,6199432396,AFH,Open
+,19615 SW JAYLEE STREET,Aloha,OR,97078,5,6200009593,AFH,Open
+,70613 CLIFTON ROAD,North Bend,OR,97459,1,6218200461,AFH,Open
+,5712 TERRACE DR,West Linn,OR,97068,5,6220914389,AFH,Open
+,20903 YOSEMITE ST NE,Aurora,OR,97002,5,6223722712,AFH,Open
+,325 SE 21ST PLACE,Hillsboro,OR,97123,3,6273755162,AFH,Open
+,11324 SW 91ST COURT,Tigard,OR,97223,5,6287256704,AFH,Open
+,14817 SE RAINTREE CT,Milwaukie,OR,97267,5,6298423565,AFH,Open
+,4434 18TH AVE NE,Keizer,OR,97303,5,6301795054,AFH,Open
+,12285 SW KATHERINE ST,Tigard,OR,97223,5,6304594766,AFH,Open
+,20030 SW JOHNSON ST,Aloha,OR,97003,5,6312158821,AFH,Open
+,693 45TH PLACE SE,Salem,OR,97317,5,6319265352,AFH,Open
+,2631 NE LAURA ST,Hillsboro,OR,97124,5,6331343299,AFH,Open
+,4257 NE JACKSON ST,Hillsboro,OR,97124,5,6337433320,AFH,Open
+,15216 SE BEVINGTON AVE,Milwaukie,OR,97267,5,6343451076,AFH,Open
+,880 MULE DEER PLACE NW,Salem,OR,97304,5,6379465191,AFH,Open
+,2209 NE WELLS ACRES RD,Bend,OR,97701,5,6382993011,AFH,Open
+,9770 SW HEATHER LANE,Beaverton,OR,97008,5,6408767854,AFH,Open
+,2020 NW 156TH AVE,Beaverton,OR,97006,5,6417012662,AFH,Open
+,16235 Southeast Clinton Street,Portland,OR,97236,5,6432547145,AFH,Open
+,3455 SW 100TH AVE,Portland,OR,97225,5,6444065985,AFH,Open
+,7070 SW OLESON RD,Portland,OR,97223,5,6475042416,AFH,Open
+,22179 CALGARY DR,Bend,OR,97702,5,6479996727,AFH,Open
+,18284 SE River Rd,Milwaukie,OR,97267,3,6490725982,AFH,Open
+,1500 N PINE,Canby,OR,97013,5,6564133620,AFH,Open
+,1909 WAREHAM LANE,Newberg,OR,97132,5,6570456028,AFH,Open
+,1860 FAIRHILL DR,Roseburg,OR,97471,5,6638066187,AFH,Open
+,3155 SW 199TH TERRACE,Aloha,OR,97003,5,6645876890,AFH,Open
+,242 S 22ND STREET,Cottage Grove,OR,97424,4,6663700773,AFH,Open
+,3200 SE CHESTNUT ST,Milwaukie,OR,97267,5,6698782640,AFH,Open
+,4790 SW 170TH AVE,Aloha,OR,97078,5,6718437431,AFH,Open
+,2846 NE MEADOW CT,Hillsboro,OR,97124,5,6718517009,AFH,Open
+,9925 SW 82ND AVE,Portland,OR,97223,5,6723008771,AFH,Open
+,6282 SW 154TH PL,Beaverton,OR,97007,5,6730399492,AFH,Open
+,3387 NE STONEBROOK LP,Bend,OR,97701,5,6734926822,AFH,Open
+,2456 LYON ST SE,Albany,OR,97321,5,6751750559,AFH,Open
+,2032 SE ARLINGTON LOOP,Hillsboro,OR,97123,3,6759846873,AFH,Open
+,19283 SE SUNNYSIDE RD,Damascus,OR,97089,5,6766063616,AFH,Open
+,3385 SUNSHINE ACRES PLACE,Eugene,OR,97401,3,6772686682,AFH,Open
+,1940 SE Arborwood Ave,Bend,OR,97702,5,6812771608,AFH,Open
+,11460 SW VIEWMOUNT LN,Tigard,OR,97223,5,6856364436,AFH,Open
+,2115 NW 29TH STREET,Corvallis,OR,97330,5,686338,AFH,Open
+,3756 SE WALNUT ST,Hillsboro,OR,97123,5,6876168131,AFH,Open
+,12050 SW 121ST AVE,Tigard,OR,97223,5,6919021855,AFH,Open
+,4505 CENTURY DR S,Salem,OR,97302,3,6930770602,AFH,Open
+,175 ORCHARDVIEW AVE,Central Point,OR,97502,5,6942761706,AFH,Open
+,1750 SW 187TH AVE,Beaverton,OR,97003,4,6957307145,AFH,Open
+,14420 Southeast Thelma Circle,Milwaukie,OR,97267,4,6958022166,AFH,Open
+,17865 SW UPPER BOONES FERRY ROAD,Durham,OR,97224,5,6961523224,AFH,Open
+,521 GIRARD CIRCLE,Medford,OR,97504,1,6972446890,AFH,Open
+,863 MEADOWVALE LANE,Woodburn,OR,97071,5,6981396683,AFH,Open
+,19275 Southwest Anderson Street,Aloha,OR,97007,5,6999088970,AFH,Open
+,10770 SW WALNUT ST,Tigard,OR,97223,5,7001930431,AFH,Open
+,3158 NW GREENBRIAR PL,Corvallis,OR,97330,5,7017527229,AFH,Open
+,2799 LANCASTER ST,West Linn,OR,97068,5,7040636687,AFH,Open
+,14740 SW JORDY CT,Tigard,OR,97224,5,7089315192,AFH,Open
+Addington Place of Canfield,14570 SW HART RD,Beaverton,OR,97005,105,70A011,ALF,Open
+The Springs at Carman Oaks,3800 CARMAN DR,Lake Oswego,OR,97035,21,70A012,ALF,Open
+Markham House,10606 SW CAPITOL HWY,Portland,OR,97219,63,70A057,ALF,Open
+Maple Ridge Senior Living,548 NORTH MAIN STREET,Ashland,OR,97520,45,70A062,ALF,Open
+Regency Park Place at Corvallis,2595 JACK LONDON ST,Corvallis,OR,97330,55,70A069,ALF,Open
+Merrill Gardens at Sheldon Park,2440 WILLAKENZIE ROAD,Eugene,OR,97401,108,70A083,ALF,Open
+Timberhill Place,989 NW SPRUCE AVE,Corvallis,OR,97330,70,70A097,ALF,Open
+Wellsprings Assisted Living Facility,2104 W IDAHO AVE,Ontario,OR,97914,38,70A102,ALF,Open
+Bonaventure of Milwaukie Assisted Living,5801 Kellogg Creek Dr.,Milwaukie,OR,97317,60,70A127996,ALF,Open
+The Springs at Wilsonville,7600 SW VLAHOS DR,Wilsonville,OR,97070,85,70A200,ALF,Open
+Laurelhurst Senior Living,3120 SE STARK,Portland,OR,97214,89,70A209,ALF,Open
+Jennings Mccall Center,2221 OAK STREET,Forest Grove,OR,97116,147,70A214,ALF,Open
+Bonaventure of Albany Assisted Living,420 GERI ST NW,Albany,OR,97321,60,70A235,ALF,Open
+Terwilliger Terrace ALF,2425 SW 6TH AVENUE,Portland,OR,97201,64,70A246,ALF,Open
+Providence Brookside Manor,1550 BROOKSIDE DR,Hood River,OR,97031,20,70A249,ALF,Open
+Willamette View Neighborhoods,13145 SE RIVER ROAD,Portland,OR,97222,50,70A259,ALF,Open
+Prestige Senior Living Southern Hills,4795 SKYLINE RD S,Salem,OR,97306,72,70A260,ALF,Open
+Edgewood Point Senior Living,7733 SW SCHOLLS FERRY RD,Beaverton,OR,97008,59,70A261,ALF,Open
+Hillside Assisted Living,440 NW HILLSIDE PARK WAY,Mcminnville,OR,97128,68,70A262,ALF,Open
+Shore Pines Senior Living,93975 OCEAN WAY,Gold Beach,OR,97444,54,70A263,ALF,Open
+Royal Anne Assisted Living,10610 SE CLAY STREET,Portland,OR,97216,110,70A264,ALF,Open
+Sea Aire Assisted Living Community,1882 N HWY 101,Yachats,OR,97498,50,70A265,ALF,Open
+The Bridge Assisted Living,201 SW BRIDGE STREET,Grants Pass,OR,97526,77,70A266,ALF,Open
+Vineyard Heights Assisted Living and Retirement Cottages,345 SW HILL ROAD,Mcminnville,OR,97128,96,70A267,ALF,Open
+Raleigh Hills Assisted Living,4815 SW DOGWOOD LANE,Portland,OR,97225,90,70A268,ALF,Open
+Hawks Ridge Senior Assisted Living Community,1795 8TH STREET,Hood River,OR,97031,85,70A269,ALF,Open
+Somerset Assisted Living,8360 CASON ROAD,Gladstone,OR,97027,100,70A270,ALF,Open
+Providence Irvington Village Assisted Living,420 NE MASON,Portland,OR,97211,130,70A271,ALF,Open
+The Springs at Murrayhill,10880 SW DAVIES ROAD,Beaverton,OR,97008,80,70A273,ALF,Open
+Stoneybrook Assisted Living,4650 SW HOLLYHOCK CIRCLE,Corvallis,OR,97333,95,70A274,ALF,Open
+The Springs at Sherwood,15677 SW OREGON ST,Sherwood,OR,97140,69,70A276,ALF,Open
+Prestige Senior Living Orchard Heights,695 ORCHARD HEIGHTS RD NW,Salem,OR,97304,67,70A277,ALF,Open
+Assumption Village,9121 N BURR AVENUE,Portland,OR,97203,84,70A278,ALF,Open
+Prestige Senior Living Five Rivers,3500 12TH STREET,Tillamook,OR,97141,82,70A279,ALF,Open
+Corvallis Caring Place Assisted Living,750 NW 23RD ST,Corvallis,OR,97330,55,70A280,ALF,Open
+Prestige Senior Living West Hills,5595 SW WEST HILLS RD,Corvallis,OR,97333,72,70A281,ALF,Open
+Willow Creek Terrace,400 FRANK GILLIAM DR,Heppner,OR,97836,18,70A283,ALF,Open
+Springridge Court Assisted Living,32100 SW FRENCH PRAIRIE ROAD,Wilsonville,OR,97070,85,70A284,ALF,Open
+Country Meadows Village,155 S EVERGREEN,Woodburn,OR,97071,50,70A285,ALF,Open
+Marquis Wilsonville Assisted Living,30900 SW PARKWAY AVE,Wilsonville,OR,97070,72,70A286,ALF,Open
+The Amber Senior Living,365 SW BEL AIR DRIVE,Clatskanie,OR,97016,40,70A287,ALF,Open
+Marquis Piedmont Assisted Living,319 NE RUSSET STREET,Portland,OR,97211,80,70A288,ALF,Open
+Prestige Senior Living High Desert,2660 NE MARY ROSE PLACE,Bend,OR,97701,75,70A289,ALF,Open
+Avamere at Chestnut Lane,1219 NE 6TH STREET,Gresham,OR,97030,78,70A290,ALF,Open
+Avamere at Bethany Assisted Living Facility,16360 NW AVAMERE CT,Portland,OR,97229,90,70A291,ALF,Open
+Prestige Senior Living Arbor Place,3150 JUANIPERO WAY,Medford,OR,97504,64,70A292,ALF,Open
+Pioneer Place Assisted Living,1060 D STREET W,Vale,OR,97918,31,70A293,ALF,Open
+Fox Hollow Independent and Assisted Living Community,2599 NE STUDIO RD,Bend,OR,97701,86,70A294,ALF,Open
+Sellwood Senior Living,8517 SE 17TH AVENUE,Portland,OR,97202,100,70A295,ALF,Open
+Canyon Rim Assisted Living,1701 GEORGE JACKSON RD,Maupin,OR,97037,35,70A296,ALF,Open
+Meadowlark Senior Living,181 S 5TH STREET,Lebanon,OR,97355,95,70A297,ALF,Open
+Pioneer Village,805 N 5TH ST,Jacksonville,OR,97530,60,70A298,ALF,Open
+Timber Pointe Senior Living Community,4865 MAIN STREET,Springfield,OR,97478,150,70A299,ALF,Open
+The Springs at Veranda Park,1641 VERANDA PARK DRIVE,Medford,OR,97504,65,70A300,ALF,Open
+Bonaventure of Tigard Assisted Living,15000 SW HALL BLVD,Tigard,OR,97224,69,70A301,ALF,Open
+Ocean Ridge Retirement And Assisted Living Community,1855 SE OCEAN BLVD,Coos Bay,OR,97420,100,70A302,ALF,Open
+Brookdale Oswego Springs - Portland,11552 SW LESSER RD,Portland,OR,97219,82,70A303,ALF,Open
+Oswego Place Assisted Living Community,17450 PILKINGTON RD,Lake Oswego,OR,97035,79,70A304,ALF,Open
+Brookdale Redmond Assisted Living,1942 SW CANYON DRIVE,Redmond,OR,97756,77,70A305,ALF,Open
+Middlefield Oaks Assisted Living Community,1500 VILLAGE DRIVE,Cottage Grove,OR,97424,85,70A306,ALF,Open
+Bayberry Commons Assisted Living,2211 LAURA STREET,Springfield,OR,97477,62,70A307,ALF,Open
+Brookdale Newberg,3802 HAYES ST,Newberg,OR,97132,110,70A308,ALF,Open
+Hawthorne Gardens Senior Living Community,2828 SE TAYLOR ST,Portland,OR,97214,42,70A309,ALF,Open
+The Stafford Assisted Living Facility,1200 OVERLOOK DR,Lake Oswego,OR,97034,16,70A310,ALF,Open
+Fircrest Assisted Living,213 NE FIRCREST DR,Mcminnville,OR,97128,29,70A311,ALF,Open
+Laurel Parc at Bethany,15850 NW CENTRAL DRIVE,Portland,OR,97229,153,70A312,ALF,Open
+Russellville Park Retirement Living,23 SE 103RD AVENUE,Portland,OR,97216,120,70A314,ALF,Open
+Courtyard Fountains Assisted Living Community,1537 SE 223RD,Gresham,OR,97030,53,70A315,ALF,Open
+Sea View Senior Living Community,98059 GERLACH LANE,Brookings,OR,97415,99,70A316,ALF,Open
+Mirabella at South Waterfront,3550 SW BOND AVE,Portland,OR,97239,24,70A317,ALF,Open
+Countryside Village,1700 KELLENBECK AVE,Grants Pass,OR,97527,22,70A318,ALF,Open
+Royalton Place Assisted Living,5555 SE KING RD,Milwaukie,OR,97222,64,70A319,ALF,Open
+Bonaventure of Salem Assisted Living,3411 BOONE RD SE,Salem,OR,97317,65,70A320,ALF,Open
+Dallas Retirement Village Assisted Living Hud,377 NW JASPER ST,Dallas,OR,97338,25,70A321,ALF,Open
+Wallowa Valley Senior Living,605 MEDICAL PARKWAY,Enterprise,OR,97828,19,70A322,ALF,Open
+Waterford Grand Assisted Living,600 WATERFORD WAY,Eugene,OR,97401,101,70A323,ALF,Open
+Marquis Tualatin Assisted Living,19945 SW BOONES FERRY ROAD,Tualatin,OR,97062,87,70A324,ALF,Open
+Merrill Gardens at Cedar Mill,11795 NW CEDAR FALLS DRIVE,Portland,OR,97229,65,70A325,ALF,Open
+Bonaventure of Gresham Assisted Living,22514 SE STARK,Gresham,OR,97030,72,70A327,ALF,Open
+Bonaventure of Keizer Assisted Living,5525 MCLEOD LANE NE,Keizer,OR,97303,61,70A328,ALF,Open
+The Springs at Greer Gardens,1282 GOOD PASTURE ISLAND ROAD,Eugene,OR,97401,100,70A329,ALF,Open
+Arcadia Senior Living,13031 SE FOSTER ROAD,Portland,OR,97236,74,70A330,ALF,Open
+Bonaventure of Medford Assisted Living,2530 EAST MCANDREWS ROAD,Medford,OR,97504,69,70A332,ALF,Open
+Waverly Place Assisted Living,2853 SE SALEM AVE,Albany,OR,97321,71,70A333,ALF,Open
+Juniper Springs Senior Living,590 NW 23RD STREET,Redmond,OR,97756,91,70A334,ALF,Open
+Morningstar Assisted Living of Beaverton,14475 SW BARROWS RD,Beaverton,OR,97007,75,70A335,ALF,Open
+Pear Valley Senior Living,800 N HASKELL ST,Central Point,OR,97502,64,70A336,ALF,Open
+The - A Senior Living Community Canopy,9860 NW CORNELL RD,Portland,OR,97229,95,70A337,ALF,Open
+Boone Ridge Senior Living Community,2950 BOONE RD SE,Salem,OR,97306,103,70A339,ALF,Open
+Merrill Gardens at Sherwood,16872 SW EDY RD,Sherwood,OR,97140,131,70A340,ALF,Open
+Kellogg Assisted Living at Mary's Woods,17395 HOLY NAMES DRIVE,Lake Oswego,OR,97034,56,70A341,ALF,Open
+The Springs at Lake Oswego,3900 KRUSE WAY PLACE,Lake Oswego,OR,97035,97,70A342,ALF,Open
+The Springs at Sunnyside,14391 SE PRINCETON VILLAGE WAY,Happy Valley,OR,97015,77,70A343,ALF,Open
+The Grove Senior Living,2184 POPLAR DRIVE,Medford,OR,97504,48,70A344,ALF,Open
+The Landing - A Senior Living Community,2490 NW EDENBOWER BLVD,Roseburg,OR,97471,93,70A345,ALF,Open
+Marquis Eugene Assisted Living,555 COUNTRY CLUB RD,Eugene,OR,97401,87,70A346,ALF,Open
+The Ackerly at Reed's Crossing,7267 SE CIRCUIT DR.,Hillsboro,OR,97123,135,70A347,ALF,Open
+Morningstar Assisted Living at Laurelhurst,3140 NE SANDY BLVD,Portland,OR,97232,98,70A348,RCF,Open
+The Esther at Riverbend Assisted Living,3535 E GAME FARM RD,Springfield,OR,97477,115,70A349,ALF,Open
+Merrill Gardens at Hillsboro,146 NE 4TH AVE.,Hillsboro,OR,98102,141,70A41485,ALF,Open
+Adams House Assisted Living,121 CORDELIA DRIVE,Myrtle Creek,OR,97457,40,70M001,ALF,Open
+Alderwood ALF,131 ALDER ST,Central Point,OR,97502,64,70M002,ALF,Open
+Alpine House Assisted Living,204 N PARK ST,Joseph,OR,97846,36,70M003,ALF,Open
+Chinook Place,470 NE OAK ST,Madras,OR,97741,13,70M004,ALF,Open
+The Aspens,210 ROE DAVIS AVE,Hines,OR,97738,48,70M005,ALF,Open
+Columbia Place Assisted Living,15727 NE RUSSELL ST,Portland,OR,97230,96,70M006,ALF,Open
+Trustwell Living at Astor Place,999 Klaskanine Avenue,Astoria,OR,97103,34,70M007,ALF,Open
+Awbrey Place,2825 NEFF RD,Bend,OR,97701,22,70M008,ALF,Open
+Bridgewood Rivers Assisted Living,1901 NW HUGHWOOD DR,Roseburg,OR,97470,50,70M009,ALF,Open
+Brookside Place,3550 SW CANAL BLVD,Redmond,OR,97756,45,70M010,ALF,Open
+Carriage Place,150 S WILLIAMSON DR,Prineville,OR,97754,32,70M013,RCF,Open
+Churchill Estates Assisted Living,1919 BAILEY HILL RD,Eugene,OR,97405,48,70M014,ALF,Open
+Cornell Estates Retirement And Assisted Living Residence,1005 NE 17TH AVE,Hillsboro,OR,97124,75,70M015,ALF,Open
+Brookdale Geary Street,2445 GEARY ST SE,Albany,OR,97321,80,70M016,ALF,Open
+Cedarbrook Place Senior Living,721 North East 27TH Street,Mcminnville,OR,97128,50,70M017,ALF,Open
+Dallas Retirement Village Assisted Living,340 NW BRENTWOOD ST,Dallas,OR,97338,53,70M018,ALF,Open
+Trustwell Living at Davenport Place,930 OAK ST,Silverton,OR,97381,36,70M019,ALF,Open
+Deerfield Village Assisted Living,5770 SE KELLOGG CREEK DR,Milwaukie,OR,97222,48,70M020,ALF,Open
+Dorian Place Assisted Living Facility,375 N DORIAN DR,Ontario,OR,97914,50,70M021,ALF,Open
+Applegate Place,1465 EAST CENTRAL,Sutherlin,OR,97479,36,70M022,ALF,Open
+Klamath Falls Senior Living,2130 N ELDORADO AVE,Klamath Falls,OR,97601,70,70M024,ALF,Open
+Elliott Residence,390 CHURCH ST,Sublimity,OR,97385,60,70M025,ALF,Open
+Emerald Valley Assisted Living,4550 W AMAZON DR,Eugene,OR,97405,48,70M026,ALF,Open
+Cascade Valley Assisted Living,1010 NE 3RD AVENUE,Milton Freewater,OR,97862,59,70M027,ALF,Open
+Flagstone Retirement And Assisted Living,3325 COLUMBIA VIEW DR,The Dalles,OR,97058,50,70M028,ALF,Open
+Forest Grove Beehive,2122 HAWTHORNE,Forest Grove,OR,97116,44,70M029,ALF,Open
+The Iris Memory Care,1615 BRUSH COLLEGE RD NW,Salem,OR,97304,55,70M030,ALF,Open
+Gilman Grove Assisted Living,2205 GILMAN DRIVE,Oregon City,OR,97045,101,70M031,ALF,Open
+Grande Ronde Retirement Residence,1809 GEKELER LANE,La Grande,OR,97850,76,70M033,ALF,Open
+Greenridge Estates,4 GREENRIDGE DRIVE,Lake Oswego,OR,97035,79,70M034,ALF,Open
+Pacific Grove Senior Living Community,2112 OAK ST,Forest Grove,OR,97116,78,70M035,ALF,Open
+Harvest Homes Assisted Living,6921 N ROBERTS AVENUE,Portland,OR,97203,49,70M036,ALF,Open
+The Springs at Beaverton,12520 SW HART RD,Beaverton,OR,97008,75,70M037,ALF,Open
+Regency Village at Redmond,3000 SW 32ND ST,Redmond,OR,97756,55,70M038,ALF,Open
+Pacific View Assisted Living Community,1000 6TH AVENUE WEST,Bandon,OR,97411,85,70M039,ALF,Open
+Avamere at Hermiston,980 W HIGHLAND AVE,Hermiston,OR,97838,63,70M040,ALF,Open
+Hillside Place,1400 SE 19TH,Lincoln City,OR,97367,25,70M041,ALF,Open
+Homewood Assisted Living,17999 SE River Road,Milwaukie,OR,97267,52,70M042,ALF,Open
+Willow Place,1307 N COLLEGE,Newberg,OR,97132,30,70M043,ALF,Open
+Inland Point Retirement Community,2290 INLAND DRIVE,North Bend,OR,97459,60,70M044,ALF,Open
+Trustwell Living at Suncrest Place,300 SUNCREST ROAD,Talent,OR,97540,40,70M045,ALF,Open
+Junction City Retirement and Assisted Living Residence,500 E 6TH ST,Junction City,OR,97448,36,70M048,ALF,Open
+Juniper House,301 SW 28TH DR,Pendleton,OR,97801,31,70M049,ALF,Open
+Lancaster Village 2,4156 MARKET ST NE,Salem,OR,97301,50,70M051,ALF,Open
+The Springs at Lancaster Village,4138 MARKET ST NE,Salem,OR,97301,36,70M052,ALF,Open
+Lakeview Senior Living,2690 NE YACHT AVE,Lincoln City,OR,97367,67,70M053,ALF,Open
+Trustwell Living at Rogue River Place,2437 KANE STREET,Klamath Falls,OR,97603,43,70M054,ALF,Open
+Azalea Gardens Senior Living,755 ELK DRIVE,Brookings,OR,97415,40,70M055,ALF,Open
+Magnolia Gardens Senior Living,1425 DAUGHERTY AVE,Cottage Grove,OR,97424,73,70M056,ALF,Open
+Mckillop Residence,500 CONIFER CIRCLE,Sublimity,OR,97385,60,70M058,ALF,Open
+Mcloughlin Place Senior Living,1153 MOLALLA AVE,Oregon City,OR,97045,74,70M059,ALF,Open
+Meadow Creek Village Assisted Living,3988 12TH ST SE,Salem,OR,97302,52,70M060,ALF,Open
+Meadowbrook Place,4000 CEDAR ST,Baker City,OR,97814,60,70M061,ALF,Open
+Neawanna By The Sea,20 NORTH WAHANNA RD,Seaside,OR,97138,48,70M064,ALF,Open
+Bayside Terrace Assisted Living,192 NORMAN AVE,Coos Bay,OR,97420,57,70M067,ALF,Open
+Oceanview Assisted Living Residence,525 NE 71ST,Newport,OR,97365,84,70M068,ALF,Open
+Avamere at Park Place,8445 SW HEMLOCK STREET,Portland,OR,97223,130,70M070,ALF,Open
+Trustwell Living at Parkhurst Place,2450 MAY ST,Hood River,OR,97031,35,70M071,ALF,Open
+Parkland Village Retirement Community,3121 NE CUMULUS AVENUE,Mcminnville,OR,97128,60,70M072,ALF,Open
+Powell Valley Assisted Living Community,4001 SE 182ND AVE,Gresham,OR,97030,115,70M073,ALF,Open
+Quail Run Assisted Living,2525 47TH AVE SE,Albany,OR,97321,137,70M074,ALF,Open
+Rackleff Place,655 SW 13TH AVE,Canby,OR,97013,29,70M075,ALF,Open
+Redwood Heights Retirement and Assisted Living Community,4050 12TH ST CUTOFF SE,Salem,OR,97302,95,70M076,ALF,Open
+Regency Park Assisted Living,8300 SW BARNES RD,Portland,OR,97225,118,70M077,ALF,Open
+Brookdale River Road,592 BEVER DR NE,Keizer,OR,97303,56,70M078,ALF,Open
+Guardian Angel Homes,540 NW 12TH ST,Hermiston,OR,97838,40,70M079,ALF,Open
+Rose Schnitzer Manor,6140 SW BOUNDARY ST,Portland,OR,97221,180,70M080,ALF,Open
+Rosewood Park Retirement and Assisted Living Residence,2405 SE CENTURY BLVD,Hillsboro,OR,97123,95,70M081,ALF,Open
+Trustwell Living at River Run Place,1155 DARLENE LANE,Eugene,OR,97401,56,70M082,ALF,Open
+Silver Creek Assisted Living Facility,703 EVERGREEN RD,Woodburn,OR,97071,41,70M084,ALF,Open
+Skylark Assisted Living,900 SKYLARK PLACE,Ashland,OR,97520,87,70M085,ALF,Open
+Spring Meadows Assisted Living Facility,36070 PITTSBURG RD,Saint Helens,OR,97051,44,70M087,ALF,Open
+Spring Valley Assisted Living,770 HARLOW RD,Springfield,OR,97477,63,70M088,ALF,Open
+Spruce Point Assisted Living,375 9TH ST,Florence,OR,97439,72,70M089,ALF,Open
+Summit Springs Village ALF,"133 S CHURCH STREET, PO BOX 687",Condon,OR,97823,38,70M091,ALF,Open
+Suzanne Elise Assisted Living,101 FOREST DRIVE,Seaside,OR,97138,90,70M092,ALF,Open
+Tanner Spring Assisted Living,23000 HORIZON DR,West Linn,OR,97068,72,70M093,ALF,Open
+The Estates at Town Center,8607 SE CAUSEY AVE,Happy Valley,OR,97086,87,70M094,ALF,Open
+The Oaks at Lebanon,621 WEST OAK,Lebanon,OR,97355,70,70M095,ALF,Open
+Regency Village at Bend,127 SE WILSON AVE,Bend,OR,97702,88,70M096,ALF,Open
+Valley View Senior Living,112 NW VALLEY VIEW DR,John Day,OR,97845,42,70M098,ALF,Open
+Marquis Hope Village ALF,1589 S IVY,Canby,OR,97013,92,70M099,ALF,Open
+Marquis Forest Grove Assisted Living,3336 19TH AVE,Forest Grove,OR,97116,70,70M100,ALF,Open
+The Suites Assisted Living Community,1301 SE PARKDALE DRIVE,Grants Pass,OR,97527,75,70M101,ALF,Open
+Wiley Creek Senior Living,5050 MOUNTAIN FIR STREET,Sweet Home,OR,97386,60,70M103,ALF,Open
+Willamette Manor,176 WEST C STREET,Lebanon,OR,97355,46,70M104,ALF,Open
+Heron Pointe Senior Living,504 Gwinn Street East,Monmouth,OR,97361,74,70M201,ALF,Open
+Evergreen Senior Living Community,3760 N CLAREY ST,Eugene,OR,97402,80,70M202,ALF,Open
+Clatsop Care Retirement Village,947 OLNEY AVE,Astoria,OR,97103,80,70M203,ALF,Open
+Springs at Clackamas Woods ALF,14404 SE WEBSTER RD,Milwaukie,OR,97267,58,70M204,ALF,Open
+Mt. Angel Orchard House,550 S MAIN ST,Mount Angel,OR,97362,54,70M205,ALF,Open
+Pheasant Pointe Assisted Living Community,835 E MAIN STREET,Molalla,OR,97038,61,70M206,ALF,Open
+Regency Village at Prineville,830 NORTH ELM ST,Prineville,OR,97754,57,70M207,ALF,Open
+Avamere Living at Newberg,730 FOOTHILLS DRIVE,Newberg,OR,97132,70,70M208,ALF,Open
+Orchards Assisted Living,1018 ROYAL COURT,Medford,OR,97504,72,70M210,ALF,Open
+Prestige Senior Living Riverwood,18321 SW PACIFIC HWY,Tualatin,OR,97062,74,70M211,ALF,Open
+Willow Creek Assisted Living,175 NE 16TH STREET,Madras,OR,97741,48,70M212,ALF,Open
+Princeton Village Assisted Living Community,14370 SE OREGON TRAIL DRIVE,Clackamas,OR,97015,68,70M213,ALF,Open
+Macdonald Residence,605 NW COUCH STREET,Portland,OR,97209,54,70M216,ALF,Open
+Desert Sage Retirement Community,1010 NE PURCELL BLVD,Bend,OR,97701,95,70M217,ALF,Open
+Avamere at Waterford Assisted Living Facility,760 SPRING STREET,Medford,OR,97504,85,70M218,ALF,Open
+The Springs at Mill Creek,1201 W 10TH STREET,The Dalles,OR,97058,75,70M219,ALF,Open
+Redwood Terrace,3111 CANAL AVENUE,Grants Pass,OR,97527,49,70M220,ALF,Open
+Prairie House Assisted Living Community,51485 MORSON ST,La Pine,OR,97739,46,70M221,ALF,Open
+Cedar Village Assisted Living Community,4452 LANCASTER DR NE,Salem,OR,97305,62,70M222,ALF,Open
+Settler's Park Assisted Living Community,2895 17TH ST,Baker City,OR,97814,56,70M223,ALF,Open
+Oak Park Senior Living,1400 NE ROCKY RIDGE DRIVE,Roseburg,OR,97470,76,70M225,ALF,Open
+Woodside Senior Living Community,4851 MAIN STREET,Springfield,OR,97478,62,70M226,ALF,Open
+Avamere at Sherwood Assisted Living Facility,16500 SW CENTURY DRIVE,Sherwood,OR,97140,65,70M227,ALF,Open
+Cascadia Village Senior Living,39495 CASCADIA VILLAGE DRIVE,Sandy,OR,97055,55,70M228,ALF,Open
+Callahan Village Assisted Living,1801 NW GARDEN VALLEY BLVD,Roseburg,OR,97470,86,70M229,ALF,Open
+Pelican Pointe Assisted Living Community,615 WASHBURN WAY,Klamath Falls,OR,97603,75,70M230,ALF,Open
+Avamere at Sandy Assisted Living Facility,17727 SE LANGENSAND RD,Sandy,OR,97055,65,70M231,ALF,Open
+Morrow Heights Retirement and Assisted Living Community,176 WARDS CREEK ROAD,Rogue River,OR,97537,53,70M233,ALF,Open
+Lakeland Senior Living,261 LOTO STREET,Eagle Point,OR,97524,70,70M234,ALF,Open
+Brookdale Rose Valley Scappoose,33800 SE FREDERICK STREET,Scappoose,OR,97056,79,70M236,ALF,Open
+Nyssa Gardens Assisted Living Facility,1101 PARK AVENUE,Nyssa,OR,97913,36,70M237,ALF,Open
+Mckay Creek Assisted Living,1601 Southgate Place,Pendleton,OR,97801,60,70M238,ALF,Open
+Courtyard at Mt Tabor,6323 SE DIVISION,Portland,OR,97206,80,70M239,ALF,Open
+Prestige Senior Living Huntington Terrace,1410 NE CLEVELAND AVE,Gresham,OR,97030,75,70M240,ALF,Open
+High Lookee Lodge,2321 OLLALLIE LANE PO BOX 6,Warm Springs,OR,97761,53,70M241,ALF,Open
+Lone Oak Assisted Living Facility,2615 LONE OAK WAY,Eugene,OR,97404,85,70M242,ALF,Open
+Prestige Senior Living Beaverton Hills,4525 SW 99TH AVE,Beaverton,OR,97005,75,70M243,ALF,Open
+Avamere at Hillsboro Assisted Living Facility,2000 SE 30TH AVENUE,Hillsboro,OR,97123,75,70M245,ALF,Open
+Albany Senior Living,2800 14TH AVE SE,Albany,OR,97322,60,70M247,ALF,Open
+Sun Terrace Hermiston,1550 NW 11TH ST,Hermiston,OR,97838,97,70M248,ALF,Open
+Sheridan Assisted Living,1350 W MAIN ST,Sheridan,OR,97378,68,70M250,ALF,Open
+Cascades of Stayton,2201 N 3RD AVE,Stayton,OR,97383,75,70M251,ALF,Open
+Laurelhurst House,15 SE 55TH AVE,Portland,OR,97215,38,70M252,ALF,Open
+Ridgeview Assisted Living Facility,872 GOLFVIEW DRIVE,Medford,OR,97504,51,70M253,ALF,Open
+Cascades of Grants Pass - The Village,1420 REDWOOD CIRCLE,Grants Pass,OR,97527,90,70M254,ALF,Open
+Woodland Heights Assisted Living,9355 SW MCDONALD STREET,Tigard,OR,97223,55,70M255,ALF,Open
+Wildflower Lodge Assisted Living Community,508 16TH STREET,La Grande,OR,97850,55,70M256,ALF,Open
+Mary's Woods Marie Rose Center - Assisted Living,17360 HOLY NAMES DRIVE,Lake Oswego,OR,97034,50,70M257,ALF,Open
+Avamere Living at St Helens,2400 GABLE RD,Saint Helens,OR,97051,70,70M258,ALF,Open
+Springs at Tanasbourne,1950 NE 102ND AVENUE,Hillsboro,OR,97006,84,70M313,ALF,Open
+Fieldstone Village at Keizer Ridge,1165 MCGEE COURT NE,Keizer,OR,97303,119,70M350,ALF,Open
+Churchill Retirement Assisted Living,3800 WESTLEIGH ST.,Eugene,OR,97405,83,70M351,ALF,Open
+Mt. Bachelor Assisted Living,20215 POWERS ROAD,Bend,OR,97702,92,70M352,ALF,Open
+,2360 PETUNIA STREET,Medford,OR,97504,4,7102969345,AFH,Open
+,31821 SE DAPHNE CT,Boring,OR,97009,5,7107356981,AFH,Open
+,995 South Shore Boulevard,Lake Oswego,OR,97034,5,7125805723,AFH,Open
+,730 Southeast Flint Street,Roseburg,OR,97470,5,7138019203,AFH,Open
+,358 SW 147TH PL,Beaverton,OR,97006,5,7153121010,AFH,Open
+,1440 FORESTVIEW DR,Grants Pass,OR,97527,4,7176283002,AFH,Open
+,3631 SE WALNUT STREET,Hillsboro,OR,97123,4,7183590410,AFH,Open
+,21580 SW LOIS ST,Beaverton,OR,97003,5,7240449842,AFH,Open
+,3591 HILLVIEW DRIVE SE,Salem,OR,97302,5,7241058428,AFH,Open
+,12063 SW TAYLOR COURT,Portland,OR,97225,5,7252245824,AFH,Open
+,14868 SE LILAC DRIVE,Milwaukie,OR,97267,5,7272290173,AFH,Open
+,1593 JORDAN DRIVE S,Salem,OR,97302,5,7308563631,AFH,Open
+,7702 SW CANYON LN,Portland,OR,97225,5,7312597375,AFH,Open
+,19690 SW BUTTERNUT ST,Beaverton,OR,97078,5,7315633775,AFH,Open
+,8490 SE BACHMAN DR,Gladstone,OR,97027,5,7349429438,AFH,Open
+,2730 FISHER RD,Salem,OR,97305,5,7364712654,AFH,Open
+,390 SE 33RD AVE,Hillsboro,OR,97123,5,7373382339,AFH,Open
+,3776 ILLAHE HILL RD SOUTH,Salem,OR,97302,4,7387056523,AFH,Open
+,860 Leavitt Ln.,Grants Pass,OR,97527,0,7392968117,AFH,Open
+,550 IDYLWOOD DR SE,Salem,OR,97302,4,7393964657,AFH,Open
+,399 KILLIAN SPRING DR,Woodburn,OR,97071,5,7471919143,AFH,Open
+,2040 PARAGON CT NW,Salem,OR,97304,5,7476940301,AFH,Open
+,987 Siskiyou Blvd,Ashland,OR,97520,5,7477453904,AFH,Open
+,3425 PINE STREET,North Bend,OR,97459,4,7479511295,AFH,Open
+,9780 SW DENNEY ROAD,Beaverton,OR,97008,5,7495889967,AFH,Open
+,5321 SE HILL RD,Milwaukie,OR,97267,5,7531108509,AFH,Open
+,18317 SW EWEN DR,Beaverton,OR,97003,5,7537844231,AFH,Open
+,7812 SW TAYLORS FERRY RD,Portland,OR,97223,5,7539066193,AFH,Open
+,3591 HWY 66,Ashland,OR,97520,5,7562569668,AFH,Open
+,16401 SE WEBSTER RD,Milwaukie,OR,97267,5,7580355587,AFH,Open
+,1958 MISTWOOD DR NE,Keizer,OR,97303,5,7582736394,AFH,Open
+,1785 OSTMAN ROAD,West Linn,OR,97068,5,7596808918,AFH,Open
+,119 N Rope St,Sisters,OR,97759,5,7614497735,AFH,Open
+,21415 SW 90TH CT,Tualatin,OR,97062,5,7641510678,AFH,Open
+,6540 SW NORSE HALL RD,Tualatin,OR,97062,3,7642079071,AFH,Open
+,2666 SE MEADOWLARK DR,Hillsboro,OR,97123,5,7645909960,AFH,Open
+,13550 SW POMMEL CT,Beaverton,OR,97008,4,7654375872,AFH,Open
+,16385 SW IVY GLENN ST,Beaverton,OR,97007,5,7654550449,AFH,Open
+,11400 SW VIEWMOUNT LANE,Tigard,OR,97223,5,7681048741,AFH,Open
+,3556 SW 91ST AVE,Portland,OR,97225,5,7698305651,AFH,Open
+,17319 SW PACIFICA COURT,Beaverton,OR,97006,5,7715095761,AFH,Open
+,4850 SW MENLO DR,Beaverton,OR,97005,0,7717640833,AFH,Open
+,4598 WARD DR NE,Salem,OR,97305,5,7728723110,AFH,Open
+,15880 SW SERENA CT,Tigard,OR,97224,5,7749110357,AFH,Open
+,52120 SW EGGLESTON LANE,Scappoose,OR,97056,2,7753480892,AFH,Open
+,214 Prairie Landing Dr.,Eagle Point,OR,97524,5,7772890019,AFH,Open
+,15611 OCEANVIEW DRIVE,Brookings,OR,97415,1,7773529066,AFH,Open
+,9135 SW NORTH DAKOTA ST,Tigard,OR,97223,5,7780575622,AFH,Open
+,14014 SE OATFIELD RD,Milwaukie,OR,97267,5,7852460406,AFH,Open
+,5544 SE FIRWOOD ST,Portland,OR,97222,4,7874164115,AFH,Open
+,1068 PALACE DRIVE NE,Salem,OR,97301,5,7916365952,AFH,Open
+,1322 SE BARBERRY AVE,Dallas,OR,97338,4,7917899283,AFH,Open
+,5837 F STREET,Springfield,OR,97478,5,7929206917,AFH,Open
+,3070 NW NYSSA CT,Beaverton,OR,97006,5,7972011045,AFH,Open
+,935 NW 20TH STREET,Mcminnville,OR,97128,4,7990689288,AFH,Open
+,2713 SW ELMER NELSON LANE,Grants Pass,OR,97527,3,7994644598,AFH,Open
+,626 45TH PLACE NE,Salem,OR,97301,5,7996639324,AFH,Open
+,5701 CRESTWOOD CT NE,Keizer,OR,97303,5,7999097765,AFH,Open
+St Anthony Village,3560 SE 79TH AVENUE,Portland,OR,97206,126,7MU215,ALF,Open
+,7975 SW OLESON ROAD,Portland,OR,97223,5,8001946102,AFH,Open
+,10819 SE FULLER RD,Milwaukie,OR,97222,4,8063179192,AFH,Open
+,15105 SW 98TH AVENUE,Tigard,OR,97224,5,8069114334,AFH,Open
+,6430 MCEWAN RD,Lake Oswego,OR,97035,5,8085377937,AFH,Open
+,20075 SW ALEXANDER ST,Beaverton,OR,97003,5,8105136290,AFH,Open
+,12050 SE MELBROOK WAY,Clackamas,OR,97015,5,8131999410,AFH,Open
+,1675 SW 88TH AVE,Portland,OR,97225,4,8144392709,AFH,Open
+,185 ALDER STREET,Mount Angel,OR,97362,5,8178939857,AFH,Open
+,19440 SW SOUTHVIEW CT,Beaverton,OR,97078,5,8181840946,AFH,Open
+,5045 WEST PORT STREET,Eugene,OR,97402,4,8202383864,AFH,Open
+,2105 LANSING AVE NE,Salem,OR,97301,5,8211905719,AFH,Open
+,3191 DELTA WATERS RD,Medford,OR,97504,5,8220224878,AFH,Open
+,1240 SW BLAINE STREET,Mcminnville,OR,97128,4,8226362057,AFH,Open
+,1837 EASY ST,Medford,OR,97504,5,8267194577,AFH,Open
+,614 HAZEL ST,Roseburg,OR,97471,4,8275828274,AFH,Open
+,4875 NOREN AVE NE,Keizer,OR,97303,5,8286569810,AFH,Open
+,2735 LADD AVE NE,Salem,OR,97301,5,8292766168,AFH,Open
+,1735 1ST ST,Columbia City,OR,97018,5,8303523171,AFH,Open
+,4279 NE LAURA STREET,Hillsboro,OR,97124,5,8307716243,AFH,Open
+,140 NE TIFFANY STREET,Hillsboro,OR,97124,5,8315410601,AFH,Open
+,19200 SW KINNAMAN RD,Beaverton,OR,97078,5,8315925728,AFH,Open
+,5097 CHEHALIS DRIVE N,Keizer,OR,97303,5,8357835314,AFH,Open
+,9957 SE LINWOOD AVE,Milwaukie,OR,97222,5,8358002452,AFH,Open
+,7695 SW LESLIE STREET,Portland,OR,97223,5,8375255522,AFH,Open
+,56631 LEVI BRANCH RD,Coquille,OR,97423,5,8383571385,AFH,Open
+,13765 SE KING RD,Happy Valley,OR,97086,5,8407290721,AFH,Open
+,14170 SW 100TH AVENUE,Tigard,OR,97224,5,8412039233,AFH,Open
+,30211 SE HEIPLE RD,Eagle Creek,OR,97022,5,8421304865,AFH,Open
+,60841 SELANDER ROAD,Coos Bay,OR,97420,5,8423653162,AFH,Open
+,9776 SW DENNEY ROAD,Beaverton,OR,97008,5,8425312475,AFH,Open
+,1163 NE Bitterbrush Road,Prineville,OR,97754,5,8447016847,AFH,Open
+,8530 Bachman Dr,Glandstone,OR,97027,5,8459381070,AFH,Open
+,535 Berntzen Road,Eugene,OR,97402,5,8461420895,AFH,Open
+,10612 SE 59TH AVE,Milwaukie,OR,97222,5,8466997188,AFH,Open
+,443 MARTHA DRIVE,Winchester,OR,97495,5,8527284985,AFH,Open
+,16215 SE Mckinley Avenue,Clackamas,OR,97015,5,8538651199,AFH,Open
+,38885 STAYTON SCIO ROAD,Scio,OR,97374,5,8561828654,AFH,Open
+,4105 DOUGLAS WAY,Lake Oswego,OR,97035,5,8572441566,AFH,Open
+,19707 SW SANDRA LANE,Beaverton,OR,97003,5,8574260670,AFH,Open
+,16256 SW BRIDLE HILLS DRIVE,Beaverton,OR,97007,3,8578203879,AFH,Open
+,990 NW CONNELL AVE,Hillsboro,OR,97124,5,8588897959,AFH,Open
+,11840 SE ELK RIDGE CT,Clackamas,OR,97015,5,8596116372,AFH,Open
+,11945 NW VALLEVUE PL,Portland,OR,97229,5,859893458,AFH,Open
+,13125 SW SHAKESPEARE ST,King City,OR,97224,3,8605517287,AFH,Open
+,4748 SAN DIEGO DRIVE NE,Salem,OR,97305,4,8612842531,AFH,Open
+,3476 FRONTIER DR NW,Salem,OR,97304,4,8614889635,AFH,Open
+,1128 34TH AVE NW,Salem,OR,97304,5,8616954207,AFH,Open
+,8235 SW SCHOLLS FERRY RD,Beaverton,OR,97008,5,8636288948,AFH,Open
+,982 NE NAOMI COURT,Hillsboro,OR,97124,5,8694753433,AFH,Open
+,397 SE IRONWOOD AVE,Dallas,OR,97338,5,8720001097,AFH,Open
+,686 LAWNSDALE RD,Medford,OR,97504,5,8726894441,AFH,Open
+,15885 SW SERENA CT,Tigard,OR,97224,4,8733286606,AFH,Open
+,661 SKYHAWK DR,Ontario,OR,97914,5,8735108969,AFH,Open
+,324 Shadowlawn Dr.,Eagle Point,OR,97524,4,8745755576,AFH,Open
+,12175 SW BRUCE LN,Beaverton,OR,97008,5,8748470916,AFH,Open
+,20845 SW EGGERT WAY,Beaverton,OR,97078,5,8753785094,AFH,Open
+,170 S OAK GROVE RD NW,Salem,OR,97304,5,8763843183,AFH,Open
+,4411 SE HILL RD,Milwaukie,OR,97267,5,8776780961,AFH,Open
+,11757 SE RUSTLING RIDGE DR,Clackamas,OR,97015,5,8789651321,AFH,Open
+,22466 SW SAXON PLACE,Sherwood,OR,97140,2,8818062986,AFH,Open
+,2425 PEMBROKE CIRCLE,Medford,OR,97504,1,8830333783,AFH,Open
+,5153 JEAN RD,Lake Oswego,OR,97035,5,8834498542,AFH,Open
+,20250 SW JOHNSON ST,Aloha,OR,97003,5,8838913527,AFH,Open
+,4621 ROYAL AVE,Eugene,OR,97402,4,8860433834,AFH,Open
+,7765 SW OBRIEN ST,Portland,OR,97223,5,8914526211,AFH,Open
+,1020 5TH STREET,Oregon City,OR,97045,5,8933971448,AFH,Open
+,12040 SW ROSE VISTA DR,Tigard,OR,97223,5,8934576692,AFH,Open
+,3524 CARLIN DR,Medford,OR,97504,5,8935540096,AFH,Open
+,506 OREGON AVE NE,Salem,OR,97301,5,8936715167,AFH,Open
+,8780 SW BOHMANN PARKWAY,Portland,OR,97223,5,8971509110,AFH,Open
+,228 SE SOFT TAIL DR,Bend,OR,97702,5,8976611605,AFH,Open
+,13045 SW COMBINE ST,Beaverton,OR,97008,5,8985385020,AFH,Open
+,156 NE 29TH CT,Hillsboro,OR,97124,5,8986768019,AFH,Open
+,1159 KNIGHTS COURT NE,Salem,OR,97301,5,9020966337,AFH,Open
+,2875 BOLTON TERRACE SOUTH,Salem,OR,97302,5,9035124780,AFH,Open
+,10835 Southeast Jason Court,Happy Valley,OR,97086,5,9085406325,AFH,Open
+,1316 SW 209TH AVE,Aloha,OR,97003,5,9089284394,AFH,Open
+,7900 SW SCHOLLS FERRY RD,Beaverton,OR,97008,5,9099818622,AFH,Open
+,2207 JULIET CT S,Salem,OR,97302,5,9106371502,AFH,Open
+,7055 SW PALMER WAY,Beaverton,OR,97007,5,9114607148,AFH,Open
+,19864 SW JOANN COURT,Aloha,OR,97003,5,9141064583,AFH,Open
+,4824 SW 182ND AVE,Beaverton,OR,97078,4,9147351519,AFH,Open
+,2657 ALDER STREET,Eugene,OR,97405,1,9171673518,AFH,Open
+,15240 SW CABERNET DR,Tigard,OR,97224,5,9187551610,AFH,Open
+,223 SW MADISON ST,Sheridan,OR,97378,5,9235641461,AFH,Open
+,6720 ROGUE RIVER DR,Shady Cove,OR,97539,4,9273391699,AFH,Open
+,2455 SW 171ST PL,Beaverton,OR,97003,5,9294873670,AFH,Open
+,8760 NW CORNELL RD,Portland,OR,97229,5,9350742580,AFH,Open
+,20151 SW CELEBRITY ST,Aloha,OR,97078,3,9362976505,AFH,Open
+,16779 SE WIDGEION LN,Damascus,OR,97089,5,9366116405,AFH,Open
+,1955 2ND STREET,Columbia City,OR,97018,5,9366845610,AFH,Open
+,239 WEST F ST,Creswell,OR,97426,2,9393080520,AFH,Open
+,413 53RD PLACE,Springfield,OR,97478,4,9398528123,AFH,Open
+,2500 W 10TH ST,The Dalles,OR,97058,5,9411654167,AFH,Open
+,14390 SW FURLONG WAY,Beaverton,OR,97005,5,9417825048,AFH,Open
+,20110 SW ROSA RD,Aloha,OR,97078,4,9429538939,AFH,Open
+,868 NE CHURCH AVE,Roseburg,OR,97470,4,9441044256,AFH,Open
+,1071 SPRING ST,Medford,OR,97504,3,9479111624,AFH,Open
+,20355 SW ERIN PLACE,Beaverton,OR,97003,5,9508390780,AFH,Open
+,168 NW CEDAR CT,Warrenton,OR,97146,4,9510172812,AFH,Open
+,2255 SW AUGUSTA PLACE,Beaverton,OR,97003,5,9512011444,AFH,Open
+,117 NE 32ND AVE,Hillsboro,OR,97124,5,9513850811,AFH,Open
+,14506 SE PRIMROSE AVE,Milwaukie,OR,97267,4,9533137255,AFH,Open
+,87771 VINE LANE,Bandon,OR,97411,4,9534720544,AFH,Open
+,52654 HOAG TERRACE,Scappoose,OR,97056,5,9544418436,AFH,Open
+,67090 MYRTLE GROVE ROAD,Coos Bay,OR,97420,1,9566068611,AFH,Open
+,8685 SW 151ST PLACE,Beaverton,OR,97007,5,9578790184,AFH,Open
+,1007 ELLIOTT ROAD,Newberg,OR,97132,5,9604820446,AFH,Open
+,11476 SW TWIN PARK PLACE,Tigard,OR,97223,5,9611306854,AFH,Open
+,5775 SW TARALYNN AVE,Beaverton,OR,97005,4,9611943924,AFH,Open
+,313 NE 16TH AVE,Hillsboro,OR,97124,5,9618660935,AFH,Open
+,3440 PINE STREET,North Bend,OR,97459,5,9628488347,AFH,Open
+,2117 D STREET,Forest Grove,OR,97116,0,9675079837,AFH,Open
+,3735 MADISON ST SE,Albany,OR,97322,5,9685494858,AFH,Open
+,8860 SW BARNES RD,Portland,OR,97225,5,9694628957,AFH,Open
+,3005 NE 48TH STREET,Lincoln City,OR,97367,5,9744214506,AFH,Open
+,2235 SW AUGUSTA PLACE,Beaverton,OR,97003,5,9765967012,AFH,Open
+,11100 SW 78TH AVE,Tigard,OR,97223,5,9802100763,AFH,Open
+,601 NE Barnes Butte Road,Prineville,OR,97754,5,9835897587,AFH,Open
+,1330 SE WALNUT ST,Hillsboro,OR,97123,5,9856629484,AFH,Open
+,3405 13TH PLACE SE,Salem,OR,97302,4,9901266286,AFH,Open
+,4735 SE WHITE LAKE RD,Milwaukie,OR,97222,5,9904186199,AFH,Open
+,5275 SE CASTLE ROCK CT,Milwaukie,OR,97267,5,9906807104,AFH,Open
+,739 WESTERN AVE,Medford,OR,97501,3,9911512851,AFH,Open
+,12208 Southeast Spring Mountain Drive,Happy Valley,OR,97086,5,9920508366,AFH,Open
+,10606 SE 59TH AVE,Milwaukie,OR,97222,5,9928300870,AFH,Open
+,5030 SW WEST HILLS ROAD,Corvallis,OR,97333,5,9966476090,AFH,Open
+,5060 BARNES CT SE,Salem,OR,97306,5,9977609451,AFH,Open
+,824 E BEACON DR,Eugene,OR,97404,5,9994842334,AFH,Open
+,880 N 42ND STREET,Springfield,OR,97478,0,AF273488,AFH,Open
+,4131 MARSHALL AVE,Eugene,OR,97402,5,AF530110,AFH,Open
+,11314 Southeast Pine Court,Portland,OR,97216,4,MULT11440,AFH,Open
