@@ -1,8 +1,9 @@
 .venv/
 .env
-data/raw/*
+# data/raw/ is committed (public Census/ACS/CMS aggregates; see data/raw/SHA256SUMS).
+# The HUD crosswalk is token-gated and is not redistributed: never commit it.
+data/raw/hud_*
 data/processed/*
-!data/raw/.gitkeep
 !data/processed/.gitkeep
 __pycache__/
 *.pyc
