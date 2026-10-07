@@ -311,6 +311,18 @@ only the given names (`name_normalizer.py`; population recall +0.0036). See `doc
 **Where this could still bite:** any check that tests a concatenation of fields against patterns
 anchored with `^` — the first field decides the verdict for the whole.
 
+## Test-set 0.0.5 drops pairs recall below the floor because trivial matches were removed
+
+On the unchanged engine, pairs recall is 0.9516 on 0.0.3 and 0.9474 on 0.0.5 (floor 0.95); population
+recall 0.9515 → 0.9504. The test-set stopped emitting fuzzy-variant pairs identical to their source
+(128 of 180 `dob_swap` pairs in 0.0.3 were exact copies) and regenerated the data with a shifted seed,
+so fuzzy-variant recall fell 0.957 → 0.938 and compound-variant recall 0.725 → 0.711. Categories the
+generator changes did not touch are identical. See `docs/TEST_SET_0.0.5_ACCURACY_ANALYSIS.md`.
+
+**Where this could still bite:** a recall floor calibrated on a benchmark that contains no-op pairs
+overstates the engine; re-check floors whenever the generator's sampling changes, not only when the
+engine does.
+
 ## ONC synthetic phones fail `phonenumbers.is_valid_number`
 
 1,650 of 14,219 pairs-tier source records (356 of the 968 false negatives) carried a phone the
