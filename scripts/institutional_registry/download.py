@@ -5,8 +5,13 @@ Sources (Proposal v3.3.6, Appendix A -- only the ones retrievable without an acc
 - CMS Provider of Services (POS) iQIES file (data.cms.gov catalog -> CSV)
 - NCES IPEDS HD directory (campus addresses)
 - Federal Bureau of Prisons facility API (per-facility JSON, found via bop.gov's list page)
-Not retrievable here: HIFLD (portal shut down 2025-08-26), state DOC rosters, BJS jail
-census, CASS validation -- see docs/INSTITUTIONAL_ADDRESS_FEASIBILITY.md.
+- HIFLD Prison Boundaries via HIFLD Next (federal, state, county and local detention)
+- Prison Policy Initiative state/federal/local facility lists (scraped; 2020 vintage)
+- Princeton open dataset of state-licensed assisted living facilities (GitHub, 2021 data)
+- Overture Maps places: senior/assisted living, shelters, jails and prisons, halfway houses
+Not downloadable automatically (state DOC rosters, BJS censuses, ...): download by hand into
+`data/institutional_registry/manual/` -- see MANUAL_DOWNLOADS.md. CASS validation is a paid
+service. Details in docs/INSTITUTIONAL_ADDRESS_FEASIBILITY.md.
 
 Files land in `data/institutional_registry/` (gitignored). All data is public; no PHI.
 
@@ -16,12 +21,15 @@ Usage:
 
 from __future__ import annotations
 
+import argparse
+import csv
 import io
 import json
 import re
 import subprocess
 import time
 import zipfile
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -33,11 +41,25 @@ CARE_COMPARE = {
     "care_compare_hospital": "xubh-q36u",
     "care_compare_hospice": "yc9t-dgbk",
 }
+PPI_BASE = "https://www.prisonersofthecensus.org/data/"
+HIFLD_COLLECTION = "https://hifld.publicenvirodata.org/api/collections/hifld"
 BOP_LIST = "https://www.bop.gov/locations/list.jsp"
 BOP_API = (
     "https://www.bop.gov/PublicInfo/execute/phyloc?todo=query&output=json&code={code}"
 )
 IPEDS_URL = "https://nces.ed.gov/ipeds/datacenter/data/HD{year}.zip"
+ALF_URL = "https://raw.githubusercontent.com/antonstengel/assisted-living-data/main/assisted-living-facilities.csv"
+OVERTURE_LIST = "https://overturemaps-us-west-2.s3.amazonaws.com/?list-type=2&prefix=release/&delimiter=/"
+OVERTURE_CATEGORIES = [
+    "retirement_home",
+    "assisted_living_facility",
+    "homeless_shelter",
+    "jail_or_prison",
+    "halfway_house",
+]
+# Sources that can't be fetched anonymously are downloaded by hand into this folder; see
+# MANUAL_DOWNLOADS.md next to this file for what to put there and the required columns.
+MANUAL_DIR = DEST / "manual"
 USER_AGENT = "Mozilla/5.0 (cms-hte-patient-matching institutional registry)"
 
 
@@ -107,8 +129,161 @@ def fetch_bop() -> None:
     print(f"bop: {len(codes)} codes on list page -> {len(rows)} physical addresses")
 
 
-def fetch_all() -> None:
+def fetch_assisted_living() -> None:
+    """Princeton open dataset of state-licensed assisted living facilities (CC BY 4.0, 2021)."""
+    _curl(ALF_URL, DEST / "assisted_living.csv", timeout=120)
+    print("assisted_living: ok (state licensing data accessed 2021 -- stale)")
+
+
+def hifld_parquet_url(title: str) -> str:
+    """Resolve a HIFLD Next collection's GeoParquet URL by title.
+
+    HIFLD Open (DHS) shut down 2025-08-26; HIFLD Next republishes the archived layers as a
+    STAC-style catalog. The release ID in every URL changes, so walk the catalog from its
+    stable entry point: collections -> child catalog -> latest-version collection -> asset.
+    """
+    root = json.loads(_curl(HIFLD_COLLECTION, timeout=60))
+    child = next(
+        link["href"]
+        for link in root["links"]
+        if link["rel"] == "child" and link.get("title") == title
+    )
+    nested = json.loads(_curl(child, timeout=60))
+    versions = [link["href"] for link in nested["links"] if link["rel"] == "child"]
+    catalog = json.loads(_curl(versions[0], timeout=60))
+    latest = next(
+        link["href"] for link in catalog["links"] if link["rel"] == "latest-version"
+    )
+    collection = json.loads(_curl(latest, timeout=60))
+    for asset in collection["assets"].values():
+        if asset["type"] == "application/vnd.apache.parquet":
+            return str(asset["href"])
+    raise RuntimeError(f"no GeoParquet asset for HIFLD collection {title!r}")
+
+
+def fetch_hifld_prisons() -> None:
+    """HIFLD Prison Boundaries: federal, state, county and local detention facilities."""
+    import duckdb  # project dependency; imported lazily so the other downloads don't need it
+
+    url = hifld_parquet_url("Prison Boundaries")
+    con = duckdb.connect()
+    con.execute("install httpfs; load httpfs")
+    con.execute(
+        f"""copy (
+            select FACILITYID, NAME, ADDRESS, CITY, STATE, ZIP, TYPE, STATUS, CAPACITY
+            from read_parquet('{url}')
+        ) to '{DEST / "hifld_prisons.csv"}' (format csv, header)"""
+    )
+    print("hifld_prisons: ok")
+
+
+class _TableParser(HTMLParser):
+    """Collect every <tr> of a page as a list of cell strings."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.rows: List[List[str]] = []
+        self._row: Optional[List[str]] = None
+        self._cell = ""
+        self._in_cell = False
+
+    def handle_starttag(self, tag: str, attrs: Any) -> None:
+        if tag == "tr":
+            self._row = []
+        elif tag in ("td", "th"):
+            self._in_cell, self._cell = True, ""
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in ("td", "th") and self._row is not None:
+            self._row.append(" ".join(self._cell.split()))
+            self._in_cell = False
+        elif tag == "tr" and self._row is not None:
+            self.rows.append(self._row)
+            self._row = None
+
+    def handle_data(self, data: str) -> None:
+        if self._in_cell:
+            self._cell += data
+
+
+def fetch_ppi_facilities() -> None:
+    """Prison Policy Initiative state/federal/local facility lists (2020 vintage).
+
+    One HTML table per state. Many local jails have no street address and the survey
+    dates are 2012-2013, so this is a supplement to HIFLD, not a replacement. Terms of
+    use are not stated on the site; check before redistributing.
+    """
+    index = _curl(PPI_BASE + "state_federal_local_2020vintage.html", timeout=60).decode(
+        "utf-8", "replace"
+    )
+    states = sorted(set(re.findall(r'href="prisons2020/([A-Z]{2})/"', index)))
+    rows: List[List[str]] = []
+    for state in states:
+        parser = _TableParser()
+        parser.feed(
+            _curl(f"{PPI_BASE}prisons2020/{state}/", timeout=60).decode(
+                "utf-8", "replace"
+            )
+        )
+        header, *body = parser.rows
+        rows += [[state, *r] for r in body if len(r) == len(header)]
+        time.sleep(0.3)
+    with (DEST / "ppi_facilities.csv").open("w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(
+            [
+                "state",
+                "name",
+                "prisoners",
+                "type",
+                "address",
+                "city",
+                "zip",
+                "county",
+                "survey_date",
+            ]
+        )
+        writer.writerows(rows)
+    print(f"ppi_facilities: {len(states)} states, {len(rows)} facilities")
+
+
+def latest_overture_release() -> str:
+    """Newest Overture release folder name, from the public bucket listing."""
+    listing = _curl(OVERTURE_LIST, timeout=60).decode("utf-8", "replace")
+    return max(re.findall(r"release/([0-9][0-9.-]*)/", listing))
+
+
+def fetch_overture() -> None:
+    """Extract US group-quarters places from Overture Maps (scans ~GBs on S3; ~7 minutes).
+
+    Overture files nursing homes and assisted living under `retirement_home` /
+    `assisted_living_facility`; its `nursing` category is individual nurse
+    practitioners, so it is deliberately not pulled.
+    """
+    import duckdb  # project dependency; imported lazily so the other downloads don't need it
+
+    release = latest_overture_release()
+    con = duckdb.connect()
+    con.execute("install httpfs; load httpfs; set s3_region='us-west-2'")
+    path = f"s3://overturemaps-us-west-2/release/{release}/theme=places/type=place/*"
+    cats = ", ".join(f"'{c}'" for c in OVERTURE_CATEGORIES)
+    con.execute(
+        f"""copy (
+            select id, struct_extract(names, 'primary') as name,
+                   struct_extract(taxonomy, 'primary') as category, confidence,
+                   addresses[1].freeform as street, addresses[1].locality as city,
+                   addresses[1].region as state, addresses[1].postcode as zip
+            from read_parquet('{path}')
+            where addresses[1].country = 'US'
+              and struct_extract(taxonomy, 'primary') in ({cats})
+        ) to '{DEST / "overture_gq.csv"}' (format csv, header)"""
+    )
+    print(f"overture: release {release} ok")
+
+
+def fetch_all(*, skip_overture: bool = False) -> None:
     DEST.mkdir(parents=True, exist_ok=True)
+    MANUAL_DIR.mkdir(parents=True, exist_ok=True)
     for name, dataset_id in CARE_COMPARE.items():
         _curl(PDC_DOWNLOAD.format(id=dataset_id), DEST / f"{name}.csv", timeout=120)
         print(f"{name}: ok")
@@ -116,7 +291,24 @@ def fetch_all() -> None:
     print("pos_iqies: ok")
     fetch_ipeds()
     fetch_bop()
+    fetch_assisted_living()
+    fetch_hifld_prisons()
+    fetch_ppi_facilities()
+    if skip_overture:
+        print("overture: skipped")
+    else:
+        fetch_overture()
+    print(
+        f"\nSources that can't be downloaded automatically go in {MANUAL_DIR}/ -- "
+        "see scripts/institutional_registry/MANUAL_DOWNLOADS.md"
+    )
 
 
 if __name__ == "__main__":
-    fetch_all()
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument(
+        "--skip-overture",
+        action="store_true",
+        help="skip the slow (~7 min) Overture Maps extract",
+    )
+    fetch_all(skip_overture=parser.parse_args().skip_overture)

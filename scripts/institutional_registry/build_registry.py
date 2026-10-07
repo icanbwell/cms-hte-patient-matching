@@ -5,7 +5,9 @@ Reads the files written by `download.py` and writes
 (institution type, normalized street, ZIP5). Columns:
 
 - institution_type: nursing_home | hospice | hospital | psychiatric_hospital |
-  long_term_hospital | higher_education_campus | federal_correctional
+  long_term_hospital | higher_education_campus | federal_correctional | assisted_living |
+  senior_living | correctional | homeless_shelter | halfway_house (plus any type named in a
+  hand-downloaded CSV under `manual/`; unknown types default to `review`)
 - match_policy: `block_household_rules` (residents live there, so the address must not be used
   as a Household-tier field) or `review` (mostly offices/non-residential); see MATCH_POLICY
 - name, street, city, state, zip, beds: from the first source that lists the address
@@ -14,19 +16,20 @@ Reads the files written by `download.py` and writes
 - sources, source_ids: every source/ID that listed the address, `|`-separated
 
 Usage:
-    uv run --with pandas python -m scripts.institutional_registry.build_registry
+    uv run python -m scripts.institutional_registry.build_registry
 """
 
 from __future__ import annotations
 
+import csv
 import json
 import re
-from typing import Dict, List, Optional, Tuple
-
-import pandas as pd
+from dataclasses import dataclass, replace
+from pathlib import Path
+from typing import Dict, Iterable, Iterator, List, Optional, Tuple
 
 from patient_matching.normalization.address_normalizer import AddressNormalizer
-from scripts.institutional_registry.download import DEST
+from scripts.institutional_registry.download import DEST, MANUAL_DIR
 
 OUTPUT = DEST / "institutional_addresses.csv"
 # POS iQIES `prvdr_type_id` values, decoded by joining to Care Compare on CCN
@@ -48,21 +51,63 @@ MATCH_POLICY = {
     "federal_correctional": "block_household_rules",
     "psychiatric_hospital": "block_household_rules",
     "long_term_hospital": "block_household_rules",
+    "assisted_living": "block_household_rules",
+    "correctional": "block_household_rules",
+    "homeless_shelter": "block_household_rules",
+    "halfway_house": "block_household_rules",
+    # Overture's `retirement_home` mixes nursing, assisted living, memory care and
+    # independent/senior apartments with no way to tell them apart.
+    "senior_living": "review",
     "hospital": "review",
     "hospice": "review",
     "higher_education_campus": "review",
 }
-SOURCE_COLUMNS = [
+# Overture `taxonomy.primary` -> our institution_type. Overture's own `nursing` category is
+# individual nurse practitioners, not nursing homes, so it is not used.
+OVERTURE_TYPES = {
+    "retirement_home": "senior_living",
+    "assisted_living_facility": "assisted_living",
+    "homeless_shelter": "homeless_shelter",
+    "jail_or_prison": "correctional",
+    "halfway_house": "halfway_house",
+}
+MANUAL_COLUMNS = ["institution_type", "name", "street", "city", "state", "zip"]
+OUTPUT_COLUMNS = [
     "institution_type",
-    "source",
-    "source_id",
+    "match_policy",
     "name",
     "street",
     "city",
     "state",
     "zip",
     "beds",
+    "match_street",
+    "match_zip5",
+    "sources",
+    "source_ids",
 ]
+
+
+@dataclass(frozen=True)
+class Record:
+    """One facility address as listed by one source."""
+
+    institution_type: str
+    source: str
+    source_id: str
+    name: str
+    street: str
+    city: str
+    state: str
+    zip: str
+    beds: str = ""
+    match_street: str = ""
+    match_zip5: str = ""
+
+    @property
+    def usable(self) -> bool:
+        return self.match_street != "" and len(self.match_zip5) == 5
+
 
 _NORMALIZER = AddressNormalizer()
 _UNIT_RE = re.compile(
@@ -105,88 +150,85 @@ def address_key(street: str, city: str, state: str, zip_code: str) -> Tuple[str,
     return (out[0]["line"][0], (out[0].get("postalCode") or "")[:5])
 
 
-def _frame(
-    institution_type: str, source: str, df: pd.DataFrame, cols: Dict[str, Optional[str]]
-) -> pd.DataFrame:
-    out = pd.DataFrame({k: df[v] if v else "" for k, v in cols.items()})
-    out.insert(0, "source", source)
-    out.insert(0, "institution_type", institution_type)
-    return out.reindex(columns=SOURCE_COLUMNS).fillna("")
+def _pad_zip(zip_code: str) -> str:
+    """Some sources store ZIPs as integers and drop the leading zero ('03431' -> '3431')."""
+    z = zip_code.strip()
+    return z.zfill(5) if z.isdigit() and len(z) < 5 else z
 
 
-def load_sources() -> pd.DataFrame:
-    """One row per facility address per source, columns = SOURCE_COLUMNS."""
-    frames: List[pd.DataFrame] = []
+def _rows(path: Path) -> Iterator[Dict[str, str]]:
+    with path.open(newline="", encoding="utf-8-sig") as f:
+        yield from csv.DictReader(f)
 
-    def read(name: str) -> pd.DataFrame:
-        return pd.read_csv(DEST / name, dtype=str).fillna("")
 
+def _records(
+    institution_type: str,
+    source: str,
+    rows: Iterable[Dict[str, str]],
+    cols: Dict[str, Optional[str]],
+) -> Iterator[Record]:
+    """Map source columns onto Record fields; `cols` values name the source column (None = blank)."""
+    for row in rows:
+        get = {k: (row.get(v) or "").strip() if v else "" for k, v in cols.items()}
+        yield Record(
+            institution_type=get.pop("institution_type", "") or institution_type,
+            source=source,
+            zip=_pad_zip(get.pop("zip")),
+            **get,
+        )
+
+
+def load_sources() -> List[Record]:
+    """One Record per facility address per source (match key not yet computed)."""
     ccn = "CMS Certification Number (CCN)"
-    frames.append(
-        _frame(
-            "nursing_home",
-            "care_compare_nh",
-            read("care_compare_nh.csv"),
+    care = {"city": "City/Town", "state": "State", "zip": "ZIP Code"}
+    records: List[Record] = []
+
+    records += _records(
+        "nursing_home",
+        "care_compare_nh",
+        _rows(DEST / "care_compare_nh.csv"),
+        {
+            "source_id": ccn,
+            "name": "Provider Name",
+            "street": "Provider Address",
+            "beds": "Number of Certified Beds",
+            **care,
+        },
+    )
+    for row in _rows(DEST / "care_compare_hospital.csv"):
+        records += _records(
+            HOSPITAL_TYPES.get(row["Hospital Type"], "hospital"),
+            "care_compare_hospital",
+            [row],
             {
-                "source_id": ccn,
-                "name": "Provider Name",
-                "street": "Provider Address",
-                "city": "City/Town",
-                "state": "State",
-                "zip": "ZIP Code",
-                "beds": "Number of Certified Beds",
+                "source_id": "Facility ID",
+                "name": "Facility Name",
+                "street": "Address",
+                "beds": None,
+                **care,
             },
         )
-    )
-    hospitals = read("care_compare_hospital.csv")
-    for hospital_type, df in hospitals.groupby(
-        hospitals["Hospital Type"].map(HOSPITAL_TYPES).fillna("hospital")
-    ):
-        frames.append(
-            _frame(
-                str(hospital_type),
-                "care_compare_hospital",
-                df,
-                {
-                    "source_id": "Facility ID",
-                    "name": "Facility Name",
-                    "street": "Address",
-                    "city": "City/Town",
-                    "state": "State",
-                    "zip": "ZIP Code",
-                    "beds": None,
-                },
-            )
-        )
-    hospice = read("care_compare_hospice.csv")
-    hospice = hospice.assign(
-        street=(hospice["Address Line 1"] + " " + hospice["Address Line 2"]).str.strip()
-    )
-    frames.append(
-        _frame(
+    for row in _rows(DEST / "care_compare_hospice.csv"):
+        row["street"] = f"{row['Address Line 1']} {row['Address Line 2']}".strip()
+        records += _records(
             "hospice",
             "care_compare_hospice",
-            hospice,
+            [row],
             {
                 "source_id": ccn,
                 "name": "Facility Name",
                 "street": "street",
-                "city": "City/Town",
-                "state": "State",
-                "zip": "ZIP Code",
                 "beds": None,
+                **care,
             },
         )
-    )
-
-    pos = read("pos_iqies.csv")
-    pos = pos[pos["prvdr_type_id"].isin(POS_TYPES) & (pos["pgm_trmntn_cd"] == "00")]
-    for type_id, institution_type in POS_TYPES.items():
-        frames.append(
-            _frame(
-                institution_type,
+    for row in _rows(DEST / "pos_iqies.csv"):
+        if row["prvdr_type_id"] in POS_TYPES and row["pgm_trmntn_cd"] == "00":
+            records += _records(
+                POS_TYPES[row["prvdr_type_id"]],
                 "pos_iqies",
-                pos[pos["prvdr_type_id"] == type_id],
+                [row],
                 {
                     "source_id": "prvdr_num",
                     "name": "fac_name",
@@ -197,87 +239,212 @@ def load_sources() -> pd.DataFrame:
                     "beds": "crtfd_bed_cnt",
                 },
             )
-        )
+    records += _records(
+        "higher_education_campus",
+        "ipeds_campus",
+        _rows(DEST / "ipeds_hd.csv"),
+        {
+            "source_id": "UNITID",
+            "name": "INSTNM",
+            "street": "ADDR",
+            "city": "CITY",
+            "state": "STABBR",
+            "zip": "ZIP",
+            "beds": None,
+        },
+    )
+    records += _records(
+        "federal_correctional",
+        "bop_physical",
+        json.loads((DEST / "bop.json").read_text()),
+        {
+            "source_id": "code",
+            "name": "name",
+            "street": "street",
+            "city": "city",
+            "state": "state",
+            "zip": "zipCode",
+            "beds": None,
+        },
+    )
+    return records + _load_optional_sources()
 
-    frames.append(
-        _frame(
-            "higher_education_campus",
-            "ipeds_campus",
-            read("ipeds_hd.csv"),
+
+def _load_optional_sources() -> List[Record]:
+    """Sources that may not have been downloaded yet; a missing file is a warning, not an error."""
+    records: List[Record] = []
+
+    alf_path = DEST / "assisted_living.csv"
+    if alf_path.exists():
+        records += _records(
+            "assisted_living",
+            "princeton_alf",
+            _rows(alf_path),
             {
-                "source_id": "UNITID",
-                "name": "INSTNM",
-                "street": "ADDR",
-                "city": "CITY",
-                "state": "STABBR",
-                "zip": "ZIP",
-                "beds": None,
+                "source_id": "License Number",
+                "name": "Facility Name",
+                "street": "Address",
+                "city": "City",
+                "state": "State",
+                "zip": "Zip Code",
+                "beds": "Capacity",
             },
         )
-    )
-    bop = pd.DataFrame(json.loads((DEST / "bop.json").read_text()))
-    frames.append(
-        _frame(
-            "federal_correctional",
-            "bop_physical",
-            bop,
+    else:
+        print(f"warning: {alf_path} missing; skipping assisted_living (run download)")
+
+    hifld_path = DEST / "hifld_prisons.csv"
+    if hifld_path.exists():
+        for row in _rows(hifld_path):
+            if row["STATUS"] == "CLOSED":
+                continue
+            if row["CAPACITY"].startswith("-"):  # HIFLD's -999 means "unknown"
+                row["CAPACITY"] = ""
+            records += _records(
+                "federal_correctional" if row["TYPE"] == "FEDERAL" else "correctional",
+                "hifld_prisons",
+                [row],
+                {
+                    "source_id": "FACILITYID",
+                    "name": "NAME",
+                    "street": "ADDRESS",
+                    "city": "CITY",
+                    "state": "STATE",
+                    "zip": "ZIP",
+                    "beds": "CAPACITY",
+                },
+            )
+    else:
+        print(f"warning: {hifld_path} missing; skipping HIFLD prisons (run download)")
+
+    ppi_path = DEST / "ppi_facilities.csv"
+    if ppi_path.exists():
+        for row in _rows(ppi_path):
+            records += _records(
+                "federal_correctional" if row["type"] == "Federal" else "correctional",
+                "ppi_facilities",
+                [row],
+                {
+                    "source_id": None,
+                    "name": "name",
+                    "street": "address",
+                    "city": "city",
+                    "state": "state",
+                    "zip": "zip",
+                    "beds": None,  # `prisoners` is a current population, not capacity
+                },
+            )
+    else:
+        print(f"warning: {ppi_path} missing; skipping PPI facilities (run download)")
+
+    overture_path = DEST / "overture_gq.csv"
+    if overture_path.exists():
+        for row in _rows(overture_path):
+            if row["category"] in OVERTURE_TYPES:
+                records += _records(
+                    OVERTURE_TYPES[row["category"]],
+                    "overture",
+                    [row],
+                    {
+                        "source_id": "id",
+                        "name": "name",
+                        "street": "street",
+                        "city": "city",
+                        "state": "state",
+                        "zip": "zip",
+                        "beds": None,
+                    },
+                )
+    else:
+        print(f"warning: {overture_path} missing; skipping Overture (run download)")
+
+    manual_files = sorted(MANUAL_DIR.glob("*.csv")) if MANUAL_DIR.exists() else []
+    if not manual_files:
+        print(f"note: no files in {MANUAL_DIR} (see MANUAL_DOWNLOADS.md)")
+    for path in manual_files:
+        records += _load_manual(path)
+    return records
+
+
+def _load_manual(path: Path) -> List[Record]:
+    """A hand-downloaded CSV in the MANUAL_DOWNLOADS.md format (one institution type per row)."""
+    rows = list(_rows(path))
+    missing = [c for c in MANUAL_COLUMNS if rows and c not in rows[0]]
+    if missing:
+        raise ValueError(
+            f"{path}: missing required column(s) {missing}; expected {MANUAL_COLUMNS}"
+        )
+    return list(
+        _records(
+            "",
+            f"manual:{path.name}",
+            rows,
             {
-                "source_id": "code",
+                "institution_type": "institution_type",
+                "source_id": None,
                 "name": "name",
                 "street": "street",
                 "city": "city",
                 "state": "state",
-                "zip": "zipCode",
-                "beds": None,
+                "zip": "zip",
+                "beds": "beds",
             },
         )
     )
-    return pd.concat(frames, ignore_index=True)
 
 
-def add_keys(sources: pd.DataFrame) -> pd.DataFrame:
-    keys = [address_key(r.street, r.city, r.state, r.zip) for r in sources.itertuples()]
-    out = sources.copy()
-    out["match_street"] = [k[0] for k in keys]
-    out["match_zip5"] = [k[1] for k in keys]
-    out["usable"] = (out["match_street"] != "") & (out["match_zip5"].str.len() == 5)
+def add_keys(records: Iterable[Record]) -> List[Record]:
+    out = []
+    for r in records:
+        street, zip5 = address_key(r.street, r.city, r.state, r.zip)
+        out.append(replace(r, match_street=street, match_zip5=zip5))
     return out
 
 
-def build() -> pd.DataFrame:
+def build() -> List[Dict[str, str]]:
     """Dedupe to one row per (institution type, match key); drop rows with no usable key."""
-    keyed = add_keys(load_sources())
-    keyed = keyed[keyed["usable"]].drop(columns="usable")
-    group = ["institution_type", "match_street", "match_zip5"]
-    grouped = keyed.groupby(group, sort=True)
-    first = grouped[["name", "street", "city", "state", "zip", "beds"]].first()
-    first["sources"] = grouped["source"].agg(lambda s: "|".join(sorted(set(s))))
-    first["source_ids"] = grouped["source_id"].agg(lambda s: "|".join(sorted(set(s))))
-    first = first.reset_index()
-    first["match_policy"] = first["institution_type"].map(MATCH_POLICY)
-    return first[
-        [
-            "institution_type",
-            "match_policy",
-            "name",
-            "street",
-            "city",
-            "state",
-            "zip",
-            "beds",
-            "match_street",
-            "match_zip5",
-            "sources",
-            "source_ids",
-        ]
-    ]
+    groups: Dict[Tuple[str, str, str], List[Record]] = {}
+    for r in add_keys(load_sources()):
+        if r.usable:
+            groups.setdefault(
+                (r.institution_type, r.match_street, r.match_zip5), []
+            ).append(r)
+    rows = []
+    for (institution_type, match_street, match_zip5), group in sorted(groups.items()):
+        first = group[0]
+        rows.append(
+            {
+                "institution_type": institution_type,
+                # A type missing from MATCH_POLICY (e.g. named in a manual CSV) defaults to review.
+                "match_policy": MATCH_POLICY.get(institution_type, "review"),
+                "name": first.name,
+                "street": first.street,
+                "city": first.city,
+                "state": first.state,
+                "zip": first.zip,
+                "beds": first.beds,
+                "match_street": match_street,
+                "match_zip5": match_zip5,
+                "sources": "|".join(sorted({r.source for r in group})),
+                "source_ids": "|".join(sorted({r.source_id for r in group})),
+            }
+        )
+    return rows
 
 
 def main() -> None:
-    registry = build()
-    registry.to_csv(OUTPUT, index=False)
-    print(f"wrote {len(registry)} rows to {OUTPUT}")
-    print(registry.groupby(["match_policy", "institution_type"]).size().to_string())
+    rows = build()
+    with OUTPUT.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=OUTPUT_COLUMNS, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(rows)
+    print(f"wrote {len(rows)} rows to {OUTPUT}")
+    counts: Dict[Tuple[str, str], int] = {}
+    for r in rows:
+        key = (r["match_policy"], r["institution_type"])
+        counts[key] = counts.get(key, 0) + 1
+    for (policy, institution_type), n in sorted(counts.items()):
+        print(f"{policy:22} {institution_type:26} {n}")
 
 
 if __name__ == "__main__":

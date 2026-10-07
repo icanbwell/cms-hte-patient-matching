@@ -3,60 +3,77 @@
 Spike for Proposal v3.3.6 ("Institutional / Multi-household Address Identification Methodology",
 a modification to §IV.G). The proposal's Step 1 matches a Street Address against public facility
 registries (Appendix A); Step 2 falls back to a postal multi-unit signal, routed to manual review.
-This doc records **how each Appendix A source can actually be retrieved**, and **how well exact
-matching against the retrievable ones works**. It does not evaluate precision/recall against real
-patient data (PHI stays in governed environments) — see "What this does not measure".
+This doc records **how each Appendix A source (and some it doesn't list) can actually be
+retrieved**, and **how well exact matching against them works**. It does not evaluate
+precision/recall against real patient data (PHI stays in governed environments) — see "What this
+does not measure".
 
 Reproduce (raw downloads and output go to `data/institutional_registry/`, gitignored; measured
-2026-10-06):
+2026-10-06). Standard library only, no extra packages:
 
 ```bash
-uv run python -m scripts.institutional_registry.download            # fetch every retrievable source
-uv run --with pandas python -m scripts.institutional_registry.build_registry   # -> institutional_addresses.csv
-uv run --with pandas python -m scripts.institutional_address_feasibility       # print the section 2 measurements
+uv run python -m scripts.institutional_registry.download            # fetch every automatable source (~10 min; --skip-overture skips the slow Overture extract)
+uv run python -m scripts.institutional_registry.build_registry      # -> institutional_addresses.csv
+uv run python -m scripts.institutional_address_feasibility          # print the section 2 measurements
 ```
 
+Sources that can't be fetched automatically are downloaded by hand into
+`data/institutional_registry/manual/` and merged by the build; see
+`scripts/institutional_registry/MANUAL_DOWNLOADS.md` for what to download and the CSV format.
+
+## The registry CSV
+
 `institutional_addresses.csv` has one row per distinct (institution type, normalized street, ZIP5):
-`institution_type` (`nursing_home`, `hospice`, `hospital`, `psychiatric_hospital`,
-`long_term_hospital`, `higher_education_campus`, `federal_correctional`), `match_policy`
-(`block_household_rules` or `review`, see below), `name`, `street`, `city`, `state`, `zip`, `beds`, the match key
-(`match_street`, `match_zip5`), and the `sources`/`source_ids` that listed it. Current build:
-32,319 rows (nursing_home 14,792; hospice 6,051; higher_education_campus 5,994; hospital 4,774;
-psychiatric_hospital 624; federal_correctional 79; long_term_hospital 5). An address that serves
-two types (e.g. a hospital campus that also houses a nursing home) appears once per type.
+`institution_type`, `match_policy`, `name`, `street`, `city`, `state`, `zip`, `beds`, the match key
+(`match_street`, `match_zip5`), and the `sources`/`source_ids` that listed it. An address that
+serves two types (e.g. a hospital campus that also houses a nursing home) appears once per type.
+Current build: **143,702 rows**.
+
+| `match_policy` | `institution_type` (rows) |
+|---|---|
+| `block_household_rules` (77,942) | assisted_living 49,818; nursing_home 14,792; correctional 7,907; homeless_shelter 3,828; halfway_house 767; psychiatric_hospital 624; federal_correctional 201; long_term_hospital 5 |
+| `review` (65,760) | senior_living 48,941; hospice 6,051; higher_education_campus 5,994; hospital 4,774 |
 
 `match_policy` is a default this spike chose, not something the proposal specifies (`MATCH_POLICY`
-in `build_registry.py`). Samples of each type showed that only some are places where residents
-live. **`block_household_rules`** means the address must not be used as a Household-tier field
-(Table 2-H rules H-03, H-06, H-09 and H-14, which pair Street Line with SSN/ITIN last 4,
-Subscriber ID or Phone); the patient is still matched by every other rule. It applies to: `nursing_home` (14,792), `psychiatric_hospital` (624),
-`federal_correctional` (79), `long_term_hospital` (5); **`review`** = `hospice` (6,051; mostly
-administrative offices, often with a suite number), `higher_education_campus` (5,994; mostly
-schools and offices, no housing flag), `hospital` (4,774; acute care, critical access, children's,
-VA, DoD and rural emergency, i.e. short-stay or outpatient). Hospitals are split on Care Compare's
-`Hospital Type`: `Psychiatric` and `Long-term` become their own types because patients stay for
-extended periods. Blocking the `review` types automatically would over-block non-residential addresses.
+in `build_registry.py`). **`block_household_rules`** means the address must not be used as a
+Household-tier field (Table 2-H rules H-03, H-06, H-09 and H-14, which pair Street Line with
+SSN/ITIN last 4, Subscriber ID or Phone); the patient is still matched by every other rule. It is
+set where residents live at the address. **`review`** is set where the address is mostly offices or
+non-residential space, so blocking it automatically would over-block: `hospice` (mostly
+administrative offices, often with a suite number), `higher_education_campus` (schools and offices,
+no housing flag), `hospital` (acute care, critical access, children's, VA, DoD and rural emergency,
+i.e. short-stay or outpatient), and `senior_living` (Overture's `retirement_home`, which mixes
+nursing homes, assisted living and independent/senior apartments). Hospitals are split on Care
+Compare's `Hospital Type`: `Psychiatric` and `Long-term` become their own types because patients
+stay for extended periods.
 
 ## 1. Retrieval, source by source
 
-| Appendix A source | Retrievable | How | Notes |
+| Source | Automated | How | Notes |
 |---|---|---|---|
 | CMS Care Compare — nursing homes | Yes, no key | Provider Data Catalog `4pq5-n9py`; CSV at `https://data.cms.gov/provider-data/api/1/datastore/query/<id>/0/download?format=csv` | 14,690 rows; street, city, state, ZIP, certified beds |
 | CMS Care Compare — hospitals | Yes, no key | `xubh-q36u` | 5,419 rows; no bed count |
 | CMS Care Compare — hospice | Yes, no key | `yc9t-dgbk` | 6,669 rows; `Address Line 1`/`2` |
 | CMS Provider of Services (POS) | Yes, no key | Resolve the newest "Provider of Services File - Internet Quality Improvement and Evaluation System" entry in `https://data.cms.gov/data.json`, take its `text/csv` `downloadURL` (175 MB) | 77,564 rows. The URL changes every quarter, so never hardcode it. `prvdr_type_id` 20 = nursing home, 12 = hospice (decoded by joining to Care Compare on CCN). Hospitals are not in this file. Has certified bed counts. |
 | NCES IPEDS | Yes, no key | `https://nces.ed.gov/ipeds/datacenter/data/HD<year>.zip` (HD2024 is latest; the current year 404s until published) | 6,072 campus addresses. IC2024 has no housing-capacity field, so a dorm cannot be told from the rest of the campus. |
-| Federal Bureau of Prisons | Partly | No bulk export. List page `https://www.bop.gov/locations/list.jsp` exposes facility codes in `/locations/institutions/<code>/` links; `https://www.bop.gov/PublicInfo/execute/phyloc?todo=query&output=json&code=<CODE>` returns JSON per facility (address type 1 = physical, 3 = inmate mail) | The API is undocumented (found in bop.gov's own JavaScript). The list page yields 79 codes against ~118 institutions; listing by state/region returns nothing. |
-| HIFLD group-quarters layers | Not confirmed | DHS shut HIFLD Open on 2025-08-26. Community archives: Data Rescue Project (DataLumos), HIFLD Next (PEDP), HSDL | No stable direct-download URL confirmed. The NASA NCCS ArcGIS mirror refused connections from the sandbox. Needs a manual pull or confirming an archive's license/URL before this can be automated. |
-| State DOC rosters, BJS Census of Jails, Vera | No | BJS Census of Jails is on ICPSR (HTTP 403 anonymously); state DOC data is fragmented per state; Vera Incarceration Trends is county-level only | No bulk facility-address source for state prisons or local jails was found. |
-| CASS validation (Step 2) | Not a download | USPS or paid vendors (Smarty, Melissa, Loqate, Experian) | Needs an account; not evaluated here. |
+| Federal Bureau of Prisons | Yes | No bulk export. List page `https://www.bop.gov/locations/list.jsp` exposes facility codes in `/locations/institutions/<code>/` links; `https://www.bop.gov/PublicInfo/execute/phyloc?todo=query&output=json&code=<CODE>` returns JSON per facility (address type 1 = physical) | Undocumented API (found in bop.gov's own JavaScript). 79 codes against ~118 institutions; listing by state/region returns nothing. |
+| HIFLD Prison Boundaries | Yes, no key | DHS shut HIFLD Open on 2025-08-26; HIFLD Next republishes it. Walk `https://hifld.publicenvirodata.org/api/collections/hifld` -> "Prison Boundaries" child catalog -> latest-version collection -> GeoParquet asset on `storage.googleapis.com`; read with DuckDB | 6,468 facilities (5,845 open, 487 closed; county 3,694, state 2,079, local 346, federal 259), addresses on all but one. Capacity `-999` means unknown. The release ID in every URL changes, so the catalog is walked each run. License is "other"; check before redistributing. |
+| Prison Policy Initiative facility lists (2020 vintage) | Yes (scraped) | One HTML table per state at `https://www.prisonersofthecensus.org/data/prisons2020/<ST>/`, linked from `.../data/state_federal_local_2020vintage.html` | 5,217 facilities, but only 42% have a street address and survey dates are 2012–2013. Adds 888 addresses HIFLD lacks. Terms of use not stated. |
+| Overture Maps places | Yes, no key | DuckDB over the public S3 bucket `overturemaps-us-west-2` (~7 min scan); newest release resolved from the bucket listing | US `jail_or_prison`, `assisted_living_facility`, `retirement_home`, `homeless_shelter`, `halfway_house`. Overture's own `nursing` category is individual nurse practitioners, **not** nursing homes. License varies by contributing source. |
+| Princeton assisted-living dataset | Yes, no key | `https://raw.githubusercontent.com/antonstengel/assisted-living-data/main/assisted-living-facilities.csv` (CC BY 4.0) | 44,649 state-licensed facilities with address, capacity, license number. **Collected in 2021**, so stale. ZIPs lose leading zeros (padded on load). |
+| BJS Census of State and Federal Adult Correctional Facilities / Census of Jails | No | ICPSR (HTTP 403 anonymously) | Manual download; unconfirmed whether public files include street addresses. |
+| State DOC rosters | No | Fragmented per state | Manual. |
+| Vera Incarceration Trends | No | County-level only | No facility addresses. |
+| CASS validation (Step 2) | No | USPS or paid vendors (Smarty, Melissa, Loqate, Experian) | Needs an account; not evaluated here. |
+
+No usable open source was found for college dormitories (IPEDS is campus-level) or for
+address-level homeless shelters beyond Overture (HUD's Housing Inventory Count is per program).
 
 ## 2. How well exact matching works
 
-Registry = Care Compare (nursing home, hospital, hospice) + POS (types 20 and 12, active only) +
-IPEDS campuses + BOP physical addresses. Each address goes through the engine's own
-`AddressNormalizer` (scourgify), and the match key is **(normalized street line 1, ZIP5)** with any
-trailing unit/suite removed.
+Each address goes through the engine's own `AddressNormalizer` (scourgify), and the match key is
+**(normalized street line 1, ZIP5)** with any trailing unit/suite removed. The first two tables
+cover the original CMS/IPEDS/BOP sources (`scripts/institutional_address_feasibility.py`).
 
 | source | rows | usable key | distinct addresses | rural-route / PO-box style |
 |---|---|---|---|---|
@@ -67,14 +84,15 @@ trailing unit/suite removed.
 | ipeds_campus | 6072 | 99.8% | 5994 | 2.4% |
 | pos_iqies | 21161 | 100.0% | 20434 | 1.3% |
 
-**31,828 distinct addresses** across all sources.
+**31,828 distinct addresses** across these sources.
 
 **Same facility, two sources.** 14,689 nursing homes appear in both Care Compare and POS; their
 normalized keys are identical for **99.3%**. The ~0.7% misses are a mix of real data disagreement
 (different street entirely, e.g. a mailing vs. physical address) and normalization misses
 (`Howel Mill Road NW` vs `HOWELL MILL ROAD N.W.`, `1st` vs `FIRST`, multi-address strings).
 
-**Patient-side variation** (3,000 sampled registry addresses, perturbed, then looked up):
+**Patient-side variation** (3,000 sampled registry addresses, perturbed, then looked up; the
+typo row varies by a point or so between runs because the sample is random):
 
 | variation | still matches |
 |---|---|
@@ -83,12 +101,29 @@ normalized keys are identical for **99.3%**. The ~0.7% misses are a mix of real 
 | lowercased | 100.0% |
 | ZIP+4 | 100.0% |
 | ZIP dropped | 0.0% |
-| one-character street typo | 8.5% |
+| one-character street typo | about 8% |
 
-Reading the table: matching is exact by design, so it is robust to formatting, case, ZIP+4 and
-unit suffixes, and **not** robust to a missing ZIP or a misspelled street. A fuzzy street match would
-trade that off against false exclusions, which matter more here than missed exclusions (an excluded
-address silently drops a Household-tier rule for every resident at it).
+Matching is exact by design, so it is robust to formatting, case, ZIP+4 and unit suffixes, and
+**not** robust to a missing ZIP or a misspelled street. A fuzzy street match would trade that off
+against false exclusions, which matter more here than missed exclusions (a blocked address silently
+drops a Household-tier rule for every resident at it).
+
+### Correctional sources overlap
+
+Distinct (street, ZIP5) keys: HIFLD 5,744 (open facilities only), Overture `jail_or_prison` 3,290,
+BOP 79; **7,213 across the three**. 79.7% of BOP addresses (63 of 79) appear in HIFLD, 55.8% of
+Overture's appear in HIFLD, and 32.0% of HIFLD's appear in Overture, so the sources are
+complementary rather than redundant. Of 1,858 distinct PPI addresses, 52.2% are already in HIFLD
+and 888 are new.
+
+### Senior living and assisted living
+
+Overture's `retirement_home` covers **66.1%** of CMS nursing-home addresses (70.7% together with
+`assisted_living_facility`), so it is the only national source that lists assisted living and
+personal care homes alongside nursing homes, but it cannot separate them from senior apartments.
+Of the Princeton 2021 assisted-living addresses, 8.9% match Overture's `assisted_living_facility`
+and 38.1% match it or `retirement_home` — the two sources largely disagree on what exists, and
+the Princeton data is five years old.
 
 ## 3. Findings that change how this would be built
 
@@ -99,18 +134,23 @@ address silently drops a Household-tier rule for every resident at it).
    ROAD` house numbers.
 2. **Unparseable lines fall back to unnormalized text**, so the same address can get
    `road` from one source and `rd` from another. Part of the 0.7% cross-source disagreement.
-3. **Facility coverage is strongest where populations are largest**: nursing homes, hospices and
-   hospitals are complete, free and current (~26k CMS facilities with bed counts). Correctional
-   coverage is the weak link: 79 federal facilities, nothing for state prisons or local jails.
-4. **Campus ≠ dorm.** IPEDS gives one campus address; matching it excludes the administrative
+3. **Nursing homes, hospices and hospitals are well covered** (~26k CMS facilities with bed
+   counts, free and current). **Correctional coverage is no longer the weak link**: HIFLD adds
+   state prisons and local jails (7,213 distinct addresses across HIFLD, Overture and BOP), though
+   HIFLD itself is an archive of a discontinued DHS product and will not be updated.
+4. **Assisted living is the weak link now**: no authoritative national source exists. The two open
+   sources disagree heavily and one is from 2021.
+5. **Campus ≠ dorm.** IPEDS gives one campus address; matching it excludes the administrative
    address but cannot tell which patients live in a residence hall.
-5. **Bed counts exist for CMS facilities** (POS `crtfd_bed_cnt`, Care Compare certified beds),
-   so Step 1 could carry a facility size, and the u-value for an excluded address could be
-   bounded rather than just dropped.
-6. **Hospital and medical-office addresses are not residential group quarters.** Registry hits on
-   hospitals and POS types beyond nursing homes/hospice would exclude addresses where patients
-   do not live. Which facility types count as "institutional" is a policy decision for the
-   proposal, not a data one.
+6. **Bed counts exist for CMS facilities** (POS `crtfd_bed_cnt`, Care Compare certified beds) and
+   for HIFLD and Princeton (capacity), so a facility size could be carried with the match and
+   used to bound the u-value for a blocked address rather than just dropping it.
+7. **Category names in open map data can't be trusted without checking.** Overture's `nursing`
+   category looked like 15,480 nursing homes; sampling showed it is individual nurse
+   practitioners. Check what a category contains before counting on it.
+8. **Which facility types count as institutional is a policy decision for the proposal, not a
+   data one.** Hospice, IPEDS and hospital samples are mostly non-residential, which is why they
+   are `review`.
 
 ## 4. What this does not measure
 
@@ -122,15 +162,20 @@ address silently drops a Household-tier rule for every resident at it).
   proposal itself flags its thresholds as unvalidated.
 - **Completeness**: no ground truth exists for the total number of group-quarters addresses, so
   coverage can't be stated as a percentage.
+- **Overture and HIFLD accuracy** beyond overlap with other sources: the overlap figures show the
+  sources agree partially, not which is right.
 
 ## 5. Suggested next steps
 
 1. Decide which facility types count as institutional (nursing home, hospice, inpatient/psychiatric
-   hospital, correctional, dorm) so the registry can be filtered, not just unioned.
-2. Resolve the correctional gap: confirm an archive of HIFLD Prison Boundaries (license, stable
-   URL), or accept federal-only coverage and say so in the spec.
-3. If this proceeds, move `strip_unit`/`address_key` (currently in
+   hospital, correctional, assisted living, shelter, dorm) so the registry can be filtered, not
+   just unioned.
+2. Confirm licenses for HIFLD (archive license is "other"), the PPI lists and Overture's
+   contributing sources before the registry is distributed rather than used internally.
+3. Decide whether to keep the Princeton 2021 assisted-living data, replace it with current state
+   licensing lists (manual downloads), or leave assisted living to Overture.
+4. If this proceeds, move `strip_unit`/`address_key` (currently in
    `scripts/institutional_registry/build_registry.py`) into `patient_matching/normalization/`
    with tests and add a registry loader; this spike deliberately stays in `scripts/`.
-4. Validate hit rates on real member addresses in Databricks, with query definitions only
+5. Validate hit rates on real member addresses in Databricks, with query definitions only
    committed, never output.

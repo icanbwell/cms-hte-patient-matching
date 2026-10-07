@@ -6,18 +6,18 @@ download.py` fetched -- public data only, no PHI.
 
 Usage:
     uv run python -m scripts.institutional_registry.download
-    uv run --with pandas python -m scripts.institutional_address_feasibility
+    uv run python -m scripts.institutional_address_feasibility
 """
 
 from __future__ import annotations
 
 import random
 import re
-from typing import Any, Iterable, Tuple
-
-import pandas as pd
+from collections import defaultdict
+from typing import Any, Dict, Iterable, List, Set, Tuple
 
 from scripts.institutional_registry.build_registry import (
+    Record,
     add_keys,
     address_key,
     load_sources,
@@ -32,9 +32,11 @@ def _md_table(rows: Iterable[Tuple[Any, ...]], header: Tuple[str, ...]) -> str:
 
 def _unusable_street(street: str) -> bool:
     """True for PO boxes / rural-route style lines that carry no street number."""
-    s = street.upper()
     return bool(
-        re.search(r"\bP\.?\s?O\.?\s?BOX\b|\bRT\b|\bRTE\b|\bMI\b\s+[NSEW]\b|\bHWY\b", s)
+        re.search(
+            r"\bP\.?\s?O\.?\s?BOX\b|\bRT\b|\bRTE\b|\bMI\b\s+[NSEW]\b|\bHWY\b",
+            street.upper(),
+        )
     )
 
 
@@ -45,20 +47,41 @@ def _typo(s: str, rng: random.Random) -> str:
     return s[:i] + s[i + 1 :]
 
 
+def _key(r: Record) -> Tuple[str, str]:
+    return (r.match_street, r.match_zip5)
+
+
+def _ccn_index(records: List[Record], source: str) -> Dict[str, Record]:
+    return {r.source_id.zfill(6): r for r in reversed(records) if r.source == source}
+
+
 def report() -> None:
-    reg = add_keys(load_sources())
+    # Report only on the original CMS/IPEDS/BOP sources, so the numbers stay comparable
+    # to the findings doc; Overture, Princeton and manual files are covered in the doc.
+    core = {
+        "care_compare_nh",
+        "care_compare_hospital",
+        "care_compare_hospice",
+        "pos_iqies",
+        "ipeds_campus",
+        "bop_physical",
+    }
+    reg = [r for r in add_keys(load_sources()) if r.source in core]
+    by_source: Dict[str, List[Record]] = defaultdict(list)
+    for r in reg:
+        by_source[r.source].append(r)
 
     print("## Registry size and usable-key rate\n")
     rows = []
-    for src, g in reg.groupby("source"):
-        distinct = g[g.usable].drop_duplicates(["match_street", "match_zip5"])
+    for src, g in sorted(by_source.items()):
+        usable = [r for r in g if r.usable]
         rows.append(
             (
                 src,
                 len(g),
-                f"{g.usable.mean():.1%}",
-                len(distinct),
-                f"{(g.street.map(_unusable_street)).mean():.1%}",
+                f"{len(usable) / len(g):.1%}",
+                len({_key(r) for r in usable}),
+                f"{sum(_unusable_street(r.street) for r in g) / len(g):.1%}",
             )
         )
     print(
@@ -73,37 +96,25 @@ def report() -> None:
             ),
         )
     )
-    allk = reg[reg.usable].drop_duplicates(["match_street", "match_zip5"])
-    print(f"\nUnion across sources: {len(allk)} distinct (street, ZIP5) keys.\n")
+    lookup: Set[Tuple[str, str]] = {_key(r) for r in reg if r.usable}
+    print(f"\nUnion across sources: {len(lookup)} distinct (street, ZIP5) keys.\n")
 
     print("## Same facility, two sources: do normalized keys agree?\n")
-    nh_all = reg[reg.source == "care_compare_nh"]
-    nh = nh_all.set_index(nh_all.source_id.str.zfill(6))
-    pos = reg[(reg.source == "pos_iqies")]
-    pos = pos.set_index(pos.source_id.str.zfill(6))
-    pos = pos[~pos.index.duplicated()]
-    common = nh.index.intersection(pos.index)
-    a, b = nh.loc[common], pos.loc[common]
-    same = (
-        (a.match_street == b.match_street) & (a.match_zip5 == b.match_zip5) & a.usable
-    )
+    nh = _ccn_index(reg, "care_compare_nh")
+    pos = _ccn_index(reg, "pos_iqies")
+    common = sorted(nh.keys() & pos.keys())
+    same = [c for c in common if nh[c].usable and _key(nh[c]) == _key(pos[c])]
     print(
         f"Nursing homes in both Care Compare and POS: {len(common)}; "
-        f"identical (street, ZIP5) key: {same.mean():.1%}\n"
+        f"identical (street, ZIP5) key: {len(same) / len(common):.1%}\n"
     )
-    diff = pd.DataFrame({"care_compare": a.street[~same], "pos": b.street[~same]}).head(
-        8
-    )
-    print(
-        "Sample disagreements:\n\n"
-        + _md_table(diff.itertuples(index=False), ("Care Compare", "POS"))
-        + "\n"
-    )
+    same_set = set(same)
+    diff = [(nh[c].street, pos[c].street) for c in common if c not in same_set][:8]
+    print("Sample disagreements:\n\n" + _md_table(diff, ("Care Compare", "POS")) + "\n")
 
     print("## Match robustness to patient-side address variation\n")
     rng = random.Random(0)
-    sample = reg[reg.usable].sample(3000, random_state=0)
-    lookup = set(zip(allk.match_street, allk.match_zip5))
+    sample = rng.sample([r for r in reg if r.usable], 3000)
     variants = {
         "unit appended (', APT 4B')": lambda r: (r.street + ", APT 4B", r.zip),
         "room appended (' RM 114')": lambda r: (r.street + " RM 114", r.zip),
@@ -115,7 +126,7 @@ def report() -> None:
     rows = []
     for label, fn in variants.items():
         hits = 0
-        for r in sample.itertuples():
+        for r in sample:
             street, zip_code = fn(r)
             hits += address_key(street, r.city, r.state, zip_code) in lookup
         rows.append((label, f"{hits / len(sample):.1%}"))
