@@ -25,7 +25,7 @@ GitHub's 100 MB file limit. To refresh the data, re-run the download and commit 
 | `ppi_facilities.csv` | Prison Policy Initiative, state/federal/local facilities (2020 vintage, scraped): `https://www.prisonersofthecensus.org/data/state_federal_local_2020vintage.html` and `.../data/prisons2020/<ST>/` | `correctional`, `federal_correctional` | Row's survey date (2012-2013). **Excluded**: not committed; `download.py --include-excluded` fetches it for local use (see `docs/DATA_SOURCE_LICENSES.md`) |
 | `assisted_living.csv` | Princeton open assisted-living dataset: `https://github.com/antonstengel/assisted-living-data` (file `assisted-living-facilities.csv`) | `assisted_living` | Row's "Date Accessed" (2021) |
 | `state_al_ca.csv` | California CDSS Community Care Licensing facilities: `https://gis.data.chhs.ca.gov/api/download/v1/items/db31b0884a074cff9260facb3f2ade45/csv?layers=0`; only elder-care types 740/741 are used | `assisted_living` | Download date |
-| `state_al_mi.txt` | Michigan LARA Adult Foster Care & Homes for the Aged: `https://documents.apps.lara.state.mi.us/bchs/afc_sw.txt` (no header row) | `assisted_living` | Download date |
+| `state_al_mi.txt` | Michigan LARA Adult Foster Care & Homes for the Aged: `https://documents.apps.lara.state.mi.us/bchs/afc_sw.txt` (no header row). **Excluded**: not committed; `download.py --include-excluded` fetches it for local use (see `docs/DATA_SOURCE_LICENSES.md`) | `assisted_living` | Download date |
 | `state_al_wi.json` | Wisconsin DHS: `https://dhsgis.wi.gov/server/rest/services/DHS_GIS/Facilities/MapServer`, layers 7 (community-based residential facilities), 17 (residential care apartment complexes), 2 (adult family homes) | `assisted_living` | Download date |
 | `state_al_fl.json` | Florida AHCA FloridaHealthFinder: `https://quality.healthfinder.fl.gov/Facility-Search/FacilityLocateSearch` (assisted living facilities, all counties; closed ones skipped) | `assisted_living` | Download date |
 | `state_lists/<ST>.csv` (26 files: AK, AZ, CO, GA, IA, IN, KY, LA, MA, MD, MN, MO, NC, NE, NJ, NV, NY, OK, OR, PA, SC, TN, TX, UT, VA, WV) | Each state's licensing list, one module per state in `scripts/institutional_registry/states/` (spreadsheets, Socrata, ArcGIS, form posts, HTML). Exact source URL per state is in `manifest.json` and `docs/ASSISTED_LIVING_STATE_COVERAGE.md` | `assisted_living` | Download date |
@@ -49,7 +49,7 @@ as I checked:
 | HIFLD Prison Boundaries (HIFLD Next archive) | The catalog lists the license as "other"; **not confirmed** |
 | Prison Policy Initiative facility lists | No terms stated on the site; **not confirmed** |
 | Overture Maps places | Varies by contributing source; **not checked** (see the Overture docs) |
-| State licensing lists (CA, MI, WI, FL) | State government publications; terms **not checked** |
+| State licensing lists (CA, WI, FL) | State government publications; terms **not checked** |
 
 ## Manual downloads
 

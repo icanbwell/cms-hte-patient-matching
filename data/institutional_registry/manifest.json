@@ -43,10 +43,6 @@
     "downloaded": "2026-10-06",
     "source": "https://quality.healthfinder.fl.gov/Facility-Search/FacilityLocateSearch (POST, facility type ALF, all counties)"
   },
-  "state_al_mi.txt": {
-    "downloaded": "2026-10-06",
-    "source": "https://documents.apps.lara.state.mi.us/bchs/afc_sw.txt"
-  },
   "state_al_wi.json": {
     "downloaded": "2026-10-06",
     "source": "https://dhsgis.wi.gov/server/rest/services/DHS_GIS/Facilities/MapServer/<layer 7,17,2>/query"

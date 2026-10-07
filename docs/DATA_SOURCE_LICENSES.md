@@ -48,7 +48,7 @@ must do to comply. Where a source's terms are restrictive or unconfirmed, the st
 
 ## State lists
 
-Each state's file is `data/institutional_registry/state_lists/<ST>.csv`, except CA, FL, MI and WI,
+Each state's file is `data/institutional_registry/state_lists/<ST>.csv`, except CA, FL and WI,
 which are the raw `state_al_*` files. Sources and methods are in
 `docs/ASSISTED_LIVING_STATE_COVERAGE.md`.
 
@@ -91,7 +91,6 @@ which are the raw `state_al_*` files. Sources and methods are in
 | TN | Information "may be copied so long as it is presented in a non-misleading way"; credit the originating agency with its web address; do not imply state endorsement. The facility-listings page itself returned 403. | `tn.gov/web-policies/linking-policy.html` | Add agency credit and URL. |
 | TX | HHSC asserts copyright; copying allowed for noncommercial or nonprofit use if content is unaltered, no endorsement is implied, a no-endorsement disclaimer is included, and HHSC is credited with web address and copy date. | `hhs.texas.gov/policies-practices-privacy` | Credit and disclaimer. The project owner considers the "unaltered" condition acceptable (2026-10-07); the registry transforms the data, so this stays a legal question. Applying this website policy to the directory file is an inference; no dataset-specific terms were found. |
 | NC | DHSR disclaimer permits copying and sharing "for noncommercial purposes, provided the materials remain unaltered" (paraphrase by the summariser). | `info.ncdhhs.gov/dhsr/disclaim.html` | The project owner reviewed the "unaltered" condition on 2026-10-07 and considers it acceptable; byte-identical copies remain the safest reading. |
-| MI | Michigan.gov terms (read manually): "You agree not to use for commercial purposes, or resell, or allow your employees, agents, or contractors to use for commercial purposes or resell any of the data derived from this website unless you have been specifically allowed to do so in a separate, written agreement with the State of Michigan, or other State of Michigan agency or department-specific terms provided with such data allow you to do." This bars commercial use and resale; it does not mention redistribution. A search snippet also quoted a ban on access "through any automated means (including use of scripts, web crawlers or screen scrapers)"; that sentence was not in the text read manually. Whether these terms cover the LARA document host was not confirmed. | `michigan.gov/en/about/terms-of-use` | The project owner states this is an open source project, so the registry is not offered for commercial use or resale; whether open-source distribution counts as non-commercial under these terms is a legal question. Confirm the automated-access sentence on the live page. |
 
 ### Restrictive (excluded)
 
@@ -105,6 +104,7 @@ which are the raw `state_al_*` files. Sources and methods are in
 
 | State | What is known | Status |
 |---|---|---|
+| MI | Michigan.gov terms (read manually): "You agree not to use for commercial purposes, or resell, or allow your employees, agents, or contractors to use for commercial purposes or resell any of the data derived from this website unless you have been specifically allowed to do so in a separate, written agreement with the State of Michigan, or other State of Michigan agency or department-specific terms provided with such data allow you to do." A search snippet also quoted a ban on access "through any automated means (including use of scripts, web crawlers or screen scrapers)"; that sentence was not confirmed on the live page. Evidence: `michigan.gov/en/about/terms-of-use`. | **Excluded by the project owner on 2026-10-07**: `state_al_mi.txt` is removed and the registry rebuilt without it. No permission request is planned. |
 | AK | No terms on the source page; the footer asserts State copyright. A search snippet attributed to other Alaska agencies says republishing distributed documents needs department approval; unverified for the health department. | **Excluded by the project owner on 2026-10-07**: `state_lists/AK.csv` is removed and the registry rebuilt without it. No permission request is planned. The fetch script remains for local use (`download.py --include-excluded`). |
 
 
@@ -120,13 +120,12 @@ which are the raw `state_al_*` files. Sources and methods are in
 
 ## Open decisions
 
-1. Excluded on 2026-10-07 with no permission requests planned: Prison Policy Initiative, AK, IN, KY and VA. Restoring any of them needs written permission from the publisher.
-2. MI (conditional): confirm the automated-access sentence and the non-commercial reading.
-3. TX and NC "unaltered, noncommercial" conditions: accepted by the project owner; confirm with legal
+1. Excluded on 2026-10-07 with no permission requests planned: Prison Policy Initiative, AK, IN, KY, MI and VA. Restoring any of them needs written permission from the publisher.
+2. TX and NC "unaltered, noncommercial" conditions: accepted by the project owner; confirm with legal
    review.
-4. CMS, IPEDS and BOP: public domain by the federal government-works rule, with no
+3. CMS, IPEDS and BOP: public domain by the federal government-works rule, with no
    source-specific license stated. Confirm that is acceptable, and cite IES for IPEDS.
-5. Legal review of this table before the registry is distributed outside the organization.
+4. Legal review of this table before the registry is distributed outside the organization.
 
 Removing a source means deleting its file and rebuilding the registry; the build is described in
 `docs/INSTITUTIONAL_ADDRESS_FEASIBILITY.md`.

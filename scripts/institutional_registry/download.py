@@ -6,9 +6,9 @@ Sources (Proposal v3.3.6, Appendix A -- only the ones retrievable without an acc
 - NCES IPEDS HD directory (campus addresses)
 - Federal Bureau of Prisons facility API (per-facility JSON, found via bop.gov's list page)
 - HIFLD Prison Boundaries via HIFLD Next (federal, state, county and local detention)
-- Prison Policy Initiative state/federal/local facility lists (scraped; 2020 vintage)
+- Prison Policy Initiative state/federal/local facility lists (scraped; 2020 vintage; excluded by default)
 - Princeton open dataset of state-licensed assisted living facilities (GitHub, 2021 data)
-- Current state assisted living lists: California, Michigan, Wisconsin, Florida
+- Current state assisted living lists: California, Wisconsin, Florida (Michigan excluded by default)
 - Overture Maps places: senior/assisted living, shelters, jails and prisons, halfway houses
 Not downloadable automatically (state DOC rosters, BJS censuses, ...): download by hand into
 `data/institutional_registry/manual/` -- see MANUAL_DOWNLOADS.md. CASS validation is a paid
@@ -89,7 +89,7 @@ STATE_LISTS_DIR = DEST / "state_lists"
 # Sources excluded from the committed data because their terms do not allow redistribution or
 # could not be confirmed (see docs/DATA_SOURCE_LICENSES.md). --include-excluded fetches them
 # for local use only; do not commit the results.
-EXCLUDED_STATES = {"AK", "IN", "KY", "VA"}
+EXCLUDED_STATES = {"AK", "IN", "KY", "MI", "VA"}
 USER_AGENT = "Mozilla/5.0 (cms-hte-patient-matching institutional registry)"
 
 
@@ -411,10 +411,13 @@ def fetch_fl_assisted_living() -> None:
     print(f"state_al_fl: {len(records)} facilities")
 
 
-def fetch_state_assisted_living() -> None:
-    """Current state licensing lists for the four states that publish them (CA, MI, WI, FL)."""
+def fetch_state_assisted_living(*, include_excluded: bool = False) -> None:
+    """Current state licensing lists for the states that publish them (CA, WI, FL; MI is excluded)."""
     fetch_ca_assisted_living()
-    fetch_mi_assisted_living()
+    if include_excluded:
+        fetch_mi_assisted_living()
+    else:
+        print("state_al_mi: excluded, skipped")
     fetch_wi_assisted_living()
     fetch_fl_assisted_living()
 
@@ -522,7 +525,7 @@ def fetch_all(*, skip_overture: bool = False, include_excluded: bool = False) ->
         fetch_ppi_facilities()
     else:
         print("ppi_facilities: excluded, skipped")
-    fetch_state_assisted_living()
+    fetch_state_assisted_living(include_excluded=include_excluded)
     fetch_state_lists(include_excluded=include_excluded)
     if skip_overture:
         print("overture: skipped")
@@ -544,7 +547,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--include-excluded",
         action="store_true",
-        help="also fetch sources excluded from the committed data (PPI, AK, IN, KY, VA); "
+        help="also fetch sources excluded from the committed data (PPI, AK, IN, KY, MI, VA); "
         "do not commit them (see docs/DATA_SOURCE_LICENSES.md)",
     )
     args = parser.parse_args()

@@ -67,12 +67,12 @@ afterwards:
 
 ## Automated
 
-26 states are downloaded automatically: CA, MI, WI and FL (raw files `state_al_*`, see
+25 states are downloaded automatically: CA, WI and FL (raw files `state_al_*`, see
 `MANUAL_DOWNLOADS.md`) and the 22 below, one module each in
 `scripts/institutional_registry/states/`, written to `data/institutional_registry/state_lists/<ST>.csv`.
-All 26 modules (the 22 below plus AK, IN, KY and VA, which are excluded; see below) returned rows on the 2026-10-06 run and none failed (`state_lists_status.json` records the
+All 26 modules (the 22 below plus AK, IN, KY and VA, which are excluded; see below). MI's raw file is excluded too returned rows on the 2026-10-06 run and none failed (`state_lists_status.json` records the
 result of every run, including failures). Every row has street, city and ZIP except 1
-in GA, which has no ZIP in the source. AK, IN, KY and VA are excluded from the committed data
+in GA, which has no ZIP in the source. AK, IN, KY, MI and VA are excluded from the committed data
 (`docs/DATA_SOURCE_LICENSES.md`); `download.py --include-excluded` fetches them for local use.
 
 | State | Rows | Source and method | Types kept | Freshness and notes |
