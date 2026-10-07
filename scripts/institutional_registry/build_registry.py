@@ -6,8 +6,8 @@ Reads the files written by `download.py` and writes
 
 - institution_type: nursing_home | hospice | hospital | psychiatric_hospital |
   long_term_hospital | higher_education_campus | federal_correctional
-- match_policy: `exclude` (residents live there) or `review` (mostly offices/non-residential);
-  see MATCH_POLICY
+- match_policy: `block_household_rules` (residents live there, so the address must not be used
+  as a Household-tier field) or `review` (mostly offices/non-residential); see MATCH_POLICY
 - name, street, city, state, zip, beds: from the first source that lists the address
   (`beds` is certified beds; blank when the source has none)
 - match_street, match_zip5: the exact-match key (see `address_key`)
@@ -38,15 +38,16 @@ HOSPITAL_TYPES = {
     "Psychiatric": "psychiatric_hospital",
     "Long-term": "long_term_hospital",
 }
-# Default policy, not a spec requirement: `exclude` = residents live at the address, so a
-# Household-tier match on it is unsafe; `review` = the address is mostly offices or
-# non-residential space (hospice admin offices, campus/school addresses, short-stay
-# hospitals), so excluding it automatically would over-exclude. Edit here to change it.
+# Default policy, not a spec requirement. `block_household_rules` = residents live at the
+# address, so Table 2-H rules that use Street Line must not fire on it (the patient is still
+# matched by every other rule); `review` = the address is mostly offices or non-residential
+# space (hospice admin offices, campus/school addresses, short-stay hospitals), so blocking
+# it automatically would over-block. Edit here to change it.
 MATCH_POLICY = {
-    "nursing_home": "exclude",
-    "federal_correctional": "exclude",
-    "psychiatric_hospital": "exclude",
-    "long_term_hospital": "exclude",
+    "nursing_home": "block_household_rules",
+    "federal_correctional": "block_household_rules",
+    "psychiatric_hospital": "block_household_rules",
+    "long_term_hospital": "block_household_rules",
     "hospital": "review",
     "hospice": "review",
     "higher_education_campus": "review",

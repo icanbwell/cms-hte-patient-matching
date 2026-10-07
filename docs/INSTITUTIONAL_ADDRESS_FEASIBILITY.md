@@ -19,7 +19,7 @@ uv run --with pandas python -m scripts.institutional_address_feasibility       #
 `institutional_addresses.csv` has one row per distinct (institution type, normalized street, ZIP5):
 `institution_type` (`nursing_home`, `hospice`, `hospital`, `psychiatric_hospital`,
 `long_term_hospital`, `higher_education_campus`, `federal_correctional`), `match_policy`
-(`exclude` or `review`, see below), `name`, `street`, `city`, `state`, `zip`, `beds`, the match key
+(`block_household_rules` or `review`, see below), `name`, `street`, `city`, `state`, `zip`, `beds`, the match key
 (`match_street`, `match_zip5`), and the `sources`/`source_ids` that listed it. Current build:
 32,319 rows (nursing_home 14,792; hospice 6,051; higher_education_campus 5,994; hospital 4,774;
 psychiatric_hospital 624; federal_correctional 79; long_term_hospital 5). An address that serves
@@ -27,13 +27,15 @@ two types (e.g. a hospital campus that also houses a nursing home) appears once 
 
 `match_policy` is a default this spike chose, not something the proposal specifies (`MATCH_POLICY`
 in `build_registry.py`). Samples of each type showed that only some are places where residents
-live: **`exclude`** = `nursing_home` (14,792), `psychiatric_hospital` (624),
+live. **`block_household_rules`** means the address must not be used as a Household-tier field
+(Table 2-H rules H-03, H-06, H-09 and H-14, which pair Street Line with SSN/ITIN last 4,
+Subscriber ID or Phone); the patient is still matched by every other rule. It applies to: `nursing_home` (14,792), `psychiatric_hospital` (624),
 `federal_correctional` (79), `long_term_hospital` (5); **`review`** = `hospice` (6,051; mostly
 administrative offices, often with a suite number), `higher_education_campus` (5,994; mostly
 schools and offices, no housing flag), `hospital` (4,774; acute care, critical access, children's,
 VA, DoD and rural emergency, i.e. short-stay or outpatient). Hospitals are split on Care Compare's
 `Hospital Type`: `Psychiatric` and `Long-term` become their own types because patients stay for
-extended periods. Auto-excluding the `review` types would over-exclude non-residential addresses.
+extended periods. Blocking the `review` types automatically would over-block non-residential addresses.
 
 ## 1. Retrieval, source by source
 
