@@ -10,6 +10,8 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Set
 
+from patient_matching.normalization.name_normalizer import generational_suffixes
+
 
 @dataclass
 class PatientFields:
@@ -253,6 +255,13 @@ class FieldExtractor:
             # name (not just the first) is also added to first_names per
             # Core Principle 10 ("match on any known value") - this
             # pre-dates session 19 and is unchanged here.
+            #
+            # Known deviation, deliberately NOT changed here: CMS v3.4.0 says First Name is
+            # the first given name only, with Middle Name a last-resort tiebreaker (C.7.3).
+            # Restricting first_names to given[0] loses 194 ONC true matches (pairs recall
+            # 0.9474 -> 0.9331), all given_abbreviate pairs ("MICHAEL J" vs "M. J") that
+            # link today only because the middle name satisfies First Name. See
+            # docs/LEARNINGS.md ("First Name accepts the middle name").
             given_list: List[str] = name_entry.get("given") or []
             for g in given_list:
                 if g:
@@ -270,10 +279,13 @@ class FieldExtractor:
                 if nick:
                     fields.first_names.add(nick)
 
-            # Suffixes
-            for s in name_entry.get("suffix") or []:
-                if s:
-                    fields.suffixes.add(s)
+            # Suffixes: only generational ones (Jr, Sr, II, III...), in canonical form. Those
+            # are what the suffix veto compares; "md", "phd", "esq" say nothing about
+            # generation. Canonicalizing here (not just in normalization) means a raw
+            # "Jr." still vetoes instead of silently dropping out.
+            suffix_value = name_entry.get("suffix") or []
+            for s in [suffix_value] if isinstance(suffix_value, str) else suffix_value:
+                fields.suffixes |= generational_suffixes(s)
 
     @staticmethod
     def _extract_birth_date(patient: Dict[str, Any], fields: PatientFields) -> None:
