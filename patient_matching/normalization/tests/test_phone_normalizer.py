@@ -1,5 +1,7 @@
 """Tests for phone number normalization."""
 
+import pytest
+
 from patient_matching.normalization.phone_normalizer import PhoneNormalizer
 
 
@@ -22,6 +24,37 @@ class TestPhoneNormalizer:
     def test_invalid_number_returns_none(self) -> None:
         assert self.normalizer.normalize_phone("123") is None
         assert self.normalizer.normalize_phone("abcdef") is None
+
+    @pytest.mark.parametrize(
+        "raw,expected",
+        [
+            # Well-formed 10-digit numbers whose exchange is not assigned (starts
+            # with 0/1) fail phonenumbers' is_valid_number but are still usable
+            # identifiers: two records holding the same number are linked by it.
+            ("917-130-8285", "+19171308285"),
+            ("(718) 124-7797", "+17181247797"),
+            ("+1 610 167 5298", "+16101675298"),
+            ("347-034-1234", "+13470341234"),
+        ],
+    )
+    def test_well_formed_number_with_unassigned_exchange_is_kept(
+        self, raw: str, expected: str
+    ) -> None:
+        assert self.normalizer.normalize_phone(raw) == expected
+
+    @pytest.mark.parametrize(
+        "raw",
+        [
+            "012-345-6789",  # area code cannot start with 0
+            "199-555-1234",  # area code cannot start with 1
+            "555-130-1234",  # unassigned area code, not just exchange
+            "917-130-82851",  # too long
+            "917-130-828",  # too short
+            "+44 20 7946 0958 123",  # not a possible number
+        ],
+    )
+    def test_malformed_number_is_still_rejected(self, raw: str) -> None:
+        assert self.normalizer.normalize_phone(raw) is None
 
     def test_placeholder_phone_returns_none(self) -> None:
         assert self.normalizer.normalize_phone("0000000000") is None

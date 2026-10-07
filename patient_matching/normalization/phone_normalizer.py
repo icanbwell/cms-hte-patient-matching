@@ -78,8 +78,8 @@ class PhoneNormalizer:
             report: If given, records why a dropped value was dropped.
                 Reason codes: PlaceholderDetector.reason_for_phone's codes,
                 plus "unparseable" (phonenumbers couldn't parse it at all)
-                and "invalid_number" (parsed, but phonenumbers says it
-                isn't a real number -- e.g. a fictional "555" exchange).
+                and "invalid_number" (parsed, but neither a valid number nor
+                a well-formed NANP one -- see _is_well_formed_nanp).
 
         Returns:
             E.164 formatted string (e.g. "+15551234567"), or None
@@ -98,7 +98,10 @@ class PhoneNormalizer:
 
         try:
             parsed = phonenumbers.parse(phone_str, self._default_region)
-            if not phonenumbers.is_valid_number(parsed):
+            if not (
+                phonenumbers.is_valid_number(parsed)
+                or self._is_well_formed_nanp(parsed)
+            ):
                 if report is not None:
                     report.record(path, phone_str, "invalid_number")
                 return None
@@ -110,6 +113,26 @@ class PhoneNormalizer:
             if report is not None:
                 report.record(path, phone_str, "unparseable")
             return None
+
+    @staticmethod
+    def _is_well_formed_nanp(parsed: phonenumbers.PhoneNumber) -> bool:
+        """A +1 number that is invalid only because its exchange is unassigned.
+
+        `phonenumbers.is_valid_number` requires an assigned area code *and*
+        exchange. ~11% of ONC's synthetic phones have a well-formed number with
+        an unassigned exchange (leading 0/1), which it rejects. Those are still
+        usable identifiers - two records holding the same number are linked by
+        it, so dropping them silently discards real match evidence. Detected by
+        re-checking with the exchange's first digit swapped for a valid one, so
+        unassigned area codes (e.g. 555) and wrong lengths are still rejected.
+        Placeholders (0000000000, 5555555555, ...) are caught earlier by
+        PlaceholderDetector.
+        """
+        national = str(parsed.national_number)
+        if parsed.country_code != 1 or len(national) != 10 or national[3] not in "01":
+            return False
+        probe = phonenumbers.parse(f"+1{national[:3]}2{national[4:]}")
+        return phonenumbers.is_valid_number(probe)
 
     def _normalize_telecom(
         self,

@@ -1,6 +1,9 @@
 """Tests for name normalization."""
 
+import pytest
+
 from patient_matching.normalization.name_normalizer import NameNormalizer
+from patient_matching.normalization.report import DroppedValue, NormalizationReport
 
 
 class TestNameNormalizer:
@@ -76,9 +79,66 @@ class TestNameNormalizer:
         }
         result = self.normalizer.normalize_patient_names(patient)
 
-        # Baby Boy Doe should be filtered out
+        # Baby Boy Doe should be filtered out (both parts are placeholders)
         assert len(result) == 1
         assert result[0]["family"] == "smith"
+
+    @pytest.mark.parametrize(
+        "given",
+        [["Baby Girl", "Mary"], ["BABY BOY"], ["Infant"], ["Newborn Girl"]],
+    )
+    def test_placeholder_given_keeps_real_family_name(self, given: list[str]) -> None:
+        """A newborn/temporary given name must not discard a real family name.
+
+        The placeholder patterns are prefix-anchored, so testing the
+        concatenated given+family string used to flag the whole entry (and
+        lose e.g. `last_name`) whenever the given name began with "baby".
+        """
+        patient = {"name": [{"family": "Aaron", "given": given}]}
+        result = self.normalizer.normalize_patient_names(patient)
+
+        assert len(result) == 1
+        assert result[0]["family"] == "aaron"
+        assert "given" not in result[0]
+        assert "_nicknames" not in result[0]
+
+    @pytest.mark.parametrize(
+        "given,family,reason",
+        [
+            (["Baby Girl", "Mary"], "Aaron", "newborn_temp_name"),
+            (["Test"], "Smith", "test_name"),
+            (["", "Baby Boy"], "Aaron", "newborn_temp_name"),
+        ],
+    )
+    def test_dropped_placeholder_given_is_recorded_in_report(
+        self, given: list[str], family: str, reason: str
+    ) -> None:
+        """Dropping only the given names must still be explainable, like a
+        whole-entry drop is."""
+        report = NormalizationReport()
+        patient = {"name": [{"family": family, "given": given}]}
+        result = self.normalizer.normalize_patient_names(patient, report=report)
+
+        assert result[0]["family"] == family.lower()
+        assert report.dropped == [
+            DroppedValue(
+                path="name[0].given",
+                raw_value=next(g for g in given if g),
+                reason=reason,
+            )
+        ]
+
+    def test_missing_given_name_is_not_reported_as_dropped(self) -> None:
+        report = NormalizationReport()
+        patient = {"name": [{"family": "Aaron"}]}
+        result = self.normalizer.normalize_patient_names(patient, report=report)
+
+        assert result[0]["family"] == "aaron"
+        assert report.dropped == []
+
+    def test_placeholder_given_and_family_still_filtered(self) -> None:
+        patient = {"name": [{"family": "Test", "given": ["Baby Boy"]}]}
+        assert self.normalizer.normalize_patient_names(patient) == []
 
     def test_test_patient_filtered(self) -> None:
         patient = {"name": [{"family": "Test", "given": ["Test"]}]}

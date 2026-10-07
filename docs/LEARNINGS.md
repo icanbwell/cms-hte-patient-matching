@@ -298,6 +298,34 @@ pairs (0.0106 > 0.01). Either decide what twins with no distinguishing data shou
 set the ceiling just above 0.0106 with a note. Re-run the script before each pin bump; it keys
 pairs by `case_id`, which is only stable for pairs a release keeps.
 
+## A placeholder given name makes the normalizer drop the real family name too
+
+`NameNormalizer._normalize_name_entry` runs the placeholder patterns on `given + family`
+concatenated (`"babygirl" + "aaron"`). The `^baby…` prefix pattern matches on the given name alone,
+so the whole HumanName is discarded and the record ends up with no `last_name` at all — rule 30
+(`Last* + DOB + Phone`) can't rescue it. On test-set 0.0.3 this hits the 61 `placeholder/given`
+pairs. Repro: `{"name":[{"family":"AARON","given":["BABY GIRL","MARY"]}]}` normalizes to nothing.
+Fixed: when the given name is a placeholder and the family name is not, the normalizer now drops
+only the given names (`name_normalizer.py`; population recall +0.0036). See `docs/TEST_SET_0.0.3_ACCURACY_ANALYSIS.md` §3.1.
+
+**Where this could still bite:** any check that tests a concatenation of fields against patterns
+anchored with `^` — the first field decides the verdict for the whole.
+
+## ONC synthetic phones fail `phonenumbers.is_valid_number`
+
+1,650 of 14,219 pairs-tier source records (356 of the 968 false negatives) carried a phone the
+phone normalizer rejected as `invalid_number`. About 11% of ONC phones are well-formed 10-digit
+numbers with an exchange code starting with 1 (or 0) — unassigned, so `is_valid_number` says no,
+but still usable as an identifier. Fixed in the engine: `PhoneNormalizer._is_well_formed_nanp` accepts
+a number that is invalid only because of its exchange (re-checked with a valid exchange first digit);
+unassigned area codes and wrong lengths are still rejected. Population recall 0.9341 → 0.9515 on the
+unmodified 0.0.3 data. (An earlier approach, remapping the phones in the test-set data, gave identical
+numbers but needed a new release and pin bump and would not help real data.)
+
+**Where this could still bite:** `is_valid_number` is a strict "real line" check; for identifier
+matching a weaker "well-formed" check is usually the right bar — keep that distinction in mind for
+any other field validated through a library that checks assignment, not shape.
+
 ## Institutional-address registry: most sources are automatable, but check before concluding "can't"
 
 Spike for Proposal v3.3.6 (see `docs/INSTITUTIONAL_ADDRESS_FEASIBILITY.md`). CMS Care Compare, the POS file, IPEDS, HIFLD Prison Boundaries (via HIFLD Next's catalog, since HIFLD Open was shut down 2025-08-26), Prison Policy Initiative's per-state tables (HTML scrape), the Princeton assisted-living CSV and Overture Maps all download without an account; BOP has only an undocumented per-facility JSON API; BJS censuses (ICPSR login), state DOC rosters and CASS validation need a manual step or an account. Two earlier "not retrievable" conclusions (HIFLD, PPI) were wrong: they came from a page-summary tool rather than fetching the URL, and the PPI state pages sit under `/data/prisons2020/`, not `/prisons2020/`. Overture's `nursing` category is individual nurse practitioners, not nursing homes (15,480 places, ~1% address overlap with CMS); nursing homes sit under `retirement_home`. A match key of (normalized street line 1, ZIP5) needs the unit stripped from **both** sides: registry streets embed suites, and scourgify leaves a unit inside line 1 when designators are stacked or the line is unparseable (unit-suffix match rate 80% -> 100% once stripped). A `#` unit rule must require a preceding character or it eats `#16 WILSON FARM ROAD`.

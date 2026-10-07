@@ -32,10 +32,10 @@ measured values.
 
 With test-set 0.0.3 (2,000 queries, 15,812 candidates, 87,747 evaluations) the
 same engine measures precision=0.9998, recall=0.9305, FPR=0.0000,
-accuracy=0.9892, F1=0.9639. The recall and F1 floors are TEMPORARILY relaxed
-to just under those values (they were 0.95 / 0.97) until the engine is
-optimized for the session 14 categories (chiefly `compound_variant`) - restore
-them then. Precision and FPR are unchanged.
+accuracy=0.9892, F1=0.9639. After the placeholder-given-name and phone-validity
+fixes it measures precision=0.9998, recall=0.9515, FPR=0.0000, accuracy=0.9924,
+F1=0.9750, so the recall and F1 floors (temporarily relaxed to 0.92 / 0.95) are
+restored to 0.95 / 0.97.
 """
 
 from __future__ import annotations
@@ -64,12 +64,11 @@ POPULATION_CANDIDATES_PATH = ONC_CASES_DIR / "population_candidates.jsonl"
 # Regression guards (see module docstring for the measured values these
 # leave headroom around). Update deliberately - with a note of why - if a
 # rule change intentionally moves these.
-# Recall and F1 temporarily relaxed from 0.95 / 0.97 - see module docstring.
 # Each can be overridden per run via the named env var (see `threshold`).
 PRECISION_FLOOR = threshold("ONC_POP_PRECISION_FLOOR", 0.99)
-RECALL_FLOOR = threshold("ONC_POP_RECALL_FLOOR", 0.92)
+RECALL_FLOOR = threshold("ONC_POP_RECALL_FLOOR", 0.95)
 FPR_CEILING = threshold("ONC_POP_FPR_CEILING", 0.001)
-F1_FLOOR = threshold("ONC_POP_F1_FLOOR", 0.95)
+F1_FLOOR = threshold("ONC_POP_F1_FLOOR", 0.97)
 
 
 def _load_jsonl(path: Path) -> List[Dict[str, Any]]:
