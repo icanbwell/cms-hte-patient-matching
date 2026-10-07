@@ -15,6 +15,7 @@ from patient_matching.matching.field_extractor import FieldExtractor
 from patient_matching.matching.in_memory_backend import InMemoryBackend
 from patient_matching.matching.match_result import MatchOutcome
 from patient_matching.matching.matching_engine import MatchingEngine
+from patient_matching.normalization.manager import NormalizationManager
 
 
 def _address(lines: List[str], postal: Optional[str]) -> Dict[str, Any]:
@@ -39,10 +40,57 @@ class TestExtractorStreetLine:
         assert values == {"123 main st|10001"}
 
     @pytest.mark.parametrize(
-        "unit", ["apt 2", "unit 5b", "ste 100", "# 4", "rm 114", "fl 3", "bldg c"]
+        "unit",
+        [
+            "apt 2",
+            "unit 5b",
+            "ste 100",
+            "rm 114",
+            "fl 3",
+            "bldg c",
+            # forms the normalizer produces (it strips "#"): bare ids, split ids, rarer USPS designators
+            "4b",
+            "unit 5 b",
+            "apt 4 b",
+            "ph 3",
+            "bsmt a",
+        ],
     )
     def test_line_that_is_only_a_unit_is_never_emitted(self, unit: str) -> None:
         assert _street_lines(_address([unit], "10001")) == set()
+
+    @pytest.mark.parametrize(
+        "street", ["floor rd", "unit dr", "lot ln", "unity", "building", "suites"]
+    )
+    def test_street_that_merely_starts_with_a_designator_word_is_kept(
+        self, street: str
+    ) -> None:
+        assert _street_lines(_address([street], "10001")) == {f"{street}|10001"}
+
+    @pytest.mark.parametrize(
+        "lines",
+        [
+            ["co jane doe", "123 main st"],
+            ["attn billing", "123 main st"],
+            ["riverside apartments", "123 main st"],
+            ["123 main st"],
+            ["apt 2", "123 main st"],
+        ],
+    )
+    def test_street_is_the_line_with_the_house_number_not_a_care_of_or_name_line(
+        self, lines: List[str]
+    ) -> None:
+        assert _street_lines(_address(lines, "10001")) == {"123 main st|10001"}
+
+    def test_no_house_number_anywhere_falls_back_to_line_one(self) -> None:
+        values = _street_lines(_address(["main st", "rear"], "10001"))
+        assert values == {"main st|10001"}
+
+    def test_malformed_line_values_do_not_crash(self) -> None:
+        assert _street_lines(_address([123], "10001")) == set()  # type: ignore[list-item]
+        assert _street_lines({"line": "123 main st", "postalCode": "10001"}) == {
+            "123 main st|10001"
+        }
 
     @pytest.mark.parametrize(
         ("postal", "expected"),
@@ -53,6 +101,7 @@ class TestExtractorStreetLine:
             (None, set()),  # no ZIP: a Street Line needs its ZIP, so none is emitted
             ("", set()),
             ("1000", set()),  # not a ZIP
+            ("123456", set()),  # six digits is not a US ZIP: don't truncate it
         ],
     )
     def test_zip_must_be_present_and_is_reduced_to_five_digits(
@@ -167,4 +216,48 @@ async def test_street_typo_in_the_same_zip_still_matches_as_fuzzy() -> None:
 async def test_street_typo_with_a_different_zip_does_not_match() -> None:
     query = _patient(street="123 main street", zip_code="10001")
     stored = _patient(street="123 main streat", zip_code="10002")
+    assert await _outcome(query, stored) != MatchOutcome.MATCH
+
+
+@pytest.mark.asyncio
+async def test_identical_line_with_zips_one_digit_apart_does_not_match() -> None:
+    # The composites differ by one character, so a generic fuzzy comparison would accept
+    # them and in-memory blocking passes them through; only the Street Line comparator,
+    # which holds the ZIP exact, rejects this pair.
+    query = _patient(street="123 main street", zip_code="10001")
+    stored = _patient(street="123 main street", zip_code="10002")
+    assert await _outcome(query, stored) != MatchOutcome.MATCH
+
+
+@pytest.mark.asyncio
+async def test_fuzzy_street_is_reported_with_its_distance() -> None:
+    engine = MatchingEngine(
+        backend=InMemoryBackend([_patient(street="123 main streat")])
+    )
+    result = await engine.match(_patient(street="123 main street"))
+    rule_01 = next(e for e in result.rule_evaluations if e.rule_id == "01")
+    assert rule_01.field_outcomes["street_line"] == "fuzzy"
+    assert rule_01.field_fuzzy_detail["street_line"] == {"distance": 1}
+
+
+@pytest.mark.asyncio
+async def test_care_of_line_before_the_street_still_matches_through_normalization() -> (
+    None
+):
+    # Goes through the real NormalizationManager, which keeps the original line order
+    # when it cannot parse a care-of line.
+    normalizer = NormalizationManager()
+    stored = normalizer.normalize(
+        _patient(street="C/O Jane Doe", zip_code="10001")
+        | {"address": [_address(["C/O Jane Doe", "123 Main St"], "10001")]}
+    )
+    query = normalizer.normalize(_patient(street="123 Main St", zip_code="10001"))
+    assert await _outcome(query, stored) == MatchOutcome.MATCH
+
+
+@pytest.mark.asyncio
+async def test_different_buildings_with_the_same_normalized_unit_do_not_match() -> None:
+    normalizer = NormalizationManager()
+    query = normalizer.normalize(_patient(street="123 Main St", unit="#4B"))
+    stored = normalizer.normalize(_patient(street="987 Oak Ave", unit="#4B"))
     assert await _outcome(query, stored) != MatchOutcome.MATCH

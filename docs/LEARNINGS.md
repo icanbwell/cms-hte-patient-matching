@@ -351,3 +351,13 @@ passes through rule 11 and never exercises Street Line. Test Street Line through
 street text and must be rebuilt (old values never match the new ones). (2) Any address stored
 without a ZIP now has no Street Line at all, so rules 01 and H-14 / C2-37 / C2-39 cannot use it.
 (3) Normalizers that leave a unit in line 1 (stacked designators) still put it in the value.
+(4) "Line 1" is not always the first FHIR `line`: when scourgify can't parse an address it keeps the
+original order, so `["c/o jane doe", "123 main st"]` would have made every record at a care-of or
+facility-name line share one Street Line. `_street_line_one` takes the first line that starts with a
+house number, else the first line. (5) Normalization strips `#`, so unit-only lines arrive as `4b`,
+`unit 5 b`, `ph 3`; `_is_unit_only` covers those forms and the rarer USPS designators, and requires
+the identifier to contain a digit or be one letter so `floor rd`, `unit dr` and `lot ln` stay streets.
+(6) Placeholder ZIPs (`00000`, `99999`) still count as exact: ZIP placeholder detection does not
+exist yet, so `123 main st|00000` matches itself (tracked in BAI-1084).
+(7) Test with a case the in-memory blocker cannot reject for you: a ZIP one digit off on an identical
+line passes blocking (composite edit distance 1), so only the Street Line comparator rejects it.

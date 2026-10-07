@@ -164,21 +164,47 @@ _RELATIONSHIP_LINKAGE_EXTENSION_URL = (
 # normalized street line (normalization strips punctuation) or in a ZIP.
 STREET_LINE_SEPARATOR = "|"
 
-# A line made only of a unit designator and its identifier ("apt 2", "# 4", "ste 100").
-_UNIT_ONLY = re.compile(
-    r"^(apt|apartment|unit|ste|suite|rm|room|fl|floor|bldg|building|lot|spc|space|"
-    r"trlr|trailer|dept|department|#)\s*[a-z0-9-]*$"
+# A line made only of a unit designator and its identifier ("apt 2", "unit 5 b", "ph 3").
+# The identifier must contain a digit or be a single letter, so a street whose name starts
+# with a designator word ("floor rd", "unit dr", "lot ln") is not mistaken for a unit.
+# Normalization strips "#", so "#4b" arrives as "4b" (see _BARE_UNIT).
+_UNIT_DESIGNATORS = (
+    "apt|apartment|unit|ste|suite|rm|room|fl|floor|bldg|building|lot|spc|space|trlr|"
+    "trailer|dept|department|ph|bsmt|frnt|rear|ofc|lbby|lowr|uppr|hngr|pier|slip|stop|key"
 )
+_UNIT_IDENTIFIER = r"(?:\d[a-z0-9-]*|[a-z])"
+_UNIT_ONLY = re.compile(rf"^(?:{_UNIT_DESIGNATORS})\b(?:\s+{_UNIT_IDENTIFIER}){{1,2}}$")
+# A single short token with a digit ("4b", "12") is a unit identifier, not a street.
+_BARE_UNIT = re.compile(r"^(?=[a-z0-9-]*\d)[a-z0-9-]{1,4}$")
+_STARTS_WITH_NUMBER = re.compile(r"^\d")
 
 
 def _zip5(postal_code: Any) -> str:
-    """First five digits of a postal code, or "" if it doesn't have five."""
+    """ZIP5 from a 5-digit ZIP or a ZIP+4 (9 digits); "" for anything else."""
     digits = re.sub(r"\D", "", str(postal_code or ""))
-    return digits[:5] if len(digits) >= 5 else ""
+    return digits[:5] if len(digits) in (5, 9) else ""
 
 
 def _is_unit_only(line: str) -> bool:
-    return bool(_UNIT_ONLY.match(line.strip().lower()))
+    text = line.strip().lower()
+    return bool(_UNIT_ONLY.match(text) or _BARE_UNIT.match(text))
+
+
+def _street_line_one(lines: Any) -> str:
+    """The address line that carries the street: "address line 1" in the spec's sense.
+
+    FHIR does not guarantee the first `line` is the street; a care-of, attention or
+    building-name line can come first ("c/o jane doe", "123 main st"). Take the first
+    line that starts with a house number, else the first line, and never a line that is
+    only a unit.
+    """
+    if isinstance(lines, str):
+        lines = [lines]
+    candidates = [line for line in (lines or []) if isinstance(line, str) and line]
+    street = next((c for c in candidates if _STARTS_WITH_NUMBER.match(c)), None)
+    if street is None and candidates:
+        street = candidates[0]
+    return street if street and not _is_unit_only(street) else ""
 
 
 class FieldExtractor:
@@ -269,19 +295,18 @@ class FieldExtractor:
 
         CMS v3.4.0 Table 3 defines Street Line as address line 1, standardized,
         with the ZIP held exact. Each value is therefore `"<line 1>|<ZIP5>"`
-        (see `STREET_LINE_SEPARATOR`), taken from line 1 only: address line 2
-        is a unit and is not part of the field, and a line 1 that is only a unit
-        designator ("apt 2") is not a street. An address with no 5-digit ZIP has
-        no Street Line, since the field cannot be held to an exact ZIP.
+        (see `STREET_LINE_SEPARATOR`). The line is the street line (see
+        `_street_line_one`), never the unit in line 2, and never a line that is only
+        a unit designator ("apt 2", "4b"). An address with no 5-digit ZIP has no
+        Street Line, since the field cannot be held to an exact ZIP.
         """
         for addr in patient.get("address") or []:
             zip5 = _zip5(addr.get("postalCode"))
             if zip5:
                 fields.zip_codes.add(zip5)
 
-            lines: List[str] = addr.get("line") or []
-            line1 = (lines[0] if lines else "") or ""
-            if zip5 and line1 and not _is_unit_only(line1):
+            line1 = _street_line_one(addr.get("line"))
+            if zip5 and line1:
                 fields.street_lines.add(f"{line1}{STREET_LINE_SEPARATOR}{zip5}")
 
     @staticmethod
