@@ -42,8 +42,10 @@ Current build: **155,480 rows**.
 
 `match_policy` is a default this spike chose, not something the proposal specifies (`MATCH_POLICY`
 in `build_registry.py`). **`block_household_rules`** means the address must not be used as a
-Household-tier field (Table 2-H rules H-03, H-06, H-09 and H-14, which pair Street Line with
-SSN/ITIN last 4, Subscriber ID or Phone); the patient is still matched by every other rule. It is
+Household-tier field. The spec's Table 2-H rows that use Street Line are H-03, H-06, H-09 and
+H-14 (Street Line with SSN/ITIN last 4, Subscriber ID or Phone); the engine implements only H-14
+(as C2-37), and Category 1 Rule 01 also uses Street Line. The patient is still matched by every
+other rule. It is
 set where residents live at the address. **`review`** is set where the address is mostly offices or
 non-residential space, so blocking it automatically would over-block: `hospice` (mostly
 administrative offices, often with a suite number), `higher_education_campus` (schools and offices,
@@ -188,25 +190,29 @@ the state provides it so a consumer can filter them out.
 8. **Which facility types count as institutional is a policy decision for the proposal, not a
    data one.** Hospice and IPEDS samples are mostly non-residential, which is why they are
    `review`; hospitals are blocked regardless of length of stay.
-9. **The engine's Street Line comparison is much looser than the registry key.** Tested by
-   running the engine's own `FieldExtractor` and `FieldComparator` on address pairs (not the full
-   pipeline, and not against real data):
-   - Street Line is compared on the line text alone. `100 Main St` in Austin, TX matches
-     `100 Main St` in Reno, NV. ZIP is a separate field that the household rules using Street
-     Line (H-03, H-06, H-09, H-14) do not require, and nothing in the matching engine or the
-     in-memory backend restricts candidates by ZIP.
-   - The Street Line collision probability (0.00003, `street_line_with_zip` in
-     `calculations/config.py`) is calibrated on street line **and** ZIP both matching, so the
-     implemented comparison is looser than the probability assumes.
-   - Every address line goes into the same set and any shared line counts. Same building,
-     different units match; **different buildings with the same unit** (`Apt 2`) match; a PO box
-     matches across states (`PO Box 12` in AK = `PO Box 12` in TX); so do `PMB 45` and
-     `General Delivery`.
-   - Because of this, a registry hit is only useful if the household rule is actually blocked on
-     it; and a missing registry entry is not the only way unrelated people are linked by address.
-     Requiring ZIP (and treating unit, PO box, PMB and General Delivery lines as non-matching) in
-     the Street Line comparison would help more than any single list. Not changed here: this PR
-     doesn't touch engine code.
+9. **The engine's Street Line comparison does not follow the spec, though the practical effect is
+   narrow.** The spec (v3.4.0 Table 3) defines Street Line as "Street line and ZIP standardized;
+   ZIP must remain exact", i.e. address line 1 plus ZIP, and `calculations/config.py` names the
+   0.00003 value `street_line_with_zip`. The engine compares Street Line as text alone:
+   - Checked through the real `NormalizationManager` and `MatchingManager` (not only the
+     extractor and comparator), using two different people with different last name, email and
+     SSN last 4. With a shared phone, date of birth and a near-identical first name, rule C2-37
+     (Phone + Street Line, then First Name + DOB) links them when the street line text is the
+     same but the **state and ZIP differ**, and when two **different buildings in different
+     states share only the unit** (`Apt 2`). A control with a different street line does not
+     match. The same holds for a shared PO box number.
+   - Every address line, including the unit, goes into one set and any shared element counts, so
+     a unit-only agreement counts. The spec's Street Line is address line 1, not the unit.
+   - Narrow impact: of the Street Line rules, the engine implements only C2-37 (spec H-14) and
+     Category 1 Rule 01 (First + Last + DOB + Street Line). **H-03, H-06 and H-09 (SSN/ITIN/Subscriber
+     ID + Street Line) are in spec Table 2-H but are not among the eight Category 2 rules the spec
+     §C.4 combines, and the engine does not implement them.** C2-37 needs a shared phone plus
+     First Name and DOB, and an exact first name already matches Rule 11 (First Name + DOB +
+     Phone), so the looseness only changes an outcome when the first name is fuzzy. Rule 01 also
+     needs names and DOB.
+   - Aligning it with the spec (compare address line 1 plus exact ZIP5, ignore the unit line)
+     is a small change that closes both cases. Not changed here: this PR doesn't touch engine
+     code, and no registry list can substitute for it.
 10. **A prison's residents may carry the mail address, not the physical one.** All 79 BOP
     facilities publish both. 66 inmate-mail addresses are PO boxes, 25 have a different ZIP, and
     73 of 79 give a different match key than the physical address. Both are now in the registry
