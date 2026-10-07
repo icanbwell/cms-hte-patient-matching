@@ -7,8 +7,22 @@ This doc records **how each Appendix A source can actually be retrieved**, and *
 matching against the retrievable ones works**. It does not evaluate precision/recall against real
 patient data (PHI stays in governed environments) — see "What this does not measure".
 
-Reproduce: `uv run --with pandas python scripts/institutional_address_feasibility.py fetch`, then
-`... report`. Raw downloads go to `data/institutional_registry/` (gitignored). Measured 2026-10-06.
+Reproduce (raw downloads and output go to `data/institutional_registry/`, gitignored; measured
+2026-10-06):
+
+```bash
+uv run python -m scripts.institutional_registry.download            # fetch every retrievable source
+uv run --with pandas python -m scripts.institutional_registry.build_registry   # -> institutional_addresses.csv
+uv run --with pandas python -m scripts.institutional_address_feasibility       # print the section 2 measurements
+```
+
+`institutional_addresses.csv` has one row per distinct (institution type, normalized street, ZIP5):
+`institution_type` (`nursing_home`, `hospice`, `hospital`, `higher_education_campus`,
+`federal_correctional`), `name`, `street`, `city`, `state`, `zip`, `beds`, the match key
+(`match_street`, `match_zip5`), and the `sources`/`source_ids` that listed it. Current build:
+32,314 rows (nursing_home 14,792; hospice 6,051; higher_education_campus 5,994; hospital 5,398;
+federal_correctional 79). An address that serves two types (e.g. a hospital campus that also
+houses a nursing home) appears once per type.
 
 ## 1. Retrieval, source by source
 
@@ -56,7 +70,7 @@ normalized keys are identical for **99.3%**. The ~0.7% misses are a mix of real 
 | lowercased | 100.0% |
 | ZIP+4 | 100.0% |
 | ZIP dropped | 0.0% |
-| one-character street typo | 8.6% |
+| one-character street typo | 8.5% |
 
 Reading the table: matching is exact by design, so it is robust to formatting, case, ZIP+4 and
 unit suffixes, and **not** robust to a missing ZIP or a misspelled street. A fuzzy street match would
@@ -102,7 +116,8 @@ address silently drops a Household-tier rule for every resident at it).
    hospital, correctional, dorm) so the registry can be filtered, not just unioned.
 2. Resolve the correctional gap: confirm an archive of HIFLD Prison Boundaries (license, stable
    URL), or accept federal-only coverage and say so in the spec.
-3. If this proceeds, move `strip_unit`/`address_key` into `patient_matching/normalization/`
+3. If this proceeds, move `strip_unit`/`address_key` (currently in
+   `scripts/institutional_registry/build_registry.py`) into `patient_matching/normalization/`
    with tests and add a registry loader; this spike deliberately stays in `scripts/`.
 4. Validate hit rates on real member addresses in Databricks, with query definitions only
    committed, never output.
