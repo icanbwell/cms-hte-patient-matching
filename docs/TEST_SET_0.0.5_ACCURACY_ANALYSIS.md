@@ -80,8 +80,9 @@ The structure of the residual is the same as 0.0.3: `abbrev + DOB error` is 345 
 Recall 0.9504 (fn 674 of 13,588 true matches). Margin to the 0.95 floor is 5 true matches; F1 0.9745
 has 0.0045 of headroom. The tier moved less than the pairs tier (−0.0011 vs −0.0042); the likely reason is that fuzzy and
 compound variants are a smaller share of its true matches (not measured). Zero new false positives; the 3
-sibling-twin FPs from `LEARNINGS.md` are unchanged. The `::household::constructed` decoys in the new
-pools did not produce an extra false positive.
+sibling-twin FPs from `LEARNINGS.md` are unchanged. The false-positive count is unchanged (3) with the
+new `::household::constructed` decoys in the pools; the identities of the 3 were not compared across
+versions because the seed shift makes the rows non-comparable.
 
 ## 5. What would raise accuracy the most (measured on 0.0.5)
 
