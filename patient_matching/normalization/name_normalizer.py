@@ -216,6 +216,18 @@ class NameNormalizer:
                 report.record(f"name[{index}]", raw, family_reason)
             return None
 
+        # A placeholder given name ("Baby Girl") with a real family name keeps
+        # the family and drops the given names. The prefix-anchored patterns
+        # would otherwise flag the concatenated given+family string below and
+        # discard the real family name along with the placeholder.
+        if given_reason is not None:
+            if report is not None and norm_given:
+                raw_given = next(g for g in given_list if g)
+                report.record(f"name[{index}].given", raw_given, given_reason)
+            norm_given = []
+            primary_given = ""
+            full_name = norm_family
+
         full_name_reason = (
             self._placeholders.reason_for_name(full_name) if full_name else None
         )
