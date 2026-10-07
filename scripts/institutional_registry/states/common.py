@@ -240,7 +240,9 @@ def safe_fromstring(data: bytes) -> ET.Element:
     upper = text.upper()
     if "<!DOCTYPE" in upper or "<!ENTITY" in upper:
         raise ValueError("refusing to parse XML that declares a DOCTYPE or entities")
-    return ET.fromstring(data)
+    parser = ET.XMLParser()
+    parser.feed(data)
+    return parser.close()
 
 
 def _unescape_ooxml(text: str) -> str:
