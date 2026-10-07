@@ -227,6 +227,42 @@ baseline the same way; check which labeled cases flipped before touching a floor
 the fixture data is fetched from a pinned commit of the test-set repo — the pin has to be bumped
 for a data fix there to reach this repo.
 
+## Test-set 0.0.2's pairs-tier metric drop is the new categories, not an engine regression
+
+Pinning test-set `0.0.2` took the pairs tier from recall 0.9709 / FPR 0.0000 to 0.9265 / 0.0964
+(11,668 pairs). Re-running only the pre-existing categories on the 0.0.2 file gives recall 0.973 /
+FPR 0.000 — unchanged. The whole drop is the two new session 14 categories:
+
+- `compound_variant`: 570 false negatives of 1,793 true matches.
+- `sibling_negative`: 43 false positives of 81 non-matches (all twins, age gap 0).
+
+**Why `compound_variant` misses.** Tabulating which fields agree in each false negative:
+
+- **383 have DOB off by more than 1 day** with every other field agreeing. Every approved Table 2
+  rule that uses a name also requires DOB (±1 day), and the one DOB-free rule (29) was removed, so
+  no rule can match these. Same situation as the 152 rule-29 cases above — a labeling/spec
+  mismatch, not an engine bug. Recall over spec-matchable true matches is ~0.969.
+- **452 of the 570 involve `given_abbreviate`** (e.g. `L.` vs `LUREANE`). An initial is neither
+  exact nor fuzzy (fuzzy needs both strings >= 5 chars and Damerau-Levenshtein <= 1). A lone
+  abbreviation still passes via rule 30 (`Last* + DOB + Phone`); it fails once combined with a DOB
+  or last-name error, or with no phone on file.
+
+**Why `sibling_negative` false-positives.** Twins share first name, last name, DOB and address, so
+rules 01, 02, 11, 30 and household rules C2-34/C2-37 all fire legitimately. Most pairs have no
+middle name, SSN last-4 or email on one side, so there is no conflicting evidence to veto on; only
+~7 of 43 have a middle-name or SSN conflict. The engine's only negative-evidence check is suffix.
+
+**How it was diagnosed:** tabulate per-field agreement (`=`, fuzzy, `±1d`, differs, missing) for
+every false negative/positive, grouped by `rationale` category, instead of reading individual
+failing cases. The 255 other false negatives (108 DOB-off, 47 `marriage_variant`, 22
+`ssn_dropped`, 20 normalization) pre-date 0.0.2.
+
+**Where this could still bite:** restoring the 0.95 / 0.01 pairs floors (relaxed in #70) needs the
+test set's labels to be rule-set-aware (re-label or tier out the DOB-off cases, decide what twins
+with no distinguishing data should expect) — engine changes alone can't get there. Matching an
+initial to a full first name would help `given_abbreviate`, but the CMS fuzzy constraints (E.2/E.4)
+don't allow it, so it would be a deliberate, documented deviation.
+
 ## 40 of the 43 `sibling_negative` false positives are labels the next test-set fixes
 
 On test-set `0.0.2` the engine links 43 of 81 `sibling_negative` pairs (FPR 0.0964 overall).
