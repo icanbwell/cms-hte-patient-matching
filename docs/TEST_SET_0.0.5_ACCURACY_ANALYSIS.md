@@ -99,15 +99,15 @@ false positives), and all gates besides pairs recall stay met.
 | 1 | **5 + 1**: DOB ±1 digit in every DOB-using rule, plus initial-only first name in all rules | 0.9876 (169) | +0.0402 | 0.9879 | +0.0375 | 0.9938 | +0.0193 | Yes | High |
 | 2 | 1 + 2 + 3: initial-only + DOB ±1 digit (fuzzy-eligible rules) + 4-character fuzzy | 0.9854 (199) | +0.0380 | 0.9855 | +0.0351 | 0.9926 | +0.0181 | Yes | High |
 | 3 | 5 + 6 + 8: lever 5 + household-only initial + edit distance 2 for ≥ 7 characters | 0.9825 (239) | +0.0351 | 0.9843 | +0.0339 | 0.9920 | +0.0175 | Yes | Medium |
-| 4 | **5 + 6**: lever 5 + initial-only first name inside household rules | 0.9822 (243) | +0.0348 | 0.9838 | +0.0334 | 0.9917 | +0.0172 | Yes | Medium |
-| 5 | 1 + 2: initial-only + DOB ±1 digit (fuzzy-eligible rules) | 0.9838 (221) | +0.0364 | 0.9843 | +0.0339 | 0.9920 | +0.0175 | Yes | High |
+| 4 | 1 + 2: initial-only + DOB ±1 digit (fuzzy-eligible rules) | 0.9838 (221) | +0.0364 | 0.9843 | +0.0339 | 0.9920 | +0.0175 | Yes | High |
+| 5 | **5 + 6**: lever 5 + initial-only first name inside household rules | 0.9822 (243) | +0.0348 | 0.9838 | +0.0334 | 0.9917 | +0.0172 | Yes | Medium |
 | 6 | 5 + 7: lever 5 + initial-only in rules with ≥ 4 fields | 0.9775 (306) | +0.0301 | 0.9795 | +0.0291 | 0.9896 | +0.0151 | Yes | Medium |
 | 7 | **5**: DOB ±1 digit in **every** DOB-using rule (incl. exact-DOB rules like 11, 12) | 0.9761 (326) | +0.0287 | 0.9778 | +0.0274 | 0.9887 | +0.0142 | Yes | Medium (needs DOB-fuzzy u-value) |
 | 8 | **1**: initial-only first name, all rules | 0.9730 (368) | +0.0256 | 0.9752 | +0.0248 | 0.9873 | +0.0128 | Yes | High |
-| 9 | **2**: DOB ±1 digit, only rules where DOB is already fuzzy-eligible (01, 02, 03, 10, 24) | 0.9534 (635) | +0.0060 | 0.9554 | +0.0050 | 0.9771 | +0.0026 | Yes (thin) | Low–medium |
-| 10 | **6**: initial-only first name, only inside household (Category 2) rules | 0.9533 (636) | +0.0059 | 0.9562 | +0.0058 | 0.9775 | +0.0030 | Yes (thin) | Low–medium |
-| 11 | **3**: fuzzy first/last name at 4 characters (min length 5 → 4) | 0.9512 (664) | +0.0038 | 0.9534 | +0.0030 | 0.9760 | +0.0015 | Barely | Medium |
-| 12 | **7**: initial-only first name, only rules with ≥ 4 fields | 0.9504 (675) | +0.0030 | 0.9538 | +0.0034 | 0.9762 | +0.0017 | Barely | Low–medium |
+| 9 | **6**: initial-only first name, only inside household (Category 2) rules | 0.9533 (636) | +0.0059 | 0.9562 | +0.0058 | 0.9775 | +0.0030 | Yes (thin) | Low–medium |
+| 10 | **2**: DOB ±1 digit, only rules where DOB is already fuzzy-eligible (01, 02, 03, 10, 24) | 0.9534 (635) | +0.0060 | 0.9554 | +0.0050 | 0.9771 | +0.0026 | Yes (thin) | Low–medium |
+| 11 | **7**: initial-only first name, only rules with ≥ 4 fields | 0.9504 (675) | +0.0030 | 0.9538 | +0.0034 | 0.9762 | +0.0017 | Barely | Low–medium |
+| 12 | **3**: fuzzy first/last name at 4 characters (min length 5 → 4) | 0.9512 (664) | +0.0038 | 0.9534 | +0.0030 | 0.9760 | +0.0015 | Barely | Medium |
 | 13 | **8**: edit distance 2 for strings ≥ 7 characters | 0.9490 (695) | +0.0016 | 0.9523 | +0.0019 | 0.9755 | +0.0010 | No | Medium |
 | 14 | **4**: month/day swap only | 0.9481 (707) | +0.0007 | 0.9511 | +0.0007 | 0.9748 | +0.0003 | No | Low |
 | 15 | **9**: DOB ±1 digit only inside household rules | 0.9474 (717) | 0.0000 | 0.9504 | 0.0000 | 0.9745 | 0.0000 | No | – |
