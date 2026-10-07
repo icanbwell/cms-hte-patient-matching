@@ -20,8 +20,7 @@ Both fixes are measured with the real code, not a simulation, on the unmodified 
 3 false positives are the sibling-twin pairs in `LEARNINGS.md` and never change.
 
 With the fixes, population recall (0.9515) and F1 (0.9750) clear the original 0.95 / 0.97 floors that
-were temporarily relaxed, and pairs recall (0.9516) clears 0.95. Restoring those floors needs no data
-change or pin bump.
+were temporarily relaxed, and pairs recall (0.9516) clears 0.95. The floors have been restored in this PR (no data change or pin bump needed).
 
 ## 2. Where the 968 original false negatives came from
 
@@ -146,7 +145,7 @@ rule gaps — only the changes in §4 (a spec change) would reach them.
 ## 6. Recommended order
 
 1. Land fixes 1 and 2 (engine) — this PR.
-2. Restore the 0.95 / 0.97 floors (recall/F1) now that the 0.0.3 data clears them.
+2. ~~Restore the 0.95 / 0.97 floors~~ — done in this PR (pairs recall margin is thin, ~0.0016).
 3. Take initial-only first names to the CMS spec owners (§4.1): the biggest remaining lever
    (+0.024), needs a guard and a P(collision) derivation.
 4. DOB edit distance and the 4-character carve-out (§4.2, §4.3) are smaller (+0.006, +0.003) and

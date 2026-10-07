@@ -9,9 +9,9 @@
 Two tests run ONC-derived data through this engine's real normalize → extract → `evaluate_pair`
 pipeline:
 
-- `tests/test_onc_regression.py` (pairs tier) — asserts recall ≥ 0.92 and FPR ≤ 0.10 (temporarily relaxed from 0.95 / 0.01 for the session 14 data; see "Pairs floors relaxed for test-set 0.0.2").
+- `tests/test_onc_regression.py` (pairs tier) — asserts recall ≥ 0.95 and FPR ≤ 0.01 (temporarily relaxed for test-sets 0.0.2/0.0.3, restored; see "Floors restored for test-set 0.0.3").
 - `tests/test_onc_population_regression.py` (population tier) — asserts precision ≥ 0.99,
-  recall ≥ 0.92, FPR ≤ 0.001, and F1 ≥ 0.95 (recall/F1 temporarily relaxed from 0.95 / 0.97 for test-set 0.0.3; see "Population floors relaxed for test-set 0.0.3").
+  recall ≥ 0.95, FPR ≤ 0.001, and F1 ≥ 0.97 (recall/F1 temporarily relaxed for test-set 0.0.3, restored; see "Floors restored for test-set 0.0.3").
 
 The data itself is **vendored into this repo** at `tests/fixtures/onc/` (copied from the sibling
 `cms-hte-patient-matching-test-set` repo — see "Vendoring decision" below) — this repo is
@@ -399,7 +399,7 @@ with rule 29 removed: recall 0.9265 (tp=10397, fn=825), FPR 0.0964 (fp=43, tn=40
 `compound_variant` (570 false negatives of 1,793 true matches) and `sibling_negative` (43 false
 positives of 81 non-matches). The pairs floors were moved from recall ≥ 0.95 / FPR ≤ 0.01 to
 recall ≥ 0.92 / FPR ≤ 0.10 so CI gates against further regression while the engine is optimized for
-those categories. **Restore 0.95 / 0.01 when that work lands.** The population tier is unchanged and
+those categories. (Restored; see "Floors restored for test-set 0.0.3".) The population tier is unchanged and
 passes (precision 0.9993, recall 0.9718, FPR 0.0001, F1 0.9853).
 
 ## Population floors relaxed for test-set 0.0.3
@@ -409,8 +409,18 @@ evaluations). Measured: precision 0.9998, recall 0.9305 (tp=12696, fn=948), FPR 
 F1 0.9639. Recall and F1 fell below the 0.95 / 0.97 floors that 0.0.2 met (recall 0.9718, F1 0.9853).
 The population floors were moved from recall ≥ 0.95 / F1 ≥ 0.97 to recall ≥ 0.92 / F1 ≥ 0.95 so CI
 gates against further regression while the engine is optimized for the session 14 categories
-(chiefly `compound_variant`). Precision ≥ 0.99 and FPR ≤ 0.001 are unchanged. **Restore 0.95 / 0.97
-when that work lands.** The pairs tier passes unchanged (recall 0.9290, FPR 0.0052).
+(chiefly `compound_variant`). Precision ≥ 0.99 and FPR ≤ 0.001 are unchanged. (Restored; see below.)
+The pairs tier passed unchanged (recall 0.9290, FPR 0.0052).
+
+## Floors restored for test-set 0.0.3
+
+Two engine fixes recovered recall on the unmodified 0.0.3 data (analysis:
+`docs/TEST_SET_0.0.3_ACCURACY_ANALYSIS.md`): a placeholder given name no longer discards the real
+family name, and well-formed phone numbers with an unassigned exchange are no longer dropped.
+Measured: pairs tier recall 0.9516 (tp=12977, fn=660), FPR 0.0052 (fp=3, tn=579); population tier
+precision 0.9998, recall 0.9515 (tp=12982, fn=662), FPR 0.0000, F1 0.9750. All four relaxed gates are
+back to their original values: pairs recall ≥ 0.95 / FPR ≤ 0.01, population recall ≥ 0.95 / F1 ≥ 0.97.
+The pairs recall margin is thin (~0.0016), so a small rule change can trip it.
 
 ## Thresholds are env-configurable
 
@@ -419,11 +429,11 @@ Each gate reads an env var, falling back to the checked-in default in the test m
 
 | Env var | Default |
 |---|---|
-| `ONC_PAIRS_RECALL_FLOOR` | 0.92 |
-| `ONC_PAIRS_FPR_CEILING` | 0.10 |
+| `ONC_PAIRS_RECALL_FLOOR` | 0.95 |
+| `ONC_PAIRS_FPR_CEILING` | 0.01 |
 | `ONC_POP_PRECISION_FLOOR` | 0.99 |
-| `ONC_POP_RECALL_FLOOR` | 0.92 |
+| `ONC_POP_RECALL_FLOOR` | 0.95 |
 | `ONC_POP_FPR_CEILING` | 0.001 |
-| `ONC_POP_F1_FLOOR` | 0.95 |
+| `ONC_POP_F1_FLOOR` | 0.97 |
 
 Example: `ONC_TEST_SET_TAG=0.0.2 ONC_POP_RECALL_FLOOR=0.95 ONC_POP_F1_FLOOR=0.97 make onc-tests`.
