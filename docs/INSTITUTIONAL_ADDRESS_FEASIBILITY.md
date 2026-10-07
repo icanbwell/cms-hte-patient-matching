@@ -67,8 +67,8 @@ several sources list an address it is the newest of them, so an address confirme
 source isn't labeled with a 2021 date. 143 rows had `Not Applicable`/`Not Available` as `beds`
 in the old CSV; those are now simply left out.
 Current build: **154,126 resources**. The Prison Policy Initiative lists and the AK, IN, KY and VA state
-lists are withheld from the committed data until their redistribution terms are confirmed
-(`docs/DATA_SOURCE_LICENSES.md`); `download.py --include-withheld` fetches them for local use. Figures
+lists are excluded from the committed data because their redistribution terms do not allow it
+or could not be confirmed (`docs/DATA_SOURCE_LICENSES.md`); `download.py --include-excluded` fetches them for local use. Figures
 elsewhere in this doc (overlaps, the Princeton comparison, row counts) come from the earlier
 155,534-resource build, which included those sources, and have not been recomputed.
 
@@ -105,7 +105,7 @@ can be reversed in `MATCH_POLICY`.
 | NCES IPEDS | Yes, no key | `https://nces.ed.gov/ipeds/datacenter/data/HD<year>.zip` (HD2024 is latest; the current year 404s until published) | 6,072 campus addresses. IC2024 has no housing-capacity field, so a dorm cannot be told from the rest of the campus. |
 | Federal Bureau of Prisons | Yes | Both addresses per facility are kept: the physical address (type 1) and the inmate mail/parcels address (type 3), usually a PO box (66 of 79; 25 with a different ZIP), since a resident's own records are likely to carry the mail one. No bulk export. List page `https://www.bop.gov/locations/list.jsp` exposes facility codes in `/locations/institutions/<code>/` links; `https://www.bop.gov/PublicInfo/execute/phyloc?todo=query&output=json&code=<CODE>` returns JSON per facility (address type 1 = physical) | Undocumented API (found in bop.gov's own JavaScript). 79 codes against ~118 institutions; listing by state/region returns nothing. |
 | HIFLD Prison Boundaries | Yes, no key | DHS shut HIFLD Open on 2025-08-26; HIFLD Next republishes it. Walk `https://hifld.publicenvirodata.org/api/collections/hifld` -> "Prison Boundaries" child catalog -> latest-version collection -> GeoParquet asset on `storage.googleapis.com`; read with DuckDB | 6,468 facilities (5,845 open, 487 closed; county 3,694, state 2,079, local 346, federal 259), addresses on all but one. Capacity `-999` means unknown. The release ID in every URL changes, so the catalog is walked each run. License is "other"; check before redistributing. |
-| Prison Policy Initiative facility lists (2020 vintage) | Yes (scraped) | One HTML table per state at `https://www.prisonersofthecensus.org/data/prisons2020/<ST>/`, linked from `.../data/state_federal_local_2020vintage.html` | 5,217 facilities, but only 42% have a street address and survey dates are 2012–2013. Adds 888 addresses HIFLD lacks. Terms of use not stated, so this source is **withheld** from the committed data pending permission. |
+| Prison Policy Initiative facility lists (2020 vintage) | Yes (scraped) | One HTML table per state at `https://www.prisonersofthecensus.org/data/prisons2020/<ST>/`, linked from `.../data/state_federal_local_2020vintage.html` | 5,217 facilities, but only 42% have a street address and survey dates are 2012–2013. Adds 888 addresses HIFLD lacks. Terms of use not stated, so this source is **excluded** from the committed data. |
 | Overture Maps places | Yes, no key | DuckDB over the public S3 bucket `overturemaps-us-west-2` (~7 min scan); newest release resolved from the bucket listing | US `jail_or_prison`, `assisted_living_facility`, `retirement_home`, `homeless_shelter`, `halfway_house`. Overture's own `nursing` category is individual nurse practitioners, **not** nursing homes. License varies by contributing source. |
 | Princeton assisted-living dataset | Yes, no key | `https://raw.githubusercontent.com/antonstengel/assisted-living-data/main/assisted-living-facilities.csv` (CC BY 4.0) | 44,649 state-licensed facilities with address, capacity, license number. **Collected in 2021**, so stale. ZIPs lose leading zeros (padded on load). |
 | California assisted living (CDSS Community Care Licensing) | Yes, no key | CSV of all licensed facility types from `gis.data.chhs.ca.gov` (ArcGIS hub item; the older `data.chhs.ca.gov` CSV link returns a login page); filter `TYPE` 740/741 (Residential Care for the Elderly) | 37,923 rows, of which 8,603 elder care; all have street and ZIP. Status codes are undocumented in the file, so all are kept. |
@@ -167,7 +167,7 @@ Distinct (street, ZIP5) keys: HIFLD 5,744 (open facilities only), Overture `jail
 BOP 79; **7,213 across the three**. 79.7% of BOP addresses (63 of 79) appear in HIFLD, 55.8% of
 Overture's appear in HIFLD, and 32.0% of HIFLD's appear in Overture, so the sources are
 complementary rather than redundant. Of 1,858 distinct PPI addresses, 52.2% are already in HIFLD
-and 888 are new (measured before PPI was withheld from the committed data).
+and 888 are new (measured before PPI was excluded from the committed data).
 
 ### Senior living and assisted living
 

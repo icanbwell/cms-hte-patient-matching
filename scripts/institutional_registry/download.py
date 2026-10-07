@@ -86,9 +86,10 @@ OVERTURE_CATEGORIES = [
 MANUAL_DIR = DEST / "manual"
 MANIFEST = DEST / "manifest.json"
 STATE_LISTS_DIR = DEST / "state_lists"
-# Sources not committed or fetched by default until their redistribution terms are confirmed
-# (see docs/DATA_SOURCE_LICENSES.md). --include-withheld fetches them for local use only.
-WITHHELD_STATES = {"AK", "IN", "KY", "VA"}
+# Sources excluded from the committed data because their terms do not allow redistribution or
+# could not be confirmed (see docs/DATA_SOURCE_LICENSES.md). --include-excluded fetches them
+# for local use only; do not commit the results.
+EXCLUDED_STATES = {"AK", "IN", "KY", "VA"}
 USER_AGENT = "Mozilla/5.0 (cms-hte-patient-matching institutional registry)"
 
 
@@ -418,7 +419,7 @@ def fetch_state_assisted_living() -> None:
     fetch_fl_assisted_living()
 
 
-def fetch_state_lists(*, include_withheld: bool = False) -> None:
+def fetch_state_lists(*, include_excluded: bool = False) -> None:
     """Run every module in `states/` and save its rows to state_lists/<ST>.csv.
 
     One state failing must not stop the others, so each is isolated. A state that is marked
@@ -433,8 +434,8 @@ def fetch_state_lists(*, include_withheld: bool = False) -> None:
     status: Dict[str, Dict[str, Any]] = {}
     for module in state_modules():
         code = module.STATE
-        if code in WITHHELD_STATES and not include_withheld:
-            print(f"state_lists {code}: withheld pending license confirmation, skipped")
+        if code in EXCLUDED_STATES and not include_excluded:
+            print(f"state_lists {code}: excluded, skipped")
             continue
         broken = getattr(module, "BROKEN", None)
         if broken:
@@ -506,7 +507,7 @@ def fetch_overture() -> None:
     print(f"overture: release {release} ok")
 
 
-def fetch_all(*, skip_overture: bool = False, include_withheld: bool = False) -> None:
+def fetch_all(*, skip_overture: bool = False, include_excluded: bool = False) -> None:
     DEST.mkdir(parents=True, exist_ok=True)
     MANUAL_DIR.mkdir(parents=True, exist_ok=True)
     for name, dataset_id in CARE_COMPARE.items():
@@ -517,12 +518,12 @@ def fetch_all(*, skip_overture: bool = False, include_withheld: bool = False) ->
     fetch_bop()
     fetch_assisted_living()
     fetch_hifld_prisons()
-    if include_withheld:
+    if include_excluded:
         fetch_ppi_facilities()
     else:
-        print("ppi_facilities: withheld pending license confirmation, skipped")
+        print("ppi_facilities: excluded, skipped")
     fetch_state_assisted_living()
-    fetch_state_lists(include_withheld=include_withheld)
+    fetch_state_lists(include_excluded=include_excluded)
     if skip_overture:
         print("overture: skipped")
     else:
@@ -541,10 +542,10 @@ if __name__ == "__main__":
         help="skip the slow (~7 min) Overture Maps extract",
     )
     parser.add_argument(
-        "--include-withheld",
+        "--include-excluded",
         action="store_true",
-        help="also fetch sources withheld pending license confirmation (PPI, AK, IN, KY, VA); "
+        help="also fetch sources excluded from the committed data (PPI, AK, IN, KY, VA); "
         "do not commit them (see docs/DATA_SOURCE_LICENSES.md)",
     )
     args = parser.parse_args()
-    fetch_all(skip_overture=args.skip_overture, include_withheld=args.include_withheld)
+    fetch_all(skip_overture=args.skip_overture, include_excluded=args.include_excluded)

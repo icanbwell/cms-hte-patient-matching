@@ -70,20 +70,20 @@ afterwards:
 26 states are downloaded automatically: CA, MI, WI and FL (raw files `state_al_*`, see
 `MANUAL_DOWNLOADS.md`) and the 22 below, one module each in
 `scripts/institutional_registry/states/`, written to `data/institutional_registry/state_lists/<ST>.csv`.
-All 26 modules (the 22 below plus AK, IN, KY and VA, which are withheld; see below) returned rows on the 2026-10-06 run and none failed (`state_lists_status.json` records the
+All 26 modules (the 22 below plus AK, IN, KY and VA, which are excluded; see below) returned rows on the 2026-10-06 run and none failed (`state_lists_status.json` records the
 result of every run, including failures). Every row has street, city and ZIP except 1
-in GA, which has no ZIP in the source. AK, IN, KY and VA are withheld from the committed data pending
-permission (`docs/DATA_SOURCE_LICENSES.md`); `download.py --include-withheld` fetches it for local use.
+in GA, which has no ZIP in the source. AK, IN, KY and VA are excluded from the committed data
+(`docs/DATA_SOURCE_LICENSES.md`); `download.py --include-excluded` fetches them for local use.
 
 | State | Rows | Source and method | Types kept | Freshness and notes |
 |---|---|---|---|---|
-| AK | (814 on 2026-10-06) | **Withheld**: not committed or fetched by default pending license confirmation. DHSS licensed assisted living homes spreadsheet; the link is scraped from the licensing page each run because the filename changes monthly | Assisted Living Home | Not in the current registry build. |
+| AK | (814 on 2026-10-06) | **Excluded**: not committed or fetched by default. DHSS licensed assisted living homes spreadsheet; the link is scraped from the licensing page each run because the filename changes monthly | Assisted Living Home | Not in the current registry build. |
 | AZ | 2,072 | ADHS ArcGIS layer 18 (`All_State_Licensed_Facilities_in_Arizona`) | Assisted Living Home 1,719; Assisted Living Center 328; Adult Foster Care 25 | **February 2025 snapshot**; the other ADHS layers carry the same run date, so no newer ADHS data was found. Behavioral health and respite settings excluded. |
 | CO | 683 | CDPHE ArcGIS layer | Assisted Living Residence (ALR only 358; ALR/ACF 284; ALR/BISL 41) | Updated 2026-06-15. 11 `Pending` rows are kept, with that status. |
 | GA | 1,888 | DCH facility search, which serves a 5 MB XML dump of every facility | Personal Care Home 1,562; Assisted Living Community 326 | No capacity or status. Community living arrangements (developmental disability homes) excluded. |
 | IA | 498 | DIAL Health Facilities Database: token, search, then a session CSV export per type | Assisted Living Programs 263; dementia ALPs 174; Residential Care Facilities 61 | All active. Boarding homes (room and board only) excluded. 44 addresses have more than one row (an assisted living building plus its memory care wing under separate licenses). |
-| IN | (230 on 2026-10-06) | **Withheld**: not committed or fetched by default pending permission. ISDH residential care directory (one HTML page) | Residential care facilities | Not in the current registry build. |
-| KY | (294 on 2026-10-06) | **Withheld**: not committed or fetched by default pending permission. CHFS spreadsheets for assisted living communities and personal care homes | Assisted living communities 247 (plain, dementia care, behavioral health); personal care homes 47 | Not in the current registry build. |
+| IN | (230 on 2026-10-06) | **Excluded**: not committed or fetched by default. ISDH residential care directory (one HTML page) | Residential care facilities | Not in the current registry build. |
+| KY | (294 on 2026-10-06) | **Excluded**: not committed or fetched by default. CHFS spreadsheets for assisted living communities and personal care homes | Assisted living communities 247 (plain, dementia care, behavioral health); personal care homes 47 | Not in the current registry build. |
 | LA | 164 | LDH licensed providers spreadsheet, filtered to Adult Residential Care | Adult Residential Care (levels 1-4) | **File is `2026_03`, about 7 months old**: LDH has not published later months. No capacity. |
 | MA | 317 | MassGIS "Long-Term Care Residences" ArcGIS layer (EOEA and DPH records) | Assisted Living Residence 259; Rest Home 58 (nursing homes dropped) | Edited 2026-05-01. No capacity. City is the mailing city. |
 | MD | 1,568 | OHCQ Socrata dataset on `opendata.maryland.gov` | All rows are assisted living programs (no type column) | **Last updated July 2025.** License ID present on 1,236 rows. |
@@ -101,7 +101,7 @@ permission (`docs/DATA_SOURCE_LICENSES.md`); `download.py --include-withheld` fe
 | TN | 370 | TDH facility listings: token, then a form POST returning an HTML table (a Chrome user agent is required) | Assisted care living 329; homes for the aged 38; adult care homes 3 | 362 licensed, 5 on probation, 3 lapsed; all kept, status carried in the row. |
 | TX | 2,007 | HHSC assisted living directory spreadsheet | Assisted Living Type A 336; Type B 1,663; Type C 8 | File dated 2026-10-05. |
 | UT | 224 | UGRC ArcGIS layer of licensed health care facilities, filtered to assisted living | Assisted Living Type I 48; Type II 176 | Live layer. "Small Health Care Facility" (all ICF/IID) and personal care agencies excluded. |
-| VA | (575 on 2026-10-06) | **Withheld**: not committed or fetched by default pending permission. VDSS search page, whose HTML embeds the API JSON in a comment | Assisted Living Facility | Not in the current registry build. |
+| VA | (575 on 2026-10-06) | **Excluded**: not committed or fetched by default. VDSS search page, whose HTML embeds the API JSON in a comment | Assisted Living Facility | Not in the current registry build. |
 | WV | 83 | OHFLAC facility lookup: JSON POST with the full DataTables body | Large AL 54; Small AL 28; Residential Care Community 1 (active only) | 162 closed rows dropped. |
 
 ### Comparison with the 2021 Princeton data
