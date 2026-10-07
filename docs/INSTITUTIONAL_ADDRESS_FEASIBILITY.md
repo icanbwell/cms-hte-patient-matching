@@ -25,7 +25,7 @@ Sources that can't be fetched automatically are downloaded by hand into
 ## The registry (FHIR Organization resources)
 
 `institutional_addresses.ndjson.gz` is FHIR R4 `Organization` resources, one per line (NDJSON, the
-FHIR Bulk Data format), gzipped: 154,367 resources, 16.7 MB (the uncompressed file is about 170 MB,
+FHIR Bulk Data format), gzipped: 154,126 resources, 16.7 MB (the uncompressed file is about 170 MB,
 over GitHub's 100 MB limit). There is one resource per distinct (institution type, normalized
 street, ZIP5). An address that serves two types (e.g. a hospital campus that also houses a nursing
 home) appears once per type. The mapping is in `scripts/institutional_registry/fhir_registry.py`:
@@ -45,7 +45,7 @@ home) appears once per type. The mapping is in `scripts/institutional_registry/f
 The five extensions, the `institution-type` code system and the identifier systems sit under
 `https://cms-hte-patient-matching.icanbwell.com/fhir/`, the same base the engine uses for its own
 extension. None is published as a conformance resource (StructureDefinition, CodeSystem) yet (follow-up:
-BAI-1086), so the resources do not claim a `meta.profile`. All 154,367 resources validate against the
+BAI-1086), so the resources do not claim a `meta.profile`. All 154,126 resources validate against the
 `fhirschemapy` R4B `Organization` model and read back to the same values. **Names are kept as the sources publish them.** Several state lists (MI, WI, NC, AZ, CA) and the
 Princeton data carry facility names that, for small private homes, may be a person's name; only Oregon's
 adult foster home names are blanked (`states/or_state.py`). The project owner decided on 2026-10-07 to keep
@@ -66,11 +66,11 @@ Compare/POS processing date, Overture release) and otherwise the date we downloa
 several sources list an address it is the newest of them, so an address confirmed by a current
 source isn't labeled with a 2021 date. 143 rows had `Not Applicable`/`Not Available` as `beds`
 in the old CSV; those are now simply left out.
-Current build: **154,367 resources**. The Prison Policy Initiative lists and the Alaska state list are
-withheld from the committed data until their redistribution terms are confirmed
+Current build: **154,126 resources**. The Prison Policy Initiative lists and the AK, IN, KY and VA state
+lists are withheld from the committed data until their redistribution terms are confirmed
 (`docs/DATA_SOURCE_LICENSES.md`); `download.py --include-withheld` fetches them for local use. Figures
 elsewhere in this doc (overlaps, the Princeton comparison, row counts) come from the earlier
-155,534-resource build, which included those two sources, and have not been recomputed.
+155,534-resource build, which included those sources, and have not been recomputed.
 
 | `match_policy` | `institution_type` (rows) |
 |---|---|
@@ -113,7 +113,7 @@ can be reversed in `MATCH_POLICY`.
 | Wisconsin assisted living (DHS) | Yes, no key | Public ArcGIS service `dhsgis.wi.gov/server/rest/services/DHS_GIS/Facilities/MapServer`, layers 7 (CBRF), 17 (RCAC), 2 (adult family homes), 2,000 records per page. The open-data portal's own CSV download returns 403. | 4,125 rows (1,555 + 367 + 2,203). No capacity field. |
 | Florida assisted living (AHCA FloridaHealthFinder) | Yes, no key | No bulk file. POST the facility search (type ALF, all counties) with a session cookie and anti-forgery token; the results page embeds the records as JSON | 3,024 facilities with address, ZIP, bed count, license status. Depends on the page structure, so the likeliest of the four to break. |
 | Minnesota assisted living (MDH) | Yes, no key | The provider lookup's own CSV API (`provider-profile-api.web.health.state.mn.us/csv?...providerGroup=Assisted%20Living%20Facilities`) | 2,525 facilities. An earlier version of this doc said "no structured download"; that was wrong, only the search page had been checked. |
-| 25 more state lists (AZ, CO, GA, IA, IN, KY, LA, MA, MD, MN, MO, NC, NE, NJ, NV, NY, OK, OR, PA, SC, TN, TX, UT, VA, WV) | Yes, no key | One module per state in `scripts/institutional_registry/states/` (spreadsheets, Socrata, ArcGIS, form posts, HTML) | See `docs/ASSISTED_LIVING_STATE_COVERAGE.md` for every source, count and caveat, and for the 20 states that could not be automated. |
+| 22 more state lists (AZ, CO, GA, IA, LA, MA, MD, MN, MO, NC, NE, NJ, NV, NY, OK, OR, PA, SC, TN, TX, UT, WV) | Yes, no key | One module per state in `scripts/institutional_registry/states/` (spreadsheets, Socrata, ArcGIS, form posts, HTML) | See `docs/ASSISTED_LIVING_STATE_COVERAGE.md` for every source, count and caveat, and for the 20 states that could not be automated. |
 | BJS Census of State and Federal Adult Correctional Facilities / Census of Jails | No | ICPSR (HTTP 403 anonymously) | Manual download; unconfirmed whether public files include street addresses. |
 | State DOC rosters | No | Fragmented per state | Manual. |
 | Vera Incarceration Trends | No | County-level only | No facility addresses. |
@@ -179,7 +179,7 @@ and 38.1% match it or `retirement_home` — the two sources largely disagree on 
 the Princeton data is five years old.
 
 **State lists refresh most of the 2021 data.** Current state licensing lists are downloaded
-automatically for 29 states: CA, MI, WI, FL, and 25 more (AZ, CO, GA, IA, IN, KY, LA, MA, MD,
+automatically for 26 states: CA, MI, WI, FL, and 22 more (AZ, CO, GA, IA, LA, MA, MD,
 MN, MO, NC, NE, NJ, NV, NY, OK, OR, PA, SC, TN, TX, UT, VA, WV). Per-state sources, row counts and
 caveats are in `docs/ASSISTED_LIVING_STATE_COVERAGE.md`, which also lists the jurisdictions that
 are not automated and why. Compared with Princeton's 2021 addresses for the 27 states that have
@@ -210,7 +210,7 @@ the state provides it so a consumer can filter them out.
    HIFLD itself is an archive of a discontinued DHS product and will not be updated.
 4. **Assisted living is still the weakest data, but much improved**: no authoritative national
    source exists, and Overture and the 2021 Princeton data disagree heavily. Current state
-   licensing lists are automated for 29 states and agree with Princeton on 76% of addresses
+   licensing lists are automated for 26 states and agree with Princeton on 76% of addresses
    (a few are old: MD July 2025, AZ Feb 2025, LA Mar 2026). 12,614 rows still rest on 2021 data
    alone, 4,285 of them in states with no automated source. Separately, 1,390 Princeton rows
    (3%) have no ZIP and are not in the registry at all; four states (ID, MA, NV, OK) lost all of

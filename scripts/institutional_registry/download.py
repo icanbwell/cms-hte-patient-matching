@@ -88,7 +88,7 @@ MANIFEST = DEST / "manifest.json"
 STATE_LISTS_DIR = DEST / "state_lists"
 # Sources not committed or fetched by default until their redistribution terms are confirmed
 # (see docs/DATA_SOURCE_LICENSES.md). --include-withheld fetches them for local use only.
-WITHHELD_STATES = {"AK"}
+WITHHELD_STATES = {"AK", "IN", "KY", "VA"}
 USER_AGENT = "Mozilla/5.0 (cms-hte-patient-matching institutional registry)"
 
 
@@ -543,7 +543,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--include-withheld",
         action="store_true",
-        help="also fetch sources withheld pending license confirmation (PPI, AK); "
+        help="also fetch sources withheld pending license confirmation (PPI, AK, IN, KY, VA); "
         "do not commit them (see docs/DATA_SOURCE_LICENSES.md)",
     )
     args = parser.parse_args()

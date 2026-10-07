@@ -19,16 +19,6 @@
     "ok": true,
     "rows": 498
   },
-  "IN": {
-    "checked": "2026-10-06",
-    "ok": true,
-    "rows": 230
-  },
-  "KY": {
-    "checked": "2026-10-06",
-    "ok": true,
-    "rows": 294
-  },
   "LA": {
     "checked": "2026-10-06",
     "ok": true,
@@ -113,11 +103,6 @@
     "checked": "2026-10-06",
     "ok": true,
     "rows": 224
-  },
-  "VA": {
-    "checked": "2026-10-06",
-    "ok": true,
-    "rows": 575
   },
   "WV": {
     "checked": "2026-10-06",
