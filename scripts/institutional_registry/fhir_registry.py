@@ -215,6 +215,19 @@ def from_organization(resource: Dict[str, Any]) -> RegistryEntry:
     )
 
 
+# json.dumps(ensure_ascii=False) leaves these raw, but they are line breaks to
+# `str.splitlines()` and some NDJSON tools, so one resource could be read as two lines.
+_LINE_BREAKS = {"\u0085": "\\u0085", "\u2028": "\\u2028", "\u2029": "\\u2029"}
+
+
+def _ndjson_line(resource: Dict[str, Any]) -> str:
+    """One compact JSON line for `resource`, with every Unicode line break escaped."""
+    line = json.dumps(resource, ensure_ascii=False, separators=(",", ":"))
+    for char, escaped in _LINE_BREAKS.items():
+        line = line.replace(char, escaped)
+    return line
+
+
 def write_registry(entries: Iterable[RegistryEntry], path: Path) -> int:
     """Write `entries` as gzipped NDJSON, one Organization per line; return the count.
 
@@ -226,13 +239,7 @@ def write_registry(entries: Iterable[RegistryEntry], path: Path) -> int:
         with gzip.GzipFile(filename="", mode="wb", fileobj=raw, mtime=0) as gz:
             with io.TextIOWrapper(gz, encoding="utf-8", newline="\n") as out:
                 for entry in entries:
-                    out.write(
-                        json.dumps(
-                            to_organization(entry),
-                            ensure_ascii=False,
-                            separators=(",", ":"),
-                        )
-                    )
+                    out.write(_ndjson_line(to_organization(entry)))
                     out.write("\n")
                     count += 1
     return count

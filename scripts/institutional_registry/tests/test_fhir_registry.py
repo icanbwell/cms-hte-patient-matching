@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import gzip
 import re
 from pathlib import Path
 from typing import Any, Dict
@@ -150,6 +151,21 @@ def test_written_file_round_trips_and_is_byte_reproducible(tmp_path: Path) -> No
     fr.write_registry([ENTRY, other], second)
     assert first.read_bytes() == second.read_bytes()
     assert list(fr.read_registry(first)) == [ENTRY, other]
+
+
+def test_unicode_line_breaks_cannot_split_a_record(tmp_path: Path) -> None:
+    tricky = fr.RegistryEntry(
+        **{**ENTRY.__dict__, "name": "Home\u2028for\u2029Elders\u0085"}  # type: ignore[arg-type]
+    )
+    path = tmp_path / "x.ndjson.gz"
+    fr.write_registry([tricky, ENTRY], path)
+    with gzip.open(path, "rt", encoding="utf-8") as f:
+        assert (
+            len(f.read().splitlines()) == 2
+        )  # one line per resource, even for splitlines()
+    assert (
+        next(fr.read_registry(path)).name == tricky.name
+    )  # the text itself is preserved
 
 
 def test_resource_validates_against_the_fhir_r4_model() -> None:
