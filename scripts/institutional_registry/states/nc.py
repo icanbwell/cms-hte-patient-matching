@@ -34,6 +34,7 @@ _HEADER_ROW = 2
 
 
 def fetch(session: Session) -> List[Dict[str, str]]:
+    """Return this state's facility rows in the shape defined by common.make_row."""
     out: List[Dict[str, str]] = []
     for url, license_type in _LISTS:
         records = sheet_dicts(read_xlsx(session.get(url)), header_row=_HEADER_ROW)

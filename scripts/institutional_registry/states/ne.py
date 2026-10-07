@@ -38,6 +38,7 @@ def _zip(value: object) -> str:
 
 
 def fetch(session: Session) -> List[Dict[str, str]]:
+    """Return this state's facility rows in the shape defined by common.make_row."""
     try:
         rows = arcgis_query(session, _PRIMARY)
     except RuntimeError:

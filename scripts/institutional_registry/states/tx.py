@@ -28,6 +28,7 @@ SOURCE = "https://apps.hhs.texas.gov/providers/directories/AL.xlsx"
 
 
 def fetch(session: Session) -> List[Dict[str, str]]:
+    """Return this state's facility rows in the shape defined by common.make_row."""
     records = sheet_dicts(read_xlsx(session.get(SOURCE)), header_row=1)
     if not records or "Physical Address" not in records[0]:
         raise RuntimeError(f"TX: unexpected layout (header row 1) in {SOURCE}")

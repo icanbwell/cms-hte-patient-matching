@@ -25,6 +25,7 @@ KEEP_LEVELS = {"ALF", "ALF**", "RCF", "RCF*"}
 
 
 def fetch(session: Session) -> List[Dict[str, str]]:
+    """Return this state's facility rows in the shape defined by common.make_row."""
     data = socrata_rows(session, SOURCE)
     if data and "level_of_care" not in data[0]:
         raise RuntimeError("MO: level_of_care column missing; dataset schema changed")

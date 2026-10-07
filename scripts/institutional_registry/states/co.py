@@ -31,6 +31,7 @@ SOURCE = (
 
 
 def fetch(session: Session) -> List[Dict[str, str]]:
+    """Return this state's facility rows in the shape defined by common.make_row."""
     rows = []
     for r in arcgis_query(session, SOURCE, "Facility_Type='Assisted Living Residence'"):
         addr = split_address(r.get("Address_Full") or "")

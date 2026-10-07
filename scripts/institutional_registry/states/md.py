@@ -20,6 +20,7 @@ SOURCE = "https://opendata.maryland.gov/resource/i48m-922u.json"
 
 
 def fetch(session: Session) -> List[Dict[str, str]]:
+    """Return this state's facility rows in the shape defined by common.make_row."""
     return [
         make_row(
             STATE,

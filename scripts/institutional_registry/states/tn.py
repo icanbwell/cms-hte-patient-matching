@@ -150,6 +150,7 @@ def _fetch_type(session: Session, code: str) -> List[Dict[str, str]]:
 
 
 def fetch(session: Session) -> List[Dict[str, str]]:
+    """Return this state's facility rows in the shape defined by common.make_row."""
     rows: List[Dict[str, str]] = []
     for code in _TYPES:
         rows += _fetch_type(session, code)

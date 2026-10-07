@@ -49,6 +49,7 @@ def _candidate_urls(today: datetime.date) -> List[str]:
 
 
 def fetch(session: Session) -> List[Dict[str, str]]:
+    """Return this state's facility rows in the shape defined by common.make_row."""
     global resolved_url
     data = None
     errors = []

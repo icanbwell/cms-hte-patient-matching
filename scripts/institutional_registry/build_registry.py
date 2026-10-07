@@ -626,6 +626,18 @@ def build() -> List[Dict[str, str]]:
             ).append(r)
         else:
             dropped[r.source] = dropped.get(r.source, 0) + 1
+    status_path = DEST / "state_lists_status.json"
+    if status_path.exists():
+        failed = sorted(
+            code
+            for code, s in json.loads(status_path.read_text()).items()
+            if not s["ok"]
+        )
+        if failed:  # a failed state keeps its previous file, so its data may be stale
+            print(
+                f"warning: the last download did not update {', '.join(failed)}; "
+                "using older files (reasons in state_lists_status.json)"
+            )
     if dropped:  # rows with no street or no 5-digit ZIP can't be matched, so say so
         detail = ", ".join(f"{s} {n}" for s, n in sorted(dropped.items()))
         print(

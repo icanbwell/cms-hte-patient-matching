@@ -103,6 +103,7 @@ def _from_cards(page: str) -> List[Dict[str, str]]:
 
 
 def fetch(session: Session) -> List[Dict[str, str]]:
+    """Return this state's facility rows in the shape defined by common.make_row."""
     page = session.get_text(SOURCE)
     try:
         rows = _from_json(page)

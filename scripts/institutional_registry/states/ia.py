@@ -78,6 +78,7 @@ def _fetch_type(session: Session, type_val: str, minimum: int) -> List[Dict[str,
 
 
 def fetch(session: Session) -> List[Dict[str, str]]:
+    """Return this state's facility rows in the shape defined by common.make_row."""
     rows: List[Dict[str, str]] = []
     for type_val, minimum in _TYPE_VALS.items():
         for r in _fetch_type(session, type_val, minimum):

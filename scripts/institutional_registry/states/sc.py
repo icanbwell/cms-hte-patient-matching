@@ -27,6 +27,7 @@ SOURCE = (
 
 
 def fetch(session: Session) -> List[Dict[str, str]]:
+    """Return this state's facility rows in the shape defined by common.make_row."""
     rows = arcgis_query(
         session,
         SOURCE,

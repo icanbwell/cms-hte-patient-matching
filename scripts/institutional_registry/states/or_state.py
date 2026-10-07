@@ -52,6 +52,7 @@ _EXPECTED_COLUMNS = {
 
 
 def fetch(session: Session) -> List[Dict[str, str]]:
+    """Return this state's facility rows in the shape defined by common.make_row."""
     html = session.get_text(_PAGE)
     token = re.search(r'name="__RequestVerificationToken"[^>]*value="([^"]+)"', html)
     size = re.search(r'name="PageSize"[^>]*value="(\d+)"', html) or re.search(

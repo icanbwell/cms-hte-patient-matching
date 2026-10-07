@@ -41,6 +41,7 @@ def _find_xlsx_url(session: Session) -> str:
 
 
 def fetch(session: Session) -> List[Dict[str, str]]:
+    """Return this state's facility rows in the shape defined by common.make_row."""
     url = _find_xlsx_url(session)
     records = sheet_dicts(
         read_xlsx(session.get(url)), header_row=2

@@ -80,6 +80,7 @@ def _body(fed_code: str) -> Dict[str, Any]:
 
 
 def fetch(session: Session) -> List[Dict[str, str]]:
+    """Return this state's facility rows in the shape defined by common.make_row."""
     session.get_text(_PAGE)  # cookie
     rows: List[Dict[str, str]] = []
     for fed_code, minimum in _FED_CODES.items():

@@ -39,6 +39,7 @@ def _zip(value: object) -> str:
 
 
 def fetch(session: Session) -> List[Dict[str, str]]:
+    """Return this state's facility rows in the shape defined by common.make_row."""
     where = "TYPE IN (" + ",".join(f"'{t}'" for t in _TYPES) + ")"
     return [
         make_row(

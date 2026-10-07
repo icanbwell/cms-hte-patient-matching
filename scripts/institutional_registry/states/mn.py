@@ -30,6 +30,7 @@ SOURCE = (
 
 
 def fetch(session: Session) -> List[Dict[str, str]]:
+    """Return this state's facility rows in the shape defined by common.make_row."""
     text = session.get_text(SOURCE).lstrip("﻿")
     if not text.startswith('"hfid"'):
         raise RuntimeError("MN provider CSV did not return the expected header")

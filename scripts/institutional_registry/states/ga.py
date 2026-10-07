@@ -35,6 +35,7 @@ KEEP_TYPES = {"PERSONAL CARE HOME", "ASSISTED LIVING COMMUNITY"}
 
 
 def fetch(session: Session) -> List[Dict[str, str]]:
+    """Return this state's facility rows in the shape defined by common.make_row."""
     raw = session.get(SOURCE)
     try:
         root = safe_fromstring(raw)

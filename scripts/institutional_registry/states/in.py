@@ -66,6 +66,7 @@ class _Providers(HTMLParser):
 
 
 def fetch(session: Session) -> List[Dict[str, str]]:
+    """Return this state's facility rows in the shape defined by common.make_row."""
     page = session.get_text(SOURCE)
     parser = _Providers()
     parser.feed(page)

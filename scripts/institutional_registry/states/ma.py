@@ -27,6 +27,7 @@ _TYPES = {"ALR": "Assisted Living Residence", "RH": "Rest Home"}
 
 
 def fetch(session: Session) -> List[Dict[str, str]]:
+    """Return this state's facility rows in the shape defined by common.make_row."""
     rows = arcgis_query(session, SOURCE, "FAC_TYPE IN ('ALR','RH')", page_size=2000)
     return [
         make_row(

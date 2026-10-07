@@ -233,12 +233,15 @@ def fetch_hifld_prisons() -> None:
     url = hifld_parquet_url("Prison Boundaries")
     con = duckdb.connect()
     con.execute("install httpfs; load httpfs")
+    # `url` comes from a remote catalog, so it is bound as a parameter, not interpolated. The
+    # COPY target can't be a parameter in DuckDB; it is a program constant.
     con.execute(
         f"""copy (
             select FACILITYID, NAME, ADDRESS, CITY, STATE, ZIP, TYPE, STATUS, CAPACITY,
                    SOURCEDATE
-            from read_parquet('{url}')
-        ) to '{DEST / "hifld_prisons.csv"}' (format csv, header)"""
+            from read_parquet(?)
+        ) to '{DEST / "hifld_prisons.csv"}' (format csv, header)""",
+        [url],
     )
     _record("hifld_prisons.csv", url)
     print("hifld_prisons: ok")
@@ -480,18 +483,21 @@ def fetch_overture() -> None:
     con = duckdb.connect()
     con.execute("install httpfs; load httpfs; set s3_region='us-west-2'")
     path = f"s3://overturemaps-us-west-2/release/{release}/theme=places/type=place/*"
-    cats = ", ".join(f"'{c}'" for c in OVERTURE_CATEGORIES)
+    placeholders = ", ".join("?" for _ in OVERTURE_CATEGORIES)
+    # The release name comes from a remote bucket listing, so it and the category names are
+    # bound as parameters. The COPY target can't be a parameter; it is a program constant.
     con.execute(
         f"""copy (
             select id, struct_extract(names, 'primary') as name,
                    struct_extract(taxonomy, 'primary') as category, confidence,
                    addresses[1].freeform as street, addresses[1].locality as city,
                    addresses[1].region as state, addresses[1].postcode as zip,
-                   '{release}' as release
-            from read_parquet('{path}')
+                   cast(? as varchar) as release
+            from read_parquet(?)
             where addresses[1].country = 'US'
-              and struct_extract(taxonomy, 'primary') in ({cats})
-        ) to '{DEST / "overture_gq.csv"}' (format csv, header)"""
+              and struct_extract(taxonomy, 'primary') in ({placeholders})
+        ) to '{DEST / "overture_gq.csv"}' (format csv, header)""",
+        [release, path, *OVERTURE_CATEGORIES],
     )
     _record("overture_gq.csv", path)
     print(f"overture: release {release} ok")

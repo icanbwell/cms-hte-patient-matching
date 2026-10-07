@@ -126,6 +126,7 @@ def _split_address(full: str) -> Dict[str, str]:
 
 
 def fetch(session: Session) -> List[Dict[str, str]]:
+    """Return this state's facility rows in the shape defined by common.make_row."""
     del session  # requests go through curl (see module docstring)
     with tempfile.TemporaryDirectory() as tmp:
         jar = Path(tmp) / "cookies.txt"
