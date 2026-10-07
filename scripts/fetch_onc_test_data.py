@@ -58,8 +58,8 @@ def resolve_commit(tag: str) -> str:
         raise RuntimeError(f"git ls-remote {REPO_URL} failed: {result.stderr.strip()}")
     shas = {}
     for line in result.stdout.splitlines():
-        sha, ref = line.split("\t")
-        shas[ref] = sha
+        line_sha, ref = line.split("\t")
+        shas[ref] = line_sha
     sha = shas.get(f"refs/tags/{tag}^{{}}") or shas.get(f"refs/tags/{tag}")
     if not sha:
         raise RuntimeError(f"Tag {tag!r} not found in {SOURCE_REPO}")
@@ -123,10 +123,7 @@ def main() -> None:
     DEST_DIR.mkdir(parents=True, exist_ok=True)
     for filename in FILES:
         fetch(filename, commit, tag)
-    print(
-        f"Done. Fetched {len(FILES)} files from {tag!r} ({commit}) "
-        f"into {DEST_DIR}"
-    )
+    print(f"Done. Fetched {len(FILES)} files from {tag!r} ({commit}) into {DEST_DIR}")
 
 
 if __name__ == "__main__":

@@ -72,7 +72,9 @@ def test_fetch_passes_safety_flags_and_correct_url_to_curl(
         == fetch_onc_test_data.CURL_RETRY_DELAY_SECONDS
     )
     assert cmd[cmd.index("--max-time") + 1] == fetch_onc_test_data.CURL_MAX_TIME_SECONDS
-    assert cmd[-1] == f"{fetch_onc_test_data.base_url(COMMIT)}/sample_labeled_pairs.jsonl"
+    assert (
+        cmd[-1] == f"{fetch_onc_test_data.base_url(COMMIT)}/sample_labeled_pairs.jsonl"
+    )
     assert cmd[cmd.index("--output") + 1] == str(
         tmp_path / "sample_labeled_pairs.jsonl"
     )
