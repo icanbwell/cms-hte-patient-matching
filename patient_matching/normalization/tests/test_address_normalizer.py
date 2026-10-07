@@ -33,7 +33,7 @@ class TestAddressNormalizer:
         patient = {
             "address": [
                 {
-                    "line": ["123 Main St"],
+                    "line": ["456 Oak St"],
                     "city": "Portland",
                     "state": "OR",
                     "postalCode": "972011234",
@@ -66,7 +66,7 @@ class TestAddressNormalizer:
                     "state": "IL",
                 },
                 {
-                    "line": ["123 Main St"],
+                    "line": ["456 Oak St"],
                     "city": "Springfield",
                     "state": "IL",
                 },

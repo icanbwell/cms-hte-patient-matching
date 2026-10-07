@@ -208,7 +208,9 @@ class NameNormalizer:
         primary_given = norm_given[0] if norm_given else ""
         full_name = f"{primary_given}{norm_family}"
 
-        given_reason = self._placeholders.reason_for_name(primary_given)
+        given_reason = self._placeholders.reason_for_name(
+            primary_given, allow_initial=True
+        )
         family_reason = self._placeholders.reason_for_name(norm_family)
         if given_reason is not None and family_reason is not None:
             if report is not None:
@@ -227,6 +229,16 @@ class NameNormalizer:
             norm_given = []
             primary_given = ""
             full_name = norm_family
+
+        # A placeholder family name ("Unknown", "ZZZ") with a real given name is treated as
+        # absent, symmetric to the given-name case above. "Doe" alone is not a placeholder:
+        # the spec lists it only paired with a generic "John"/"Jane", which the combined
+        # given+family check below catches.
+        elif family_reason is not None and norm_family != "doe":
+            if report is not None and family:
+                report.record(f"name[{index}].family", family, family_reason)
+            norm_family = ""
+            full_name = primary_given
 
         full_name_reason = (
             self._placeholders.reason_for_name(full_name) if full_name else None

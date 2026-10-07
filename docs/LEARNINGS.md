@@ -325,3 +325,30 @@ numbers but needed a new release and pin bump and would not help real data.)
 **Where this could still bite:** `is_valid_number` is a strict "real line" check; for identifier
 matching a weaker "well-formed" check is usually the right bar — keep that distinction in mind for
 any other field validated through a library that checks assignment, not shape.
+
+## The §V.D placeholder table had gaps; one example is deliberately not implemented
+
+Feeding every example from the spec's placeholder table through `NormalizationManager` and
+`FieldExtractor` (positive controls included) found 29 of 88 cases surviving as matchable values.
+Closed: SSN/ITIN last four `0000`/`9999`/`1234`/repeated digits (the old SSN patterns only looked at
+a full SSN, so the last four the engine actually uses were never checked); phone numbers in the
+`555` exchange; DOB `2000-01-01` and the other default-fill dates by name; `unknown@…` emails;
+`123 Main St` (only when there is no unit) and `PO Box 0`; ZIP `00000`/`99999`; names `TBD`/`None`
+and repeated characters (`ZZZ`); and a placeholder *family* name with a real given name (the
+normalizer only handled the reverse). `TABLE_VERSION` is `1.1.0`.
+
+**Not implemented: single-character given names.** Spec V.D lists `"X"`-style single characters as
+placeholder names. Applied to given names it drops initial-only first names (`L.`), which cost 194
+ONC pairs-tier true matches (recall 0.9516 → 0.9374, below the 0.95 floor) and which the ranked
+accuracy levers (BAI-1061) want to *match*, not discard. `reason_for_name(..., allow_initial=True)` keeps
+them for given names; a single-character family name is still a placeholder. This needs a
+project-lead decision if the spec's wording is to be followed literally.
+
+**Cost of the rest:** the `555` exchange rule drops 4 ONC pairs (recall 0.9516 → 0.9513; population
+0.9515 → 0.9513). Not implemented (no data): a DOB equal to the record's registration date, and
+`123 Main St` "accompanied by a real city match".
+
+**Where this could still bite:** test fixtures that use `555` phones, `123 Main St` or a 2000-01-01
+birth date as "real" sample values now normalize to nothing; use values outside the spec table.
+An attribution run (enable one group at a time against the ONC pairs tier) is the fast way to find
+which new placeholder rule costs recall.

@@ -85,7 +85,9 @@ class AddressNormalizer:
 
         # Check for placeholder addresses (D.5)
         if line1:
-            reason = self._placeholders.reason_for_address(line1)
+            reason = self._placeholders.reason_for_address(
+                line1, has_unit=bool(line2.strip())
+            )
             if reason is not None:
                 if report is not None:
                     report.record(f"address[{index}].line[0]", line1, reason)
@@ -99,6 +101,14 @@ class AddressNormalizer:
         norm_city = normalize_text(city, preserve_spaces=True) if city else ""
         norm_state = normalize_text(state, preserve_spaces=True) if state else ""
         norm_postal = _normalize_postal_code(postal_code)
+        # A placeholder ZIP (00000, 99999) is treated as absent; the rest of the address stays.
+        postal_reason = self._placeholders.reason_for_postal_code(postal_code)
+        if postal_reason is not None:
+            if report is not None:
+                report.record(
+                    f"address[{index}].postalCode", postal_code, postal_reason
+                )
+            norm_postal = ""
 
         # If everything is empty after normalization, skip
         if not any([normalized_line1, norm_city, norm_state, norm_postal]):

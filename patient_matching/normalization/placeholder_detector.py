@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import FrozenSet, List, Optional, Pattern
 
-TABLE_VERSION = "1.0.0"
+TABLE_VERSION = "1.1.0"
 
 # D.4: Newborn temporary names
 _NEWBORN_NAMES: FrozenSet[str] = frozenset(
@@ -113,6 +113,29 @@ _PLACEHOLDER_NAME_PATTERNS: List[Pattern[str]] = [
     re.compile(r"^\.+$"),
 ]
 
+# Spec V.D, Date of Birth: default-fill dates. Dates before (current year - 120) are
+# already rejected by the range check; they are listed so the reason is explicit.
+_PLACEHOLDER_DATES: FrozenSet[str] = frozenset(
+    {
+        "1800-01-01",
+        "1900-01-01",
+        "1901-01-01",
+        "2000-01-01",
+        "1111-11-11",
+        "0001-01-01",
+    }
+)
+
+# Spec V.D, SSN / ITIN Last 4.
+_PLACEHOLDER_LAST4: FrozenSet[str] = frozenset({"0000", "9999", "1234"})
+_REPEATED_DIGITS = re.compile(r"^(\d)\1{3}$")
+
+# Spec V.D, Phone: "any number in the 555 exchange" (NXX = 555 of a 10-digit NANP number).
+_NANP_555_EXCHANGE = re.compile(r"^1?\d{3}555\d{4}$")
+
+# Spec V.D, First / Last Name: single-character or repeated-character strings ("X", "ZZZ").
+_REPEATED_CHARACTER = re.compile(r"^(.)\1{2,}$")
+
 _PLACEHOLDER_PHONE_PATTERNS: List[Pattern[str]] = [
     re.compile(r"^0{7,}$"),
     re.compile(r"^1{10}$"),
@@ -132,7 +155,11 @@ _PLACEHOLDER_SSN_PATTERNS: List[Pattern[str]] = [
     re.compile(r"^(\d)\1{2}-\1{2}-\1{4}$"),
 ]
 
+# Spec V.D, Street Address: "123 Main St" only counts as a placeholder when it is not
+# accompanied by a real unit; "PO Box 0" always does.
+_GENERIC_STREET = re.compile(r"^123\s+main\s+(st|street)\.?$", re.IGNORECASE)
 _PLACEHOLDER_ADDRESS_PATTERNS: List[Pattern[str]] = [
+    re.compile(r"^p\.?\s*o\.?\s*box\s+0+$", re.IGNORECASE),
     re.compile(r"^unknown", re.IGNORECASE),
     re.compile(r"^(homeless|no\s*(fixed\s*)?address)", re.IGNORECASE),
     re.compile(r"^general\s*delivery$", re.IGNORECASE),
@@ -145,7 +172,11 @@ _PLACEHOLDER_EMAIL_PATTERNS: List[Pattern[str]] = [
         r"^(test|noreply|no-reply|donotreply|nobody|null|none|fake)", re.IGNORECASE
     ),
     re.compile(r"@(example\.com|test\.com|invalid|nowhere)$", re.IGNORECASE),
+    re.compile(r"^unknown@", re.IGNORECASE),
 ]
+
+# Spec V.D, Street Address: ZIP 00000 or 99999.
+_PLACEHOLDER_ZIPS: FrozenSet[str] = frozenset({"00000", "99999"})
 
 # v3.3.4: all-zero/all-nine strings, and common payer default/test-enrollment
 # values ("PENDING", "TBD", "NONE") for Subscriber/Member IDs.
@@ -169,12 +200,21 @@ class PlaceholderDetector:
         """Check if a name value is a placeholder (D.4)."""
         return self.reason_for_name(name) is not None
 
-    def reason_for_name(self, name: str) -> Optional[str]:
+    def reason_for_name(
+        self, name: str, *, allow_initial: bool = False
+    ) -> Optional[str]:
         """Why a name value would be treated as a placeholder (D.4), or
         None if it isn't one.
 
+        `allow_initial` keeps a single character from counting as a placeholder. Spec V.D
+        lists single-character strings ("X") as placeholder names, but an initial in a
+        given-name position ("L." for "Lureane") is a legitimate abbreviation the matching
+        rules are being extended to use (BAI-1061 levers), and treating it as absent costs
+        ONC pairs-tier recall 0.9516 -> 0.9374. Callers pass True for given names.
+
         Reason codes: "empty", "newborn_temp_name", "unidentified_name",
-        "test_name", "placeholder_pattern".
+        "test_name", "unknown_placeholder", "single_or_repeated_character",
+        "placeholder_pattern".
         """
         if not name:
             return "empty"
@@ -187,6 +227,12 @@ class PlaceholderDetector:
             return "unidentified_name"
         if stripped in _TEST_NAMES:
             return "test_name"
+        if stripped in _UNKNOWN_PLACEHOLDERS:
+            return "unknown_placeholder"
+        if (len(stripped) == 1 and not allow_initial) or _REPEATED_CHARACTER.match(
+            stripped
+        ):
+            return "single_or_repeated_character"
 
         for pattern in _PLACEHOLDER_NAME_PATTERNS:
             if pattern.search(name):
@@ -206,14 +252,16 @@ class PlaceholderDetector:
         """Why a date of birth would be treated as unavailable (D.6), or
         None if it's usable.
 
-        Reason codes: "empty", "unknown_placeholder", "unparseable",
-        "out_of_range".
+        Reason codes: "empty", "unknown_placeholder", "placeholder_date",
+        "unparseable", "out_of_range".
         """
         if not date_str:
             return "empty"
 
         if date_str.lower() in _UNKNOWN_PLACEHOLDERS:
             return "unknown_placeholder"
+        if date_str in _PLACEHOLDER_DATES:
+            return "placeholder_date"
 
         try:
             parsed = date.fromisoformat(date_str)
@@ -237,7 +285,8 @@ class PlaceholderDetector:
         """Why a phone number would be treated as a placeholder, or None
         if it isn't one.
 
-        Reason codes: "empty", "no_digits", "placeholder_pattern". Does
+        Reason codes: "empty", "no_digits", "placeholder_pattern",
+        "placeholder_555_exchange". Does
         not cover format/validity rejections (unparseable, not a valid
         number) -- those are PhoneNormalizer's responsibility, since they
         depend on the `phonenumbers` library, not this placeholder table.
@@ -252,18 +301,28 @@ class PlaceholderDetector:
         for pattern in _PLACEHOLDER_PHONE_PATTERNS:
             if pattern.match(digits):
                 return "placeholder_pattern"
+        if _NANP_555_EXCHANGE.match(digits):
+            return "placeholder_555_exchange"
 
         return None
 
-    def is_placeholder_address(self, address_line: str) -> bool:
+    def is_placeholder_address(
+        self, address_line: str, *, has_unit: bool = False
+    ) -> bool:
         """Check if an address value is a placeholder."""
-        return self.reason_for_address(address_line) is not None
+        return self.reason_for_address(address_line, has_unit=has_unit) is not None
 
-    def reason_for_address(self, address_line: str) -> Optional[str]:
+    def reason_for_address(
+        self, address_line: str, *, has_unit: bool = False
+    ) -> Optional[str]:
         """Why an address line would be treated as a placeholder, or None
         if it isn't one.
 
-        Reason codes: "empty", "unknown_placeholder", "placeholder_pattern".
+        `has_unit` says the address also carries a unit (address line 2): "123 Main St"
+        is only a placeholder when it is not accompanied by one (spec V.D).
+
+        Reason codes: "empty", "unknown_placeholder", "placeholder_pattern",
+        "generic_street".
         """
         if not address_line:
             return "empty"
@@ -271,11 +330,21 @@ class PlaceholderDetector:
         stripped = address_line.strip()
         if stripped.lower() in _UNKNOWN_PLACEHOLDERS:
             return "unknown_placeholder"
+        if not has_unit and _GENERIC_STREET.match(stripped):
+            return "generic_street"
 
         for pattern in _PLACEHOLDER_ADDRESS_PATTERNS:
             if pattern.search(stripped):
                 return "placeholder_pattern"
 
+        return None
+
+    def reason_for_postal_code(self, postal_code: str) -> Optional[str]:
+        """Why a postal code would be treated as a placeholder (spec V.D: ZIP 00000
+        or 99999), or None if it isn't one. Reason code: "placeholder_zip"."""
+        digits = re.sub(r"\D", "", postal_code or "")
+        if digits[:5] in _PLACEHOLDER_ZIPS and len(digits) in (5, 9):
+            return "placeholder_zip"
         return None
 
     def is_placeholder_email(self, email: str) -> bool:
@@ -314,6 +383,16 @@ class PlaceholderDetector:
             if pattern.match(ssn):
                 return "placeholder_pattern"
 
+        return None
+
+    def reason_for_ssn_last4(self, last4: str) -> Optional[str]:
+        """Why the last four digits of an SSN or ITIN would be treated as a placeholder
+        (spec V.D: 0000, 9999, 1234, repeated digits), or None if they aren't.
+
+        Reason code: "placeholder_last4".
+        """
+        if last4 in _PLACEHOLDER_LAST4 or _REPEATED_DIGITS.match(last4):
+            return "placeholder_last4"
         return None
 
     def is_placeholder_subscriber_id(self, value: str) -> bool:

@@ -119,8 +119,8 @@ def test_main_reports_engine_false_positive_removed_by_new_version(
     # labeled as a sibling non-match this is a false positive.
     same_person_like = {
         "case_id": "900001::900002::sibling",
-        "source": _patient("900001", "ALPHA", "2000-01-01"),
-        "target": _patient("900002", "ALPHA", "2000-01-01"),
+        "source": _patient("900001", "ALPHA", "2000-03-14"),
+        "target": _patient("900002", "ALPHA", "2000-03-14"),
         "expected_match": False,
         "rationale": "sibling_negative (age_gap_years=0)",
     }
