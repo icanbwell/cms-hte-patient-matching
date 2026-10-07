@@ -199,7 +199,7 @@ def fetch_bop() -> None:
 
 
 def fetch_assisted_living() -> None:
-    """Princeton open dataset of state-licensed assisted living facilities (CC BY 4.0, 2021)."""
+    """Princeton open dataset of state-licensed assisted living facilities (2021; no license stated)."""
     _save(ALF_URL, "assisted_living.csv", timeout=120)
     print("assisted_living: ok (state licensing data accessed 2021 -- stale)")
 

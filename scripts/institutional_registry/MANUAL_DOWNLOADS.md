@@ -45,7 +45,7 @@ as I checked:
 | Source | Terms |
 |---|---|
 | CMS (Care Compare, POS), NCES IPEDS, Federal Bureau of Prisons | US government public data |
-| Princeton assisted-living dataset | CC BY 4.0: credit "Assisted Living in the United States: an Open Dataset" (A. Stengel, Princeton) |
+| Princeton assisted-living dataset | No license stated (the CC BY 4.0 on the paper's arXiv page covers the paper, not the data); compiled from state public records. Cite "Assisted Living in the United States: an Open Dataset" as a courtesy |
 | HIFLD Prison Boundaries (HIFLD Next archive) | The catalog lists the license as "other"; **not confirmed** |
 | Prison Policy Initiative facility lists | No terms stated on the site; **not confirmed** |
 | Overture Maps places | Varies by contributing source; **not checked** (see the Overture docs) |
