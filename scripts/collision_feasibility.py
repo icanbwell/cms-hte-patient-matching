@@ -273,14 +273,18 @@ def rule_views() -> List[RuleView]:
     return views
 
 
-def _overrides(rule: RuleView, levers: Iterable[str]) -> Dict[str, str]:
+def _overrides(
+    rule: RuleView, levers: Iterable[str], mult: Multipliers
+) -> Dict[str, str]:
     """field -> widening id, taking the larger multiplier if two levers hit one field."""
     out: Dict[str, str] = {}
     for key in levers:
         lever = LEVERS[key]
         for field, wid in lever.field_to_widening.items():
-            if lever.applies(rule, field):
-                out.setdefault(field, wid)
+            if not lever.applies(rule, field):
+                continue
+            if field not in out or mult.multiplier(wid) > mult.multiplier(out[field]):
+                out[field] = wid
     return out
 
 
@@ -288,7 +292,7 @@ def p_collision(
     rule: RuleView, levers: Iterable[str], mult: Multipliers, basis: str
 ) -> float:
     """P(collision) of `rule` with `levers` applied, on `basis`."""
-    over = _overrides(rule, levers)
+    over = _overrides(rule, levers, mult)
     if basis == "scaled_conservative":
         p = max(rule.p_exact, rule.p_fuzzy)
         for field, wid in over.items():
@@ -382,7 +386,7 @@ def feasibility_report(mult: Multipliers) -> Dict[str, Any]:
     for basis in BASES:
         report["single"][basis] = {}
         for key in LEVERS:
-            applicable = [r for r in rules if _overrides(r, [key])]
+            applicable = [r for r in rules if _overrides(r, [key], mult)]
             ok = [
                 r.rule_id
                 for r in applicable

@@ -115,3 +115,13 @@ def test_assign_falls_back_to_a_single_lever_when_both_do_not_fit(
     )
     assert len(assigned["02"]) == 1
     assert assigned["02"][0] == "dob_dl1_all"  # first in the combo's priority order
+
+
+def test_two_levers_on_one_field_take_the_larger_multiplier(mult: Multipliers, rules):
+    # Rule 01 has a fuzzy-eligible first name: initial (x50) and min4 (x1.1) both target it.
+    from scripts.collision_feasibility import _overrides
+
+    got = _overrides(rules["01"], ["min4", "initial_all"], mult)
+    assert got["first_name"] == "initial"
+    got = _overrides(rules["01"], ["initial_all", "min4"], mult)
+    assert got["first_name"] == "initial"  # order must not matter

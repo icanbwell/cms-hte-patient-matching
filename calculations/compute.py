@@ -495,6 +495,19 @@ def _parse_dob_digits(s: str) -> date | None:
         return None
 
 
+def _one_digit_edit_dates(s: str) -> set[date]:
+    """Valid dates one edit from the 8-digit YYYYMMDD string `s`: one digit replaced,
+    or two adjacent different digits swapped."""
+    candidates = [
+        s[:i] + c + s[i + 1 :] for i in range(8) for c in "0123456789" if c != s[i]
+    ]
+    candidates += [
+        s[:i] + s[i + 1] + s[i] + s[i + 2 :] for i in range(7) if s[i] != s[i + 1]
+    ]
+    parsed = (_parse_dob_digits(t) for t in candidates)
+    return {d for d in parsed if d is not None}
+
+
 def dob_neighbors(d: date, variant: str) -> set[date]:
     """Dates (other than `d`) that count as a DOB match under `variant`.
 
@@ -517,18 +530,7 @@ def dob_neighbors(d: date, variant: str) -> set[date]:
         if swapped is not None:
             out.add(swapped)
     if variant == "dl1":
-        s = _dob_digits(d)
-        for i in range(8):
-            for c in "0123456789":
-                if c != s[i]:
-                    n = _parse_dob_digits(s[:i] + c + s[i + 1 :])
-                    if n is not None:
-                        out.add(n)
-        for i in range(7):
-            if s[i] != s[i + 1]:
-                n = _parse_dob_digits(s[:i] + s[i + 1] + s[i] + s[i + 2 :])
-                if n is not None:
-                    out.add(n)
+        out.update(_one_digit_edit_dates(_dob_digits(d)))
     out.discard(d)
     return out
 
