@@ -70,8 +70,8 @@ Current build: **155,534 resources**.
 
 | `match_policy` | `institution_type` (rows) |
 |---|---|
-| `block_household_rules` (94,494) | assisted_living 61,524; nursing_home 14,792; correctional 7,907; hospital 4,774; homeless_shelter 3,828; halfway_house 767; psychiatric_hospital 624; federal_correctional 273; long_term_hospital 5 |
-| `review` (60,986) | senior_living 48,941; hospice 6,051; higher_education_campus 5,994 |
+| `block_household_rules` (94,507) | assisted_living 61,535; nursing_home 14,792; correctional 7,907; hospital 4,774; homeless_shelter 3,828; halfway_house 767; psychiatric_hospital 624; federal_correctional 275; long_term_hospital 5 |
+| `review` (61,027) | senior_living 48,941; hospice 6,092; higher_education_campus 5,994 |
 
 `match_policy` is a default this spike chose, not something the proposal specifies (`MATCH_POLICY`
 in `build_registry.py`). **`block_household_rules`** means the address must not be used as a
