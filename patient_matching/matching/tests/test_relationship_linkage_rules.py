@@ -63,7 +63,7 @@ def _guardian_child_patient(
         "resourceType": "Patient",
         "name": [{"given": [first]}],
         "birthDate": dob,
-        "address": [{"line": [street]}],
+        "address": [{"line": [street], "postalCode": "10001"}],
         "telecom": [],
         "identifier": [_identifier("CMS-GRDN", guardian_id)],
     }

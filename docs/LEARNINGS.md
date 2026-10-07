@@ -325,3 +325,29 @@ numbers but needed a new release and pin bump and would not help real data.)
 **Where this could still bite:** `is_valid_number` is a strict "real line" check; for identifier
 matching a weaker "well-formed" check is usually the right bar — keep that distinction in mind for
 any other field validated through a library that checks assignment, not shape.
+
+## Street Line is address line 1 plus an exact ZIP5, not every address line
+
+CMS v3.4.0 Table 3 defines Street Line as "street line and ZIP standardized; ZIP must remain
+exact." The engine put every address line (line 1 and the unit in line 2) into one set and
+intersected the text, so it linked two records on a shared unit (`apt 2`) in different buildings,
+and on identical street text in different ZIPs. Verified through `NormalizationManager` and
+`MatchingEngine`, with a positive control. Fixed in `field_extractor.py`: each address emits one
+`"<line 1>|<ZIP5>"` value (nothing without a 5-digit ZIP, nothing for a line that is only a unit),
+`zip_codes` is ZIP5 so ZIP+4 matches ZIP5, and `FieldComparator.street_line_fuzzy_*` fuzzes the
+line only (Damerau-Levenshtein <= 1, >= 5 characters) with the ZIP held exact.
+
+**Effect on the ONC population tier:** 2 of 87,747 pairs flip, recall 0.9515 → 0.9513. Both are
+labeled matches whose records have a street line and a blank ZIP, so they linked on street text
+alone before. By the spec's own wording a blank ZIP cannot be "exact", so they no longer link; it
+is a decision for the project lead whether to carve out "both ZIPs blank".
+
+**Why it is usually invisible:** Phone + Street Line (C2-37) is largely subsumed by rule 11
+(First Name + DOB + Phone), which needs no address, so a test that gives two records a shared phone
+passes through rule 11 and never exercises Street Line. Test Street Line through rule 01
+(First* + Last* + DOB* + Street Line*) with no phone, email or ID on either record.
+
+**Where this could still bite:** (1) a persisted DuckDB or Mongo cache holds the old bare
+street text and must be rebuilt (old values never match the new ones). (2) Any address stored
+without a ZIP now has no Street Line at all, so rules 01 and H-14 / C2-37 / C2-39 cannot use it.
+(3) Normalizers that leave a unit in line 1 (stacked designators) still put it in the value.

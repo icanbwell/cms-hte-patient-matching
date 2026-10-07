@@ -22,7 +22,7 @@ def _patient(
         "id": pid,
         "name": [{"given": [given], "family": family}],
         "birthDate": dob,
-        "address": [{"line": [street]}],
+        "address": [{"line": [street], "postalCode": "10001"}],
     }
 
 

@@ -36,8 +36,8 @@ def full_patient() -> Dict[str, Any]:
             {"system": "phone", "value": "+12125559999"},
         ],
         "address": [
-            {"line": ["123 main st", "apt 4"]},
-            {"line": ["456 oak ave"]},
+            {"line": ["123 main st", "apt 4"], "postalCode": "10001"},
+            {"line": ["456 oak ave"], "postalCode": "94110"},
         ],
         "identifier": [
             {
@@ -146,9 +146,8 @@ class TestFieldExtractor:
         self, extractor: FieldExtractor, full_patient: Dict[str, Any]
     ) -> None:
         fields = extractor.extract(full_patient)
-        assert "123 main st" in fields.street_lines
-        assert "apt 4" in fields.street_lines
-        assert "456 oak ave" in fields.street_lines
+        # Street Line = line 1 + ZIP5 (CMS v3.4.0 Table 3); the unit is not a Street Line.
+        assert fields.street_lines == {"123 main st|10001", "456 oak ave|94110"}
 
     def test_extract_ssn_last4(
         self, extractor: FieldExtractor, full_patient: Dict[str, Any]

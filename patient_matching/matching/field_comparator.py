@@ -15,6 +15,8 @@ from typing import Optional, Set
 
 from rapidfuzz.distance import DamerauLevenshtein
 
+from .field_extractor import STREET_LINE_SEPARATOR
+
 MIN_FUZZY_LENGTH = 5
 MAX_DAMERAU_LEVENSHTEIN_DISTANCE = 1
 DOB_FUZZY_TOLERANCE_DAYS = 1
@@ -75,6 +77,46 @@ class FieldComparator:
                 if abs((q - c).days) <= DOB_FUZZY_TOLERANCE_DAYS:
                     return True
         return False
+
+    @staticmethod
+    def street_line_fuzzy_distance(
+        query_values: Set[str], candidate_values: Set[str]
+    ) -> Optional[int]:
+        """Smallest Damerau-Levenshtein distance between street lines whose ZIP5 is equal.
+
+        CMS v3.4.0 Table 3: Street Line is line 1 with the ZIP held exact, so fuzzy
+        matching applies to the line only (distance <= 1, both lines >= 5 characters)
+        and never to the ZIP. Values are `"<line 1>|<ZIP5>"` (see
+        `field_extractor.STREET_LINE_SEPARATOR`); a value without a ZIP never matches.
+        Returns None if no pair qualifies.
+        """
+        best: Optional[int] = None
+        for q_val in query_values:
+            q_line, _, q_zip = q_val.rpartition(STREET_LINE_SEPARATOR)
+            if not q_zip or len(q_line) < MIN_FUZZY_LENGTH:
+                continue
+            for c_val in candidate_values:
+                c_line, _, c_zip = c_val.rpartition(STREET_LINE_SEPARATOR)
+                if c_zip != q_zip or len(c_line) < MIN_FUZZY_LENGTH:
+                    continue
+                dist = DamerauLevenshtein.distance(q_line, c_line)
+                if dist <= MAX_DAMERAU_LEVENSHTEIN_DISTANCE and (
+                    best is None or dist < best
+                ):
+                    best = dist
+        return best
+
+    @staticmethod
+    def street_line_fuzzy_match(
+        query_values: Set[str], candidate_values: Set[str]
+    ) -> bool:
+        """True if an exact match exists or any same-ZIP street lines are within distance 1."""
+        if query_values & candidate_values:
+            return True
+        return (
+            FieldComparator.street_line_fuzzy_distance(query_values, candidate_values)
+            is not None
+        )
 
     @staticmethod
     def fuzzy_distance(

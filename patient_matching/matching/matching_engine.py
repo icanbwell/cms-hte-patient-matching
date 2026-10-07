@@ -26,6 +26,7 @@ from .relationship_linkage_rules import RELATIONSHIP_LINKAGE_RULES
 from .table2_rules import (
     APPROVED_RULES,
     DOB,
+    STREET_LINE,
     FIRST_NAME,
     FieldRole,
     MatchingRule,
@@ -429,15 +430,25 @@ class MatchingEngine:
                     all_matched = False
                 continue
 
+            # Street Line fuzzes on line 1 only; its ZIP5 must stay exact (Table 3).
+            is_street = rf.name == STREET_LINE
+            fuzzy_ok = (
+                self._comparator.street_line_fuzzy_match(q_values, c_values)
+                if is_street
+                else self._comparator.fuzzy_match(q_values, c_values)
+            )
+
             # Generic string-fuzzy fields count against max_fuzzy_fields.
-            if max_fuzzy_fields > 0 and self._comparator.fuzzy_match(
-                q_values, c_values
-            ):
+            if max_fuzzy_fields > 0 and fuzzy_ok:
                 fuzzy_count += 1
                 if fuzzy_count <= max_fuzzy_fields:
                     evaluation.field_outcomes[rf.name] = "fuzzy"
                     evaluation.fuzzy_fields.append(rf.name)
-                    distance = self._comparator.fuzzy_distance(q_values, c_values)
+                    distance = (
+                        self._comparator.street_line_fuzzy_distance(q_values, c_values)
+                        if is_street
+                        else self._comparator.fuzzy_distance(q_values, c_values)
+                    )
                     if distance is not None:
                         evaluation.field_fuzzy_detail[rf.name] = {"distance": distance}
                 else:
