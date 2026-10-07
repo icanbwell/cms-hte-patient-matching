@@ -46,7 +46,7 @@ class DateNormalizer:
             birth_date: The raw date string from the FHIR Patient resource.
             report: If given, records why a dropped value was dropped.
                 Reason codes: PlaceholderDetector.reason_for_date's codes
-                ("empty", "unknown_placeholder", "unparseable",
+                ("empty", "unknown_placeholder", "placeholder_date", "unparseable",
                 "out_of_range" -- reused here for the partial-date year-
                 range check too), plus "unrecognized_format" for a string
                 that matches none of YYYY-MM-DD/YYYY-MM/YYYY.

@@ -23,13 +23,13 @@ class TestPatientNormalizer:
             "birthDate": "1990-01-15",
             "gender": "female",
             "telecom": [
-                {"system": "phone", "value": "(503) 555-1234", "use": "home"},
+                {"system": "phone", "value": "(503) 234-5678", "use": "home"},
                 {"system": "email", "value": "Maria@Gmail.COM"},
             ],
             "address": [
                 {
                     "use": "home",
-                    "line": ["123 Main Street"],
+                    "line": ["456 Oak Street"],
                     "city": "Springfield",
                     "state": "IL",
                     "postalCode": "62704",
@@ -62,7 +62,7 @@ class TestPatientNormalizer:
 
         # Phone E.164
         phones = [t for t in result["telecom"] if t["system"] == "phone"]
-        assert phones[0]["value"] == "+15035551234"
+        assert phones[0]["value"] == "+15032345678"
 
         # Email lowercased
         emails = [t for t in result["telecom"] if t["system"] == "email"]

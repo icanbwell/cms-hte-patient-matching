@@ -19,4 +19,4 @@ test:
 	$(PYTHON) -m pytest tests/
 
 clean:
-	rm -rf data/raw data/processed outputs/u_probabilities.csv outputs/u_probabilities.md
+	rm -rf data/processed outputs/u_probabilities.csv outputs/u_probabilities.md

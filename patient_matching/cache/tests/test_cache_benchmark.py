@@ -76,7 +76,9 @@ def _generate_patients(n: int) -> Iterator[CachedPatient]:
             phones={f"+1212555{i % 10000:04d}"},
             emails={f"{first}.{last}{i}@example.com"},
             ssn_last4={f"{i % 10000:04d}"},
-            street_lines={f"{i} main st"},
+            street_lines={
+                f"{i} main st|10001"
+            },  # "<line 1>|<ZIP5>", as FieldExtractor emits
             fhir_resource={
                 "resourceType": "Patient",
                 "id": pid,
