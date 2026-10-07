@@ -28,9 +28,9 @@ from rapidfuzz.distance import DamerauLevenshtein
 
 import patient_matching.matching.field_comparator as fc
 from patient_matching.matching.field_extractor import FieldExtractor, PatientFields
+from patient_matching.matching.in_memory_backend import InMemoryBackend
 from patient_matching.matching.matching_engine import MatchingEngine
 from patient_matching.normalization.manager import NormalizationManager
-from tests._null_backend import NullBackend
 
 try:  # imported as a package module (pytest) or run as a script (scripts/ on sys.path)
     from .collision_feasibility import (
@@ -43,6 +43,8 @@ try:  # imported as a package module (pytest) or run as a script (scripts/ on sy
         rule_views,
     )
 except ImportError:  # pragma: no cover - script invocation
+    # mypy sees the relative import above as the only definition and cannot resolve the
+    # bare module that exists only when scripts/ is on sys.path; both ignores are for that.
     from collision_feasibility import (  # type: ignore[no-redef,import-not-found]
         BASES,
         COMBOS,
@@ -96,6 +98,9 @@ def dob_dl1_match(q: Set[str], c: Set[str]) -> bool:
 
 
 def _patch_for(levers: Tuple[str, ...]) -> None:
+    # The ignores below are false positives: this harness deliberately replaces
+    # FieldComparator's staticmethods at class level to approximate a rule change, and
+    # mypy rejects assigning to a method and staticmethod-wrapped callables.
     initial = any(k.startswith("initial") for k in levers)
     dl1 = any(k.startswith("dob_dl1") for k in levers)
     swap = any(k.startswith("dob_swap") for k in levers)
@@ -155,7 +160,7 @@ def load_data(fixtures: Path = FIXTURES) -> Data:
 
 def evaluate(data: Data, assignment: Dict[str, Tuple[str, ...]]) -> Dict[str, Any]:
     """Run both tiers with `assignment` (rule_id -> levers) patched in per rule."""
-    engine = MatchingEngine(backend=NullBackend())
+    engine = MatchingEngine(backend=InMemoryBackend())
     original = engine._verify_fields
 
     def verify(*args: Any, **kwargs: Any) -> Any:
@@ -165,6 +170,7 @@ def evaluate(data: Data, assignment: Dict[str, Tuple[str, ...]]) -> Dict[str, An
         finally:
             _restore()
 
+    # Deliberate per-instance wrap of the engine's field verification (false positive).
     engine._verify_fields = verify  # type: ignore[method-assign]
     tp = fp = tn = fn = 0
     for case, s, t in data.pairs:
