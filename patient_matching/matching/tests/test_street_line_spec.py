@@ -269,19 +269,21 @@ async def test_care_of_line_before_the_street_still_matches_through_normalizatio
     None
 ):
     # Goes through the real NormalizationManager, which keeps the original line order
-    # when it cannot parse a care-of line.
+    # when it cannot parse a care-of line. The street is "456 Oak St", not "123 Main St":
+    # CMS v3.4.0 §V.D lists "123 Main St" as a placeholder street, which normalization
+    # drops, so a test through the normalizer must not use it as a real address.
     normalizer = NormalizationManager()
     stored = normalizer.normalize(
         _patient(street="C/O Jane Doe", zip_code="10001")
-        | {"address": [_address(["C/O Jane Doe", "123 Main St"], "10001")]}
+        | {"address": [_address(["C/O Jane Doe", "456 Oak St"], "10001")]}
     )
-    query = normalizer.normalize(_patient(street="123 Main St", zip_code="10001"))
+    query = normalizer.normalize(_patient(street="456 Oak St", zip_code="10001"))
     assert await _outcome(query, stored) == MatchOutcome.MATCH
 
 
 @pytest.mark.asyncio
 async def test_different_buildings_with_the_same_normalized_unit_do_not_match() -> None:
     normalizer = NormalizationManager()
-    query = normalizer.normalize(_patient(street="123 Main St", unit="#4B"))
+    query = normalizer.normalize(_patient(street="456 Oak St", unit="#4B"))
     stored = normalizer.normalize(_patient(street="987 Oak Ave", unit="#4B"))
     assert await _outcome(query, stored) != MatchOutcome.MATCH
