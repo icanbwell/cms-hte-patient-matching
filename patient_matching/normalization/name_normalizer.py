@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 _REAL_FAMILY_NAMES = frozenset({"doe", "na"})
 
 NICKNAME_TABLE_VERSION = "1.0.0"
-SUFFIX_TABLE_VERSION = "1.0.0"
+SUFFIX_TABLE_VERSION = "1.1.0"
 
 # B.6: Suffix expansion table — maps abbreviations/variants to canonical forms
 _SUFFIX_EXPANSIONS: Dict[str, str] = {
@@ -87,22 +87,49 @@ GENERATIONAL_SUFFIXES: frozenset[str] = frozenset(
     {"jr", "sr", "i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x"}
 )
 
-# A raw suffix string can hold several ("Jr., MD", "Jr III") or an article ("the second").
-_SUFFIX_SPLIT = re.compile(r"[\s,;]+")
+# Any Roman numeral ("XI", "XII") and any digit form ("2", "11th", "3d") is generational too, not
+# only the values listed above; a table that stops at X would let "XI" vs "XII" link.
+_ROMAN_SUFFIX = re.compile(r"[ivx]+")
+_NUMERIC_SUFFIX = re.compile(r"(\d+)(?:st|nd|rd|th|d)?")
+_ROMAN_VALUES = ((10, "x"), (9, "ix"), (5, "v"), (4, "iv"), (1, "i"))
+_MAX_GENERATION = 39
+
+# A raw suffix string can hold several ("Jr., MD", "Jr III", "Jr/Sr", "Jr-MD", "Jr.III") or an
+# article ("the second"). Split on the separators before punctuation is stripped, or "Jr/Sr"
+# collapses into one unknown token.
+_SUFFIX_SPLIT = re.compile(r"[\s,;/\-.]+")
 _SUFFIX_STOPWORDS = frozenset({"the"})
 
 
 def split_suffix(raw: str) -> List[str]:
-    """Break a raw suffix string into its separate suffixes ("Jr., MD" -> ["Jr.", "MD"])."""
+    """Break a raw suffix string into its separate suffixes ("Jr., MD" -> ["Jr", "MD"])."""
     return [
         t for t in _SUFFIX_SPLIT.split(raw) if t and t.lower() not in _SUFFIX_STOPWORDS
     ]
 
 
+def _to_roman(n: int) -> str:
+    out = ""
+    for value, numeral in _ROMAN_VALUES:
+        while n >= value:
+            out += numeral
+            n -= value
+    return out
+
+
 def canonical_suffix(token: str) -> str:
-    """One suffix token in its canonical form ("Jr." -> "jr", "2nd" -> "ii")."""
+    """One suffix token in its canonical form ("Jr." -> "jr", "2nd" -> "ii", "2" -> "ii")."""
     cleaned = normalize_text(token)
-    return _SUFFIX_EXPANSIONS.get(cleaned, cleaned)
+    if cleaned in _SUFFIX_EXPANSIONS:
+        return _SUFFIX_EXPANSIONS[cleaned]
+    numeric = _NUMERIC_SUFFIX.fullmatch(cleaned)
+    if numeric and 1 <= int(numeric.group(1)) <= _MAX_GENERATION:
+        return _to_roman(int(numeric.group(1)))
+    return cleaned
+
+
+def _is_generational(canon: str) -> bool:
+    return canon in GENERATIONAL_SUFFIXES or bool(_ROMAN_SUFFIX.fullmatch(canon))
 
 
 def generational_suffixes(raw: Any) -> Set[str]:
@@ -112,7 +139,7 @@ def generational_suffixes(raw: Any) -> Set[str]:
     return {
         canon
         for canon in (canonical_suffix(token) for token in split_suffix(raw))
-        if canon in GENERATIONAL_SUFFIXES
+        if _is_generational(canon)
     }
 
 

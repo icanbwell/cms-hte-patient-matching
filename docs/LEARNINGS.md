@@ -460,8 +460,16 @@ separate suffixes (`"Jr., MD"` -> `jr`, `md`; `"the"` is dropped); a bare string
 not a set of characters; and `FieldExtractor` canonicalizes (`generational_suffixes`) instead of
 trusting that the input was normalized, so a raw `"Jr."` still vetoes.
 
-**Where this could still bite:** a generational suffix the table does not list (`XI`+, other languages)
-no longer vetoes; a suffix typed into the family or given name (`"Alvarez Jr"`) is never collected, on
+A fixed table still left gaps (review finding): bare digits (`2` vs `3`) and Roman numerals past `X`
+(`XI` vs `XII`) linked, and `Jr/Sr`, `Jr-MD` and `Jr.III` stayed one unknown token because punctuation was
+stripped before splitting. Now any `[ivx]+` and any digit/ordinal (`2`, `11th`, `3d`, up to 39) is
+generational and canonicalized to Roman so `2` = `2nd` = `II`, and the raw string is split on `/`, `-` and
+`.` as well as space, comma and semicolon. `SUFFIX_TABLE_VERSION` is `1.1.0`. A record with two suffixes
+(`Jr/Sr`) still links to one that shares either (`Sr`): the veto is "no overlap", unchanged and consistent
+with `Jr III` vs `III`; on `main` that pair only vetoed because `jrsr` matched nothing.
+
+**Where this could still bite:** a generational suffix outside that pattern (a spelled ordinal past
+`tenth`, other languages) no longer vetoes; a suffix typed into the family or given name (`"Alvarez Jr"`) is never collected, on
 `main` or here.
 
 ## First Name accepts the middle name (spec says it must not) - not changed, 194 ONC matches depend on it

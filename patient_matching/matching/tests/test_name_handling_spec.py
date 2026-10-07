@@ -55,6 +55,11 @@ class TestExtractor:
             (["III"], {"iii"}),
             (["2nd"], {"ii"}),
             (["MD"], set()),
+            (["Jr/Sr"], {"jr", "sr"}),
+            (["Jr.III"], {"jr", "iii"}),
+            (["2"], {"ii"}),
+            (["XI"], {"xi"}),
+            (["Ph.D."], set()),
             (["PhD"], set()),
             (["Esq"], set()),
             (["MBA"], set()),
@@ -127,6 +132,12 @@ class TestGenerationalSuffixCoverage:
             (["Jr., MD"], ["Sr."]),
             (["Jr III"], ["Sr"]),
             (["2d"], ["3d"]),
+            (["2"], ["3"]),
+            (["XI"], ["XII"]),
+            (["11th"], ["12th"]),
+            (["Jr/Sr"], ["III"]),
+            (["Jr-MD"], ["Sr"]),
+            (["Jr.III"], ["Sr"]),
         ],
     )
     def test_generational_suffixes_in_any_spelling_still_veto(
@@ -141,6 +152,11 @@ class TestGenerationalSuffixCoverage:
             (["the second"], ["II"]),
             (["Jr., MD"], ["Jr"]),
             (["2d"], ["2nd"]),
+            (["2"], ["II"]),
+            (["XI"], ["11th"]),
+            (["Jr/Sr"], ["Jr"]),
+            (["Jr/Sr"], ["Sr"]),
+            (["Jr-MD"], ["Jr"]),
         ],
     )
     def test_the_same_generation_in_different_spellings_still_links(
