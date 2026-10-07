@@ -35,7 +35,7 @@ import csv
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 from patient_matching.matching.collision import APPROVAL_THRESHOLD, FIELD_U_PROBS
 from patient_matching.matching.household_rules import CATEGORY_2_RULES
@@ -288,6 +288,40 @@ def _overrides(
     return out
 
 
+_FUZZY_NAME_FIELDS = ("first_name", "last_name")
+_FUZZY_SPEC_FIELDS = ("first_name", "last_name", "street_line")
+
+
+def _empirical_fuzzy_names(rule: RuleView, mult: Multipliers) -> Set[str]:
+    """Name fields assumed to go fuzzy: up to `max_fuzzy` fuzzy-eligible ones, picking those
+    whose fuzzy u is largest relative to exact (the worst case for the rule)."""
+    ratios = []
+    for f in rule.fields:
+        if not (f.fuzzy_eligible and f.name in _FUZZY_NAME_FIELDS):
+            continue
+        exact, fuzzy = (
+            mult.empirical_base(f.name, False),
+            mult.empirical_base(f.name, True),
+        )
+        if exact and fuzzy:
+            ratios.append((fuzzy / exact, f.name))
+    return {name for _, name in sorted(ratios, reverse=True)[: rule.max_fuzzy]}
+
+
+def _empirical_field_u(
+    rule: RuleView, field: FieldView, fuzzy_names: Set[str], mult: Multipliers
+) -> float:
+    """Empirical u for a Census-measured field, else its Table 3 value (fuzzy where the
+    rule can make that field fuzzy)."""
+    measured = mult.empirical_base(field.name, field.name in fuzzy_names)
+    if measured is not None:
+        return measured
+    can_be_fuzzy = (
+        field.fuzzy_eligible and rule.max_fuzzy > 0 and field.name in _FUZZY_SPEC_FIELDS
+    )
+    return _spec_u(field.name, can_be_fuzzy)
+
+
 def p_collision(
     rule: RuleView, levers: Iterable[str], mult: Multipliers, basis: str
 ) -> float:
@@ -302,34 +336,13 @@ def p_collision(
             p *= min(mult.multiplier(wid), 1.0 / spec_u)
         return p
     if basis == "empirical":
-        # Fuzzy applies to up to max_fuzzy fuzzy-eligible fields with the largest
-        # fuzzy/exact ratio; others are exact.
-        fuzzy_fields: set = set()
-        if rule.max_fuzzy:
-            cands = []
-            for f in rule.fields:
-                if f.fuzzy_eligible and f.name in ("first_name", "last_name"):
-                    ex = mult.empirical_base(f.name, False)
-                    fz = mult.empirical_base(f.name, True)
-                    if ex and fz:
-                        cands.append((fz / ex, f.name))
-            fuzzy_fields = {n for _, n in sorted(cands, reverse=True)[: rule.max_fuzzy]}
+        fuzzy_names = _empirical_fuzzy_names(rule, mult)
         p = 1.0
         for f in rule.fields:
             if f.name in over:
                 p *= mult.widening(over[f.name])[0]
-                continue
-            emp = mult.empirical_base(f.name, f.name in fuzzy_fields)
-            p *= (
-                emp
-                if emp is not None
-                else _spec_u(
-                    f.name,
-                    f.fuzzy_eligible
-                    and rule.max_fuzzy > 0
-                    and f.name in ("first_name", "last_name", "street_line"),
-                )
-            )
+            else:
+                p *= _empirical_field_u(rule, f, fuzzy_names, mult)
         return p
     raise ValueError(basis)
 

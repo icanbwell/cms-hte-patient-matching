@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+from typing import Dict
 from pathlib import Path
 
 import pytest
@@ -11,6 +12,7 @@ from patient_matching.matching.collision import APPROVAL_THRESHOLD
 from scripts.collision_feasibility import (
     LEVERS,
     Multipliers,
+    RuleView,
     assign,
     p_collision,
     rule_views,
@@ -45,24 +47,26 @@ def mult(tmp_path: Path) -> Multipliers:
 
 
 @pytest.fixture
-def rules():
+def rules() -> Dict[str, RuleView]:
     return {r.rule_id: r for r in rule_views()}
 
 
-def test_multipliers_are_widened_over_baseline(mult: Multipliers):
+def test_multipliers_are_widened_over_baseline(mult: Multipliers) -> None:
     assert mult.multiplier("initial") == pytest.approx(50)
     assert mult.multiplier("dob_dl1") == pytest.approx(30)
     assert mult.multiplier("min4_first_name") == pytest.approx(1.1)
 
 
-def test_missing_widened_variant_names_the_fix(tmp_path: Path):
+def test_missing_widened_variant_names_the_fix(tmp_path: Path) -> None:
     path = tmp_path / "u.csv"
     path.write_text("field,variant,u_unbiased\nfirst_name,exact,0.001\n")
     with pytest.raises(KeyError, match="make calculate"):
         Multipliers.from_csv(path).multiplier("initial")
 
 
-def test_rule_with_no_headroom_cannot_absorb_any_widening(mult: Multipliers, rules):
+def test_rule_with_no_headroom_cannot_absorb_any_widening(
+    mult: Multipliers, rules: Dict[str, RuleView]
+) -> None:
     # Rule 11 (First Name + DOB + Phone) is exactly at the threshold.
     r = rules["11"]
     assert r.p_exact == pytest.approx(APPROVAL_THRESHOLD)
@@ -77,15 +81,17 @@ def test_rule_with_no_headroom_cannot_absorb_any_widening(mult: Multipliers, rul
 
 
 def test_scaled_conservative_multiplies_published_p_by_field_multiplier(
-    mult: Multipliers, rules
-):
+    mult: Multipliers, rules: Dict[str, RuleView]
+) -> None:
     r = rules["02"]  # First + Last* + DOB* + Phone, published P = 1e-14
     base = max(r.p_exact, r.p_fuzzy)
     got = p_collision(r, ["dob_dl1_fuzzy"], mult, "scaled_conservative")
     assert got == pytest.approx(base * 30)
 
 
-def test_lever_scope_is_respected(mult: Multipliers, rules):
+def test_lever_scope_is_respected(
+    mult: Multipliers, rules: Dict[str, RuleView]
+) -> None:
     # dob_dl1_fuzzy only applies where DOB is already fuzzy-eligible; rule 11 has exact DOB.
     assert p_collision(
         rules["11"], ["dob_dl1_fuzzy"], mult, "scaled_conservative"
@@ -94,7 +100,9 @@ def test_lever_scope_is_respected(mult: Multipliers, rules):
     assert LEVERS["initial_c2"].applies(rules["C2-13"], "first_name")
 
 
-def test_assign_never_exceeds_threshold(mult: Multipliers, rules):
+def test_assign_never_exceeds_threshold(
+    mult: Multipliers, rules: Dict[str, RuleView]
+) -> None:
     combo = ("dob_dl1_all", "initial_all")
     for basis in ("scaled_conservative", "empirical"):
         assigned = assign(rules.values(), combo, mult, basis)
@@ -107,8 +115,8 @@ def test_assign_never_exceeds_threshold(mult: Multipliers, rules):
 
 
 def test_assign_falls_back_to_a_single_lever_when_both_do_not_fit(
-    mult: Multipliers, rules
-):
+    mult: Multipliers, rules: Dict[str, RuleView]
+) -> None:
     # Rule 02: 1e-14 * 50 (initial) = 5e-13 fits; * 30 (dob) = 3e-13 fits; both = 1.5e-11 does not.
     assigned = assign(
         [rules["02"]], ("dob_dl1_all", "initial_all"), mult, "scaled_conservative"
@@ -117,7 +125,9 @@ def test_assign_falls_back_to_a_single_lever_when_both_do_not_fit(
     assert assigned["02"][0] == "dob_dl1_all"  # first in the combo's priority order
 
 
-def test_two_levers_on_one_field_take_the_larger_multiplier(mult: Multipliers, rules):
+def test_two_levers_on_one_field_take_the_larger_multiplier(
+    mult: Multipliers, rules: Dict[str, RuleView]
+) -> None:
     # Rule 01 has a fuzzy-eligible first name: initial (x50) and min4 (x1.1) both target it.
     from scripts.collision_feasibility import _overrides
 
