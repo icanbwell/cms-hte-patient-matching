@@ -4,8 +4,8 @@ Reads the files written by `download.py` and writes
 `data/institutional_registry/institutional_addresses.csv`, one row per distinct
 (institution type, normalized street, ZIP5). Columns:
 
-- institution_type: nursing_home | hospice | hospital | higher_education_campus |
-  federal_correctional
+- institution_type: nursing_home | hospice | hospital | psychiatric_hospital |
+  long_term_hospital | higher_education_campus | federal_correctional
 - match_policy: `exclude` (residents live there) or `review` (mostly offices/non-residential);
   see MATCH_POLICY
 - name, street, city, state, zip, beds: from the first source that lists the address
@@ -32,13 +32,21 @@ OUTPUT = DEST / "institutional_addresses.csv"
 # POS iQIES `prvdr_type_id` values, decoded by joining to Care Compare on CCN
 # (every Care Compare nursing home is type 20, every hospice type 12).
 POS_TYPES = {"20": "nursing_home", "12": "hospice"}
+# Care Compare `Hospital Type` values that mean extended stays; every other type (acute
+# care, critical access, children's, VA, DoD, rural emergency) stays plain "hospital".
+HOSPITAL_TYPES = {
+    "Psychiatric": "psychiatric_hospital",
+    "Long-term": "long_term_hospital",
+}
 # Default policy, not a spec requirement: `exclude` = residents live at the address, so a
 # Household-tier match on it is unsafe; `review` = the address is mostly offices or
-# non-residential space (hospice admin offices, campus/school addresses, hospitals), so
-# excluding it automatically would over-exclude. Edit here to change the policy.
+# non-residential space (hospice admin offices, campus/school addresses, short-stay
+# hospitals), so excluding it automatically would over-exclude. Edit here to change it.
 MATCH_POLICY = {
     "nursing_home": "exclude",
     "federal_correctional": "exclude",
+    "psychiatric_hospital": "exclude",
+    "long_term_hospital": "exclude",
     "hospital": "review",
     "hospice": "review",
     "higher_education_campus": "review",
@@ -129,22 +137,26 @@ def load_sources() -> pd.DataFrame:
             },
         )
     )
-    frames.append(
-        _frame(
-            "hospital",
-            "care_compare_hospital",
-            read("care_compare_hospital.csv"),
-            {
-                "source_id": "Facility ID",
-                "name": "Facility Name",
-                "street": "Address",
-                "city": "City/Town",
-                "state": "State",
-                "zip": "ZIP Code",
-                "beds": None,
-            },
+    hospitals = read("care_compare_hospital.csv")
+    for hospital_type, df in hospitals.groupby(
+        hospitals["Hospital Type"].map(HOSPITAL_TYPES).fillna("hospital")
+    ):
+        frames.append(
+            _frame(
+                str(hospital_type),
+                "care_compare_hospital",
+                df,
+                {
+                    "source_id": "Facility ID",
+                    "name": "Facility Name",
+                    "street": "Address",
+                    "city": "City/Town",
+                    "state": "State",
+                    "zip": "ZIP Code",
+                    "beds": None,
+                },
+            )
         )
-    )
     hospice = read("care_compare_hospice.csv")
     hospice = hospice.assign(
         street=(hospice["Address Line 1"] + " " + hospice["Address Line 2"]).str.strip()
