@@ -71,7 +71,13 @@ Downloading is idempotent (re-running skips files that already exist). `data/raw
 (public US Census, ACS and CMS aggregate files, about 41 MB), so `make calculate` works on a fresh
 clone with no network. `data/raw/SHA256SUMS` records each file's checksum
 (`cd data/raw && shasum -a 256 -c SHA256SUMS`); if `make download` is ever re-run after deleting a
-file and the upstream file has changed, `git diff` shows it. `data/processed/` is not committed. Keep the raw files byte-identical to what the source serves: the
+file and the upstream file has changed, `git diff` shows it. `data/processed/` is not committed.
+
+To refresh a raw file: delete it (`make download` skips files that already exist), run
+`make download`, regenerate the checksums (`cd data/raw && shasum -a 256 <files> > SHA256SUMS`), and
+commit the changed files. `make clean` leaves `data/raw/` alone because it is tracked.
+
+Keep the raw files byte-identical to what the source serves: the
 checksums, and the "upstream changed" signal above, depend on it (the spreadsheets' document
 properties carry their publishers' metadata, which is left as published).
 `make calculate` / `--compute-only` never touches the network -- it only
