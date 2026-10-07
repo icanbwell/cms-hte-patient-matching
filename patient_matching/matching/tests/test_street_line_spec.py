@@ -95,7 +95,10 @@ class TestExtractorStreetLine:
             (["apt 2", "main st"], "main st"),
             (["main plaza", "3rd floor"], "main plaza"),  # floor is not a house number
             (["1st floor", "123 main st"], "123 main st"),
-            (["c/o jane doe", "3rd ave"], "3rd ave"),  # ordinal street is still a street
+            (
+                ["c/o jane doe", "3rd ave"],
+                "3rd ave",
+            ),  # ordinal street is still a street
         ],
     )
     def test_unit_lines_are_skipped_before_the_street_is_chosen(
