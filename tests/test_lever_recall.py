@@ -28,16 +28,11 @@ def test_dob_swap_match_does_not_accept_a_digit_replacement():
 
 
 def test_patch_is_scoped_and_restored():
-    original = fc.FieldComparator.exact_match
     lever_recall._patch_for(("initial_all",))
     try:
         assert fc.FieldComparator.exact_match({"s"}, {"stanley"})
     finally:
         lever_recall._restore()
-    assert (
-        fc.FieldComparator.exact_match is original
-        or not fc.FieldComparator.exact_match({"s"}, {"stanley"})
-    )
     assert not fc.FieldComparator.exact_match({"s"}, {"stanley"})
     assert fc.MIN_FUZZY_LENGTH == 5
 
@@ -61,3 +56,14 @@ def test_unrestricted_assigns_each_lever_only_where_its_scope_applies():
         "dob_dl1_fuzzy",
     )  # flat rule with fuzzy DOB: only the DOB lever
     assert got["11"] == ()  # exact-DOB flat rule: neither
+
+
+def test_restore_leaves_the_comparator_usable_as_instance_and_class_calls():
+    # Regression: assigning the plain function back turned the staticmethods into
+    # instance methods, so every later `engine._comparator.exact_match(q, c)` raised.
+    lever_recall._patch_for(("initial_all", "dob_dl1_all"))
+    lever_recall._restore()
+    comparator = fc.FieldComparator()
+    assert comparator.exact_match({"a"}, {"a"})
+    assert fc.FieldComparator.exact_match({"a"}, {"a"})
+    assert comparator.dob_fuzzy_match({"2000-03-07"}, {"2000-03-08"})

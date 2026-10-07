@@ -124,8 +124,12 @@ def _patch_for(levers: Tuple[str, ...]) -> None:
 
 
 def _restore() -> None:
-    fc.FieldComparator.exact_match = _orig_exact  # type: ignore[method-assign]
-    fc.FieldComparator.dob_fuzzy_match = _orig_dob_fuzzy  # type: ignore[method-assign]
+    # Re-wrap: the originals were read off the class as plain functions, and assigning a plain
+    # function back would turn the staticmethods into instance methods.
+    fc.FieldComparator.exact_match = staticmethod(_orig_exact)  # type: ignore[method-assign,assignment]
+    fc.FieldComparator.dob_fuzzy_match = staticmethod(  # type: ignore[method-assign,assignment]
+        _orig_dob_fuzzy
+    )
     fc.MIN_FUZZY_LENGTH = 5
 
 
