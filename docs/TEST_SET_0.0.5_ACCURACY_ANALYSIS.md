@@ -87,14 +87,18 @@ Each row applies one change to the current engine and re-runs both tiers on the 
 These are monkeypatched approximations of proposed rules, not implementations (throwaway script, not
 committed). Baseline: pairs recall 0.9474 (fn 717), population recall 0.9504 (fn 674), F1 0.9745.
 
-| # | Change | Pairs recall (fn) | Pop. recall (fn) | Pop. F1 | New FP |
-|---|---|---|---|---|---|
-| 1 | **Initial-only first name** matches a full first name with that letter (`S` ≙ `STANLEY`) | 0.9730 (368) | 0.9752 (337) | 0.9873 | 0 |
-| 2 | **DOB edit distance ≤ 1** (Damerau-Levenshtein on `YYYYMMDD`, includes month/day swap) | 0.9534 (635) | 0.9554 (606) | 0.9771 | 0 |
-| 3 | **Fuzzy first/last name allowed at 4 characters** (min length 5 → 4) | 0.9512 (664) | 0.9534 (633) | 0.9760 | 0 |
-| 4 | Month/day swap only | 0.9481 (707) | 0.9511 (665) | 0.9748 | 0 |
-| | 1 + 2 | 0.9838 (221) | 0.9843 (213) | 0.9920 | 0 |
-| | 1 + 2 + 3 | **0.9854 (199)** | **0.9855 (197)** | **0.9926** | 0 |
+| # | Change | Pairs recall (fn) | Pairs uplift | Pop. recall (fn) | Pop. uplift | Pop. F1 | F1 uplift | New FP |
+|---|---|---|---|---|---|---|---|---|
+| | Baseline (no change) | 0.9474 (717) | – | 0.9504 (674) | – | 0.9745 | – | – |
+| 1 | **Initial-only first name** matches a full first name with that letter (`S` ≙ `STANLEY`) | 0.9730 (368) | **+0.0256** | 0.9752 (337) | **+0.0248** | 0.9873 | +0.0128 | 0 |
+| 2 | **DOB edit distance ≤ 1** (Damerau-Levenshtein on `YYYYMMDD`, includes month/day swap) | 0.9534 (635) | +0.0060 | 0.9554 (606) | +0.0050 | 0.9771 | +0.0026 | 0 |
+| 3 | **Fuzzy first/last name allowed at 4 characters** (min length 5 → 4) | 0.9512 (664) | +0.0038 | 0.9534 (633) | +0.0030 | 0.9760 | +0.0015 | 0 |
+| 4 | Month/day swap only | 0.9481 (707) | +0.0007 | 0.9511 (665) | +0.0007 | 0.9748 | +0.0003 | 0 |
+| | 1 + 2 | 0.9838 (221) | +0.0364 | 0.9843 (213) | +0.0339 | 0.9920 | +0.0175 | 0 |
+| | 1 + 2 + 3 | **0.9854 (199)** | **+0.0380** | **0.9855 (197)** | **+0.0351** | **0.9926** | +0.0181 | 0 |
+
+Uplift is the absolute change against the baseline row. Lever 3 adds +0.0016 pairs recall (+0.0012
+population) on top of 1 + 2, so its marginal value shrinks once the others land.
 
 Ranking by false negatives removed (pairs tier): initial-only first name −349, DOB edit distance −82,
 4-character fuzzy −53, month/day swap −10. The first alone clears the 0.95 floor by 0.023 on both tiers;
