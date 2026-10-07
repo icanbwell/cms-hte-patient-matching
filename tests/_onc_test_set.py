@@ -10,12 +10,29 @@ Not itself a test module - `test_*.py` files import from here.
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any, Dict
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ONC_CASES_DIR = REPO_ROOT / "tests" / "fixtures" / "onc"
 REPORTS_DIR = REPO_ROOT / "reports"
+
+
+def threshold(env_var: str, default: float) -> float:
+    """Regression-gate threshold: `env_var` if set, else the checked-in `default`.
+
+    Lets a run compare against a different bar without editing code, e.g.
+    `ONC_POP_RECALL_FLOOR=0.95 make onc-tests`. The value in effect is written
+    into the metrics report, so the job summary always shows what was enforced.
+    """
+    raw = os.environ.get(env_var, "").strip()
+    if not raw:
+        return default
+    try:
+        return float(raw)
+    except ValueError:
+        raise ValueError(f"{env_var}={raw!r} is not a number") from None
 
 
 def missing_fixture_data_reason(path: Path) -> str:

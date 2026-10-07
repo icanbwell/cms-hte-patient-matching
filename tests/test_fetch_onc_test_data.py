@@ -17,6 +17,10 @@ import pytest
 import scripts.fetch_onc_test_data as fetch_onc_test_data
 
 
+COMMIT = "a" * 40
+TAG = "9.9.9"
+
+
 def _mock_run(returncode: int) -> MagicMock:
     return MagicMock(
         return_value=subprocess.CompletedProcess(args=[], returncode=returncode)
@@ -29,7 +33,7 @@ def test_fetch_raises_on_nonzero_curl_exit(
     monkeypatch.setattr(fetch_onc_test_data, "DEST_DIR", tmp_path)
     with patch.object(subprocess, "run", _mock_run(22)):
         with pytest.raises(RuntimeError, match="curl exit 22"):
-            fetch_onc_test_data.fetch("sample_labeled_pairs.jsonl")
+            fetch_onc_test_data.fetch("sample_labeled_pairs.jsonl", COMMIT, TAG)
 
 
 def test_fetch_raises_on_empty_download(
@@ -39,7 +43,7 @@ def test_fetch_raises_on_empty_download(
     (tmp_path / "sample_labeled_pairs.jsonl").write_bytes(b"")
     with patch.object(subprocess, "run", _mock_run(0)):
         with pytest.raises(RuntimeError, match="empty file"):
-            fetch_onc_test_data.fetch("sample_labeled_pairs.jsonl")
+            fetch_onc_test_data.fetch("sample_labeled_pairs.jsonl", COMMIT, TAG)
 
 
 def test_fetch_succeeds_when_download_is_present_and_non_empty(
@@ -48,7 +52,7 @@ def test_fetch_succeeds_when_download_is_present_and_non_empty(
     monkeypatch.setattr(fetch_onc_test_data, "DEST_DIR", tmp_path)
     (tmp_path / "sample_labeled_pairs.jsonl").write_bytes(b"some data")
     with patch.object(subprocess, "run", _mock_run(0)):
-        fetch_onc_test_data.fetch("sample_labeled_pairs.jsonl")
+        fetch_onc_test_data.fetch("sample_labeled_pairs.jsonl", COMMIT, TAG)
 
 
 def test_fetch_passes_safety_flags_and_correct_url_to_curl(
@@ -58,7 +62,7 @@ def test_fetch_passes_safety_flags_and_correct_url_to_curl(
     (tmp_path / "sample_labeled_pairs.jsonl").write_bytes(b"data")
     mock_run = _mock_run(0)
     with patch.object(subprocess, "run", mock_run):
-        fetch_onc_test_data.fetch("sample_labeled_pairs.jsonl")
+        fetch_onc_test_data.fetch("sample_labeled_pairs.jsonl", COMMIT, TAG)
 
     cmd = mock_run.call_args[0][0]
     assert "--fail" in cmd
@@ -68,7 +72,9 @@ def test_fetch_passes_safety_flags_and_correct_url_to_curl(
         == fetch_onc_test_data.CURL_RETRY_DELAY_SECONDS
     )
     assert cmd[cmd.index("--max-time") + 1] == fetch_onc_test_data.CURL_MAX_TIME_SECONDS
-    assert cmd[-1] == f"{fetch_onc_test_data.BASE_URL}/sample_labeled_pairs.jsonl"
+    assert (
+        cmd[-1] == f"{fetch_onc_test_data.base_url(COMMIT)}/sample_labeled_pairs.jsonl"
+    )
     assert cmd[cmd.index("--output") + 1] == str(
         tmp_path / "sample_labeled_pairs.jsonl"
     )
@@ -79,6 +85,8 @@ def test_main_fetches_every_file_into_dest_dir(
 ) -> None:
     dest_dir = tmp_path / "onc"
     monkeypatch.setattr(fetch_onc_test_data, "DEST_DIR", dest_dir)
+    monkeypatch.setenv(fetch_onc_test_data.TAG_ENV_VAR, TAG)
+    monkeypatch.setattr(fetch_onc_test_data, "resolve_commit", lambda tag: COMMIT)
 
     def fake_run(
         cmd: list[str], check: bool = False
@@ -101,6 +109,8 @@ def test_main_stops_at_first_failing_file(
 ) -> None:
     dest_dir = tmp_path / "onc"
     monkeypatch.setattr(fetch_onc_test_data, "DEST_DIR", dest_dir)
+    monkeypatch.setenv(fetch_onc_test_data.TAG_ENV_VAR, TAG)
+    monkeypatch.setattr(fetch_onc_test_data, "resolve_commit", lambda tag: COMMIT)
     with patch.object(subprocess, "run", _mock_run(22)):
         with pytest.raises(RuntimeError):
             fetch_onc_test_data.main()
@@ -109,7 +119,43 @@ def test_main_stops_at_first_failing_file(
 def test_base_url_pins_to_commit_sha_not_the_mutable_tag() -> None:
     # A git tag can be force-moved upstream to a different commit with no
     # trace in this repo's history; the fetch itself must pin to the commit
-    # SHA, not the tag name, or bumping SOURCE_TAG would stop being the
-    # single reviewable diff this design relies on.
-    assert fetch_onc_test_data.SOURCE_COMMIT in fetch_onc_test_data.BASE_URL
-    assert fetch_onc_test_data.SOURCE_TAG not in fetch_onc_test_data.BASE_URL
+    # SHA the tag resolved to, not the tag name.
+    assert COMMIT in fetch_onc_test_data.base_url(COMMIT)
+    assert TAG not in fetch_onc_test_data.base_url(COMMIT)
+
+
+def test_get_source_tag_requires_env_var(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv(fetch_onc_test_data.TAG_ENV_VAR, raising=False)
+    with pytest.raises(RuntimeError, match="ONC_TEST_SET_TAG is not set"):
+        fetch_onc_test_data.get_source_tag()
+    monkeypatch.setenv(fetch_onc_test_data.TAG_ENV_VAR, " 0.0.3 ")
+    assert fetch_onc_test_data.get_source_tag() == "0.0.3"
+
+
+def _ls_remote(stdout: str, returncode: int = 0) -> MagicMock:
+    return MagicMock(
+        return_value=subprocess.CompletedProcess(
+            args=[], returncode=returncode, stdout=stdout, stderr="boom"
+        )
+    )
+
+
+def test_resolve_commit_lightweight_tag() -> None:
+    out = f"{COMMIT}\trefs/tags/{TAG}\n"
+    with patch.object(subprocess, "run", _ls_remote(out)):
+        assert fetch_onc_test_data.resolve_commit(TAG) == COMMIT
+
+
+def test_resolve_commit_peels_annotated_tag() -> None:
+    out = f"{'b' * 40}\trefs/tags/{TAG}\n{COMMIT}\trefs/tags/{TAG}^{{}}\n"
+    with patch.object(subprocess, "run", _ls_remote(out)):
+        assert fetch_onc_test_data.resolve_commit(TAG) == COMMIT
+
+
+def test_resolve_commit_raises_when_tag_missing_or_ls_remote_fails() -> None:
+    with patch.object(subprocess, "run", _ls_remote("")):
+        with pytest.raises(RuntimeError, match="not found"):
+            fetch_onc_test_data.resolve_commit(TAG)
+    with patch.object(subprocess, "run", _ls_remote("", returncode=128)):
+        with pytest.raises(RuntimeError, match="ls-remote"):
+            fetch_onc_test_data.resolve_commit(TAG)

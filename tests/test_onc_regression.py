@@ -58,6 +58,7 @@ from ._null_backend import NullBackend
 from ._onc_test_set import (
     ONC_CASES_DIR,
     missing_fixture_data_reason,
+    threshold,
     write_metrics_report,
 )
 
@@ -67,8 +68,9 @@ ONC_PAIRS_PATH = ONC_CASES_DIR / "sample_labeled_pairs.jsonl"
 # leave headroom around). Update deliberately - with a note of why - if a
 # rule change intentionally moves these.
 # Temporarily relaxed from 0.95 / 0.01 - see module docstring.
-RECALL_FLOOR = 0.92
-FPR_CEILING = 0.10
+# Each can be overridden per run via the named env var (see `threshold`).
+RECALL_FLOOR = threshold("ONC_PAIRS_RECALL_FLOOR", 0.92)
+FPR_CEILING = threshold("ONC_PAIRS_FPR_CEILING", 0.10)
 
 
 def _load_pairs(path: Path) -> List[Dict[str, Any]]:
