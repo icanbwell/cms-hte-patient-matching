@@ -340,7 +340,7 @@ line only (Damerau-Levenshtein <= 1, >= 5 characters) with the ZIP held exact.
 **Effect on the ONC population tier:** 2 of 87,747 pairs flip, recall 0.9515 → 0.9513. Both are
 labeled matches whose records have a street line and a blank ZIP, so they linked on street text
 alone before. By the spec's own wording a blank ZIP cannot be "exact", so they no longer link; it
-is a decision for the project lead whether to carve out "both ZIPs blank".
+was decided (2026-10-07) to keep the strict reading, with no "both ZIPs blank" carve-out.
 
 **Why it is usually invisible:** Phone + Street Line (C2-37) is largely subsumed by rule 11
 (First Name + DOB + Phone), which needs no address, so a test that gives two records a shared phone
