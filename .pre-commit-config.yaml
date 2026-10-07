@@ -27,6 +27,9 @@ repos:
       # Dependency and import checks
       - id: check-ast
       - id: check-added-large-files
+        # calculations/data/raw/ holds committed public source files (see its SHA256SUMS);
+        # refreshing one is delete + re-add, which this hook would otherwise block.
+        exclude: ^calculations/data/raw/
       - id: check-json
       - id: check-toml
       - id: check-yaml

@@ -24,7 +24,9 @@ class CachedPatient:
         last_names: Normalized family names.
         suffixes: Generational suffixes.
         dob: Date of birth (YYYY-MM-DD).
-        street_lines: Normalized street address lines.
+        street_lines: Street Line values, `"<line 1>|<ZIP5>"` per address (see
+            `FieldExtractor`). A cache built before this format holds bare street
+            text and must be rebuilt.
         phones: E.164 phone numbers.
         emails: Normalized email addresses.
         ssn_last4: Last 4 digits of SSN.

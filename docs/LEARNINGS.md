@@ -386,6 +386,42 @@ birth date as "real" sample values now normalize to nothing; use values outside 
 An attribution run (enable one group at a time against the ONC pairs tier) is the fast way to find
 which new placeholder rule costs recall.
 
+## Street Line is address line 1 plus an exact ZIP5, not every address line
+
+CMS v3.4.0 Table 3 defines Street Line as "street line and ZIP standardized; ZIP must remain
+exact." The engine put every address line (line 1 and the unit in line 2) into one set and
+intersected the text, so it linked two records on a shared unit (`apt 2`) in different buildings,
+and on identical street text in different ZIPs. Verified through `NormalizationManager` and
+`MatchingEngine`, with a positive control. Fixed in `field_extractor.py`: each address emits one
+`"<line 1>|<ZIP5>"` value (nothing without a 5-digit ZIP, nothing for a line that is only a unit),
+`zip_codes` is ZIP5 so ZIP+4 matches ZIP5, and `FieldComparator.street_line_fuzzy_*` fuzzes the
+line only (Damerau-Levenshtein <= 1, >= 5 characters) with the ZIP held exact.
+
+**Effect on the ONC population tier:** 2 of 87,747 pairs flip, recall 0.9515 → 0.9513. Both are
+labeled matches whose records have a street line and a blank ZIP, so they linked on street text
+alone before. By the spec's own wording a blank ZIP cannot be "exact", so they no longer link; it
+was decided (2026-10-07) to keep the strict reading, with no "both ZIPs blank" carve-out.
+
+**Why it is usually invisible:** Phone + Street Line (C2-37) is largely subsumed by rule 11
+(First Name + DOB + Phone), which needs no address, so a test that gives two records a shared phone
+passes through rule 11 and never exercises Street Line. Test Street Line through rule 01
+(First* + Last* + DOB* + Street Line*) with no phone, email or ID on either record.
+
+**Where this could still bite:** (1) a persisted DuckDB or Mongo cache holds the old bare
+street text and must be rebuilt (old values never match the new ones). (2) Any address stored
+without a ZIP now has no Street Line at all, so rules 01 and H-14 / C2-37 / C2-39 cannot use it.
+(3) Normalizers that leave a unit in line 1 (stacked designators) still put it in the value.
+(4) "Line 1" is not always the first FHIR `line`: when scourgify can't parse an address it keeps the
+original order, so `["c/o jane doe", "123 main st"]` would have made every record at a care-of or
+facility-name line share one Street Line. `_street_line_one` takes the first line that starts with a
+house number, else the first line. (5) Normalization strips `#`, so unit-only lines arrive as `4b`,
+`unit 5 b`, `ph 3`; `_is_unit_only` covers those forms and the rarer USPS designators, and requires
+the identifier to contain a digit or be one letter so `floor rd`, `unit dr` and `lot ln` stay streets.
+(6) Placeholder ZIPs (`00000`, `99999`) are dropped by the V.D placeholder table (see the section
+above), so they no longer form a Street Line value.
+(7) Test with a case the in-memory blocker cannot reject for you: a ZIP one digit off on an identical
+line passes blocking (composite edit distance 1), so only the Street Line comparator rejects it.
+
 ## Widened-match levers: most rules have no P(collision) headroom, and a test harness can hide a lever's effect
 
 Rules 11, 12, 13-16, 08, 09 and 23 sit at exactly 2e-12, the approval threshold, so widening any of their

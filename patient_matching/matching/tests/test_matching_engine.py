@@ -788,7 +788,8 @@ class TestDobFuzzyExtendedToNewRules:
     actually wired to use it."""
 
     _RULE_ANCHOR_FIELDS = [
-        ("01", {"street": "123 main st"}),  # First*+Last*+DOB*+Street Line*
+        # First*+Last*+DOB*+Street Line* (a Street Line needs its ZIP, Table 3)
+        ("01", {"street": "123 main st", "zip_code": "10001"}),
         ("02", {"phone": "+12125551234"}),  # First+Last*+DOB*+Phone
         ("03", {"email": "john@gmail.com"}),  # First*+Last*+DOB*+Email
         ("10", {"legal_id": "DL123456"}),  # Last*+DOB*+Legal ID (no First Name field)
