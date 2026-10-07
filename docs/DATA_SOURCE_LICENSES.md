@@ -17,7 +17,8 @@ must do to comply. Where a source's terms are restrictive or unconfirmed, the st
 - Pages were fetched through an automated summariser, so quotes are near-verbatim, not raw page
   text. Several agency pages returned HTTP 403 or 404 and could not be read; those are marked.
   Items marked "search snippet" were not confirmed on the primary page.
-- **This is not legal advice and has not had legal review.** Before relying on a row for
+- **This is not legal advice and has not had legal review.** The project owner accepted the
+  remaining risk on 2026-10-07 without a separate legal review (see "Owner risk acceptance"). Before relying on a row for
   redistribution, confirm the quoted terms on the live page.
 - A "public record" status means the data is a government licensing list with no reuse terms
   found. It is not an explicit grant of redistribution rights.
@@ -121,12 +122,30 @@ which are the raw `state_al_*` files. Sources and methods are in
 ## Open decisions
 
 1. Excluded on 2026-10-07 with no permission requests planned: Prison Policy Initiative, AK, IN, KY, MI and VA. Restoring any of them needs written permission from the publisher.
-2. TX and NC "unaltered, noncommercial" conditions: accepted by the project owner; confirm with legal
-   review.
+2. TX and NC "unaltered, noncommercial" conditions: accepted by the project owner (see "Owner risk
+   acceptance").
 3. CMS, IPEDS and BOP: public domain by the federal government-works rule, with no
-   source-specific license stated. Confirm that is acceptable, and cite IES for IPEDS.
-4. Legal review of this table before the registry is distributed outside the organization, including
-   the Princeton compilation, which has no license of its own and is derived from state public records.
+   source-specific license stated; accepted by the project owner. Cite IES for IPEDS.
+4. Legal review of this table: **not obtained; see "Owner risk acceptance" below.**
+
+## Owner risk acceptance
+
+On 2026-10-07 the project owner reviewed this table and accepted the remaining licensing risk
+without a separate legal review. This is the owner's acceptance of risk, not a legal sign-off, and
+it does not say the terms below permit redistribution. It covers:
+
+- Sources with no license or terms stated, used as public records (the "Public record" group,
+  including the Princeton compilation, which has no license of its own and is derived from state
+  public records).
+- Sources used under conditions the owner considers acceptable: TX and NC (noncommercial,
+  unaltered), TN and UT (credit), Overture (attribution and notices), and the federal sources
+  (public domain by rule, no source-specific license stated).
+- The weaker calls noted in the tables (for example SC, NE, FL, NV and WI, where an agency's site
+  terms may or may not apply to the dataset).
+
+It does not cover the excluded sources (the Prison Policy Initiative lists and the AK, IN, KY, MI
+and VA state lists), which are not redistributed. Anyone distributing the registry outside the
+organization should obtain legal review first.
 
 Removing a source means deleting its file and rebuilding the registry; the build is described in
 `docs/INSTITUTIONAL_ADDRESS_FEASIBILITY.md`.
