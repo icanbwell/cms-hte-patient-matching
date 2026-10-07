@@ -22,7 +22,11 @@ from __future__ import annotations
 import xml.etree.ElementTree as ET
 from typing import Dict, List
 
-from scripts.institutional_registry.states.common import Session, make_row
+from scripts.institutional_registry.states.common import (
+    Session,
+    make_row,
+    safe_fromstring,
+)
 
 STATE = "GA"
 SOURCE = "https://forms.dch.georgia.gov/hfrd/FACSEARCH.aspx"
@@ -33,9 +37,9 @@ KEEP_TYPES = {"PERSONAL CARE HOME", "ASSISTED LIVING COMMUNITY"}
 def fetch(session: Session) -> List[Dict[str, str]]:
     raw = session.get(SOURCE)
     try:
-        root = ET.fromstring(raw)
-    except ET.ParseError as err:
-        raise RuntimeError(f"GA: {SOURCE} no longer returns XML: {err}") from err
+        root = safe_fromstring(raw)
+    except (ET.ParseError, UnicodeDecodeError, ValueError) as err:
+        raise RuntimeError(f"GA: {SOURCE} no longer returns plain XML: {err}") from err
     elements = root.findall("FAC_SEARCH")
     if len(elements) < 5000:
         raise RuntimeError(

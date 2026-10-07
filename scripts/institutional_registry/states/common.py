@@ -225,6 +225,24 @@ def _column_index(ref: str) -> int:
     return index - 1
 
 
+def safe_fromstring(data: bytes) -> ET.Element:
+    """Parse XML from an untrusted source (a state website, a downloaded spreadsheet).
+
+    The standard library parser expands entities declared in a DOCTYPE, which is how
+    entity-expansion ("billion laughs") attacks work. None of the XML this package reads
+    (OOXML parts, Georgia's facility feed) has a DOCTYPE, so any document that declares one,
+    or isn't UTF-8 (which would hide the declaration from this check), is rejected instead
+    of parsed. This is the core protection `defusedxml` provides, without a new dependency.
+    """
+    text = data.decode(
+        "utf-8"
+    )  # raises on UTF-16/32, whose markup this check can't see
+    upper = text.upper()
+    if "<!DOCTYPE" in upper or "<!ENTITY" in upper:
+        raise ValueError("refusing to parse XML that declares a DOCTYPE or entities")
+    return ET.fromstring(data)
+
+
 def _unescape_ooxml(text: str) -> str:
     """OOXML stores control characters as _xHHHH_ (e.g. a carriage return is _x000D_)."""
     return re.sub(r"_x([0-9A-Fa-f]{4})_", lambda m: chr(int(m.group(1), 16)), text)
@@ -239,7 +257,7 @@ def read_xlsx(data: bytes, sheet: int = 0) -> List[List[str]]:
     with zipfile.ZipFile(io.BytesIO(data)) as zf:
         shared: List[str] = []
         if "xl/sharedStrings.xml" in zf.namelist():
-            root = ET.fromstring(zf.read("xl/sharedStrings.xml"))
+            root = safe_fromstring(zf.read("xl/sharedStrings.xml"))
             shared = [
                 _unescape_ooxml("".join(t.text or "" for t in si.iter(f"{_NS}t")))
                 for si in root.findall(f"{_NS}si")
@@ -252,7 +270,7 @@ def read_xlsx(data: bytes, sheet: int = 0) -> List[List[str]]:
             ),
             key=lambda n: int(re.findall(r"\d+", n)[-1]),
         )
-        tree = ET.fromstring(zf.read(sheets[sheet]))
+        tree = safe_fromstring(zf.read(sheets[sheet]))
     rows: List[List[str]] = []
     for row in tree.iter(f"{_NS}row"):
         cells: Dict[int, str] = {}
