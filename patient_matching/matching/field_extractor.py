@@ -6,6 +6,7 @@ Per Core Principle 10: each field represents a set of ALL known values
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Set
 
@@ -22,7 +23,8 @@ class PatientFields:
         last_names: All family names (including maiden/previous).
         suffixes: All generational suffixes.
         dob: Date of birth (single value, set for consistency).
-        street_lines: All street address lines.
+        street_lines: Street Line values, one per address: address line 1
+            joined to its ZIP5 as `"<line 1>|<ZIP5>"` (CMS v3.4.0 Table 3).
         phones: All phone numbers (E.164).
         emails: All email addresses.
         ssn_last4: Last 4 digits of SSN.
@@ -30,7 +32,8 @@ class PatientFields:
         mbi: Medicare Beneficiary Identifier.
         legal_ids: Legal ID values (DL, passport) with namespace.
         namespace_ids: Namespace-bound unique identifiers.
-        zip_codes: 5-digit ZIP codes from all addresses (CMS v3.3).
+        zip_codes: ZIP5 from all addresses; ZIP+4 is reduced to its first
+            five digits (CMS v3.3).
         insurance_member_ids: Payer-namespace-scoped, individual-level
             insurance Member IDs (CMS v3.3).
         insurance_subscriber_ids: Payer-namespace-scoped, policyholder-level
@@ -157,6 +160,60 @@ _RELATIONSHIP_LINKAGE_EXTENSION_URL = (
 )
 
 
+# Joins address line 1 and ZIP5 into one Street Line value. "|" cannot appear in a
+# normalized street line (normalization strips punctuation) or in a ZIP.
+STREET_LINE_SEPARATOR = "|"
+
+# A line made only of a unit designator and its identifier ("apt 2", "unit 5 b", "ph 3").
+# The identifier must contain a digit or be a single letter, so a street whose name starts
+# with a designator word ("floor rd", "unit dr", "lot ln") is not mistaken for a unit.
+# Normalization strips "#", so "#4b" arrives as "4b" (see _BARE_UNIT).
+_UNIT_DESIGNATORS = (
+    "apt|apartment|unit|ste|suite|rm|room|fl|floor|bldg|building|lot|spc|space|trlr|"
+    "trailer|dept|department|ph|bsmt|frnt|rear|ofc|lbby|lowr|uppr|hngr|pier|slip|stop|key"
+)
+_UNIT_IDENTIFIER = r"(?:\d[a-z0-9-]*|[a-z])"
+_UNIT_ONLY = re.compile(rf"^(?:{_UNIT_DESIGNATORS})\b(?:\s+{_UNIT_IDENTIFIER}){{1,2}}$")
+# A single short token with a digit ("4b", "12") is a unit identifier, not a street.
+_BARE_UNIT = re.compile(r"^(?=[a-z0-9-]*\d)[a-z0-9-]{1,4}$")
+# "3rd floor", "1st fl": a floor, not a house number, even though it starts with a digit.
+_FLOOR_LINE = re.compile(r"^\d+(?:st|nd|rd|th)\s+(?:floor|fl)\b")
+_STARTS_WITH_NUMBER = re.compile(r"^\d")
+# 5 digits, optionally followed by a 4-digit ZIP+4 extension.
+_ZIP_SHAPE = re.compile(r"^(\d{5})(?:[-\s]?\d{4})?$")
+
+
+def _zip5(postal_code: Any) -> str:
+    """ZIP5 from a 5-digit ZIP or a ZIP+4; "" for anything else (letters, stray digits)."""
+    match = _ZIP_SHAPE.match(str(postal_code or "").strip())
+    return match.group(1) if match else ""
+
+
+def _is_unit_only(line: str) -> bool:
+    text = line.strip().lower()
+    return bool(
+        _UNIT_ONLY.match(text) or _BARE_UNIT.match(text) or _FLOOR_LINE.match(text)
+    )
+
+
+def _street_line_one(lines: Any) -> str:
+    """The address line that carries the street: "address line 1" in the spec's sense.
+
+    FHIR does not guarantee the first `line` is the street; a care-of, attention or
+    building-name line can come first ("c/o jane doe", "123 main st"). Take the first
+    line that starts with a house number, else the first line, and never a line that is
+    only a unit.
+    """
+    line_list = [lines] if isinstance(lines, str) else lines
+    candidates = [
+        line
+        for line in (line_list or [])
+        if isinstance(line, str) and line and not _is_unit_only(line)
+    ]
+    street = next((c for c in candidates if _STARTS_WITH_NUMBER.match(c)), None)
+    return street or (candidates[0] if candidates else "")
+
+
 class FieldExtractor:
     """Extracts canonical field values from a normalized FHIR Patient."""
 
@@ -241,14 +298,23 @@ class FieldExtractor:
 
     @staticmethod
     def _extract_addresses(patient: Dict[str, Any], fields: PatientFields) -> None:
-        """Extract street lines and ZIP codes from all addresses."""
+        """Extract Street Line and ZIP5 from all addresses.
+
+        CMS v3.4.0 Table 3 defines Street Line as address line 1, standardized,
+        with the ZIP held exact. Each value is therefore `"<line 1>|<ZIP5>"`
+        (see `STREET_LINE_SEPARATOR`). The line is the street line (see
+        `_street_line_one`), never the unit in line 2, and never a line that is only
+        a unit designator ("apt 2", "4b"). An address with no 5-digit ZIP has no
+        Street Line, since the field cannot be held to an exact ZIP.
+        """
         for addr in patient.get("address") or []:
-            for line in addr.get("line") or []:
-                if line:
-                    fields.street_lines.add(line)
-            postal_code = addr.get("postalCode", "")
-            if postal_code:
-                fields.zip_codes.add(postal_code)
+            zip5 = _zip5(addr.get("postalCode"))
+            if zip5:
+                fields.zip_codes.add(zip5)
+
+            line1 = _street_line_one(addr.get("line"))
+            if zip5 and line1:
+                fields.street_lines.add(f"{line1}{STREET_LINE_SEPARATOR}{zip5}")
 
     @staticmethod
     def _extract_identifiers(patient: Dict[str, Any], fields: PatientFields) -> None:
