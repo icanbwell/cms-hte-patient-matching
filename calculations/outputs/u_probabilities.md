@@ -11,9 +11,16 @@ u = probability two randomly chosen, distinct people agree on a field. `u_unbias
 | last_name | fuzzy | 0.0008325 | 0.0008325 | 0.01 | 12.01x | Names2020_LastNames_RaceHispanic.xlsx |
 | first_name | exact | 0.001793 | 0.001793 | 0.02 | 11.16x | Names2020_FirstNames_Sex.xlsx |
 | first_name | fuzzy | 0.002257 | 0.002257 | 0.03 | 13.29x | Names2020_FirstNames_Sex.xlsx |
+| first_name | initial | 0.06717 | 0.06717 | n/a | n/a | Names2020_FirstNames_Sex.xlsx |
+| last_name | fuzzy_min4 | 0.0009106 | 0.0009106 | n/a | n/a | Names2020_LastNames_RaceHispanic.xlsx |
+| first_name | fuzzy_min4 | 0.002583 | 0.002583 | n/a | n/a | Names2020_FirstNames_Sex.xlsx |
 | middle_name | exact | 0.001793 | 0.001793 | 0.01 | 5.58x | Names2020_FirstNames_Sex.xlsx |
 | year_of_birth | exact | 0.01178 | 0.01178 | 0.015 | 1.27x | nc-est2025-agesex-res.csv |
 | dob_full | exact | 3.226e-05 | 3.226e-05 | 0.0001 | 3.10x | derived from year_of_birth |
+| dob_full | exact_datelevel | 3.226e-05 | 3.226e-05 | n/a | n/a | nc-est2025-agesex-res.csv |
+| dob_full | fuzzy_pm1day | 9.678e-05 | 9.678e-05 | n/a | n/a | nc-est2025-agesex-res.csv |
+| dob_full | fuzzy_swap | 0.0001084 | 0.0001084 | n/a | n/a | nc-est2025-agesex-res.csv |
+| dob_full | fuzzy_dl1 | 0.001044 | 0.001044 | n/a | n/a | nc-est2025-agesex-res.csv |
 | zip5 | exact | 9.698e-05 | 9.698e-05 | 0.0003 | 3.09x | acs5_zcta_population.json |
 | state | exact | 0.04455 | 0.04455 | 0.06 | 1.35x | NST-EST2025-POP.xlsx |
 | city | exact | 0.003121 | 0.003121 | 0.01 | 3.20x | sub-est2025.csv |
@@ -121,6 +128,48 @@ DANIEL: 0.5674%
 JOSEPH: 0.5651%
 ```
 
+### first_name (initial)
+
+Probability two distinct people share a first LETTER (the match set for an initial-only first name against a full name). Distribution = counts by first letter over the 53,615 listed first names; unlisted names are ignored, so this assumes they follow the listed letter mix.
+
+### last_name (fuzzy_min4)
+
+Ball = names within Damerau-OSA edit distance 1 (insert/delete/substitute/adjacent-transposition), found via a SymSpell-style deletion-neighborhood index over the 156,619 listed names (>= 4 chars eligible: 154,770); verified exactly with rapidfuzz. Fuzzy match is edit distance <= 1, i.e. exact match (p_v^2) plus the distance-1 near-miss ball mass. Names < 4 chars fall back to exact-match probability (p_v^2) only. Restricted to listed (>=100-occurrence) names -- same coverage caveat as the exact-match calculation.
+
+Top 10 by frequency (value, share of listed population):
+
+```
+SMITH: 0.9023%
+JOHNSON: 0.7076%
+WILLIAMS: 0.5946%
+BROWN: 0.5278%
+JONES: 0.5267%
+GARCIA: 0.4377%
+MILLER: 0.4300%
+RODRIGUEZ: 0.4135%
+DAVIS: 0.4091%
+MARTINEZ: 0.3960%
+```
+
+### first_name (fuzzy_min4)
+
+Ball = names within Damerau-OSA edit distance 1 (insert/delete/substitute/adjacent-transposition), found via a SymSpell-style deletion-neighborhood index over the 53,615 listed names (>= 4 chars eligible: 52,215); verified exactly with rapidfuzz. Fuzzy match is edit distance <= 1, i.e. exact match (p_v^2) plus the distance-1 near-miss ball mass. Names < 4 chars fall back to exact-match probability (p_v^2) only. Restricted to listed (>=100-occurrence) names -- same coverage caveat as the exact-match calculation.
+
+Top 10 by frequency (value, share of listed population):
+
+```
+MICHAEL: 1.2275%
+JOHN: 1.1034%
+JAMES: 1.0579%
+DAVID: 0.9932%
+ROBERT: 0.9742%
+WILLIAM: 0.7909%
+MARY: 0.6243%
+MARIA: 0.5836%
+DANIEL: 0.5674%
+JOSEPH: 0.5651%
+```
+
 ### middle_name (exact)
 
 PROXY, not a direct measurement: Census publishes no middle-name frequency table, so this reuses the first-name distribution (same source file) under the assumption that middle names are drawn from a similar cultural name pool as first names. True middle-name concentration could differ in either direction -- e.g. parents may deliberately pick a less-common middle name (lowering u), or lean on a smaller set of family/traditional names (raising u) -- and this tool cannot distinguish those effects. Headline = bound (a): listed names (53,615) renormalized to their own total, ignoring the unlisted remainder. Coverage = listed/total population = 0.9378 (283,236,830 / 302,031,536). Bound (b) lower bound, treating all unlisted individuals as unique singleton names: u_unbiased=1.576e-03, u_simple=1.576e-03. Names below the Census suppression threshold (<100 occurrences, or <11 for race/ethnicity cross-tabs) are not separately listed; this is the standard disclosure-avoidance suppression, not missing data.
@@ -162,6 +211,22 @@ Top 10 by frequency (value, share of listed population):
 ### dob_full (exact)
 
 Assumes birthdates are uniformly distributed within a birth year: u_dob = u_yob / 365.25 (365.25 approximates the leap-day effect; real birth-date distributions have mild seasonal non-uniformity -- e.g. September birth clustering -- which would raise this slightly above the uniform-model estimate).
+
+### dob_full (exact_datelevel)
+
+Date-level exact DOB agreement, uniform within each birth year using real calendar lengths; the baseline the widened DOB variants are divided by.
+
+### dob_full (fuzzy_pm1day)
+
+DOB agreement widened to variant 'pm1day' (see compute.dob_neighbors); mean 2.0 neighbor dates per date. Same uniform-within-year assumption as dob_full; neighbors in a different birth year are weighted by that year's mass. u_unbiased = u_simple here (N is in the hundreds of millions, so the finite-population correction is below 1e-8).
+
+### dob_full (fuzzy_swap)
+
+DOB agreement widened to variant 'swap' (see compute.dob_neighbors); mean 2.4 neighbor dates per date. Same uniform-within-year assumption as dob_full; neighbors in a different birth year are weighted by that year's mass. u_unbiased = u_simple here (N is in the hundreds of millions, so the finite-population correction is below 1e-8).
+
+### dob_full (fuzzy_dl1)
+
+DOB agreement widened to variant 'dl1' (see compute.dob_neighbors); mean 57.1 neighbor dates per date. Same uniform-within-year assumption as dob_full; neighbors in a different birth year are weighted by that year's mass. u_unbiased = u_simple here (N is in the hundreds of millions, so the finite-population correction is below 1e-8).
 
 ### zip5 (exact)
 
@@ -266,7 +331,7 @@ Namespace-size floor, not a frequency distribution: u = 1 / N where N = 67,994,9
 
 ## Sources and download dates
 
-All data downloaded/re-verified on 2026-09-30.
+All data downloaded/re-verified on 2026-10-06.
 
 - 2010 Census surnames: https://www2.census.gov/topics/genealogy/2010surnames/names.zip
 - 2020 Census first names: https://www2.census.gov/topics/genealogy/2020surnames/Names2020_FirstNames_Sex.xlsx

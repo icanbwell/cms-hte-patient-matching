@@ -337,3 +337,21 @@ numbers but needed a new release and pin bump and would not help real data.)
 **Where this could still bite:** `is_valid_number` is a strict "real line" check; for identifier
 matching a weaker "well-formed" check is usually the right bar — keep that distinction in mind for
 any other field validated through a library that checks assignment, not shape.
+
+## Widened-match levers: most rules have no P(collision) headroom, and a test harness can hide a lever's effect
+
+Rules 11, 12, 13-16, 08, 09 and 23 sit at exactly 2e-12, the approval threshold, so widening any of their
+fields (DOB within one edit: measured 32.4x the exact-DOB u; initial-only first name: 37.5x) cannot pass
+Table 3 as written. Rules 02, 03 and the eight household rules have the headroom. Restricted to the rules
+that fit, the best package (DOB within one edit in 02/03/household + initial-only in household) keeps
+0.9780 of the unrestricted 0.9822 pairs recall. Measured with `calculations/`,
+`scripts/collision_feasibility.py` and `scripts/lever_recall.py`; see
+`docs/TEST_SET_0.0.5_ACCURACY_ANALYSIS.md` section 5.7.
+
+Separately, the first lever harness reported "DOB within one edit in household rules only" as having no
+effect because it widened only `dob_fuzzy_match`; household rules compare DOB with exact matching, so
+that path was never touched. The corrected harness shows +0.0042 pairs recall.
+
+**Where this could still bite:** a monkeypatched counterfactual that reports "no effect" may just be
+patching a code path the rule does not use; check that the baseline-vs-lever comparison actually exercises
+the field in that rule before concluding a lever is inert.
