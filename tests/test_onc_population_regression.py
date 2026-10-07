@@ -68,7 +68,14 @@ POPULATION_CANDIDATES_PATH = ONC_CASES_DIR / "population_candidates.jsonl"
 # rule change intentionally moves these.
 # Each can be overridden per run via the named env var (see `threshold`).
 PRECISION_FLOOR = threshold("ONC_POP_PRECISION_FLOOR", 0.99)
-RECALL_FLOOR = threshold("ONC_POP_RECALL_FLOOR", 0.95)
+# TEMPORARY: lowered from 0.95 to 0.949 for test-set 0.0.5. On 0.0.5 the unchanged engine
+# measures 0.9503 (tp=12914 of 13588 true matches, so the 0.95 floor needs 12909). Two spec
+# compliance changes each lose a few true matches that the spec says must not link: the
+# placeholder table (555-exchange phones, 4 pairs) and Street Line = line 1 + exact ZIP5 (2
+# pairs with a blank ZIP). Together they measure 0.94996 (12908), one pair under the old floor.
+# Restore to 0.95 once the rule changes in docs/TEST_SET_0.0.5_ACCURACY_ANALYSIS.md (section 7)
+# land.
+RECALL_FLOOR = threshold("ONC_POP_RECALL_FLOOR", 0.949)
 FPR_CEILING = threshold("ONC_POP_FPR_CEILING", 0.001)
 F1_FLOOR = threshold("ONC_POP_F1_FLOOR", 0.97)
 

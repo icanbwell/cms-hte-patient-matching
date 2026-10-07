@@ -22,10 +22,10 @@ def _make_cached(
     first: str = "john",
     last: str = "smith",
     dob: str = "1990-01-15",
-    phone: str = "+12125551234",
+    phone: str = "+12122345678",
     email: str = "john@gmail.com",
     ssn_last4: str = "6789",
-    street: str = "123 main st",
+    street: str = "456 oak st",
 ) -> CachedPatient:
     return CachedPatient(
         patient_id=pid,
@@ -73,10 +73,10 @@ class TestPatientMatcherService:
             "name": [{"family": "smith", "given": ["john"]}],
             "birthDate": "1990-01-15",
             "telecom": [
-                {"system": "phone", "value": "+12125551234"},
+                {"system": "phone", "value": "+12122345678"},
                 {"system": "email", "value": "john@gmail.com"},
             ],
-            "address": [{"line": ["123 main st"]}],
+            "address": [{"line": ["456 oak st"]}],
             "identifier": [
                 {"system": "http://hl7.org/fhir/sid/us-ssn", "value": "xxx-xx-6789"},
             ],
@@ -102,10 +102,10 @@ class TestPatientMatcherService:
             "name": [{"family": "smith", "given": ["john"]}],
             "birthDate": "1990-01-15",
             "telecom": [
-                {"system": "phone", "value": "+12125551234"},
+                {"system": "phone", "value": "+12122345678"},
                 {"system": "email", "value": "john@gmail.com"},
             ],
-            "address": [{"line": ["123 main st"]}],
+            "address": [{"line": ["456 oak st"]}],
             "identifier": [
                 {"system": "http://hl7.org/fhir/sid/us-ssn", "value": "xxx-xx-6789"},
             ],
@@ -139,7 +139,7 @@ class TestPatientMatcherService:
             "resourceType": "Patient",
             "name": [{"family": "jones", "given": ["alice"]}],
             "birthDate": "2000-12-25",
-            "telecom": [{"system": "phone", "value": "+12125551111"}],
+            "telecom": [{"system": "phone", "value": "+12122341111"}],
         }
         result = await service.match_patient(query)
         assert result.outcome == "no_match"
@@ -171,10 +171,10 @@ class TestPatientMatcherService:
             "name": [{"family": "smith", "given": ["john"]}],
             "birthDate": "1990-01-15",
             "telecom": [
-                {"system": "phone", "value": "+12125551234"},
+                {"system": "phone", "value": "+12122345678"},
                 {"system": "email", "value": "john@gmail.com"},
             ],
-            "address": [{"line": ["123 main st"]}],
+            "address": [{"line": ["456 oak st"]}],
             "identifier": [
                 {"system": "http://hl7.org/fhir/sid/us-ssn", "value": "xxx-xx-6789"},
             ],

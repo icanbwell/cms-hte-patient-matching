@@ -25,8 +25,9 @@ class DroppedValue:
 
     Attributes:
         path: Where the value came from on the source FHIR Patient, e.g.
-            "name[0].given[0]", "name[0]" (whole name entry), "birthDate",
-            "telecom[1].value", "address[0].line[0]", "identifier[2].value".
+            "name[0].given[0]", "name[0].family", "name[0]" (whole name
+            entry), "birthDate", "telecom[1].value", "address[0].line[0]",
+            "address[0].postalCode", "identifier[2].value".
         raw_value: The original, pre-normalization string.
         reason: A short, stable code for why it was dropped. Each
             normalizer documents the exact set of codes it can produce

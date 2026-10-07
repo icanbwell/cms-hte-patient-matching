@@ -20,6 +20,12 @@ from .report import NormalizationReport
 
 logger = logging.getLogger(__name__)
 
+# Identifier systems whose last four digits are matched: SSN, and ITIN (the same OID the
+# matching engine's FieldExtractor reads).
+_LAST4_SYSTEMS = frozenset(
+    {"http://hl7.org/fhir/sid/us-ssn", "urn:oid:2.16.840.1.113883.4.4"}
+)
+
 
 class PatientNormalizer:
     """Normalizes a FHIR R4 Patient resource for demographic matching.
@@ -146,13 +152,28 @@ class PatientNormalizer:
         """Filter out placeholder identifiers (e.g. fake SSNs, fake Subscriber/Member IDs)."""
         result = []
         for index, ident in enumerate(identifiers):
-            value = ident.get("value", "")
-            system = ident.get("system", "")
+            # `or ""`, not a default: a present-but-null value is None, not absent.
+            value = ident.get("value") or ""
+            system = ident.get("system") or ""
             path = f"identifier[{index}].value"
 
             # Check SSN placeholders
             if system == "http://hl7.org/fhir/sid/us-ssn":
                 reason = self._placeholders.reason_for_ssn(value)
+                if reason is not None:
+                    if report is not None:
+                        report.record(path, value, reason)
+                    continue
+
+            # SSN / ITIN last 4 placeholders (0000, 9999, 1234, repeated digits). The
+            # matching engine only ever uses the last four digits of these.
+            if system in _LAST4_SYSTEMS:
+                digits = "".join(c for c in value if c.isdigit())
+                reason = (
+                    self._placeholders.reason_for_ssn_last4(digits[-4:])
+                    if len(digits) >= 4
+                    else None
+                )
                 if reason is not None:
                     if report is not None:
                         report.record(path, value, reason)

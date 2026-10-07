@@ -23,8 +23,8 @@ def _make_fhir_patient(
         "id": pid,
         "name": [{"family": last, "given": [first]}],
         "birthDate": dob,
-        "telecom": [{"system": "phone", "value": "+12125551234"}],
-        "address": [{"line": ["123 main st"]}],
+        "telecom": [{"system": "phone", "value": "+12122345678"}],
+        "address": [{"line": ["456 oak st"]}],
     }
 
 

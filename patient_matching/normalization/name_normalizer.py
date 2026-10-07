@@ -16,11 +16,15 @@ from typing import Any, Dict, List, Optional, Set
 
 from nicknames import NickNamer
 
-from .placeholder_detector import PlaceholderDetector
+from .placeholder_detector import FAMILY_NAME_EXACT_REASONS, PlaceholderDetector
 from .report import NormalizationReport
 from .text_utils import normalize_text
 
 logger = logging.getLogger(__name__)
+
+# Family names that spell like a placeholder but are real ("Doe" is only a placeholder paired
+# with a generic "John"/"Jane"; "Na" is a common Korean surname, "N/A" normalizes to the same).
+_REAL_FAMILY_NAMES = frozenset({"doe", "na"})
 
 NICKNAME_TABLE_VERSION = "1.0.0"
 SUFFIX_TABLE_VERSION = "1.0.0"
@@ -208,7 +212,10 @@ class NameNormalizer:
         primary_given = norm_given[0] if norm_given else ""
         full_name = f"{primary_given}{norm_family}"
 
-        given_reason = self._placeholders.reason_for_name(primary_given)
+        family_dropped = False
+        given_reason = self._placeholders.reason_for_name(
+            primary_given, allow_initial=True
+        )
         family_reason = self._placeholders.reason_for_name(norm_family)
         if given_reason is not None and family_reason is not None:
             if report is not None:
@@ -228,8 +235,29 @@ class NameNormalizer:
             primary_given = ""
             full_name = norm_family
 
+        # A placeholder family name ("Unknown", "ZZZ") with a real given name is treated as
+        # absent, symmetric to the given-name case above. "Doe" alone is not a placeholder:
+        # the spec lists it only paired with a generic "John"/"Jane", which the combined
+        # given+family check below catches.
+        # Only the unidentified / unknown / repeated-character reasons drop a family name on
+        # its own: the prefix patterns would drop real surnames (Infante, Babyak, Zzaman), the
+        # test/newborn word lists would drop Sample, Demo and Baby, and "na" is a real surname.
+        elif (
+            family_reason in FAMILY_NAME_EXACT_REASONS
+            and norm_family not in _REAL_FAMILY_NAMES
+        ):
+            if report is not None and family:
+                report.record(f"name[{index}].family", family, family_reason)
+            norm_family = ""
+            full_name = primary_given
+            family_dropped = True
+
+        # A lone initial is a legitimate given name even when the family name was a
+        # placeholder, so only re-check it for other placeholder shapes.
         full_name_reason = (
-            self._placeholders.reason_for_name(full_name) if full_name else None
+            self._placeholders.reason_for_name(full_name, allow_initial=family_dropped)
+            if full_name
+            else None
         )
         if full_name_reason is not None:
             if report is not None:

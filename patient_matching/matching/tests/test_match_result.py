@@ -88,7 +88,7 @@ class TestMatchType:
                 "name": [{"given": ["john"], "family": last}],
                 "birthDate": "1990-01-15",
                 "telecom": [],
-                "address": [{"line": ["123 main st"]}],
+                "address": [{"line": ["123 main st"], "postalCode": "10001"}],
             }
 
         candidate = _street_patient("smtih")
