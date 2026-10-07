@@ -86,6 +86,23 @@ class TestExtractorStreetLine:
         values = _street_lines(_address(["main st", "rear"], "10001"))
         assert values == {"main st|10001"}
 
+    @pytest.mark.parametrize(
+        ("lines", "street"),
+        [
+            (["2b", "123 main st"], "123 main st"),  # bare unit first, digit-leading
+            (["main st", "12"], "main st"),
+            (["oak street", "2b"], "oak street"),
+            (["apt 2", "main st"], "main st"),
+            (["main plaza", "3rd floor"], "main plaza"),  # floor is not a house number
+            (["1st floor", "123 main st"], "123 main st"),
+            (["c/o jane doe", "3rd ave"], "3rd ave"),  # ordinal street is still a street
+        ],
+    )
+    def test_unit_lines_are_skipped_before_the_street_is_chosen(
+        self, lines: List[str], street: str
+    ) -> None:
+        assert _street_lines(_address(lines, "10001")) == {f"{street}|10001"}
+
     def test_malformed_line_values_do_not_crash(self) -> None:
         assert _street_lines(_address([123], "10001")) == set()  # type: ignore[list-item]
         assert _street_lines({"line": "123 main st", "postalCode": "10001"}) == {
@@ -102,6 +119,10 @@ class TestExtractorStreetLine:
             ("", set()),
             ("1000", set()),  # not a ZIP
             ("123456", set()),  # six digits is not a US ZIP: don't truncate it
+            ("ab10001", set()),  # stray characters are not stripped into a ZIP
+            ("1000 1", set()),
+            ("10001 1234", {"123 main st|10001"}),  # ZIP+4 written with a space
+            ("10001-12", set()),  # truncated ZIP+4
         ],
     )
     def test_zip_must_be_present_and_is_reduced_to_five_digits(

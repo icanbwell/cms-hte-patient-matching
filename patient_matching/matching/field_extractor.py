@@ -176,18 +176,24 @@ _UNIT_IDENTIFIER = r"(?:\d[a-z0-9-]*|[a-z])"
 _UNIT_ONLY = re.compile(rf"^(?:{_UNIT_DESIGNATORS})\b(?:\s+{_UNIT_IDENTIFIER}){{1,2}}$")
 # A single short token with a digit ("4b", "12") is a unit identifier, not a street.
 _BARE_UNIT = re.compile(r"^(?=[a-z0-9-]*\d)[a-z0-9-]{1,4}$")
+# "3rd floor", "1st fl": a floor, not a house number, even though it starts with a digit.
+_FLOOR_LINE = re.compile(r"^\d+(?:st|nd|rd|th)\s+(?:floor|fl)\b")
 _STARTS_WITH_NUMBER = re.compile(r"^\d")
+# 5 digits, optionally followed by a 4-digit ZIP+4 extension.
+_ZIP_SHAPE = re.compile(r"^(\d{5})(?:[-\s]?\d{4})?$")
 
 
 def _zip5(postal_code: Any) -> str:
-    """ZIP5 from a 5-digit ZIP or a ZIP+4 (9 digits); "" for anything else."""
-    digits = re.sub(r"\D", "", str(postal_code or ""))
-    return digits[:5] if len(digits) in (5, 9) else ""
+    """ZIP5 from a 5-digit ZIP or a ZIP+4; "" for anything else (letters, stray digits)."""
+    match = _ZIP_SHAPE.match(str(postal_code or "").strip())
+    return match.group(1) if match else ""
 
 
 def _is_unit_only(line: str) -> bool:
     text = line.strip().lower()
-    return bool(_UNIT_ONLY.match(text) or _BARE_UNIT.match(text))
+    return bool(
+        _UNIT_ONLY.match(text) or _BARE_UNIT.match(text) or _FLOOR_LINE.match(text)
+    )
 
 
 def _street_line_one(lines: Any) -> str:
@@ -199,11 +205,13 @@ def _street_line_one(lines: Any) -> str:
     only a unit.
     """
     line_list = [lines] if isinstance(lines, str) else lines
-    candidates = [line for line in (line_list or []) if isinstance(line, str) and line]
+    candidates = [
+        line
+        for line in (line_list or [])
+        if isinstance(line, str) and line and not _is_unit_only(line)
+    ]
     street = next((c for c in candidates if _STARTS_WITH_NUMBER.match(c)), None)
-    if street is None and candidates:
-        street = candidates[0]
-    return street if street and not _is_unit_only(street) else ""
+    return street or (candidates[0] if candidates else "")
 
 
 class FieldExtractor:
