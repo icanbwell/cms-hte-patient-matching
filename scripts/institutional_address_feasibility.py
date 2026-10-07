@@ -123,14 +123,14 @@ def report() -> None:
         "ZIP dropped": lambda r: (r.street, ""),
         "one-char street typo": lambda r: (_typo(r.street, rng), r.zip),
     }
-    rows = []
+    variant_rows: List[Tuple[str, str]] = []
     for label, fn in variants.items():
         hits = 0
         for r in sample:
             street, zip_code = fn(r)
             hits += address_key(street, r.city, r.state, zip_code) in lookup
-        rows.append((label, f"{hits / len(sample):.1%}"))
-    print(_md_table(rows, ("variation", "still matches registry")))
+        variant_rows.append((label, f"{hits / len(sample):.1%}"))
+    print(_md_table(variant_rows, ("variation", "still matches registry")))
     print("\n(Baseline unperturbed = 100% by construction.)")
 
 

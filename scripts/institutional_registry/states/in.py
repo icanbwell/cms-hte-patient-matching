@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import re
 from html.parser import HTMLParser
-from typing import Dict, List
+from typing import Dict, List, Optional, Tuple
 
 from scripts.institutional_registry.states.common import Session, make_row
 
@@ -40,7 +40,7 @@ class _Providers(HTMLParser):
         self._p: List[str] = []
         self._in_p = False
 
-    def handle_starttag(self, tag: str, attrs: List[tuple]) -> None:
+    def handle_starttag(self, tag: str, attrs: List[Tuple[str, Optional[str]]]) -> None:
         if tag == "div":
             if self._depth:
                 self._depth += 1

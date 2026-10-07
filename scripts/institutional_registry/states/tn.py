@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import re
 from html.parser import HTMLParser
-from typing import Dict, List
+from typing import Dict, List, Optional, Tuple
 
 from scripts.institutional_registry.states.common import Session, make_row
 
@@ -50,7 +50,7 @@ class _Table(HTMLParser):
         self._in_row = False
         self._in_cell = False
 
-    def handle_starttag(self, tag: str, attrs: List) -> None:
+    def handle_starttag(self, tag: str, attrs: List[Tuple[str, Optional[str]]]) -> None:
         if tag == "tr" and "row" in (dict(attrs).get("class") or "").split():
             self._in_row, self._row = True, []
         elif tag == "td" and self._in_row:

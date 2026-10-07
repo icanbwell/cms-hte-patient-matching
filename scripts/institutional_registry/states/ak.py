@@ -37,7 +37,7 @@ def _find_xlsx_url(session: Session) -> str:
     open_lists = [h for h in hrefs if "alh" in h.lower() or "open" in h.lower()]
     if not open_lists:
         raise RuntimeError(f"AK: no assisted-living .xlsx link found on {PAGE}")
-    return urllib.parse.urljoin(PAGE, open_lists[0])
+    return str(urllib.parse.urljoin(PAGE, open_lists[0]))
 
 
 def fetch(session: Session) -> List[Dict[str, str]]:

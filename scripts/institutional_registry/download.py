@@ -236,11 +236,9 @@ def fetch_hifld_prisons() -> None:
     # `url` comes from a remote catalog, so it is bound as a parameter, not interpolated. The
     # COPY target can't be a parameter in DuckDB; it is a program constant.
     con.execute(
-        f"""copy (
-            select FACILITYID, NAME, ADDRESS, CITY, STATE, ZIP, TYPE, STATUS, CAPACITY,
-                   SOURCEDATE
-            from read_parquet(?)
-        ) to '{DEST / "hifld_prisons.csv"}' (format csv, header)""",
+        f"copy (select FACILITYID, NAME, ADDRESS, CITY, STATE, ZIP, TYPE, STATUS, CAPACITY, "  # nosec B608
+        "SOURCEDATE from read_parquet(?)) "
+        f"to '{DEST / 'hifld_prisons.csv'}' (format csv, header)",
         [url],
     )
     _record("hifld_prisons.csv", url)
@@ -467,7 +465,7 @@ def fetch_state_lists() -> None:
 def latest_overture_release() -> str:
     """Newest Overture release folder name, from the public bucket listing."""
     listing = _curl(OVERTURE_LIST, timeout=60).decode("utf-8", "replace")
-    return max(re.findall(r"release/([0-9][0-9.-]*)/", listing))
+    return str(max(re.findall(r"release/([0-9][0-9.-]*)/", listing)))
 
 
 def fetch_overture() -> None:
@@ -487,16 +485,15 @@ def fetch_overture() -> None:
     # The release name comes from a remote bucket listing, so it and the category names are
     # bound as parameters. The COPY target can't be a parameter; it is a program constant.
     con.execute(
-        f"""copy (
-            select id, struct_extract(names, 'primary') as name,
-                   struct_extract(taxonomy, 'primary') as category, confidence,
-                   addresses[1].freeform as street, addresses[1].locality as city,
-                   addresses[1].region as state, addresses[1].postcode as zip,
-                   cast(? as varchar) as release
-            from read_parquet(?)
-            where addresses[1].country = 'US'
-              and struct_extract(taxonomy, 'primary') in ({placeholders})
-        ) to '{DEST / "overture_gq.csv"}' (format csv, header)""",
+        f"copy (select id, struct_extract(names, 'primary') as name, "  # nosec B608
+        "struct_extract(taxonomy, 'primary') as category, confidence, "
+        "addresses[1].freeform as street, addresses[1].locality as city, "
+        "addresses[1].region as state, addresses[1].postcode as zip, "
+        "cast(? as varchar) as release "
+        "from read_parquet(?) "
+        "where addresses[1].country = 'US' "
+        f"and struct_extract(taxonomy, 'primary') in ({placeholders})) "
+        f"to '{DEST / 'overture_gq.csv'}' (format csv, header)",
         [release, path, *OVERTURE_CATEGORIES],
     )
     _record("overture_gq.csv", path)
