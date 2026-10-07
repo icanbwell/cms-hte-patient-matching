@@ -26,18 +26,24 @@ def test_plain_xml_parses() -> None:
     [
         BILLION_LAUGHS,
         b'<!DOCTYPE r [<!ENTITY x SYSTEM "file:///etc/passwd">]><r>&x;</r>',
-        b"<!doctype r><r/>",  # DOCTYPE is matched case-insensitively
     ],
-    ids=["entity-expansion", "external-entity", "lowercase-doctype"],
+    ids=["entity-expansion", "external-entity"],
 )
 def test_doctype_and_entities_are_rejected(payload: bytes) -> None:
-    with pytest.raises(ValueError, match="DOCTYPE or entities"):
+    with pytest.raises(ValueError, match="DTDForbidden"):
         safe_fromstring(payload)
 
 
-def test_utf16_is_rejected_because_its_markup_is_invisible_to_the_check() -> None:
-    with pytest.raises(UnicodeDecodeError):
-        safe_fromstring("<r><!DOCTYPE x></r>".encode("utf-16"))
+def test_lowercase_doctype_is_not_parsed() -> None:
+    # expat is case-sensitive, so this is a syntax error rather than a forbidden DTD.
+    with pytest.raises((ValueError, SyntaxError)):
+        safe_fromstring(b"<!doctype r><r/>")
+
+
+def test_utf16_doctype_is_not_parsed() -> None:
+    # Rejected either as a forbidden DTD or as unparseable; it must never yield a tree.
+    with pytest.raises((ValueError, SyntaxError)):
+        safe_fromstring("<!DOCTYPE x><r/>".encode("utf-16"))
 
 
 def _xlsx(rows: List[List[str]]) -> bytes:
@@ -66,5 +72,5 @@ def test_read_xlsx_decodes_excel_escapes_and_rejects_hostile_parts() -> None:
     hostile = io.BytesIO()
     with zipfile.ZipFile(hostile, "w") as zf:
         zf.writestr("xl/worksheets/sheet1.xml", BILLION_LAUGHS)
-    with pytest.raises(ValueError, match="DOCTYPE or entities"):
+    with pytest.raises(ValueError, match="DTDForbidden"):
         read_xlsx(hostile.getvalue())

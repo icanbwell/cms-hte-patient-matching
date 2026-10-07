@@ -20,9 +20,13 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-import xml.etree.ElementTree as ET
 import zipfile
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Union
+
+from defusedxml.ElementTree import fromstring as defused_fromstring
+
+if TYPE_CHECKING:
+    from xml.etree.ElementTree import Element
 
 # Several state hosts (LA, TN, MS, WY, ...) return 403 to a bare curl or "Mozilla/5.0" UA
 # and answer a full browser string.
@@ -225,24 +229,16 @@ def _column_index(ref: str) -> int:
     return index - 1
 
 
-def safe_fromstring(data: bytes) -> ET.Element:
+def safe_fromstring(data: bytes) -> Element:
     """Parse XML from an untrusted source (a state website, a downloaded spreadsheet).
 
     The standard library parser expands entities declared in a DOCTYPE, which is how
     entity-expansion ("billion laughs") attacks work. None of the XML this package reads
-    (OOXML parts, Georgia's facility feed) has a DOCTYPE, so any document that declares one,
-    or isn't UTF-8 (which would hide the declaration from this check), is rejected instead
-    of parsed. This is the core protection `defusedxml` provides, without a new dependency.
+    (OOXML parts, Georgia's facility feed) has a DOCTYPE, so `defusedxml` is told to reject
+    any document that declares one. Its exceptions subclass ValueError.
     """
-    text = data.decode(
-        "utf-8"
-    )  # raises on UTF-16/32, whose markup this check can't see
-    upper = text.upper()
-    if "<!DOCTYPE" in upper or "<!ENTITY" in upper:
-        raise ValueError("refusing to parse XML that declares a DOCTYPE or entities")
-    parser = ET.XMLParser()
-    parser.feed(data)
-    return parser.close()
+    root: Element = defused_fromstring(data, forbid_dtd=True)
+    return root
 
 
 def _unescape_ooxml(text: str) -> str:

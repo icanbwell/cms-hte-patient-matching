@@ -19,8 +19,9 @@ a business phone and is not carried.
 
 from __future__ import annotations
 
-import xml.etree.ElementTree as ET
 from typing import Dict, List
+
+from defusedxml.ElementTree import ParseError
 
 from scripts.institutional_registry.states.common import (
     Session,
@@ -39,7 +40,7 @@ def fetch(session: Session) -> List[Dict[str, str]]:
     raw = session.get(SOURCE)
     try:
         root = safe_fromstring(raw)
-    except (ET.ParseError, UnicodeDecodeError, ValueError) as err:
+    except (ParseError, UnicodeDecodeError, ValueError) as err:
         raise RuntimeError(f"GA: {SOURCE} no longer returns plain XML: {err}") from err
     elements = root.findall("FAC_SEARCH")
     if len(elements) < 5000:
