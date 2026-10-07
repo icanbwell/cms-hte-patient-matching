@@ -44,9 +44,15 @@ home) appears once per type. The mapping is in `scripts/institutional_registry/f
 
 The five extensions, the `institution-type` code system and the identifier systems sit under
 `https://cms-hte-patient-matching.icanbwell.com/fhir/`, the same base the engine uses for its own
-extension. None is published as a conformance resource (StructureDefinition, CodeSystem) yet, so
-the resources do not claim a `meta.profile`. All 155,480 resources validate against the
-`fhirschemapy` R4B `Organization` model and read back to the same values. Reading it:
+extension. None is published as a conformance resource (StructureDefinition, CodeSystem) yet (follow-up:
+BAI-1086), so the resources do not claim a `meta.profile`. All 155,480 resources validate against the
+`fhirschemapy` R4B `Organization` model and read back to the same values. **Names are kept as the sources publish them.** Several state lists (MI, WI, NC, AZ, AK, CA) and the
+Princeton data carry facility names that, for small private homes, may be a person's name; only Oregon's
+adult foster home names are blanked (`states/or_state.py`). The project owner decided on 2026-10-07 to keep
+the others as published (the data is already public at its source). `Organization.name` therefore carries
+them, exactly as the earlier CSV did.
+
+Reading it:
 
 ```python
 from scripts.institutional_registry.fhir_registry import read_registry, read_resources
