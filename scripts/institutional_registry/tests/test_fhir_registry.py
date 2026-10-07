@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import gzip
 import re
+from dataclasses import replace
 from pathlib import Path
 from typing import Any, Dict
 
@@ -79,9 +80,7 @@ def test_registry_specific_fields_are_extensions() -> None:
 
 
 def test_beds_extension_is_omitted_when_unknown() -> None:
-    org = fr.to_organization(
-        fr.RegistryEntry(**{**ENTRY.__dict__, "beds": None})  # type: ignore[arg-type]
-    )
+    org = fr.to_organization(replace(ENTRY, beds=None))
     assert _ext(org, fr.BEDS_URL) == []
 
 
@@ -100,9 +99,7 @@ def test_beds_parsing_drops_non_numeric_values(raw: str, expected: object) -> No
 
 
 def test_unknown_institution_type_gets_the_other_organization_type() -> None:
-    org = fr.to_organization(
-        fr.RegistryEntry(**{**ENTRY.__dict__, "institution_type": "shelter_x"})  # type: ignore[arg-type]
-    )
+    org = fr.to_organization(replace(ENTRY, institution_type="shelter_x"))
     assert org["type"][0]["coding"][0]["code"] == "other"
     assert org["type"][1]["coding"][0]["code"] == "shelter_x"
 
@@ -115,11 +112,8 @@ def test_resource_id_is_stable_and_a_valid_fhir_id() -> None:
 
 
 def test_several_ids_from_one_source_survive_a_round_trip() -> None:
-    entry = fr.RegistryEntry(
-        **{
-            **ENTRY.__dict__,  # type: ignore[arg-type]
-            "sources": (("overture", "aaa"), ("overture", "bbb"), ("pos", "")),
-        }
+    entry = replace(
+        ENTRY, sources=(("overture", "aaa"), ("overture", "bbb"), ("pos", ""))
     )
     assert fr.from_organization(fr.to_organization(entry)) == entry
 
@@ -143,9 +137,7 @@ def test_from_organization_rejects_resources_that_are_not_ours(
 
 
 def test_written_file_round_trips_and_is_byte_reproducible(tmp_path: Path) -> None:
-    other = fr.RegistryEntry(
-        **{**ENTRY.__dict__, "institution_type": "hospice", "beds": None}
-    )  # type: ignore[arg-type]
+    other = replace(ENTRY, institution_type="hospice", beds=None)
     first, second = tmp_path / "a.ndjson.gz", tmp_path / "b.ndjson.gz"
     assert fr.write_registry([ENTRY, other], first) == 2
     fr.write_registry([ENTRY, other], second)
@@ -154,9 +146,7 @@ def test_written_file_round_trips_and_is_byte_reproducible(tmp_path: Path) -> No
 
 
 def test_unicode_line_breaks_cannot_split_a_record(tmp_path: Path) -> None:
-    tricky = fr.RegistryEntry(
-        **{**ENTRY.__dict__, "name": "Home\u2028for\u2029Elders\u0085"}  # type: ignore[arg-type]
-    )
+    tricky = replace(ENTRY, name="Home\u2028for\u2029Elders\u0085")
     path = tmp_path / "x.ndjson.gz"
     fr.write_registry([tricky, ENTRY], path)
     with gzip.open(path, "rt", encoding="utf-8") as f:
