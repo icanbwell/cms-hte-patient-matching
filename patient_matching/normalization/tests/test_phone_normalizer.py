@@ -10,16 +10,16 @@ class TestPhoneNormalizer:
         self.normalizer = PhoneNormalizer()
 
     def test_us_number_to_e164(self) -> None:
-        assert self.normalizer.normalize_phone("(503) 555-1234") == "+15035551234"
+        assert self.normalizer.normalize_phone("(503) 234-5678") == "+15032345678"
 
     def test_already_e164(self) -> None:
-        assert self.normalizer.normalize_phone("+15035551234") == "+15035551234"
+        assert self.normalizer.normalize_phone("+15032345678") == "+15032345678"
 
     def test_ten_digit(self) -> None:
-        assert self.normalizer.normalize_phone("5035551234") == "+15035551234"
+        assert self.normalizer.normalize_phone("5032345678") == "+15032345678"
 
     def test_with_dashes(self) -> None:
-        assert self.normalizer.normalize_phone("503-555-1234") == "+15035551234"
+        assert self.normalizer.normalize_phone("503-234-5678") == "+15032345678"
 
     def test_invalid_number_returns_none(self) -> None:
         assert self.normalizer.normalize_phone("123") is None
@@ -66,7 +66,7 @@ class TestPhoneNormalizer:
     def test_normalize_telecoms(self) -> None:
         patient = {
             "telecom": [
-                {"system": "phone", "value": "(503) 555-1234", "use": "home"},
+                {"system": "phone", "value": "(503) 234-5678", "use": "home"},
                 {"system": "email", "value": "John@Gmail.COM", "use": "home"},
                 {"system": "phone", "value": "0000000000", "use": "work"},
             ]
@@ -75,7 +75,7 @@ class TestPhoneNormalizer:
 
         # Placeholder phone should be filtered
         assert len(result) == 2
-        assert result[0]["value"] == "+15035551234"
+        assert result[0]["value"] == "+15032345678"
         assert result[0]["use"] == "home"
         assert result[1]["value"] == "john@gmail.com"
 
@@ -95,8 +95,8 @@ class TestPhoneNormalizer:
     def test_phone_type_preserved(self) -> None:
         patient = {
             "telecom": [
-                {"system": "phone", "value": "+15035551234", "use": "mobile"},
-                {"system": "phone", "value": "+15035554321", "use": "work"},
+                {"system": "phone", "value": "+15032345678", "use": "mobile"},
+                {"system": "phone", "value": "+15032348765", "use": "work"},
             ]
         }
         result = self.normalizer.normalize_patient_telecoms(patient)

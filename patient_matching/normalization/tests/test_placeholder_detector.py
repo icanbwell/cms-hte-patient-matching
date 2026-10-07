@@ -82,7 +82,8 @@ class TestPlaceholderDates:
         assert self.detector.reason_for_date("") == "empty"
         assert self.detector.reason_for_date("unknown") == "unknown_placeholder"
         assert self.detector.reason_for_date("not-a-date") == "unparseable"
-        assert self.detector.reason_for_date("1800-01-01") == "out_of_range"
+        assert self.detector.reason_for_date("1800-01-01") == "placeholder_date"
+        assert self.detector.reason_for_date("1850-06-01") == "out_of_range"
         assert self.detector.reason_for_date("2099-01-01") == "out_of_range"
         assert self.detector.reason_for_date("1990-01-15") is None
 
@@ -103,7 +104,7 @@ class TestPlaceholderPhone:
 
     def test_real_phone_not_placeholder(self) -> None:
         assert not self.detector.is_placeholder_phone("+15551234567")
-        assert not self.detector.is_placeholder_phone("503-555-1234")
+        assert not self.detector.is_placeholder_phone("503-234-5678")
 
     def test_reason_for_phone_codes(self) -> None:
         """Detector-level reasons only -- format/validity rejections
@@ -126,14 +127,16 @@ class TestPlaceholderAddress:
         assert self.detector.is_placeholder_address("General Delivery")
 
     def test_real_address_not_placeholder(self) -> None:
-        assert not self.detector.is_placeholder_address("123 Main St")
+        assert not self.detector.is_placeholder_address("456 Oak Ave")
         assert not self.detector.is_placeholder_address("456 Oak Ave Apt 2B")
 
     def test_reason_for_address_codes(self) -> None:
         assert self.detector.reason_for_address("") == "empty"
         assert self.detector.reason_for_address("Unknown") == "unknown_placeholder"
         assert self.detector.reason_for_address("Homeless") == "placeholder_pattern"
-        assert self.detector.reason_for_address("123 Main St") is None
+        assert self.detector.reason_for_address("123 Main St") == "generic_street"
+        assert self.detector.reason_for_address("123 Main St", has_unit=True) is None
+        assert self.detector.reason_for_address("456 Oak Ave") is None
 
 
 class TestPlaceholderEmail:

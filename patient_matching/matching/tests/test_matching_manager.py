@@ -22,10 +22,10 @@ def _make_patient(**overrides: Any) -> Dict[str, Any]:
         "name": [{"family": "smith", "given": ["john"]}],
         "birthDate": "1990-01-15",
         "telecom": [
-            {"system": "phone", "value": "+12125551234"},
+            {"system": "phone", "value": "+12122345678"},
             {"system": "email", "value": "john@gmail.com"},
         ],
-        "address": [{"line": ["123 main st"]}],
+        "address": [{"line": ["456 oak st"]}],
         "identifier": [
             {
                 "system": "http://hl7.org/fhir/sid/us-ssn",
