@@ -32,7 +32,7 @@ calculations/
   compute.py    # one pure, unit-tested function per field -- no I/O
   run_all.py    # orchestrates download -> compute -> write outputs/, with fuzzy-match checkpointing
   tests/        # synthetic-fixture unit tests for compute.py
-  data/raw/         # downloaded source files (gitignored)
+  data/raw/         # downloaded source files (committed; checksums in SHA256SUMS)
   data/processed/   # fuzzy-match ball-mass checkpoints (gitignored)
   outputs/          # u_probabilities.csv / .md (generated, checked in)
 ```
@@ -110,9 +110,11 @@ these paths periodically):
 
 See the Setup/Running sections in [`README.md`](../README.md). In short: `python3.12 -m venv
 .venv`, install `requirements.txt`, optionally drop `CENSUS_API_KEY`/`HUD_TOKEN` into a
-gitignored `calculations/.env`, then `python run_all.py` and `pytest tests/`. Both `data/raw/`
-and `data/processed/` are gitignored and fully reproducible from `run_all.py` alone — nothing in
-those directories should be assumed durable or edited by hand.
+gitignored `calculations/.env`, then `python run_all.py` and `pytest tests/`. `data/raw/` is
+committed (public aggregate files, about 41 MB, so the numbers in `outputs/` can be reproduced
+offline and a source file that changes upstream is visible as a diff); verify it with
+`cd data/raw && shasum -a 256 -c SHA256SUMS`. `data/processed/` is gitignored and fully
+reproducible from `run_all.py`. Neither directory should be edited by hand.
 
 ## Extending this later
 

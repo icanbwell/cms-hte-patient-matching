@@ -1,8 +1,7 @@
 .venv/
 .env
-data/raw/*
+# data/raw/ is committed (public Census/ACS/CMS aggregates; see data/raw/SHA256SUMS).
 data/processed/*
-!data/raw/.gitkeep
 !data/processed/.gitkeep
 __pycache__/
 *.pyc
