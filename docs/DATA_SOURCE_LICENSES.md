@@ -76,6 +76,7 @@ which are the raw `state_al_*` files. Sources and methods are in
 | NV | No terms on the vendor-hosted licensee search; footers are vendor and state copyright boilerplate. Weaker: the search is vendor-hosted. |
 | OK | ArcGIS item has empty license and access fields. OSDH's own terms page returned 404; a sister agency's "public domain" notice was seen only in a search snippet. |
 | OR | State site terms have no reuse or scraping prohibition. Adult foster home names are not carried (they are mostly licensees' personal names). |
+| SC | The ArcGIS item page for the layer reads: "No special restrictions or limitations on using the item's content have been provided." (read on the live page). Weaker: the DPH website policy says content is copyrighted and may not be reproduced or distributed except as permitted by DPH in writing (wording paraphrased by the summariser); whether that policy extends to the separately hosted layer was not shown. |
 | WI | Layer metadata gives only a copyright credit to the department; no license or access constraint. A portal-wide fair-use clause appeared only in a search snippet. Layers 17 and 2 were not checked individually. |
 | WV | `wv.gov` legal notices are warranty and liability disclaimers; the link policy bars framing. No reuse restriction found. |
 
@@ -92,7 +93,6 @@ which are the raw `state_al_*` files. Sources and methods are in
 | State | Terms | Evidence | Required action |
 |---|---|---|---|
 | IN | Site terms (verbatim, read on the live page): "Except as may otherwise be allowed by law (including but not limited to the Indiana Access to Public Records Law), the viewing, printing, or downloading of any content, graphic, form, or document from the Portal grants you only a limited, nonexclusive license for use solely by you for your own personal use, and not for republication, distribution, assignment, sublicense, sale, preparation of derivative works or other use. No part of any content, graphic, form, or document may be reproduced in any form or incorporated into any information retrieval system, electronic or mechanical, other than for your personal use (not for resale or redistribution). You must keep intact all copyright and other proprietary notices. IN.gov may revoke this license at any time." | `in.gov/core/terms_of_use.html` | Redistribution in a public repo is outside the stated license. Request permission, or obtain the list through an Access to Public Records Act request and confirm what reuse that allows; otherwise remove the file and keep the fetch script. Whether the ISDH directory page is covered by these Portal terms or by the public-records carve-out is a legal question. |
-| SC | DPH website policy: content is copyrighted; no reproducing or distributing any part of the site except as permitted by DPH in writing. Whether this covers the separately hosted ArcGIS layer is unclear; the layer's own metadata is empty. The restriction wording is paraphrased. | `dph.sc.gov/about/accessibility-nondiscrimination-privacy-notices/website-accessibility-and-policies` | Request written permission or remove the file. |
 | VA | VDSS web policy: "You may use content under fair use"; other uses need written permission. | `dss.virginia.gov/general-info/web-policy/` | Bulk redistribution is probably beyond fair use; request permission or remove the file. |
 | KY | General Commonwealth copyright, "fair use" only. Search snippet only; the primary page failed to load and the CHFS policy pages returned 404. | `ky.gov/kystandards/statements/copyright.html` (unread) | Confirm on the live page; request permission if it applies. |
 | MI | Search snippet only: no commercial use or resale of website data without a written agreement, and no access "through any automated means (including use of scripts, web crawlers or screen scrapers)". The michigan.gov terms pages returned 403, and whether they cover the LARA document host is unconfirmed. | `michigan.gov/en/about/terms-of-use` (unread) | Confirm in a browser; request permission if it applies. |
@@ -119,7 +119,7 @@ which are the raw `state_al_*` files. Sources and methods are in
 ## Open decisions
 
 1. Prison Policy Initiative: permission request, or removal.
-2. Restrictive and unresolved state lists (IN, SC, VA, KY, MI, AK, LA, MA, NE): permission,
+2. Restrictive and unresolved state lists (IN, VA, KY, MI, AK, LA, MA, NE): permission,
    removal, or a decision to accept the risk.
 3. TX and NC "unaltered, noncommercial" conditions: whether the committed files and the registry
    comply.
