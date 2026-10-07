@@ -198,9 +198,8 @@ def _street_line_one(lines: Any) -> str:
     line that starts with a house number, else the first line, and never a line that is
     only a unit.
     """
-    if isinstance(lines, str):
-        lines = [lines]
-    candidates = [line for line in (lines or []) if isinstance(line, str) and line]
+    line_list = [lines] if isinstance(lines, str) else lines
+    candidates = [line for line in (line_list or []) if isinstance(line, str) and line]
     street = next((c for c in candidates if _STARTS_WITH_NUMBER.match(c)), None)
     if street is None and candidates:
         street = candidates[0]
