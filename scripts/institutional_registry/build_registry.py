@@ -1,23 +1,30 @@
-"""Combine the downloaded sources into one CSV of institutional addresses and their type.
+"""Combine the downloaded sources into one file of institutional addresses and their type.
 
 Reads the files written by `download.py` and writes
-`data/institutional_registry/institutional_addresses.csv`, one row per distinct
-(institution type, normalized street, ZIP5). Columns:
+`data/institutional_registry/institutional_addresses.ndjson.gz`: FHIR R4 `Organization`
+resources, one per line (NDJSON), gzipped; one resource per distinct
+(institution type, normalized street, ZIP5). The FHIR mapping is documented in
+`fhir_registry.py`. Each resource carries:
 
-- institution_type: nursing_home | hospice | hospital | psychiatric_hospital |
+- address (`Organization.address`): street, city, state, ZIP from the first source that
+  lists the address
+- name: from the same first source
+- type: `institution_type` (nursing_home | hospice | hospital | psychiatric_hospital |
   long_term_hospital | higher_education_campus | federal_correctional | assisted_living |
-  senior_living | correctional | homeless_shelter | halfway_house (plus any type named in a
-  hand-downloaded CSV under `manual/`; unknown types default to `review`)
-- match_policy: `block_household_rules` (residents live there, so the address must not be used
-  as a Household-tier field) or `review` (mostly offices/non-residential); see MATCH_POLICY
-- name, street, city, state, zip, beds: from the first source that lists the address
-  (`beds` is certified beds; blank when the source has none)
-- data_collected: ISO date the data was gathered, taken from the source when it states one
-  (HIFLD per-facility source date, Princeton "Date Accessed", PPI survey date, Care Compare
-  processing date, Overture release) and otherwise the date the file was downloaded; the
-  newest date among the sources that list the address
-- match_street, match_zip5: the exact-match key (see `address_key`)
-- sources, source_ids: every source/ID that listed the address, `|`-separated
+  senior_living | correctional | homeless_shelter | halfway_house, plus any type named in a
+  hand-downloaded CSV under `manual/`; unknown types default to `review`), with a coarse HL7
+  organization type
+- match policy (extension): `block_household_rules` (residents live there, so the address
+  must not be used as a Household-tier field) or `review` (mostly offices/non-residential);
+  see MATCH_POLICY
+- beds (extension): certified beds; omitted when the source has none or a non-numeric value
+- data collected (extension): ISO date the data was gathered, taken from the source when it
+  states one (HIFLD per-facility source date, Princeton "Date Accessed", PPI survey date, Care
+  Compare processing date, Overture release) and otherwise the date the file was downloaded;
+  the newest date among the sources that list the address
+- match key (extension): the exact-match key (see `address_key`)
+- sources (extension, repeated) and identifiers: every source that listed the address, and
+  each source's own ID where it has one
 
 Usage:
     uv run python -m scripts.institutional_registry.build_registry
@@ -35,6 +42,7 @@ from pathlib import Path
 from typing import Dict, Iterable, Iterator, List, Optional, Tuple
 
 from patient_matching.normalization.address_normalizer import AddressNormalizer
+from scripts.institutional_registry.fhir_registry import RegistryEntry, write_registry
 from scripts.institutional_registry.download import (
     DEST,
     MANIFEST,
@@ -42,7 +50,7 @@ from scripts.institutional_registry.download import (
     STATE_LISTS_DIR,
 )
 
-OUTPUT = DEST / "institutional_addresses.csv"
+OUTPUT = DEST / "institutional_addresses.ndjson.gz"
 # POS iQIES `prvdr_type_id` values, decoded by joining to Care Compare on CCN
 # (every Care Compare nursing home is type 20, every hospice type 12).
 POS_TYPES = {"20": "nursing_home", "12": "hospice"}
@@ -87,21 +95,6 @@ OVERTURE_TYPES = {
 # (740) and RCFE in a Continuing Care Retirement Community (741).
 CA_ELDER_CARE_TYPES = {"740", "741"}
 MANUAL_COLUMNS = ["institution_type", "name", "street", "city", "state", "zip"]
-OUTPUT_COLUMNS = [
-    "institution_type",
-    "match_policy",
-    "name",
-    "street",
-    "city",
-    "state",
-    "zip",
-    "beds",
-    "data_collected",
-    "match_street",
-    "match_zip5",
-    "sources",
-    "source_ids",
-]
 
 
 @dataclass(frozen=True)
@@ -615,7 +608,15 @@ def add_keys(records: Iterable[Record]) -> List[Record]:
     return out
 
 
-def build() -> List[Dict[str, str]]:
+def _beds(value: str) -> Optional[int]:
+    """Certified beds as an integer; None for blank or non-numeric (e.g. 'Not Applicable')."""
+    try:
+        return int(float(value))
+    except ValueError:
+        return None
+
+
+def build() -> List[RegistryEntry]:
     """Dedupe to one row per (institution type, match key); drop rows with no usable key."""
     groups: Dict[Tuple[str, str, str], List[Record]] = {}
     dropped: Dict[str, int] = {}
@@ -643,42 +644,38 @@ def build() -> List[Dict[str, str]]:
         print(
             f"note: dropped {sum(dropped.values())} rows with no usable key: {detail}"
         )
-    rows = []
+    entries = []
     for (institution_type, match_street, match_zip5), group in sorted(groups.items()):
         first = group[0]
-        rows.append(
-            {
-                "institution_type": institution_type,
+        entries.append(
+            RegistryEntry(
+                institution_type=institution_type,
                 # A type missing from MATCH_POLICY (e.g. named in a manual CSV) defaults to review.
-                "match_policy": MATCH_POLICY.get(institution_type, "review"),
-                "name": first.name,
-                "street": first.street,
-                "city": first.city,
-                "state": first.state,
-                "zip": first.zip,
-                "beds": first.beds,
+                match_policy=MATCH_POLICY.get(institution_type, "review"),
+                name=first.name,
+                street=first.street,
+                city=first.city,
+                state=first.state,
+                zip=first.zip,
+                beds=_beds(first.beds),
                 # Newest date among the sources listing it, so an address confirmed by a
                 # current source isn't labeled with an older source's date.
-                "data_collected": max((r.collected for r in group), default=""),
-                "match_street": match_street,
-                "match_zip5": match_zip5,
-                "sources": "|".join(sorted({r.source for r in group})),
-                "source_ids": "|".join(sorted({r.source_id for r in group})),
-            }
+                data_collected=max((r.collected for r in group), default=""),
+                match_street=match_street,
+                match_zip5=match_zip5,
+                sources=tuple(sorted({(r.source, r.source_id) for r in group})),
+            )
         )
-    return rows
+    return entries
 
 
 def main() -> None:
-    rows = build()
-    with OUTPUT.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=OUTPUT_COLUMNS, lineterminator="\n")
-        writer.writeheader()
-        writer.writerows(rows)
-    print(f"wrote {len(rows)} rows to {OUTPUT}")
+    entries = build()
+    count = write_registry(entries, OUTPUT)
+    print(f"wrote {count} Organization resources to {OUTPUT}")
     counts: Dict[Tuple[str, str], int] = {}
-    for r in rows:
-        key = (r["match_policy"], r["institution_type"])
+    for e in entries:
+        key = (e.match_policy, e.institution_type)
         counts[key] = counts.get(key, 0) + 1
     for (policy, institution_type), n in sorted(counts.items()):
         print(f"{policy:22} {institution_type:26} {n}")

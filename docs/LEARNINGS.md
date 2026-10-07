@@ -337,3 +337,18 @@ Twenty-three more state lists are fetched by one module each under `scripts/inst
 Engine comparison, found while checking what an address list can block (details in `docs/INSTITUTIONAL_ADDRESS_FEASIBILITY.md` finding 9): `FieldExtractor` puts every address line, including the unit, into one `street_line` set, and `FieldComparator.exact_match` counts any shared element, with no ZIP, city or state. The spec (v3.4.0 Table 3) defines Street Line as line 1 plus exact ZIP, and the 0.00003 value is `street_line_with_zip`, but the comparison is text alone. Verified end to end through `NormalizationManager` and `MatchingManager` (an earlier component-only check was misleading, and a first end-to-end attempt used H-03, which the engine does not implement): rule C2-37 (Phone + Street Line, then First Name + DOB) links two different people when only the street text matches and the state and ZIP differ, and when different buildings share only `Apt 2`; the engine implements only H-14 of the Street Line household rows (H-03/06/09 are not among the eight Category 2 rules in spec §C.4). The practical effect is narrow (C2-37 needs a shared phone, and an exact first name already matches Rule 11), but it is a spec deviation. Not changed (engine code is out of scope for that PR). Lesson: test through the real pipeline with a positive control before concluding anything from a component test. BOP publishes two addresses per prison (physical and inmate-mail, 66 of 79 mail addresses are PO boxes), and a resident's record is likely to carry the mail one, so the registry now keeps both.
 
 **Where this could still bite:** the POS CSV URL changes every quarter (resolve it from `data.cms.gov/data.json`), and unparseable street lines fall back to unnormalized text, so the same address can key differently across sources.
+
+## "Validates against fhirschemapy" is a weak conformance check, and a flattened export can hide multi-valued data
+
+The institutional-address registry is now FHIR `Organization` NDJSON (`scripts/institutional_registry/fhir_registry.py`).
+Two things surfaced while building it. First, `Organization.model_validate` is pydantic in lax mode: it coerces
+`"yes"` to `True`, so passing it shows the resource has the right shape, not that it conforms to the R4 spec
+(no cardinality, binding or extension checks); the tests use a clearly wrong value (`address` as a string) to
+show it rejects something. Second, the old CSV joined `sources` and `source_ids` as two independent sorted
+lists, so the pairing of a source with its ID was already lost there (a source can list several IDs at one
+address: 6,378 of 155,480 rows). The FHIR output keeps each (source, ID) as an `identifier`, and the reader was
+first written to collapse them; a round-trip check over every resource caught it.
+
+**Where this could still bite:** treat a pydantic model passing as "well-formed", not "conformant"; for real
+conformance run the HL7 validator against published profiles. When flattening a many-to-many into delimited
+columns, check the pairing survives before building a reader on top of it.

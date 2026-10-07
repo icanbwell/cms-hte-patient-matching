@@ -33,7 +33,7 @@ GitHub's 100 MB file limit. To refresh the data, re-run the download and commit 
 
 Three files in the same folder are generated rather than downloaded: `manifest.json` and
 `state_lists_status.json` (written by `download.py`; the latter records, per state, whether the
-last run worked and why not if it didn't) and `institutional_addresses.csv` (written by `build_registry.py`, which reads the
+last run worked and why not if it didn't) and `institutional_addresses.ndjson.gz` (FHIR Organization resources, written by `build_registry.py`, which reads the
 files above plus anything in `manual/`). A missing automatic file is a warning, not an error, so
 the build still runs if a download was skipped.
 
@@ -62,7 +62,7 @@ data/institutional_registry/manual/
 ```
 
 (`download.py` creates the folder; files you add there can be committed like the others). `build_registry.py` merges every `*.csv` in that
-folder into `institutional_addresses.csv`, with `source` set to `manual:<filename>`.
+folder into `institutional_addresses.ndjson.gz`, with `source` set to `manual:<filename>`.
 
 ## Required CSV format
 
@@ -82,7 +82,7 @@ e.g. `2026-09-15`; if omitted, the file's download date is used). Extra columns 
 names (e.g. `ADDRESS`, `ZIPCODE`), rename them in a spreadsheet; the build script does not guess.
 
 `institution_type` is free text. Use one of the existing types if one fits so the
-`match_policy` column is set correctly: `correctional`, `federal_correctional`,
+match policy is set correctly: `correctional`, `federal_correctional`,
 `assisted_living`, `homeless_shelter`, `halfway_house` (all `block_household_rules`), or
 `senior_living` (`review`). Any other value is accepted and gets `review`.
 

@@ -10,11 +10,11 @@ does not measure".
 
 Reproduce (raw downloads and output go to `data/institutional_registry/` and are committed; each
 file's source URL and download date is in `manifest.json`; measured
-2026-10-06). Standard library only, no extra packages:
+2026-10-06). Standard library only, plus `defusedxml` for the state XML (a dev dependency):
 
 ```bash
 uv run python -m scripts.institutional_registry.download            # fetch every automatable source (~10 min; --skip-overture skips the slow Overture extract)
-uv run python -m scripts.institutional_registry.build_registry      # -> institutional_addresses.csv
+uv run python -m scripts.institutional_registry.build_registry      # -> institutional_addresses.ndjson.gz (FHIR Organization)
 uv run python -m scripts.institutional_address_feasibility          # print the section 2 measurements
 ```
 
@@ -22,18 +22,45 @@ Sources that can't be fetched automatically are downloaded by hand into
 `data/institutional_registry/manual/` and merged by the build; see
 `scripts/institutional_registry/MANUAL_DOWNLOADS.md` for what to download and the CSV format.
 
-## The registry CSV
+## The registry (FHIR Organization resources)
 
-`institutional_addresses.csv` has one row per distinct (institution type, normalized street, ZIP5):
-`institution_type`, `match_policy`, `name`, `street`, `city`, `state`, `zip`, `beds`,
-`data_collected`, the match key (`match_street`, `match_zip5`), and the `sources`/`source_ids` that
-listed it. `data_collected` is the ISO date the data was gathered: taken from the source where it
+`institutional_addresses.ndjson.gz` is FHIR R4 `Organization` resources, one per line (NDJSON, the
+FHIR Bulk Data format), gzipped: 155,480 resources, 16.8 MB (the uncompressed file is about 170 MB,
+over GitHub's 100 MB limit). There is one resource per distinct (institution type, normalized
+street, ZIP5). An address that serves two types (e.g. a hospital campus that also houses a nursing
+home) appears once per type. The mapping is in `scripts/institutional_registry/fhir_registry.py`:
+
+| Registry field | FHIR element |
+|---|---|
+| name | `Organization.name` |
+| street, city, state, zip | `Organization.address[0]` (`line`, `city`, `state`, `postalCode`; `use=work`, `type=physical`) |
+| `institution_type` | `Organization.type`: a coarse HL7 `organization-type` (`prov`, `govt`, `edu`, `other`) plus our `institution-type` code |
+| (source, source ID) pairs | `Organization.identifier`, one per ID, `system` = a URL per source |
+| `match_policy` | extension `institutional-address-match-policy` (code) |
+| `data_collected` | extension `data-collected` (date, or a year) |
+| `beds` | extension `beds` (integer; omitted when blank or not numeric) |
+| sources that list it | extension `source` (code), repeated |
+| `match_street`, `match_zip5` | extension `match-key` (complex: `street`, `zip5`) |
+
+The five extensions, the `institution-type` code system and the identifier systems sit under
+`https://cms-hte-patient-matching.icanbwell.com/fhir/`, the same base the engine uses for its own
+extension. None is published as a conformance resource (StructureDefinition, CodeSystem) yet, so
+the resources do not claim a `meta.profile`. All 155,480 resources validate against the
+`fhirschemapy` R4B `Organization` model and read back to the same values. Reading it:
+
+```python
+from scripts.institutional_registry.fhir_registry import read_registry, read_resources
+for entry in read_registry(path): ...      # RegistryEntry (typed)
+for resource in read_resources(path): ...  # plain FHIR dicts
+```
+
+`data_collected` is the ISO date the data was gathered: taken from the source where it
 states one (HIFLD per-facility source date, Princeton "Date Accessed", PPI survey date, Care
 Compare/POS processing date, Overture release) and otherwise the date we downloaded the file. When
 several sources list an address it is the newest of them, so an address confirmed by a current
-source isn't labeled with a 2021 date. An address that
-serves two types (e.g. a hospital campus that also houses a nursing home) appears once per type.
-Current build: **155,480 rows**.
+source isn't labeled with a 2021 date. 143 rows had `Not Applicable`/`Not Available` as `beds`
+in the old CSV; those are now simply left out.
+Current build: **155,480 resources**.
 
 | `match_policy` | `institution_type` (rows) |
 |---|---|
