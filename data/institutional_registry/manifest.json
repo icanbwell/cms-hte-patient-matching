@@ -1,0 +1,138 @@
+{
+  "assisted_living.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://raw.githubusercontent.com/antonstengel/assisted-living-data/main/assisted-living-facilities.csv"
+  },
+  "bop.json": {
+    "downloaded": "2026-10-06",
+    "source": "https://www.bop.gov/locations/list.jsp (facility codes) -> https://www.bop.gov/PublicInfo/execute/phyloc?todo=query&output=json&code={code}"
+  },
+  "care_compare_hospice.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://data.cms.gov/provider-data/api/1/datastore/query/yc9t-dgbk/0/download?format=csv"
+  },
+  "care_compare_hospital.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://data.cms.gov/provider-data/api/1/datastore/query/xubh-q36u/0/download?format=csv"
+  },
+  "care_compare_nh.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://data.cms.gov/provider-data/api/1/datastore/query/4pq5-n9py/0/download?format=csv"
+  },
+  "hifld_prisons.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://storage.googleapis.com/hifld-next-portolan-published/hifld/prison-boundaries-1/prison-boundaries-1/v1.0.0/geoparquet/prison-boundaries-1.parquet"
+  },
+  "ipeds_hd.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://nces.ed.gov/ipeds/datacenter/data/HD2024.zip"
+  },
+  "overture_gq.csv": {
+    "downloaded": "2026-10-06",
+    "source": "s3://overturemaps-us-west-2/release/2026-09-23.1/theme=places/type=place/*"
+  },
+  "pos_iqies.csv.gz": {
+    "downloaded": "2026-10-06",
+    "source": "https://data.cms.gov/sites/default/files/2026-08/9f345e2d-5199-4630-a08b-9b45581a9a2a/POS_iQIES.DATA.Q2_2026.csv"
+  },
+  "state_al_ca.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://gis.data.chhs.ca.gov/api/download/v1/items/db31b0884a074cff9260facb3f2ade45/csv?layers=0"
+  },
+  "state_al_fl.json": {
+    "downloaded": "2026-10-06",
+    "source": "https://quality.healthfinder.fl.gov/Facility-Search/FacilityLocateSearch (POST, facility type ALF, all counties)"
+  },
+  "state_al_wi.json": {
+    "downloaded": "2026-10-06",
+    "source": "https://dhsgis.wi.gov/server/rest/services/DHS_GIS/Facilities/MapServer/<layer 7,17,2>/query"
+  },
+  "state_lists/AZ.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://services1.arcgis.com/mpVYz37anSdrK4d8/ArcGIS/rest/services/All_State_Licensed_Facilities_in_Arizona/FeatureServer/18"
+  },
+  "state_lists/CO.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://services3.arcgis.com/66aUo8zsujfVXRIT/arcgis/rest/services/CDPHE_Health_Facilities/FeatureServer/0"
+  },
+  "state_lists/GA.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://forms.dch.georgia.gov/hfrd/FACSEARCH.aspx"
+  },
+  "state_lists/IA.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://dia-hfd.iowa.gov/ (TypeVals 22, 28, 12; Home/GenerateEntitySearchCsv)"
+  },
+  "state_lists/LA.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://ldh.la.gov/assets/medicaid/hss/docs/DirectorySpreadsheets/Licensed_Providers_Report_YYYY_MM.xlsx (newest month that resolves)"
+  },
+  "state_lists/MA.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://services1.arcgis.com/hGdibHYSPO59RG1h/arcgis/rest/services/Long_Term_Care_Residences/FeatureServer/0"
+  },
+  "state_lists/MD.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://opendata.maryland.gov/resource/i48m-922u.json"
+  },
+  "state_lists/MN.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://provider-profile-api.web.health.state.mn.us/csv?county=&city=&name=&id=&zipCode=&providerGroup=Assisted%20Living%20Facilities&providerType=&miles=&limit=100000"
+  },
+  "state_lists/MO.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://data.mo.gov/resource/fenu-sipv.json"
+  },
+  "state_lists/NC.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://info.ncdhhs.gov/dhsr/data/Ahlist.xlsx ; https://info.ncdhhs.gov/dhsr/data/Fchlist.xlsx"
+  },
+  "state_lists/NE.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://services8.arcgis.com/sfauBl8MaKYMG7K4/arcgis/rest/services/Assisted_Living_Facility_Upload/FeatureServer/27 ; fallback https://gis.ne.gov/agencyext/rest/services/DHHS_Assisted_Living_Facilities/FeatureServer/0"
+  },
+  "state_lists/NJ.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://www.nj.gov/health/guide/json/healthfacilities_map_datav2.csv"
+  },
+  "state_lists/NV.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://nvdpbh.aithent.com/Protected/LIC/LicenseeSearch.aspx?Program=HF&PubliSearch=Y"
+  },
+  "state_lists/NY.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://health.data.ny.gov/resource/wssx-idhx.json"
+  },
+  "state_lists/OK.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://services9.arcgis.com/QeqGrHRDFO8mPwTf/arcgis/rest/services/LongTermCareFacilities_2024/FeatureServer/1"
+  },
+  "state_lists/OR.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://ltclicensing.oregon.gov/Providers (POST https://ltclicensing.oregon.gov/Providers/Export, type=csv, Filters=Status=Open)"
+  },
+  "state_lists/PA.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://data.pa.gov/resource/pqf4-d4xn.json"
+  },
+  "state_lists/SC.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://services5.arcgis.com/G4BLIH7rTQoIjCFv/arcgis/rest/services/Health_Facilities/FeatureServer/0"
+  },
+  "state_lists/TN.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://internet.health.tn.gov/facilitylistings (types 0537, 0593, 0536)"
+  },
+  "state_lists/TX.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://apps.hhs.texas.gov/providers/directories/AL.xlsx"
+  },
+  "state_lists/UT.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://services1.arcgis.com/99lidPhWCzftIe9K/ArcGIS/rest/services/LicensedHealthCareFacilities/FeatureServer/0"
+  },
+  "state_lists/WV.csv": {
+    "downloaded": "2026-10-06",
+    "source": "https://ohflac.wvdhhr.org/Apps/Lookup/FacilitySearch (POST .../FacilitySearch/FacilitySearch, FedCode W7*, W3*, W2*)"
+  }
+}

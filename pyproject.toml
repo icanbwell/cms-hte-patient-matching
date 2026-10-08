@@ -74,6 +74,8 @@ dev = [
     "testcontainers>=4.9.0",
     "docker>=7.1.0",
     "pip-licenses>=5.0.0",
+    # scripts/institutional_registry parses XML from state websites and downloaded spreadsheets.
+    "defusedxml>=0.7.1",
 ]
 
 [tool.setuptools.dynamic]
@@ -115,6 +117,10 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = ["scourgify.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["defusedxml.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

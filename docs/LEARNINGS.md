@@ -338,6 +338,33 @@ numbers but needed a new release and pin bump and would not help real data.)
 matching a weaker "well-formed" check is usually the right bar — keep that distinction in mind for
 any other field validated through a library that checks assignment, not shape.
 
+## Institutional-address registry: most sources are automatable, but check before concluding "can't"
+
+Spike for Proposal v3.3.6 (see `docs/INSTITUTIONAL_ADDRESS_FEASIBILITY.md`). CMS Care Compare, the POS file, IPEDS, HIFLD Prison Boundaries (via HIFLD Next's catalog, since HIFLD Open was shut down 2025-08-26), Prison Policy Initiative's per-state tables (HTML scrape), the Princeton assisted-living CSV and Overture Maps all download without an account; BOP has only an undocumented per-facility JSON API; BJS censuses (ICPSR login), state DOC rosters and CASS validation need a manual step or an account. Two earlier "not retrievable" conclusions (HIFLD, PPI) were wrong: they came from a page-summary tool rather than fetching the URL, and the PPI state pages sit under `/data/prisons2020/`, not `/prisons2020/`. Overture's `nursing` category is individual nurse practitioners, not nursing homes (15,480 places, ~1% address overlap with CMS); nursing homes sit under `retirement_home`. A match key of (normalized street line 1, ZIP5) needs the unit stripped from **both** sides: registry streets embed suites, and scourgify leaves a unit inside line 1 when designators are stacked or the line is unparseable (unit-suffix match rate 80% -> 100% once stripped). A `#` unit rule must require a preceding character or it eats `#16 WILSON FARM ROAD`.
+
+State assisted-living lists (CA, MI, WI, FL) are each a different shape: California's older `data.chhs.ca.gov` CSV link now returns an HTML login page (use the `gis.data.chhs.ca.gov` ArcGIS item); Michigan's file has no header row and puts the street in column 5, or column 4 when 5 is empty (column 4 otherwise holds a suite); Wisconsin's portal CSV download is 403 but the DHS ArcGIS REST service is open (page at 2,000 records); Florida has no bulk file but its search results embed all records as JSON, behind a session cookie and anti-forgery token. A check that a "download" returns the right content type, not just HTTP 200, would have caught the California case (the 200 response was a login page).
+
+Twenty-three more state lists are fetched by one module each under `scripts/institutional_registry/states/` (see `docs/ASSISTED_LIVING_STATE_COVERAGE.md`; sources differ: XLSX, Socrata, ArcGIS, token-protected form posts, embedded JSON). Things that bit: several hosts (LA, TN, MS, WY) return 403 to a bare curl or "Mozilla/5.0" and need a full Chrome user agent; Excel stores carriage returns as `_x000D_` inside strings, so a stdlib XLSX reader must decode `_xHHHH_`; Nebraska's canonical ArcGIS service returned `SITE_NOT_INITIALIZED` while an identical copy on ArcGIS Online worked; the state's own "download" can be absent while the site's search backend serves a clean file (Minnesota's lookup has a CSV API, found only by looking beyond the search page); and Oregon's adult foster home names are licensees' personal names, so they are dropped because this repo is public. A source that silently drops rows is worse than one that fails: Princeton's rows for ID, MA, NV and OK have no ZIP, so a street-plus-ZIP key discarded all 1,116 without any warning.
+
+Engine comparison, found while checking what an address list can block (details in `docs/INSTITUTIONAL_ADDRESS_FEASIBILITY.md` finding 9): `FieldExtractor` puts every address line, including the unit, into one `street_line` set, and `FieldComparator.exact_match` counts any shared element, with no ZIP, city or state. The spec (v3.4.0 Table 3) defines Street Line as line 1 plus exact ZIP, and the 0.00003 value is `street_line_with_zip`, but the comparison is text alone. Verified end to end through `NormalizationManager` and `MatchingManager` (an earlier component-only check was misleading, and a first end-to-end attempt used H-03, which the engine does not implement): rule C2-37 (Phone + Street Line, then First Name + DOB) links two different people when only the street text matches and the state and ZIP differ, and when different buildings share only `Apt 2`; the engine implements only H-14 of the Street Line household rows (H-03/06/09 are not among the eight Category 2 rules in spec §C.4). The practical effect is narrow (C2-37 needs a shared phone, and an exact first name already matches Rule 11), but it is a spec deviation. Not changed (engine code is out of scope for that PR). Lesson: test through the real pipeline with a positive control before concluding anything from a component test. BOP publishes two addresses per prison (physical and inmate-mail, 66 of 79 mail addresses are PO boxes), and a resident's record is likely to carry the mail one, so the registry now keeps both.
+
+**Where this could still bite:** the POS CSV URL changes every quarter (resolve it from `data.cms.gov/data.json`), and unparseable street lines fall back to unnormalized text, so the same address can key differently across sources.
+
+## "Validates against fhirschemapy" is a weak conformance check, and a flattened export can hide multi-valued data
+
+The institutional-address registry is now FHIR `Organization` NDJSON (`scripts/institutional_registry/fhir_registry.py`).
+Two things surfaced while building it. First, `Organization.model_validate` is pydantic in lax mode: it coerces
+`"yes"` to `True`, so passing it shows the resource has the right shape, not that it conforms to the R4 spec
+(no cardinality, binding or extension checks); the tests use a clearly wrong value (`address` as a string) to
+show it rejects something. Second, the old CSV joined `sources` and `source_ids` as two independent sorted
+lists, so the pairing of a source with its ID was already lost there (a source can list several IDs at one
+address: 6,378 of 155,480 rows). The FHIR output keeps each (source, ID) as an `identifier`, and the reader was
+first written to collapse them; a round-trip check over every resource caught it.
+
+**Where this could still bite:** treat a pydantic model passing as "well-formed", not "conformant"; for real
+conformance run the HL7 validator against published profiles. When flattening a many-to-many into delimited
+columns, check the pairing survives before building a reader on top of it.
+
 ## The §V.D placeholder table had gaps; one example is deliberately not implemented
 
 Feeding every example from the spec's placeholder table through `NormalizationManager` and
