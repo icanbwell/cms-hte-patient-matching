@@ -8,9 +8,9 @@ to retrieve candidate patients, then applies Table 2 rules locally.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List
+from typing import Any, Dict, FrozenSet, List
 
 
 class MatchType(Enum):
@@ -34,15 +34,37 @@ class MatchType(Enum):
 class FieldCriterion:
     """A single field-level search criterion.
 
+    A multi-valued query field (every given name, several phones, ...) is
+    one criterion carrying all of its values: a backend must return a
+    candidate that satisfies ANY of them (OR within the criterion), while
+    separate criteria stay AND'd. Blocking on a single value would drop
+    every candidate that shares only a non-chosen value - verification
+    can't recover a candidate blocking never retrieved.
+
     Attributes:
         field_name: Canonical field name (e.g. "first_name", "dob").
-        value: The normalized query value.
+        value: A single normalized query value. Kept for single-value
+            construction; when only `values` is given it is set to the
+            smallest of them, so it never depends on set iteration order.
         match_type: Whether to search exact or fuzzy.
+        values: Every normalized query value for this field. Defaults to
+            `{value}`; `value` is always a member.
     """
 
     field_name: str
-    value: str
+    value: str = ""
     match_type: MatchType = MatchType.EXACT
+    values: FrozenSet[str] = field(default_factory=frozenset)
+
+    def __post_init__(self) -> None:
+        if self.value:
+            self.values = frozenset(self.values) | {self.value}
+        elif self.values:
+            self.value = min(self.values)
+        else:
+            raise ValueError(
+                f"FieldCriterion for {self.field_name!r} needs a value or values"
+            )
 
 
 class MatchingBackend(ABC):

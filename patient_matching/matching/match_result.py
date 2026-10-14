@@ -113,13 +113,11 @@ class RuleEvaluation:
             MatchingEngine._evaluate_household_individual_rule). This
             field is that survivor-pool size for those evaluations, not a
             second blocking retrieval count.
-        blocking_criteria: The field->value pairs backend.search() was
-            actually called with for this rule/step. A multi-valued query
-            field (e.g. two known phone numbers) is blocked on only one
-            arbitrarily-chosen value (see
-            MatchingEngine._build_criteria_for_fields) - this shows exactly
-            which one, so a caller can tell whether blocking picked a value
-            that doesn't align with the candidate's data.
+        blocking_criteria: The field -> values backend.search() was
+            actually called with for this rule/step, each list sorted. A
+            multi-valued query field (e.g. two known phone numbers) blocks
+            on every value, so a candidate sharing any one of them is
+            retrieved (see MatchingEngine._build_criteria_for_fields).
         suffix_values: The generational-suffix sets actually compared for
             the B.5 suffix-conflict check, as {"query": [...],
             "candidate": [...]} - populated whenever that check ran
@@ -150,7 +148,7 @@ class RuleEvaluation:
     field_fuzzy_detail: Dict[str, Dict[str, int]] = field(default_factory=dict)
     step: str = "flat"
     candidates_retrieved: int = 0
-    blocking_criteria: Dict[str, str] = field(default_factory=dict)
+    blocking_criteria: Dict[str, List[str]] = field(default_factory=dict)
     suffix_values: Dict[str, List[str]] = field(default_factory=dict)
     p_collision_exact: Optional[float] = None
     p_collision_fuzzy: Optional[float] = None

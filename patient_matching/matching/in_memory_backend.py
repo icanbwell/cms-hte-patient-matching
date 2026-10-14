@@ -92,7 +92,7 @@ class InMemoryBackend(MatchingBackend):
         candidate_values = fields.get_values(criterion.field_name)
         if not candidate_values:
             return False
-        query_values = {criterion.value}
+        query_values = set(criterion.values)
         if self._comparator.exact_match(query_values, candidate_values):
             return True
         if criterion.match_type == MatchType.FUZZY:
