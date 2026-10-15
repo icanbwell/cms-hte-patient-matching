@@ -8,9 +8,9 @@ to retrieve candidate patients, then applies Table 2 rules locally.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List
+from typing import Any, Dict, FrozenSet, List, Optional
 
 
 class MatchType(Enum):
@@ -34,15 +34,41 @@ class MatchType(Enum):
 class FieldCriterion:
     """A single field-level search criterion.
 
+    A multi-valued query field (every given name, several phones, ...) is
+    one criterion carrying all of its values: a backend must return a
+    candidate that satisfies ANY of them (OR within the criterion), while
+    separate criteria stay AND'd. Blocking on a single value would drop
+    every candidate that shares only a non-chosen value - verification
+    can't recover a candidate blocking never retrieved.
+
     Attributes:
         field_name: Canonical field name (e.g. "first_name", "dob").
-        value: The normalized query value.
+        value: The single value a caller passed, if any - a convenience for
+            single-value construction, merged into `values`. Backends read
+            `values`.
         match_type: Whether to search exact or fuzzy.
+        values: Every normalized query value for this field (authoritative).
+            Always non-empty after construction, with no empty strings.
     """
 
     field_name: str
-    value: str
+    value: Optional[str] = None
     match_type: MatchType = MatchType.EXACT
+    values: FrozenSet[str] = field(default_factory=frozenset)
+
+    def __post_init__(self) -> None:
+        merged = frozenset(self.values)
+        if self.value is not None:
+            merged |= {self.value}
+        if not merged:
+            raise ValueError(
+                f"FieldCriterion for {self.field_name!r} needs a value or values"
+            )
+        if "" in merged:
+            raise ValueError(
+                f"FieldCriterion for {self.field_name!r} has an empty value"
+            )
+        self.values = merged
 
 
 class MatchingBackend(ABC):

@@ -120,6 +120,12 @@ class TestPatientMatcherService:
         assert matched_summary["step"] == "flat"
         assert matched_summary["candidates_retrieved"] >= 1
         assert matched_summary["blocking_criteria"]
+        # Contract: each blocked field maps to the sorted list of every
+        # value blocking searched on, not a single string.
+        assert all(
+            isinstance(v, list) and v == sorted(v)
+            for v in matched_summary["blocking_criteria"].values()
+        )
         assert matched_summary["p_collision_exact"] is not None
 
     async def test_match_patient_no_match(self, cache: DuckDBCache) -> None:

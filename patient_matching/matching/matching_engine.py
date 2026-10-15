@@ -69,6 +69,11 @@ _PACKAGE_VERSION = _read_package_version()
 _NO_ANCHOR = object()
 
 
+def _blocking_criteria(criteria: List[FieldCriterion]) -> Dict[str, List[str]]:
+    """Every value each criterion blocked on, sorted, for the audit record."""
+    return {c.field_name: sorted(c.values) for c in criteria}
+
+
 class MatchingEngine:
     """Evaluates Table 2 matching rules against backend candidates.
 
@@ -141,7 +146,7 @@ class MatchingEngine:
 
             # Build criteria and search backend
             criteria = self._build_criteria_for_fields(query_fields, rule.fields)
-            blocking_criteria = {c.field_name: c.value for c in criteria}
+            blocking_criteria = _blocking_criteria(criteria)
             candidates = await self._backend.search(criteria)
 
             if not candidates:
@@ -213,11 +218,10 @@ class MatchingEngine:
         it can be used directly against precomputed pairs (see
         evaluation/onc_baseline.py) without needing a MatchingBackend at all.
 
-        Known limitation: this checks a candidate's full known-value sets
-        directly, while match()'s blocking (_build_criteria) only blocks on a
-        single representative value per field before verification - so for a
-        candidate with multiple values in a blocked field (e.g. multiple
-        historical last names), the two paths are not guaranteed to agree.
+        This checks a candidate's full known-value sets directly. match()'s
+        blocking (_build_criteria) also blocks on every query value per
+        field, so a candidate this method accepts is one match() can
+        retrieve (e.g. one sharing only a historical last name).
         """
         for rule in self._rules:
             evaluation = self._evaluate_rule(rule, query_fields, candidate_fields)
@@ -287,9 +291,8 @@ class MatchingEngine:
         for rf in fields:
             values = query_fields.get_values(rf.name)
             if values:
-                # Use the first value for backend blocking; the engine
-                # will check all values during verification.
-                primary_value = next(iter(values))
+                # Block on every value: a candidate sharing any one of them
+                # must reach verification, which then checks all values.
                 if rf.role != FieldRole.FUZZY_ELIGIBLE:
                     match_type = MatchType.EXACT
                 elif rf.name == DOB:
@@ -305,7 +308,7 @@ class MatchingEngine:
                 criteria.append(
                     FieldCriterion(
                         field_name=rf.name,
-                        value=primary_value,
+                        values=frozenset(values),
                         match_type=match_type,
                     )
                 )
@@ -316,7 +319,7 @@ class MatchingEngine:
         rule_id: str,
         *,
         step: str,
-        blocking_criteria: Dict[str, str],
+        blocking_criteria: Dict[str, List[str]],
         p_collision_exact: Optional[float] = None,
         p_collision_fuzzy: Optional[float] = None,
     ) -> RuleEvaluation:
@@ -518,9 +521,7 @@ class MatchingEngine:
         household_criteria = self._build_criteria_for_fields(
             query_fields, household_fields
         )
-        household_blocking_criteria = {
-            c.field_name: c.value for c in household_criteria
-        }
+        household_blocking_criteria = _blocking_criteria(household_criteria)
         household_candidates = await self._backend.search(household_criteria)
 
         if not household_candidates:

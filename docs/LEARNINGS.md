@@ -519,3 +519,20 @@ them together; do not tighten the leak alone. Probe: legacy vs new `first_names`
 
 **Where this could still bite:** an initial-only first-name rule added later will overlap with this
 leak; remove the leak in the same change so the added rule's collision price is the whole story.
+
+## Blocking searched one arbitrary value per field; the ONC benchmark could not see it
+
+`MatchingEngine._build_criteria_for_fields` sent the backend one value per field, `next(iter(values))`
+over a `set`. Verification compares every value, but only for candidates blocking retrieved, so a
+candidate sharing only a non-chosen value (a second given name, an old last name, a second phone) was
+never matched. The chosen value also depended on the process's string-hash seed (`PYTHONHASHSEED`):
+the same query could match in one process and miss in another. `FieldCriterion` now carries every
+value (`values`); both backends OR within a criterion and AND across criteria, and
+`RuleEvaluation.blocking_criteria` records every value as a sorted list.
+
+**Why the benchmark missed it:** the ONC regression tests and `evaluation/legacy_comparison.py` score
+with `evaluate_pair()`, which compares full value sets and never blocks. A recall fix in
+`FieldExtractor` therefore showed up in ONC metrics while `match()` silently discarded part of it at
+retrieval. Lesson: a pairwise benchmark measures verification only; test retrieval through `match()`
+with a real backend, and parametrize a multi-value case over which value the stored record shares so a
+single-value blocker fails under every hash seed (`test_multi_value_blocking.py`).
