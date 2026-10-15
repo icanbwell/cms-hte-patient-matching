@@ -171,17 +171,88 @@ class TestBackendsUnionWithinAField:
         assert sorted(p["id"] for p in results) == ["p1", "p2"]
 
 
+class TestCacheAdapterMultiValueEdgeCases:
+    """Multi-value retrieval for the fuzzy and malformed-DOB paths."""
+
+    @pytest.mark.parametrize(
+        "stored_first",
+        ["jonathon", "mariah"],  # each 1 edit from one query value, >= 5 chars
+    )
+    async def test_fuzzy_criterion_matches_any_value(
+        self, stored_first: str, duckdb_cache: DuckDBCache
+    ) -> None:
+        await duckdb_cache.upsert_patients([_cached("p1", stored_first)])
+        adapter = CacheMatchingBackend(duckdb_cache)
+
+        results = await adapter.search(
+            [
+                FieldCriterion(
+                    field_name="first_name",
+                    values=frozenset({"jonathan", "maria"}),
+                    match_type=MatchType.FUZZY,
+                )
+            ]
+        )
+        assert [p["id"] for p in results] == ["p1"]
+
+    @pytest.mark.parametrize(
+        "stored_dob",
+        ["1990-01-16", "15/01/1990"],  # +1 day of the valid value; the literal bad one
+    )
+    async def test_dob_tolerance_with_one_unparseable_value(
+        self, stored_dob: str, duckdb_cache: DuckDBCache
+    ) -> None:
+        record = _cached("p1", "alex")
+        record.dob = {stored_dob}
+        await duckdb_cache.upsert_patients([record])
+        adapter = CacheMatchingBackend(duckdb_cache)
+
+        results = await adapter.search(
+            [
+                FieldCriterion(
+                    field_name="dob",
+                    values=frozenset({"1990-01-15", "15/01/1990"}),
+                    match_type=MatchType.DOB_TOLERANCE,
+                )
+            ]
+        )
+        assert [p["id"] for p in results] == ["p1"]
+
+
 class TestFieldCriterionValues:
+    """`values` is authoritative; `value` is only the single value a caller
+    passed, if any."""
+
     def test_single_value_construction_still_works(self) -> None:
         c = FieldCriterion(field_name="first_name", value="alex")
+        assert c.value == "alex"
         assert c.values == frozenset({"alex"})
 
-    def test_value_is_a_deterministic_member_of_values(self) -> None:
+    def test_values_only_leaves_value_unset(self) -> None:
         c = FieldCriterion(
             field_name="first_name", values=frozenset({"jordan", "alex"})
         )
-        assert c.value == "alex"
+        assert c.value is None
+        assert c.values == frozenset({"jordan", "alex"})
 
-    def test_rejects_a_criterion_with_no_value(self) -> None:
-        with pytest.raises(ValueError, match="first_name"):
-            FieldCriterion(field_name="first_name")
+    def test_value_and_values_are_merged(self) -> None:
+        c = FieldCriterion(
+            field_name="first_name", value="jordan", values=frozenset({"alex"})
+        )
+        assert c.value == "jordan"
+        assert c.values == frozenset({"alex", "jordan"})
+
+    @pytest.mark.parametrize(
+        ("kwargs", "message"),
+        [
+            ({}, "needs a value or values"),
+            ({"value": ""}, "empty value"),
+            ({"values": frozenset({"alex", ""})}, "empty value"),
+        ],
+        ids=["nothing", "empty_value", "empty_member_of_values"],
+    )
+    def test_rejects_a_missing_or_empty_value(
+        self, kwargs: Dict[str, Any], message: str
+    ) -> None:
+        with pytest.raises(ValueError, match=message):
+            FieldCriterion(field_name="first_name", **kwargs)
