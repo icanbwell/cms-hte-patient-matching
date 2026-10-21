@@ -536,3 +536,26 @@ with `evaluate_pair()`, which compares full value sets and never blocks. A recal
 retrieval. Lesson: a pairwise benchmark measures verification only; test retrieval through `match()`
 with a real backend, and parametrize a multi-value case over which value the stored record shares so a
 single-value blocker fails under every hash seed (`test_multi_value_blocking.py`).
+
+## Name and gender-marker changes: gender is not a field; first name alone links, first + last together needs an identifier
+
+Table 2 has no gender field, so a changed gender marker (male/female/other/unknown, any pair) never
+blocks a match. A first-name change on its own (e.g. a gender transition) still links, carried by rule 30
+(Last Name* + DOB + Phone). If the first **and** last name both change, no rule fires unless the records
+share an identifier: only rules 10, 17-22, 24-26 and 30 skip First Name, and every one except 30 needs an
+MBI, legal ID, namespace ID or insurance member ID (10 and 24 also need Last Name + DOB). Rule 22 is
+Namespace ID alone. Listing the former name on either record (`HumanName.use = old`) restores the link,
+because the extractor keeps every name. A last + middle name change (e.g. marriage) links while a phone,
+email or identifier is shared and does not once all three are gone.
+
+**Not changed:** Table 2 is defined by the CMS spec, so closing the first-and-last-name gap needs a
+spec conformance review, not just a rule added here. The behavior is pinned by
+`patient_matching/matching/tests/test_name_and_gender_change.py` (pairwise `evaluate_pair` plus one
+class through `match()`), so any rule change shows up as a deliberate test change. The legacy matcher,
+where gender is a scored field, has a different gap; do not assume this one applies there.
+
+**Scenario IDs** (a)-(e) follow BAI-1151 and are defined in the docstring of
+`test_name_and_gender_change.py`.
+
+**Fixtures:** avoid 555-exchange phones in synthetic records (they silently disable rule 30); see
+"The §V.D placeholder table had gaps" above.
