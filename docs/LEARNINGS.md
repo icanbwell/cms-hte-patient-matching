@@ -554,7 +554,10 @@ spec conformance review, not just a rule added here. The behavior is pinned by
 class through `match()`), so any rule change shows up as a deliberate test change. The legacy matcher,
 where gender is a scored field, has a different gap; do not assume this one applies there.
 
-**Where this could still bite:** synthetic fixtures with a phone number in the 555 exchange (e.g.
-`212-555-0142`). The spec's placeholder table (§V.D) suppresses them, the record ends up with no phone,
-and rule 30 silently cannot fire;
-that looks like an engine finding but is a fixture problem. Use a number the existing spec tests use.
+**Scenario IDs** follow BAI-1151: (a) and (c) are the gender-pair cases (male to female, other,
+unknown) in `TestGenderMarkerIsNotAMatchingField`; (b) is a first-name and gender change with the
+former name also listed; (d) is the last + middle name change; (e) is first and last both changed
+with no identifier.
+
+**Fixtures:** keep 555-exchange phones out of synthetic records; they silently disable rule 30. See
+"The §V.D placeholder table had gaps" above.
