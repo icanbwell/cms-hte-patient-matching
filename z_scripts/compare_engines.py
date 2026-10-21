@@ -18,7 +18,7 @@ import csv
 from collections import defaultdict
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Callable, Dict, Literal, Sequence
+from typing import Any, Callable, Dict, List, Literal, Optional, Sequence
 
 from z_scripts.score_test_set import _bucket
 
@@ -109,3 +109,123 @@ def write_csv(rows: Sequence[DisagreementRow], path: Path) -> int:
             writer.writerow(asdict(row))
             written += 1
     return written
+
+
+@dataclass(frozen=True)
+class ComparisonResult:
+    rows: List[DisagreementRow]
+    errors: List[str]
+
+
+def _category(rationale: Optional[str]) -> str:
+    """Top-level rationale category, e.g. `fuzzy_variant/given_nickname` -> `fuzzy_variant`."""
+    return (rationale or "").split("/")[0].split(" ")[0] or "unknown"
+
+
+def _make_row(
+    tier: str,
+    case_id: str,
+    category: str,
+    expected: bool,
+    engine_verdict: Verdict,
+    helix_verdict: Verdict,
+) -> DisagreementRow:
+    return DisagreementRow(
+        tier=tier,
+        case_id=case_id,
+        category=category,
+        expected=expected,
+        engine_pred=engine_verdict.matched,
+        helix_pred=helix_verdict.matched,
+        bucket=classify(expected, engine_verdict.matched, helix_verdict.matched),
+        helix_score=helix_verdict.score,
+        helix_rule=helix_verdict.rule,
+    )
+
+
+def compare_pairs(
+    cases: Sequence[Dict[str, Any]], engine: Side, helix: Side, tier: str
+) -> ComparisonResult:
+    """Pairs tier: one (source, target, expected_match) per case."""
+    rows: List[DisagreementRow] = []
+    errors: List[str] = []
+    for case in cases:
+        try:
+            engine_verdict = engine.match(
+                engine.prepare(case["source"]), engine.prepare(case["target"])
+            )
+            helix_verdict = helix.match(
+                helix.prepare(case["source"]), helix.prepare(case["target"])
+            )
+        except Exception as exc:  # noqa: BLE001 - tally, don't crash
+            errors.append(f"{case['case_id']}: {exc!r}")
+            continue
+        rows.append(
+            _make_row(
+                tier,
+                case["case_id"],
+                _category(case.get("rationale")),
+                bool(case["expected_match"]),
+                engine_verdict,
+                helix_verdict,
+            )
+        )
+    return ComparisonResult(rows, errors)
+
+
+def compare_population(
+    queries: Sequence[Dict[str, Any]],
+    candidates: Sequence[Dict[str, Any]],
+    engine: Side,
+    helix: Side,
+    tier: str,
+) -> ComparisonResult:
+    """Population tier: every (query, candidate) pair in every query's pool."""
+    rows: List[DisagreementRow] = []
+    errors: List[str] = []
+    engine_fields: Dict[str, Any] = {}
+    helix_fields: Dict[str, Any] = {}
+    unusable: set[str] = set()  # failed to prepare; already reported once below
+    for cand in candidates:
+        try:
+            prepared = (engine.prepare(cand["patient"]), helix.prepare(cand["patient"]))
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"candidate {cand['id']}: {exc!r}")
+            unusable.add(cand["id"])
+            continue
+        engine_fields[cand["id"]], helix_fields[cand["id"]] = prepared
+
+    for query in queries:
+        query_id = query["query_id"]
+        try:
+            engine_query = engine.prepare(query["query"])
+            helix_query = helix.prepare(query["query"])
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"query {query_id}: {exc!r}")
+            continue
+        expected_ids = set(query["expected_match_ids"])
+        category = _category(query.get("rationale"))
+        for candidate_id in query["candidate_ids"]:
+            if candidate_id in unusable:
+                continue
+            case_id = f"{query_id}x{candidate_id}"
+            if candidate_id not in engine_fields:
+                errors.append(f"{case_id}: missing candidate {candidate_id}")
+                continue
+            try:
+                engine_verdict = engine.match(engine_query, engine_fields[candidate_id])
+                helix_verdict = helix.match(helix_query, helix_fields[candidate_id])
+            except Exception as exc:  # noqa: BLE001
+                errors.append(f"{case_id}: {exc!r}")
+                continue
+            rows.append(
+                _make_row(
+                    tier,
+                    case_id,
+                    category,
+                    candidate_id in expected_ids,
+                    engine_verdict,
+                    helix_verdict,
+                )
+            )
+    return ComparisonResult(rows, errors)
