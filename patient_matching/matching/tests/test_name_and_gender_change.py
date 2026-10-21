@@ -14,6 +14,8 @@ Scenario IDs follow the ticket:
   (e)       first AND last name changed, no shared identifier -> NO link (known
             limitation); every rule that skips First Name needs an identifier or
             Last Name + DOB + Phone
+  (e) variant  as (e) plus a shared MBI, or the former name (use=old) listed on either
+            record -> link (ids and names tagged `e_variant`)
 
 Table 2 is defined by the CMS spec, so closing (e) would need a conformance review, not a
 code change alone. Details and the fixture caveat (555-exchange phones): docs/LEARNINGS.md,
@@ -184,7 +186,7 @@ class TestLegalNameChangeOfLastAndMiddleName:
             pytest.param([], [], False, id="nothing_shared"),
         ],
     )
-    def test_d_links_while_phone_email_or_identifier_is_shared(
+    def test_d_link_depends_on_shared_phone_email_or_identifier(
         self,
         telecom: List[Dict[str, Any]],
         identifiers: List[Dict[str, Any]],

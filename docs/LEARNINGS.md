@@ -554,10 +554,8 @@ spec conformance review, not just a rule added here. The behavior is pinned by
 class through `match()`), so any rule change shows up as a deliberate test change. The legacy matcher,
 where gender is a scored field, has a different gap; do not assume this one applies there.
 
-**Scenario IDs** follow BAI-1151: (a) and (c) are the gender-pair cases (male to female, other,
-unknown) in `TestGenderMarkerIsNotAMatchingField`; (b) is a first-name and gender change with the
-former name also listed; (d) is the last + middle name change; (e) is first and last both changed
-with no identifier.
+**Scenario IDs** (a)-(e) follow BAI-1151 and are defined in the docstring of
+`test_name_and_gender_change.py`.
 
-**Fixtures:** keep 555-exchange phones out of synthetic records; they silently disable rule 30. See
+**Fixtures:** avoid 555-exchange phones in synthetic records (they silently disable rule 30); see
 "The §V.D placeholder table had gaps" above.
