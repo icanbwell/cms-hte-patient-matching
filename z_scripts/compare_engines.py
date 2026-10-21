@@ -14,13 +14,16 @@ Not part of the shippable `patient_matching` package and not run by CI.
 
 from __future__ import annotations
 
+import argparse
 import csv
+import subprocess
+import sys
 from collections import defaultdict
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Literal, Optional, Sequence
 
-from z_scripts.score_test_set import _bucket
+from z_scripts.score_test_set import TIER_FILES, _bucket, _engine, _load
 
 
 @dataclass(frozen=True)
@@ -229,3 +232,159 @@ def compare_population(
                 )
             )
     return ComparisonResult(rows, errors)
+
+
+# --- real matchers ----------------------------------------------------------------
+
+
+def engine_side() -> Side:
+    """The CMS Table 2 engine, via the same normalize -> extract -> evaluate_pair path
+    as `score_test_set.py`."""
+    prepare, match = _engine()
+    return Side(prepare=prepare, match=lambda a, b: Verdict(matched=bool(match(a, b))))
+
+
+def _is_empty_str(value: Any) -> bool:
+    return isinstance(value, str) and value.strip() == ""
+
+
+def _strip_empty_strings(obj: Any) -> Any:
+    """Recursively drop empty/whitespace-only strings. FHIR's `string` type needs at
+    least one non-whitespace character, but a few ONC-derived records have an empty
+    city/state/given value. Used only as a fallback when strict parsing fails.
+    (Copied from `evaluation/legacy_comparison.py`, a non-package script.)"""
+    if isinstance(obj, dict):
+        return {
+            k: _strip_empty_strings(v) for k, v in obj.items() if not _is_empty_str(v)
+        }
+    if isinstance(obj, list):
+        cleaned = [_strip_empty_strings(v) for v in obj]
+        return [v for v in cleaned if not _is_empty_str(v)]
+    return obj
+
+
+def _build_helix_side(matcher: Any, patient_cls: Any) -> Side:
+    """Wrap a helix `Matcher` as a `Side`. Split from `make_helix_side` so tests can
+    inject a fake matcher without importing helix."""
+
+    def prepare(raw: Dict[str, Any]) -> Any:
+        # helix pins fhir.resources<8, which only has the pydantic-v1 `parse_obj`.
+        try:
+            return patient_cls.parse_obj(raw)
+        except Exception:  # noqa: BLE001 - retry once with empty strings dropped
+            return patient_cls.parse_obj(_strip_empty_strings(raw))
+
+    def match(source: Any, target: Any) -> Verdict:
+        results = matcher.match_resources(source=source, target=target)
+        if not results:
+            return Verdict(False, 0.0, "")
+        top = max(results, key=lambda r: r.total_score)
+        best_rule = max(top.rule_scores, key=lambda r: r.rule_score, default=None)
+        return Verdict(
+            matched=any(r.matched for r in results),
+            score=top.total_score,
+            rule=best_rule.rule_name if best_rule else "",
+        )
+
+    return Side(prepare=prepare, match=match)
+
+
+def make_helix_side(helix_repo: Path) -> Side:
+    """helix.personmatching at `helix_repo` (a checkout or `git archive` of one).
+    Imported lazily: helix is an eval-only dependency, never a dependency of the package."""
+    sys.path.insert(0, str(helix_repo))
+    from fhir.resources.R4B.patient import Patient
+    from helix_personmatching.matchers.matcher import Matcher  # type: ignore[import-not-found]
+
+    return _build_helix_side(Matcher(), Patient)
+
+
+# --- run one tier + CLI -----------------------------------------------------------
+
+
+def _confusion_line(label: str, counts: Dict[str, int]) -> str:
+    return (
+        f"  {label:<7}tp={counts['tp']} fp={counts['fp']} "
+        f"tn={counts['tn']} fn={counts['fn']}"
+    )
+
+
+def _report_section(name: str, result: ComparisonResult) -> List[str]:
+    lines = [
+        f"== {name}: n={len(result.rows)} errors={len(result.errors)}",
+        _confusion_line("engine", confusion(result.rows, "engine")),
+        _confusion_line("helix", confusion(result.rows, "helix")),
+        "  by category (bucket=count):",
+    ]
+    for category, buckets in sorted(summarize(result.rows).items()):
+        counts = " ".join(f"{b}={n}" for b, n in sorted(buckets.items()))
+        lines.append(f"    {category}: {counts}")
+    lines.extend(f"  error: {e}" for e in result.errors[:5])
+    return lines
+
+
+def run_tier(
+    cases_dir: Path, tier: str, engine: Side, helix: Side, out_dir: Path
+) -> str:
+    """Compare both matchers on one tier's pairs and population files; write
+    `pairs_<tier>.csv` and `population_<tier>.csv` into `out_dir`; return the report."""
+    pairs_name, queries_name, candidates_name = TIER_FILES[tier]
+    pairs = compare_pairs(_load(cases_dir / f"{pairs_name}.jsonl"), engine, helix, tier)
+    population = compare_population(
+        _load(cases_dir / f"{queries_name}.jsonl"),
+        _load(cases_dir / f"{candidates_name}.jsonl"),
+        engine,
+        helix,
+        tier,
+    )
+    out_dir.mkdir(parents=True, exist_ok=True)
+    write_csv(pairs.rows, out_dir / f"pairs_{tier}.csv")
+    write_csv(population.rows, out_dir / f"population_{tier}.csv")
+    return "\n".join(
+        [
+            *_report_section(f"{tier}/pairs", pairs),
+            *_report_section(f"{tier}/population", population),
+        ]
+    )
+
+
+def _helix_label(helix_repo: Path) -> str:
+    try:
+        described = subprocess.run(
+            ["git", "-C", str(helix_repo), "describe", "--tags", "--always"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+        version = described.stdout.strip() if described.returncode == 0 else ""
+    except (OSError, subprocess.TimeoutExpired):
+        version = ""
+    return f"{helix_repo} ({version or 'no git metadata'})"
+
+
+def main(argv: Optional[Sequence[str]] = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--cases-dir", type=Path, required=True)
+    parser.add_argument("--tier", choices=sorted(TIER_FILES), required=True)
+    parser.add_argument("--helix-repo", type=Path, required=True)
+    parser.add_argument("--out-dir", type=Path, required=True)
+    args = parser.parse_args(argv)
+    if not args.helix_repo.exists():
+        parser.error(f"helix.personmatching not found at {args.helix_repo}")
+
+    print(f"helix: {_helix_label(args.helix_repo)}")
+    print(
+        run_tier(
+            args.cases_dir,
+            args.tier,
+            engine_side(),
+            make_helix_side(args.helix_repo),
+            args.out_dir,
+        )
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

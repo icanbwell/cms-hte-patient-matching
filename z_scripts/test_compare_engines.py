@@ -6,6 +6,10 @@ it with toy matchers and never import `patient_matching` or `helix_personmatchin
 
 from __future__ import annotations
 
+import json
+import os
+from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -15,10 +19,14 @@ from z_scripts.compare_engines import (
     DisagreementRow,
     Side,
     Verdict,
+    _build_helix_side,
     classify,
     compare_pairs,
     compare_population,
     confusion,
+    engine_side,
+    make_helix_side,
+    run_tier,
     summarize,
     write_csv,
 )
@@ -247,3 +255,149 @@ def test_compare_population_reports_missing_candidate_and_prepares_each_once() -
 
     assert any("missing candidate zzz" in e for e in result.errors)
     assert sorted(engine_prepared) == ["a", "b", "q1"]  # each exactly once
+
+
+# --- real adapters ----------------------------------------------------------------
+
+
+@dataclass
+class _FakeRuleScore:
+    rule_name: str
+    rule_score: float
+
+
+@dataclass
+class _FakeResult:
+    matched: bool
+    total_score: float
+    rule_scores: list[_FakeRuleScore] = field(default_factory=list)
+
+
+class _FakeMatcher:
+    def __init__(self, results: list[_FakeResult]) -> None:
+        self._results = results
+
+    def match_resources(self, source: Any, target: Any) -> list[_FakeResult]:
+        return self._results
+
+
+class _FakePatient:
+    """Stands in for fhir.resources' Patient: rejects empty strings like FHIR's `string`."""
+
+    def __init__(self, raw: dict[str, Any]) -> None:
+        self.raw = raw
+
+    @classmethod
+    def parse_obj(cls, raw: dict[str, Any]) -> "_FakePatient":
+        if "" in raw.values():
+            raise ValueError("string must have a non-whitespace character")
+        return cls(raw)
+
+
+def test_helix_side_maps_an_empty_result_to_a_non_match() -> None:
+    side = _build_helix_side(_FakeMatcher([]), _FakePatient)
+
+    assert side.match(object(), object()) == Verdict(False, 0.0, "")
+
+
+def test_helix_side_reports_matched_if_any_rule_result_matched_with_top_score_and_rule() -> (
+    None
+):
+    results = [
+        _FakeResult(False, 0.90, [_FakeRuleScore("A", 0.5)]),
+        _FakeResult(True, 0.97, [_FakeRuleScore("A", 0.4), _FakeRuleScore("B", 0.9)]),
+    ]
+    side = _build_helix_side(_FakeMatcher(results), _FakePatient)
+
+    assert side.match(object(), object()) == Verdict(True, 0.97, "B")
+
+
+def test_helix_side_prepare_retries_with_empty_strings_stripped() -> None:
+    side = _build_helix_side(_FakeMatcher([]), _FakePatient)
+
+    parsed = side.prepare({"city": "", "name": "x"})
+
+    assert parsed.raw == {"name": "x"}
+
+
+# The ZIP must not be a placeholder: the engine drops `00000` (spec V.D placeholder table),
+# which leaves an identical record with no usable Table 2 rule and so no match.
+SYNTHETIC_PATIENT: dict[str, Any] = {
+    "resourceType": "Patient",
+    "id": "synthetic-1",
+    "name": [{"family": "Testperson", "given": ["Synthia"]}],
+    "birthDate": "1980-02-03",
+    "gender": "female",
+    "address": [
+        {
+            "line": ["1 Example Way"],
+            "city": "Faketown",
+            "state": "ZZ",
+            "postalCode": "90210",
+        }
+    ],
+    "telecom": [{"system": "phone", "value": "555-010-0100"}],
+}
+
+
+def test_engine_side_matches_an_identical_synthetic_patient_and_rejects_a_stranger() -> (
+    None
+):
+    side = engine_side()
+    stranger = {
+        **SYNTHETIC_PATIENT,
+        "name": [{"family": "Otherperson", "given": ["Zed"]}],
+        "birthDate": "1999-09-09",
+        "telecom": [{"system": "phone", "value": "555-010-0199"}],
+        "address": [{"line": ["9 Nowhere Rd"], "city": "Elsewhere", "state": "ZZ"}],
+    }
+
+    same = side.match(side.prepare(SYNTHETIC_PATIENT), side.prepare(SYNTHETIC_PATIENT))
+    other = side.match(side.prepare(SYNTHETIC_PATIENT), side.prepare(stranger))
+
+    assert (same.matched, other.matched) == (True, False)
+
+
+def test_helix_adapter_runs_on_one_synthetic_pair() -> None:
+    helix_repo = os.environ.get("HELIX_REPO")
+    if not helix_repo:
+        pytest.skip(
+            "set HELIX_REPO to a helix.personmatching checkout (eval-only dependency)"
+        )
+    side = make_helix_side(Path(helix_repo))
+
+    verdict = side.match(
+        side.prepare(SYNTHETIC_PATIENT), side.prepare(SYNTHETIC_PATIENT)
+    )
+
+    assert verdict.matched is True
+
+
+def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
+    path.write_text("".join(json.dumps(r) + "\n" for r in rows))
+
+
+def test_run_tier_reads_tier_files_writes_both_csvs_and_summarizes(
+    tmp_path: Path,
+) -> None:
+    cases = tmp_path / "cases"
+    cases.mkdir()
+    _write_jsonl(
+        cases / "realistic_labeled_pairs.jsonl", [_case("c1", True), _case("c2", True)]
+    )
+    queries, candidates = _population()
+    _write_jsonl(cases / "realistic_population_queries.jsonl", queries)
+    _write_jsonl(cases / "realistic_population_candidates.jsonl", candidates)
+    out = tmp_path / "out"
+
+    # Engine links c1, c2; helix links only c1 -> c2 is engine_only_right.
+    report = run_tier(
+        cases, "realistic", _side({"c1", "c2", "a"}), _side({"c1", "a"}), out
+    )
+
+    pairs_csv = (out / "pairs_realistic.csv").read_text().splitlines()
+    assert pairs_csv[0] == ",".join(CSV_COLUMNS)
+    assert len(pairs_csv) == 2 and "c2" in pairs_csv[1]
+    assert (out / "population_realistic.csv").exists()
+    assert "tp=2 fp=0 tn=0 fn=0" in report  # engine, pairs
+    assert "tp=1 fp=0 tn=0 fn=1" in report  # helix, pairs
