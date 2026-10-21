@@ -394,13 +394,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if not args.helix_repo.exists():
         parser.error(f"helix.personmatching not found at {args.helix_repo}")
 
+    # Engine first: make_helix_side puts the helix tree ahead on sys.path, and that tree has
+    # its own `tests` package, which would shadow the repo's `tests._null_backend`.
+    engine = engine_side()
     helix = make_helix_side(args.helix_repo)
     threshold_note = "library default (0.955)"
     if args.helix_threshold is not None:
         helix = with_threshold(helix, args.helix_threshold)
         threshold_note = str(args.helix_threshold)
     print(f"helix: {_helix_label(args.helix_repo)}, match threshold {threshold_note}")
-    print(run_tier(args.cases_dir, args.tier, engine_side(), helix, args.out_dir))
+    print(run_tier(args.cases_dir, args.tier, engine, helix, args.out_dir))
     return 0
 
 

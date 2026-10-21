@@ -14,6 +14,7 @@ from typing import Any
 
 import pytest
 
+from z_scripts import compare_engines
 from z_scripts.compare_engines import (
     CSV_COLUMNS,
     DisagreementRow,
@@ -430,3 +431,40 @@ def test_with_threshold_leaves_prepare_untouched() -> None:
         match=lambda a, b: Verdict(matched=False),
     )
     assert with_threshold(base, 0.9555).prepare({"k": 7}) == ("prepared", 7)
+
+
+def test_main_builds_the_engine_before_helix_so_helix_tests_package_cannot_shadow_ours(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """make_helix_side puts the helix tree first on sys.path, and that tree has its own
+    `tests` package; the engine imports `tests._null_backend`, so it must be built first."""
+    calls: list[str] = []
+    stub = Side(prepare=lambda p: p, match=lambda a, b: Verdict(matched=False))
+
+    def fake_engine() -> Side:
+        calls.append("engine")
+        return stub
+
+    def fake_helix(helix_repo: Path) -> Side:
+        calls.append("helix")
+        return stub
+
+    monkeypatch.setattr(compare_engines, "engine_side", fake_engine)
+    monkeypatch.setattr(compare_engines, "make_helix_side", fake_helix)
+    monkeypatch.setattr(compare_engines, "run_tier", lambda *args, **kwargs: "report")
+
+    exit_code = compare_engines.main(
+        [
+            "--cases-dir",
+            str(tmp_path),
+            "--tier",
+            "curated",
+            "--helix-repo",
+            str(tmp_path),
+            "--out-dir",
+            str(tmp_path),
+        ]
+    )
+
+    assert exit_code == 0
+    assert calls == ["engine", "helix"]
