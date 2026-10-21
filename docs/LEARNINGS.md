@@ -557,8 +557,8 @@ single-value blocker fails under every hash seed (`test_multi_value_blocking.py`
 ## helix's cut-off differs between its two consumers, and Rule-015 sits just above the library's
 
 `helix.personmatching` flags a match at a total score of 0.955 (`MATCH_THRESHOLD`). The real-time match
-service keeps a candidate only at 0.9555 (`MATCH_SCORE_THRESHOLD`); the batch pipeline uses the library's
-flag. On the realistic population, 31 of the 34 helix false links from Rule-015 (family name, DOB,
+service keeps a blocking-search candidate only at 0.9555 (`MATCH_SCORE_THRESHOLD`; caller-supplied candidates
+come back unthresholded); the batch pipeline uses the library's flag. On the realistic population, 31 of the 34 helix false links from Rule-015 (family name, DOB,
 adult-today flag, gender, address line 1, zip, email: no given name) score in [0.955, 0.9555). Re-deciding
 at 0.9555 cut helix's false links from 53 to 21 and lost no true link on this data. Lesson: when comparing
 against helix, state which cut-off you used; `compare_engines.py --helix-threshold` re-decides from the

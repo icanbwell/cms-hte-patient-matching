@@ -303,7 +303,8 @@ def with_threshold(side: Side, threshold: float) -> Side:
     """Re-decide `matched` as `score >= threshold`, keeping the score and rule.
 
     The library flags a match at 0.955; a caller with a different cut-off (the match service
-    uses 0.9555) is scored by re-thresholding the same score, not by re-running the matcher."""
+    uses 0.9555 on its blocking-search path) is scored by re-thresholding the same score,
+    not by re-running the matcher."""
 
     def match(a: Any, b: Any) -> Verdict:
         verdict = side.match(a, b)

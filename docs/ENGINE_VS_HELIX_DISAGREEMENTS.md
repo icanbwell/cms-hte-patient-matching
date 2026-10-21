@@ -1,22 +1,22 @@
 # Engine vs `helix.personmatching`: per-record disagreements on both test-set tiers
 
 Date: 2026-10-21. Ticket: BAI-1167. Engine: `patient_matching` on `main` at `5c684e9` (Table 2 rules
-engine, verification only). **No engine or helix change in this document**; both matchers run exactly
-as released and only the comparison is new (`z_scripts/compare_engines.py`).
+engine, verification only). **No engine or helix change in this document**; both matchers' code is
+unmodified and only the comparison is new (`z_scripts/compare_engines.py`).
 
 ## 1. Verdict
 
 **The two matchers have the same recall (0.945–0.953 on every tier, within 0.3 points of each other) but
 miss different records, and on the realistic tier helix links more wrong patients: 53 false links against
 the engine's 4 on the 80,000-evaluation population test (21 at the match service's 0.9555 cut-off).**
-Helix 2.1.0, 2.20 and 3.0.1 give identical verdicts and scores on this data, so the version question does
-not change any number below.
+Helix 2.1.0 and 3.0.1 give identical verdicts and scores on this data (2.20 has the same package code as
+2.1.0 and was not run separately), so the version question does not change any number below.
 
 ## 2. Results
 
 `tp`/`fp`/`tn`/`fn` are record-level counts. A positive is "these two records are the same person".
 Helix "matches" when its total score is at least **0.955**, the library's own cut-off. Helix columns are
-the same for 2.1.0, 2.20 and 3.0.1 (§6).
+the same for 2.1.0 and 3.0.1, and for 2.20 by package-code identity (§6).
 
 | Tier | Matcher | tp | fp | tn | fn | Recall | False-positive rate |
 |---|---|---|---|---|---|---|---|
@@ -37,8 +37,9 @@ fp 3); the realistic engine rows reproduce `TEST_SET_e4cf29e_ACCURACY_ANALYSIS.m
 
 ### Helix at the match service's cut-off (0.9555)
 
-The real-time match service keeps a candidate only at `MATCH_SCORE_THRESHOLD=0.9555`, not 0.955. Re-deciding
-helix's matches at 0.9555 (`--helix-threshold 0.9555`, same scores, no re-run of the matcher):
+The real-time match service keeps a **blocking-search** candidate only at `MATCH_SCORE_THRESHOLD=0.9555`, not
+0.955 (when a caller supplies its own candidates the service returns every scored result, with no threshold).
+Re-deciding helix's matches at 0.9555 (`--helix-threshold 0.9555`, same scores, no re-run of the matcher):
 
 | Tier | Helix fp at 0.955 | Helix fp at 0.9555 | Helix tp / fn |
 |---|---|---|---|
@@ -158,7 +159,7 @@ no deployed image tag or running pipeline build was checked here.
 
 | Consumer | Locked helix version | Match decision |
 |---|---|---|
-| Real-time match service (`main`) | 3.0.1 (`>=3.0.1`) | score ≥ 0.9555 (`MATCH_SCORE_THRESHOLD`, Helm values and code default) |
+| Real-time match service (`main`) | 3.0.1 (`>=3.0.1`) | blocking-search candidates: score ≥ 0.9555 (`MATCH_SCORE_THRESHOLD`, Helm values and code default); caller-supplied candidates: all scored results, no threshold |
 | Batch ingestion pipeline (default branch) | 2.20 (`>=2.1.0`) | library's `matched` flag (0.955); no separate threshold found in its matcher module |
 
 - **2.20 vs 2.1.0:** `git diff 2.1.0 2.20 -- helix_personmatching` is empty. 2.20 changes 15 files, all
@@ -167,13 +168,14 @@ no deployed image tag or running pipeline build was checked here.
 - **3.0.1 vs 2.1.0:** 3.0.1 migrates to `fhir.resources` 8.3 (Pydantic v2) and touches 65 files. On all four
   tiers the per-record CSVs are **byte-identical** to 2.1.0, scores included.
 
-So the pipeline path is judged at 0.955 and the service path at 0.9555. Both rows of §2 apply, and the
-0.9555 table shows what the service sees.
+So the pipeline is judged at 0.955 (the §2 columns), and the service at 0.9555 on its blocking-search path (the
+0.9555 table). The service's caller-supplied path applies no threshold, so what those callers see depends on
+the cut-off each caller applies.
 
 ## 7. Open items
 
 1. **Which cut-off the comparison should use.** 0.9555 removes helix's Rule-015 band on this data at no
-   measured recall cost; 0.955 is what the pipeline applies. The project and DS leads own that choice.
+   measured recall cost; it is the service's blocking-search cut-off, while 0.955 is what the pipeline applies. The project and DS leads own that choice.
 2. **Engine rule attribution** (§5) if a rule-by-rule comparison is wanted.
 3. **Real-record replay** to confirm the synthetic gaps (recall ~0.95 for both, helix's extra links) hold.
 4. **Deployed versions**: confirm the prod service image tag and pipeline build against §6.
@@ -198,4 +200,8 @@ PYTHONPATH=. python z_scripts/compare_engines.py --cases-dir <dir> --tier {curat
   matchers do not both agree with the label: ids, category, label, each verdict, bucket, and helix's score
   and rule. No patient fields. The anchors in §2 were reproduced exactly with helix 2.1.0 before any other
   run was trusted.
+- Scoring dependencies: the 2.1.0 run used rapidfuzz 3.14.6 and phonenumbers 9.0.40, the 3.0.1 run rapidfuzz
+  3.14.6 and phonenumbers 9.0.41. The 2.1.0 lock pins rapidfuzz 3.14.5 and phonenumbers 9.0.28, and the 3.0.1
+  lock 3.14.6 and 9.0.38, so neither run used a consumer's exact lock. A patch-level change in a scoring
+  dependency is not expected to alter results, but that was not tested.
 - Test: `z_scripts/test_compare_engines.py` (injected `Side(prepare, match)` stubs, no data).
