@@ -299,6 +299,21 @@ def make_helix_side(helix_repo: Path) -> Side:
     return _build_helix_side(Matcher(), Patient)
 
 
+def with_threshold(side: Side, threshold: float) -> Side:
+    """Re-decide `matched` as `score >= threshold`, keeping the score and rule.
+
+    The library flags a match at 0.955; a caller with a different cut-off (the match service
+    uses 0.9555) is scored by re-thresholding the same score, not by re-running the matcher."""
+
+    def match(a: Any, b: Any) -> Verdict:
+        verdict = side.match(a, b)
+        return Verdict(
+            matched=verdict.score >= threshold, score=verdict.score, rule=verdict.rule
+        )
+
+    return Side(prepare=side.prepare, match=match)
+
+
 # --- run one tier + CLI -----------------------------------------------------------
 
 
@@ -369,20 +384,23 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--tier", choices=sorted(TIER_FILES), required=True)
     parser.add_argument("--helix-repo", type=Path, required=True)
     parser.add_argument("--out-dir", type=Path, required=True)
+    parser.add_argument(
+        "--helix-threshold",
+        type=float,
+        default=None,
+        help="re-decide helix matches at this score (default: the library's own 0.955)",
+    )
     args = parser.parse_args(argv)
     if not args.helix_repo.exists():
         parser.error(f"helix.personmatching not found at {args.helix_repo}")
 
-    print(f"helix: {_helix_label(args.helix_repo)}")
-    print(
-        run_tier(
-            args.cases_dir,
-            args.tier,
-            engine_side(),
-            make_helix_side(args.helix_repo),
-            args.out_dir,
-        )
-    )
+    helix = make_helix_side(args.helix_repo)
+    threshold_note = "library default (0.955)"
+    if args.helix_threshold is not None:
+        helix = with_threshold(helix, args.helix_threshold)
+        threshold_note = str(args.helix_threshold)
+    print(f"helix: {_helix_label(args.helix_repo)}, match threshold {threshold_note}")
+    print(run_tier(args.cases_dir, args.tier, engine_side(), helix, args.out_dir))
     return 0
 
 

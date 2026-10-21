@@ -28,6 +28,7 @@ from z_scripts.compare_engines import (
     make_helix_side,
     run_tier,
     summarize,
+    with_threshold,
     write_csv,
 )
 
@@ -401,3 +402,31 @@ def test_run_tier_reads_tier_files_writes_both_csvs_and_summarizes(
     assert (out / "population_realistic.csv").exists()
     assert "tp=2 fp=0 tn=0 fn=0" in report  # engine, pairs
     assert "tp=1 fp=0 tn=0 fn=1" in report  # helix, pairs
+
+
+@pytest.mark.parametrize(
+    ("score", "threshold", "matched"),
+    [
+        (0.9550, 0.9555, False),
+        (0.9555, 0.9555, True),
+        (0.9560, 0.9555, True),
+        (0.9550, 0.9550, True),
+    ],
+)
+def test_with_threshold_redecides_matched_from_the_score_and_keeps_score_and_rule(
+    score: float, threshold: float, matched: bool
+) -> None:
+    base = Side(
+        prepare=lambda patient: patient,
+        match=lambda a, b: Verdict(matched=True, score=score, rule="R1"),
+    )
+    verdict = with_threshold(base, threshold).match({"k": 1}, {"k": 2})
+    assert verdict == Verdict(matched=matched, score=score, rule="R1")
+
+
+def test_with_threshold_leaves_prepare_untouched() -> None:
+    base = Side(
+        prepare=lambda patient: ("prepared", patient["k"]),
+        match=lambda a, b: Verdict(matched=False),
+    )
+    assert with_threshold(base, 0.9555).prepare({"k": 7}) == ("prepared", 7)
