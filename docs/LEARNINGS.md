@@ -520,6 +520,23 @@ them together; do not tighten the leak alone. Probe: legacy vs new `first_names`
 **Where this could still bite:** an initial-only first-name rule added later will overlap with this
 leak; remove the leak in the same change so the added rule's collision price is the whole story.
 
+**Seen linking two different people (test-set `e4cf29e`, BAI-1167):** the `twin_like_negative`
+pair JOELLEN L / AMBER L PLUMMER (same DOB and phone, different first names) satisfies the exact First
+Name in rules 02 and 11 only through the shared middle initial `L`. Without it, rule 11 does not
+fire. Rule 30 links the pair anyway, so it is not yet a measurable FPR cost, but it is the first
+benchmark evidence that the leak is a false-positive risk, not just unpriced recall. See
+`docs/TEST_SET_e4cf29e_ACCURACY_ANALYSIS.md` §5.
+
+## Same-day siblings who share a phone are linked by rule 30 (4 of 4 in test-set `e4cf29e`)
+
+Test-set #28 added `twin_like_negative`: same surname and birth date, clearly different first names,
+a shared phone or address. On `e4cf29e` the engine links all 4 such pairs, every one through rule 30
+(`Last* + DOB + Phone`, no first-name field; `table2_rules.py` already calls it "no twin
+disambiguation"). These are the only false positives on any tier at `e4cf29e`; the 0.0.5-era
+`sibling_negative` twins are gone (#24's same-person guard). The FPR is far under the ceiling
+(0.00023), but this is now a *measured* wrong-patient link class rather than an assumed one. Decide
+the expected label for twins, or add a first-name veto to rule 30, before treating it as noise.
+
 ## Blocking searched one arbitrary value per field; the ONC benchmark could not see it
 
 `MatchingEngine._build_criteria_for_fields` sent the backend one value per field, `next(iter(values))`
