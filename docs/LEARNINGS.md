@@ -556,21 +556,20 @@ single-value blocker fails under every hash seed (`test_multi_value_blocking.py`
 
 ## helix's cut-off differs between its two consumers, and Rule-015 sits just above the library's
 
-`helix.personmatching` flags a match at a total score of 0.955 (`MATCH_THRESHOLD`). The real-time match
-service keeps a blocking-search candidate only at 0.9555 (`MATCH_SCORE_THRESHOLD`; caller-supplied candidates
-come back unthresholded); the batch pipeline uses the library's flag. On the realistic population, 31 of the 34 helix false links from Rule-015 (family name, DOB,
-adult-today flag, gender, address line 1, zip, email: no given name) score in [0.955, 0.9555). Re-deciding
-at 0.9555 cut helix's false links from 53 to 21 and lost no true link on this data. Lesson: when comparing
-against helix, state which cut-off you used; `compare_engines.py --helix-threshold` re-decides from the
-same scores. See `docs/ENGINE_VS_HELIX_DISAGREEMENTS.md`.
+`helix.personmatching` flags a match at a total score of 0.955 (`MATCH_THRESHOLD`), but the real-time match
+service keeps a blocking-search candidate only at 0.9555 (`MATCH_SCORE_THRESHOLD`), and the batch pipeline
+uses the library's flag. Helix's Rule-015 false links (no given name) score in the gap between the two.
+Lesson: when comparing against helix, state which cut-off you used; `compare_engines.py --helix-threshold`
+re-decides from the same scores. The counts and the effect on this data are in
+`docs/ENGINE_VS_HELIX_DISAGREEMENTS.md` sections 2 and 4.
 
 ## helix 3.0.1 needs `fhir.resources` 8; 2.1.0 needs it below 8
 
 helix 3.0.0 migrated to `fhir.resources` 8.3 (Pydantic v2), so 3.0.1 fails at import
 (`No module named 'fhir_core'`) in an environment built for 2.1.0 (`fhir.resources<8`), and the reverse
 fails too. Score them in two virtualenvs. Pin `fhirschemapy==0.0.12` in the newer one: an unpinned install
-picked 0.0.13, which could move the engine's own numbers. The per-record verdicts and scores are
-byte-identical across 2.1.0, 2.20 (package code identical to 2.1.0) and 3.0.1 on test-set 0.0.5 and `e4cf29e`.
+picked 0.0.13, which could move the engine's own numbers. The version comparison and the pins used are in
+`docs/ENGINE_VS_HELIX_DISAGREEMENTS.md` sections 6 and 8.
 
 ## Adding a helix tree to `sys.path` shadows this repo's `tests` package
 
@@ -591,4 +590,5 @@ identical copy. Use a real-looking ZIP (`90210`) in synthetic fixtures that must
 A population query's `rationale` is the `+`-joined list of every variant in its candidate set
 (`population/compound_variant+fuzzy_variant+...`), and candidate ids are opaque hashes. A disagreement on a
 query-candidate row therefore cannot be attributed to a category; the `category` column of the population
-CSV is always `population`. Read category-level behavior from the pairs tier.
+CSV is always `population`. Read category-level behavior from the pairs tier (see
+`docs/ENGINE_VS_HELIX_DISAGREEMENTS.md` section 3).

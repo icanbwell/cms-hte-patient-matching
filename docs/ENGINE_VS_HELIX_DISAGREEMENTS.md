@@ -149,6 +149,11 @@ test-set 0.0.5); 2 of them are linked by both.
   public method on `MatchingEngine` and its own PR.
 - Helix is scored in one direction only: `source` is the pair's source (or the population query) and `target`
   is the pair's target (or the candidate).
+- **The two matchers do not always see the same input.** Helix needs a valid FHIR `Patient`, and a few
+  ONC-derived records have an empty city, state or given value. When helix's strict parse rejects a record
+  with a validation error, the adapter retries once with empty strings dropped. The engine reads the
+  record as it is. Each run prints how many helix parse calls needed the retry (`== helix input:` line), so
+  the effect on a given run can be sized; this report does not measure it.
 - Whether the engine's recall gains on `compound_variant` are worth its misses on typos and phone changes
   is a policy question (a combined or tiered decision is possible); this report does not answer it.
 
@@ -204,4 +209,10 @@ PYTHONPATH=. python z_scripts/compare_engines.py --cases-dir <dir> --tier {curat
   3.14.6 and phonenumbers 9.0.41. The 2.1.0 lock pins rapidfuzz 3.14.5 and phonenumbers 9.0.28, and the 3.0.1
   lock 3.14.6 and 9.0.38, so neither run used a consumer's exact lock. A patch-level change in a scoring
   dependency is not expected to alter results, but that was not tested.
-- Test: `z_scripts/test_compare_engines.py` (injected `Side(prepare, match)` stubs, no data).
+- A case that raises in either matcher, or whose candidate or query cannot be prepared (one error for the
+  cause plus one per pair it would have scored), is left out of every count and listed under `errors=`. Each report
+  section prints a warning when `errors` is above zero, and the run exits non-zero. Read the counts only
+  from a run with `errors=0` on every section.
+- Test: `z_scripts/test_compare_engines.py`. The comparison logic runs on injected `Side(prepare, match)`
+  stubs with no data. The engine adapter test needs this repo's `patient_matching` package, and the helix
+  adapter test skips unless `HELIX_REPO` points at a helix checkout.
