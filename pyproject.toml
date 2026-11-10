@@ -147,6 +147,12 @@ ignore_missing_imports = true
 module = ["yaml.*"]
 ignore_missing_imports = true
 
+# Eval-only: z_scripts/compare_engines.py imports these lazily; they come from a helix.personmatching
+# checkout and its own dependency set, never from this repo's lockfile.
+[[tool.mypy.overrides]]
+module = ["fhir.*", "helix_personmatching.*"]
+ignore_missing_imports = true
+
 [[tool.mypy.overrides]]
 module = ["psycopg2.*"]
 ignore_missing_imports = true

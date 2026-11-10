@@ -57,25 +57,6 @@ class _NullBackend:
         return []
 
 
-def _is_empty_str(v: Any) -> bool:
-    return isinstance(v, str) and v.strip() == ""
-
-
-def _strip_empty_strings(obj: Any) -> Any:
-    """Recursively drop empty/whitespace-only strings - FHIR's `string` type
-    requires >=1 non-whitespace character, but a handful of ONC-derived
-    records have an empty city/state/given value. Used only as a fallback
-    when strict validation fails."""
-    if isinstance(obj, dict):
-        return {
-            k: _strip_empty_strings(v) for k, v in obj.items() if not _is_empty_str(v)
-        }
-    if isinstance(obj, list):
-        cleaned = [_strip_empty_strings(v) for v in obj]
-        return [v for v in cleaned if not _is_empty_str(v)]
-    return obj
-
-
 def _load_jsonl(path: Path) -> List[Dict[str, Any]]:
     with path.open() as f:
         return [json.loads(line) for line in f]
@@ -212,10 +193,14 @@ def run_our_engine_population(
 
 
 def _parse_helix_patient(raw: Dict[str, Any], patient_cls: Any) -> Any:
+    # Needs the repo root on sys.path (`PYTHONPATH=.`, as in this script's usage), like the
+    # `patient_matching` imports above.
+    from z_scripts.empty_strings import strip_empty_strings
+
     try:
         return patient_cls.model_validate(raw)
     except Exception:  # noqa: BLE001
-        return patient_cls.model_validate(_strip_empty_strings(raw))
+        return patient_cls.model_validate(strip_empty_strings(raw))
 
 
 def run_helix_pairs(pairs: List[Dict[str, Any]], helix_repo: Path) -> None:
