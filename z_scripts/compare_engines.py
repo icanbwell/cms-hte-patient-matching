@@ -27,7 +27,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Literal, Optional, Sequence
 
-from z_scripts.empty_strings import strip_empty_strings
+from z_scripts.empty_strings import parse_with_empty_string_fallback
 from z_scripts.score_test_set import TIER_FILES, _bucket, _engine, _load
 
 # helix.personmatching's own default cut-off for flagging a match.
@@ -290,11 +290,13 @@ def _build_helix_side(matcher: Any, patient_cls: Any) -> Side:
         # `parse_obj` is the pydantic-v1 API, which fhir.resources 7 (helix 2.x) and 8 (helix
         # 3.x) both expose. Pydantic's ValidationError is a ValueError in v1 and v2; any other
         # error is not a validation problem, so it is not retried.
-        try:
-            return patient_cls.parse_obj(raw)
-        except ValueError:
-            stats[EMPTY_STRING_RETRIES] += 1
-            return patient_cls.parse_obj(strip_empty_strings(raw))
+        return parse_with_empty_string_fallback(
+            patient_cls.parse_obj,
+            raw,
+            on_retry=lambda: stats.__setitem__(
+                EMPTY_STRING_RETRIES, stats[EMPTY_STRING_RETRIES] + 1
+            ),
+        )
 
     def match(source: Any, target: Any) -> Verdict:
         results = matcher.match_resources(source=source, target=target)

@@ -7,7 +7,7 @@ and `evaluation/legacy_comparison.py`; use it only as a fallback when strict par
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Callable, Optional
 
 
 def is_empty_str(value: Any) -> bool:
@@ -28,3 +28,22 @@ def strip_empty_strings(obj: Any) -> Any:
         cleaned = [strip_empty_strings(v) for v in obj]
         return [v for v in cleaned if not is_empty_str(v)]
     return obj
+
+
+def parse_with_empty_string_fallback(
+    parse: Callable[[Any], Any],
+    raw: Any,
+    on_retry: Optional[Callable[[], None]] = None,
+) -> Any:
+    """Parse `raw` strictly; if that raises `ValueError`, retry once with blanks dropped.
+
+    `on_retry` is called before the retry, so a retry that fails is still counted. Pydantic's
+    `ValidationError` is a `ValueError` in v1 and v2; any other error is not a validation
+    problem and propagates without a retry, as does a `ValueError` from the retry itself.
+    """
+    try:
+        return parse(raw)
+    except ValueError:
+        if on_retry is not None:
+            on_retry()
+        return parse(strip_empty_strings(raw))

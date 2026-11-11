@@ -213,6 +213,11 @@ PYTHONPATH=. python z_scripts/compare_engines.py --cases-dir <dir> --tier {curat
   cause plus one per pair it would have scored), is left out of every count and listed under `errors=`. Each report
   section prints a warning when `errors` is above zero, and the run exits non-zero. Read the counts only
   from a run with `errors=0` on every section.
+- Rerun on head `e1c748c` plus the shared retry helper, helix 2.1.0, 2026-11-11: `errors=0` on all four
+  sections (curated and realistic, pairs and population), and the counts in §2 reproduce exactly. The per-record
+  CSVs were byte-identical across two runs. The curated tier had **1,832** helix parse calls retried with empty
+  strings dropped (pairs and population together); the realistic tier had **0**. So the input asymmetry in §5
+  applies to the curated numbers and not to the realistic ones. The 3.0.1 and 0.9555 variants were not rerun.
 - Test: `z_scripts/test_compare_engines.py`. The comparison logic runs on injected `Side(prepare, match)`
   stubs with no data. The engine adapter test needs this repo's `patient_matching` package, and the helix
   adapter test skips unless `HELIX_REPO` points at a helix checkout.
