@@ -57,25 +57,6 @@ class _NullBackend:
         return []
 
 
-def _is_empty_str(v: Any) -> bool:
-    return isinstance(v, str) and v.strip() == ""
-
-
-def _strip_empty_strings(obj: Any) -> Any:
-    """Recursively drop empty/whitespace-only strings - FHIR's `string` type
-    requires >=1 non-whitespace character, but a handful of ONC-derived
-    records have an empty city/state/given value. Used only as a fallback
-    when strict validation fails."""
-    if isinstance(obj, dict):
-        return {
-            k: _strip_empty_strings(v) for k, v in obj.items() if not _is_empty_str(v)
-        }
-    if isinstance(obj, list):
-        cleaned = [_strip_empty_strings(v) for v in obj]
-        return [v for v in cleaned if not _is_empty_str(v)]
-    return obj
-
-
 def _load_jsonl(path: Path) -> List[Dict[str, Any]]:
     with path.open() as f:
         return [json.loads(line) for line in f]
@@ -211,11 +192,25 @@ def run_our_engine_population(
 # --- helix.personmatching's engine ------------------------------------------
 
 
-def _parse_helix_patient(raw: Dict[str, Any], patient_cls: Any) -> Any:
-    try:
-        return patient_cls.model_validate(raw)
-    except Exception:  # noqa: BLE001
-        return patient_cls.model_validate(_strip_empty_strings(raw))
+def _parse_helix_patient(
+    raw: Dict[str, Any], patient_cls: Any, retries: List[bool]
+) -> Any:
+    """Parse for helix; a record that only validates with blank strings dropped appends to
+    `retries` (the engine is never given the stripped record)."""
+    # `z_scripts` is not an installed package, and this script runs as
+    # `python evaluation/legacy_comparison.py`, so put the repo root on sys.path ourselves.
+    # Appended, not inserted first, so it cannot shadow the helix tree added by the runners.
+    if str(REPO_ROOT) not in sys.path:
+        sys.path.append(str(REPO_ROOT))
+    from z_scripts.empty_strings import parse_with_empty_string_fallback
+
+    return parse_with_empty_string_fallback(
+        patient_cls.model_validate, raw, on_retry=lambda: retries.append(True)
+    )
+
+
+def _print_helix_retries(count: int) -> None:
+    print(f"== helix input: {count} parse call(s) retried with empty strings dropped")
 
 
 def run_helix_pairs(pairs: List[Dict[str, Any]], helix_repo: Path) -> None:
@@ -226,6 +221,7 @@ def run_helix_pairs(pairs: List[Dict[str, Any]], helix_repo: Path) -> None:
     matcher = Matcher()
     tp = fp = tn = fn = 0
     errors: List[str] = []
+    retries: List[bool] = []
     by_cat: Dict[str, Dict[str, int]] = defaultdict(
         lambda: {"tp": 0, "fp": 0, "tn": 0, "fn": 0}
     )
@@ -233,8 +229,8 @@ def run_helix_pairs(pairs: List[Dict[str, Any]], helix_repo: Path) -> None:
     for case in pairs:
         category = case["rationale"].split("/")[0].split(" ")[0]
         try:
-            source = _parse_helix_patient(case["source"], Patient)
-            target = _parse_helix_patient(case["target"], Patient)
+            source = _parse_helix_patient(case["source"], Patient, retries)
+            target = _parse_helix_patient(case["target"], Patient, retries)
             scores = matcher.match_resources(source=source, target=target)
             predicted = any(s.matched for s in scores) if scores else False
         except Exception as exc:  # noqa: BLE001
@@ -263,6 +259,7 @@ def run_helix_pairs(pairs: List[Dict[str, Any]], helix_repo: Path) -> None:
     _print_report(
         "helix.personmatching (legacy)", "pairs", len(pairs), tp, fp, tn, fn, errors
     )
+    _print_helix_retries(len(retries))
     for cat, c in sorted(by_cat.items()):
         print(f"  {cat}: tp={c['tp']} fp={c['fp']} tn={c['tn']} fn={c['fn']}")
 
@@ -276,17 +273,20 @@ def run_helix_population(
 
     matcher = Matcher()
     errors: List[str] = []
+    retries: List[bool] = []
     candidate_patients = {}
     for c in candidates:
         try:
-            candidate_patients[c["id"]] = _parse_helix_patient(c["patient"], Patient)
+            candidate_patients[c["id"]] = _parse_helix_patient(
+                c["patient"], Patient, retries
+            )
         except Exception as exc:  # noqa: BLE001
             errors.append(f"candidate {c['id']}: {exc!r}")
 
     tp = fp = tn = fn = 0
     for q in queries:
         try:
-            query_patient = _parse_helix_patient(q["query"], Patient)
+            query_patient = _parse_helix_patient(q["query"], Patient, retries)
         except Exception as exc:  # noqa: BLE001
             errors.append(f"query {q['query_id']}: {exc!r}")
             continue
@@ -316,6 +316,7 @@ def run_helix_population(
     _print_report(
         "helix.personmatching (legacy)", "population", n, tp, fp, tn, fn, errors
     )
+    _print_helix_retries(len(retries))
 
 
 # --- entry point -------------------------------------------------------------
