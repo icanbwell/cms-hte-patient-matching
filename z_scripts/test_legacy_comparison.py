@@ -7,6 +7,9 @@ import would otherwise go unnoticed. It is loaded by path because `evaluation/` 
 from __future__ import annotations
 
 import importlib.util
+import subprocess
+import sys
+import textwrap
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -18,6 +21,7 @@ pytest.importorskip("patient_matching")
 LEGACY_PATH = (
     Path(__file__).resolve().parent.parent / "evaluation" / "legacy_comparison.py"
 )
+SUBPROCESS_TIMEOUT_SECONDS = 60
 
 
 def _load_legacy() -> ModuleType:
@@ -64,3 +68,41 @@ def test_parse_helix_patient_reraises_when_the_retry_also_fails() -> None:
     legacy = _load_legacy()
     with pytest.raises(ValueError):
         legacy._parse_helix_patient({"city": ""}, _AlwaysInvalid, [])
+
+
+def test_parse_helix_patient_runs_without_the_repo_root_on_sys_path(
+    tmp_path: Path,
+) -> None:
+    """The script's Usage block runs it as `python evaluation/legacy_comparison.py`, with no
+    `PYTHONPATH=.`. `z_scripts` is not an installed package, so the helper import only works
+    if the script puts the repo root on `sys.path` itself. pytest has the root on its path,
+    so this has to run in a fresh interpreter (`-I`: no cwd, no PYTHON* variables)."""
+    code = textwrap.dedent(
+        f"""
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location("legacy_comparison", {str(LEGACY_PATH)!r})
+        legacy = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(legacy)
+
+
+        class Patient:
+            @classmethod
+            def model_validate(cls, raw):
+                return raw
+
+
+        assert legacy._parse_helix_patient({{"name": "x"}}, Patient, []) == {{"name": "x"}}
+        """
+    )
+
+    result = subprocess.run(
+        [sys.executable, "-I", "-c", code],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        timeout=SUBPROCESS_TIMEOUT_SECONDS,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr

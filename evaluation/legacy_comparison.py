@@ -197,8 +197,11 @@ def _parse_helix_patient(
 ) -> Any:
     """Parse for helix; a record that only validates with blank strings dropped appends to
     `retries` (the engine is never given the stripped record)."""
-    # Needs the repo root on sys.path (`PYTHONPATH=.`, as in this script's usage), like the
-    # `patient_matching` imports above.
+    # `z_scripts` is not an installed package, and this script runs as
+    # `python evaluation/legacy_comparison.py`, so put the repo root on sys.path ourselves.
+    # Appended, not inserted first, so it cannot shadow the helix tree added by the runners.
+    if str(REPO_ROOT) not in sys.path:
+        sys.path.append(str(REPO_ROOT))
     from z_scripts.empty_strings import parse_with_empty_string_fallback
 
     return parse_with_empty_string_fallback(
