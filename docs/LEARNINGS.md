@@ -520,6 +520,23 @@ them together; do not tighten the leak alone. Probe: legacy vs new `first_names`
 **Where this could still bite:** an initial-only first-name rule added later will overlap with this
 leak; remove the leak in the same change so the added rule's collision price is the whole story.
 
+**Seen linking two different people (test-set `e4cf29e`, BAI-1167):** the `twin_like_negative`
+pair JOELLEN L / AMBER L PLUMMER (same DOB and phone, different first names) satisfies the exact First
+Name in rules 02 and 11 only through the shared middle initial `L`. Without it, rule 11 does not
+fire. Rule 30 links the pair anyway, so it is not yet a measurable FPR cost, but it is the first
+benchmark evidence that the leak is a false-positive risk, not just unpriced recall. See
+`docs/TEST_SET_e4cf29e_ACCURACY_ANALYSIS.md` §5.
+
+## Same-day siblings who share a phone are linked by rule 30 (4 of 4 in test-set `e4cf29e`)
+
+Test-set #28 added `twin_like_negative`: same surname and birth date, clearly different first names,
+a shared phone or address. On `e4cf29e` the engine links all 4 such pairs, every one through rule 30
+(`Last* + DOB + Phone`, no first-name field; `table2_rules.py` already calls it "no twin
+disambiguation"). These are the only false positives on any tier at `e4cf29e`; the 0.0.5-era
+`sibling_negative` twins are gone (#24's same-person guard). The FPR is far under the ceiling
+(0.00023), but this is now a *measured* wrong-patient link class rather than an assumed one. Decide
+the expected label for twins, or add a first-name veto to rule 30, before treating it as noise.
+
 ## Blocking searched one arbitrary value per field; the ONC benchmark could not see it
 
 `MatchingEngine._build_criteria_for_fields` sent the backend one value per field, `next(iter(values))`
@@ -559,3 +576,42 @@ where gender is a scored field, has a different gap; do not assume this one appl
 
 **Fixtures:** avoid 555-exchange phones in synthetic records (they silently disable rule 30); see
 "The §V.D placeholder table had gaps" above.
+
+## helix's cut-off differs between its two consumers, and Rule-015 sits just above the library's
+
+`helix.personmatching` flags a match at a total score of 0.955 (`MATCH_THRESHOLD`), but the real-time match
+service keeps a blocking-search candidate only at 0.9555 (`MATCH_SCORE_THRESHOLD`), and the batch pipeline
+uses the library's flag. Helix's Rule-015 false links (no given name) score in the gap between the two.
+Lesson: when comparing against helix, state which cut-off you used; `compare_engines.py --helix-threshold`
+re-decides from the same scores. The counts and the effect on this data are in
+`docs/ENGINE_VS_HELIX_DISAGREEMENTS.md` sections 2 and 4.
+
+## helix 3.0.1 needs `fhir.resources` 8; 2.1.0 needs it below 8
+
+helix 3.0.0 migrated to `fhir.resources` 8.3 (Pydantic v2), so 3.0.1 fails at import
+(`No module named 'fhir_core'`) in an environment built for 2.1.0 (`fhir.resources<8`), and the reverse
+fails too. Score them in two virtualenvs. Pin `fhirschemapy==0.0.12` in the newer one: an unpinned install
+picked 0.0.13, which could move the engine's own numbers. The version comparison and the pins used are in
+`docs/ENGINE_VS_HELIX_DISAGREEMENTS.md` sections 6 and 8.
+
+## Adding a helix tree to `sys.path` shadows this repo's `tests` package
+
+A `git archive` of helix contains its own top-level `tests/` package. `make_helix_side` puts that tree first
+on `sys.path`, so any later `import tests._null_backend` (the engine's null backend, imported lazily by
+`score_test_set._engine`) resolves to helix's `tests` and fails with `ModuleNotFoundError`. Build the engine
+side before the helix side; `test_main_builds_the_engine_before_helix_so_helix_tests_package_cannot_shadow_ours`
+pins the order. The failure only shows when the CLI runs end to end, not in unit tests with injected sides.
+
+## A synthetic patient with ZIP `00000` never matches, even against itself
+
+`placeholder_detector.py` drops ZIP `00000`/`99999` as a placeholder (spec V.D), so a fixture whose only
+usable address field is `00000` has too few fields for any rule and `evaluate_pair` returns no match for an
+identical copy. Use a real-looking ZIP (`90210`) in synthetic fixtures that must match.
+
+## Population test rows carry a composite label, not a per-candidate category
+
+A population query's `rationale` is the `+`-joined list of every variant in its candidate set
+(`population/compound_variant+fuzzy_variant+...`), and candidate ids are opaque hashes. A disagreement on a
+query-candidate row therefore cannot be attributed to a category; the `category` column of the population
+CSV is always `population`. Read category-level behavior from the pairs tier (see
+`docs/ENGINE_VS_HELIX_DISAGREEMENTS.md` section 3).
