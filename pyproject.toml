@@ -28,7 +28,7 @@ dependencies = [
     "text-unidecode>=1.3",
     "fhirschemapy>=0.0.11",
     "httpx>=0.28.0",
-    "duckdb>=1.2.0",
+    "duckdb>=2.0,<2.1",
     "apscheduler>=3.10.0",
 ]
 
